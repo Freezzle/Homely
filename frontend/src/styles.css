@@ -1,0 +1,32 @@
+/*
+ * Tailwind CSS v4 + PrimeNG 21 — ordre des CSS layers
+ *
+ * Explication des priorités (layer déclaré EN DERNIER = plus haute priorité) :
+ *   theme < base < primeng < components < utilities
+ *
+ *   - base    : CSS reset/preflight de Tailwind — effacé par primeng ✓
+ *   - primeng : styles des composants PrimeNG (boutons, menus, padding…) — wins over reset ✓
+ *   - utilities: classes Tailwind (flex, p-4, bg-*…) — gagnent sur PrimeNG via styleClass ✓
+ *
+ * IMPORTANT : la déclaration @layer doit venir AVANT @import "tailwindcss"
+ * pour pré-établir l'ordre AVANT que Tailwind tente de re-déclarer ses layers.
+ */
+@layer theme, base, primeng, components, utilities;
+
+@import "tailwindcss";
+@import "tailwindcss-primeui";
+
+/* PrimeIcons */
+@import "primeicons/primeicons.css";
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--p-surface-300) transparent;
+}

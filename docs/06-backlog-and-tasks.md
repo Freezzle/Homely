@@ -126,24 +126,24 @@ Format des tâches : `T<epic>.<n>`.
 ## Jalon 5 — Frontend
 
 ### E9 · Socle front
-- [ ] **T9.1** Auth (login/register), interceptor JWT + refresh transparent, guards.
-- [ ] **T9.2** Shell (topbar, menu, sélecteurs foyer/scénario), `ContexteService`
+- [x] **T9.1** Auth (login/register), interceptor JWT + refresh transparent, guards.
+- [x] **T9.2** Shell (topbar, menu, sélecteurs foyer/scénario), `ContexteService`
   (signals), thème/i18n (FR), pipes montant/date (Intl + deviseBase).
-- [ ] **T9.3** Services HTTP typés + modèles TS des DTO (générés d'OpenAPI si possible).
+- [x] **T9.3** Services HTTP typés + modèles TS des DTO (générés d'OpenAPI si possible).
 
 ### E10 · Écrans
-- [ ] **T10.1** Écran générique Revenus/Charges/Réserves : `p-table` + `p-dialog`, éditeur
+- [x] **T10.1** Écran générique Revenus/Charges/Réserves : `p-table` + `p-dialog`, éditeur
   de répartition (**somme = 100 % live**), ventilation comptes, aperçu mensuel. *Accept.* :
   création/édition/suppression fonctionnelles ; sauvegarde bloquée si somme ≠ 1.
-- [ ] **T10.2** Référentiels (CRUD) + Paramètres foyer + Accès (OWNER).
-- [ ] **T10.3** Scénarios (liste, hypothèses, duplication, définir référence).
-- [ ] **T10.4** **Tableau de bord annuel** : 3 tableaux + total année + barres empilées +
+- [x] **T10.2** Référentiels (CRUD) + Paramètres foyer + Accès (OWNER).
+- [x] **T10.3** Scénarios (liste, hypothèses, duplication, définir référence).
+- [x] **T10.4** **Tableau de bord annuel** : 3 tableaux + total année + barres empilées +
   courbe de trésorerie. *Accept.* : chiffres affichés == vecteurs T2/T3 sur le seed.
-- [ ] **T10.5** **Tableau de bord du mois** : camemberts par catégorie + ventilation
+- [x] **T10.5** **Tableau de bord du mois** : camemberts par catégorie + ventilation
   compte/membre + cartes de synthèse.
-- [ ] **T10.6** **Patrimoine** : courbe net worth + répartition + tableau comptes/actifs.
-- [ ] **T10.7** **Objectifs** : cartes + barres de progression + formulaire.
-- [ ] **T10.8** **Comparaison de scénarios** : multi-sélection + graphe multi-séries +
+- [x] **T10.6** **Patrimoine** : courbe net worth + répartition + tableau comptes/actifs.
+- [x] **T10.7** **Objectifs** : cartes + barres de progression + formulaire.
+- [x] **T10.8** **Comparaison de scénarios** : multi-sélection + graphe multi-séries +
   tableau des écarts.
 
 ---

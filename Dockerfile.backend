@@ -1,0 +1,17 @@
+# ── Stage 1 : Build Maven ─────────────────────────────────
+FROM eclipse-temurin:21-jdk-alpine AS builder
+WORKDIR /app
+COPY pom.xml .
+# Télécharge les dépendances en couche séparée (cache Docker)
+RUN mvn -f pom.xml dependency:go-offline -B --no-transfer-progress 2>/dev/null || true
+COPY src ./src
+RUN mvn package -DskipTests -B --no-transfer-progress
+
+# ── Stage 2 : Image d'exécution légère ───────────────────
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+RUN addgroup -S spring && adduser -S spring -G spring
+COPY --from=builder /app/target/*.jar app.jar
+USER spring
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "app.jar"]

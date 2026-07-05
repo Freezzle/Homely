@@ -1,0 +1,143 @@
+import { Component, inject, signal, OnInit, effect, untracked } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { SelectModule } from 'primeng/select';
+import { ButtonModule } from 'primeng/button';
+import { AvatarModule } from 'primeng/avatar';
+import { MenuModule } from 'primeng/menu';
+import { MenuItem } from 'primeng/api';
+import { ContexteService } from '../../core/services/contexte.service';
+import { AuthService } from '../../core/services/auth.service';
+import { FoyerService } from '../../core/services/referentiel.service';
+import { ScenarioService } from '../../core/services/scenario-poste.service';
+import { FoyerDto, ScenarioDto } from '../../core/models/api.models';
+import { FR } from '../../core/i18n/fr';
+
+@Component({
+  selector: 'app-topbar',
+  standalone: true,
+  imports: [CommonModule, FormsModule, SelectModule, ButtonModule, AvatarModule, MenuModule],
+  template: `
+    <div class="flex items-center gap-3 px-4 py-2 bg-surface-0 dark:bg-surface-900 border-b border-surface-200 dark:border-surface-700 shadow-sm">
+      <!-- Logo -->
+      <span class="text-primary font-bold text-xl mr-2">🏠 Homely</span>
+
+      <!-- Sélecteur foyer -->
+      <p-select appendTo="body"
+        [options]="foyers()"
+        [(ngModel)]="foyerSelectionne"
+        optionLabel="nom"
+        [placeholder]="t.foyer.choisir"
+        styleClass="min-w-44"
+        (onChange)="onFoyerChange($event.value)"
+      />
+
+      <!-- Sélecteur scénario -->
+      @if (contexte.foyerCourant()) {
+        <p-select appendTo="body"
+          [options]="scenarios()"
+          [(ngModel)]="scenarioSelectionne"
+          optionLabel="nom"
+          [placeholder]="t.scenario.choisir"
+          styleClass="min-w-52"
+          (onChange)="onScenarioChange($event.value)"
+        >
+          <ng-template pTemplate="item" let-s>
+            <span>{{ s.nom }}</span>
+            @if (s.estReference) {
+              <span class="ml-2 text-xs bg-primary text-white rounded px-1">{{ t.scenario.reference }}</span>
+            }
+          </ng-template>
+        </p-select>
+      }
+
+      <div class="flex-1"></div>
+
+      <!-- Bouton dark mode -->
+      <p-button
+        [icon]="contexte.isDark() ? 'pi pi-sun' : 'pi pi-moon'"
+        [rounded]="true"
+        severity="secondary"
+        [text]="true"
+        (click)="contexte.toggleDark()"
+      />
+
+      <!-- Menu utilisateur -->
+      <p-button
+        icon="pi pi-user"
+        [rounded]="true"
+        severity="secondary"
+        [text]="true"
+        (click)="menuUser.toggle($event)"
+      />
+      <p-menu #menuUser [popup]="true" [model]="userMenuItems" />
+    </div>
+  `,
+})
+export class TopbarComponent implements OnInit {
+  readonly t = FR;
+  contexte = inject(ContexteService);
+  private auth = inject(AuthService);
+  private foyerSvc = inject(FoyerService);
+  private scenarioSvc = inject(ScenarioService);
+  private router = inject(Router);
+
+  foyers = signal<FoyerDto[]>([]);
+  scenarios = signal<ScenarioDto[]>([]);
+  foyerSelectionne: FoyerDto | null = null;
+  scenarioSelectionne: ScenarioDto | null = null;
+
+  userMenuItems: MenuItem[] = [
+    { label: FR.auth.logout, icon: 'pi pi-sign-out', command: () => this.auth.deconnecter() },
+  ];
+
+  // Réagit UNIQUEMENT à foyerCourant (pas à foyers/scenarios → pas de double-appel)
+  private readonly _syncFoyer = effect(() => {
+    const foyer = this.contexte.foyerCourant();
+    // Lecture non-trackée de la liste de foyers (évite re-runs inutiles quand foyers se charge)
+    this.foyerSelectionne = foyer
+      ? (untracked(() => this.foyers()).find(f => f.id === foyer.id) ?? foyer)
+      : null;
+    if (foyer) {
+      this.chargerScenarios(foyer.id);
+    } else {
+      this.scenarios.set([]);
+      this.scenarioSelectionne = null;
+    }
+  });
+  private readonly _syncScenario = effect(() => {
+    this.scenarioSelectionne = this.contexte.scenarioCourant();
+  });
+
+  ngOnInit(): void {
+    this.foyerSvc.lister().subscribe(f => {
+      this.foyers.set(f);
+      // Resynchroniser la sélection affichée une fois la liste chargée
+      const foyer = this.contexte.foyerCourant();
+      if (foyer) {
+        this.foyerSelectionne = f.find(x => x.id === foyer.id) ?? this.foyerSelectionne;
+      }
+    });
+  }
+
+  private chargerScenarios(foyerId: string): void {
+    this.scenarioSvc.lister(foyerId).subscribe(scenarios => {
+      this.scenarios.set(scenarios);
+      const currentSc = this.contexte.scenarioCourant();
+      this.scenarioSelectionne = currentSc
+        ? (scenarios.find(s => s.id === currentSc.id) ?? scenarios[0] ?? null)
+        : (scenarios[0] ?? null);
+    });
+  }
+
+  onFoyerChange(foyer: FoyerDto): void {
+    this.contexte.setFoyer(foyer);
+    // chargerScenarios est déclenché automatiquement par l'effect _syncFoyer
+    this.router.navigate(['/f', foyer.id, 'dashboard-annuel']);
+  }
+
+  onScenarioChange(scenario: ScenarioDto): void {
+    this.contexte.setScenario(scenario);
+  }
+}
