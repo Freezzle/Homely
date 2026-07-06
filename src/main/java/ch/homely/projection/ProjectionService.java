@@ -260,6 +260,7 @@ public class ProjectionService {
         return new PosteCalcul(p.getId(), p.getType(), p.getMontant().doubleValue(),
                 p.getDevise() != null ? p.getDevise() : deviseBase,
                 p.getPeriodiciteMois(), p.getDebut(), p.getFin(), p.getMode(), p.getMoment(),
+                p.getNature(),
                 repartitions, ventilations,
                 p.getCategorie() != null ? p.getCategorie().getId() : null,
                 p.getCompteSource() != null ? p.getCompteSource().getId() : null);
@@ -268,9 +269,11 @@ public class ProjectionService {
     // ── mappers ───────────────────────────────────────────────────────────────
 
     private ProjectionAnnuelleDto toAnnuelleDto(ProjectionAnnuelle pa) {
-        List<ProjectionAnnuelleDto.MoisDto> mois = new ArrayList<>();
+        List<ProjectionAnnuelleDto.MoisDto> mois     = new ArrayList<>();
+        List<ProjectionAnnuelleDto.MoisDto> moisReel = new ArrayList<>();
         for (int m = 0; m < 12; m++) {
             mois.add(new ProjectionAnnuelleDto.MoisDto(m + 1, toAggregatDto(pa.mois().get(m))));
+            moisReel.add(new ProjectionAnnuelleDto.MoisDto(m + 1, toAggregatDto(pa.moisReel().get(m))));
         }
         Map<UUID, ProjectionAnnuelleDto.AggregatDto> parMembre = pa.parMembre().entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> toAggregatDto(e.getValue())));
@@ -278,8 +281,12 @@ public class ProjectionService {
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
                         e -> e.getValue().stream().map(this::toAggregatDto).toList()));
-        return new ProjectionAnnuelleDto(pa.annee(), mois, toAggregatDto(pa.totalAnnuel()),
-                parMembre, moisParMembre);
+        Map<UUID, List<ProjectionAnnuelleDto.AggregatDto>> moisParMembreReel = pa.moisParMembreReel().entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        e -> e.getValue().stream().map(this::toAggregatDto).toList()));
+        return new ProjectionAnnuelleDto(pa.annee(), mois, moisReel, toAggregatDto(pa.totalAnnuel()),
+                parMembre, moisParMembre, moisParMembreReel);
     }
 
     private ProjectionAnnuelleDto.AggregatDto toAggregatDto(AggregatMensuel ag) {

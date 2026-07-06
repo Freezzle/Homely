@@ -75,6 +75,40 @@ public class MoteurCalcul {
     }
 
     /**
+     * Contribution <b>réelle</b> d'un poste à un mois donné.
+     *
+     * <p>Identique à {@link #contribution(PosteCalcul,int,int)} <em>mais</em> en forçant
+     * la comptabilisation périodique : un poste dont {@code periodicité > 1} est imputé
+     * au montant plein <b>sur son mois d'ancrage</b> (selon {@code moment}), quel que
+     * soit son {@code mode} déclaré. Les postes {@code D=1} restent imputés chaque mois.
+     * Utilisé pour visualiser les décaissements/encaissements réels dans le temps,
+     * sans lissage.</p>
+     *
+     * <p><b>Invariant</b> : sur une année complète (fenêtre de validité couvrante),
+     * la somme des 12 contributions réelles == somme des 12 contributions mensualisées.</p>
+     */
+    public static double contributionReelle(PosteCalcul poste, int annee, int mois) {
+        if (poste == null || poste.montant() <= 0) return 0.0;
+
+        int d = poste.periodiciteMois();
+        int dSafe = (d == 0) ? 1 : d;
+
+        LocalDate premierJour = LocalDate.of(annee, mois, 1);
+        LocalDate finDeMois   = YearMonth.of(annee, mois).atEndOfMonth();
+        boolean actifDebut = poste.debut() == null || !poste.debut().isAfter(finDeMois);
+        boolean actifFin   = poste.fin()   == null || !poste.fin().isBefore(premierJour);
+        if (!(actifDebut && actifFin)) return 0.0;
+
+        // Poste mensuel : imputé chaque mois actif (même semantic qu'en mensualisé).
+        if (d == 1 || d == 0) return poste.montant();
+
+        int ancre = (poste.debut() == null) ? 1 : poste.debut().getMonthValue();
+        boolean fin = poste.moment() == MomentPeriode.FIN_PERIODE;
+        int delta = fin ? (mois - ancre + 1) : (mois - ancre);
+        return (Math.floorMod(delta, dSafe) == 0) ? poste.montant() : 0.0;
+    }
+
+    /**
      * Montant mensualisé d'un poste (champ dérivé affiché dans les listes) — doc 01 §3.6.
      */
     public static double montantMensualise(PosteCalcul poste) {
@@ -146,10 +180,21 @@ public class MoteurCalcul {
      * Calcule les agrégats du foyer pour un mois donné (périmètre FOYER).
      */
     public static AggregatMensuel aggregatFoyerMois(ParametresScenario params, int annee, int mois) {
+        return aggregatFoyerMoisInterne(params, annee, mois, false);
+    }
+
+    /**
+     * Variante <b>réelle</b> — cf. {@link #contributionReelle(PosteCalcul,int,int)}.
+     */
+    public static AggregatMensuel aggregatFoyerMoisReel(ParametresScenario params, int annee, int mois) {
+        return aggregatFoyerMoisInterne(params, annee, mois, true);
+    }
+
+    private static AggregatMensuel aggregatFoyerMoisInterne(ParametresScenario params, int annee, int mois, boolean reel) {
         double revenus  = 0, charges = 0, reserves = 0;
         for (PosteCalcul poste : params.postes()) {
-            double contrib = contribution(poste, annee, mois)
-                    * tauxConversion(poste.devise(), params.deviseBase(), params.taux());
+            double base = reel ? contributionReelle(poste, annee, mois) : contribution(poste, annee, mois);
+            double contrib = base * tauxConversion(poste.devise(), params.deviseBase(), params.taux());
             switch (poste.type()) {
                 case REVENU  -> revenus  += contrib;
                 case CHARGE  -> charges  += contrib;
@@ -164,9 +209,23 @@ public class MoteurCalcul {
      */
     public static AggregatMensuel aggregatMembreMois(ParametresScenario params, UUID membreId,
                                                      int annee, int mois) {
+        return aggregatMembreMoisInterne(params, membreId, annee, mois, false);
+    }
+
+    /**
+     * Variante <b>réelle</b> — cf. {@link #contributionReelle(PosteCalcul,int,int)}.
+     */
+    public static AggregatMensuel aggregatMembreMoisReel(ParametresScenario params, UUID membreId,
+                                                         int annee, int mois) {
+        return aggregatMembreMoisInterne(params, membreId, annee, mois, true);
+    }
+
+    private static AggregatMensuel aggregatMembreMoisInterne(ParametresScenario params, UUID membreId,
+                                                             int annee, int mois, boolean reel) {
         double revenus = 0, charges = 0, reserves = 0;
         for (PosteCalcul poste : params.postes()) {
-            double contrib = contribution(poste, annee, mois)
+            double base = reel ? contributionReelle(poste, annee, mois) : contribution(poste, annee, mois);
+            double contrib = base
                     * tauxConversion(poste.devise(), params.deviseBase(), params.taux())
                     * quotePartEffective(poste, membreId, params.repartitionDefaut());
             switch (poste.type()) {
@@ -186,31 +245,40 @@ public class MoteurCalcul {
      * Projection complète pour une année : 12 mois FOYER + total + par membre (T2.5).
      */
     public static ProjectionAnnuelle projectionAnnuelle(ParametresScenario params, int annee) {
-        List<AggregatMensuel> moisFoyer = new ArrayList<>(12);
+        List<AggregatMensuel> moisFoyer     = new ArrayList<>(12);
+        List<AggregatMensuel> moisFoyerReel = new ArrayList<>(12);
         AggregatMensuel total = AggregatMensuel.zero();
 
         for (int m = 1; m <= 12; m++) {
-            AggregatMensuel ag = aggregatFoyerMois(params, annee, m);
+            AggregatMensuel ag  = aggregatFoyerMois(params, annee, m);
+            AggregatMensuel agR = aggregatFoyerMoisReel(params, annee, m);
             moisFoyer.add(ag);
+            moisFoyerReel.add(agR);
             total = total.plus(ag);
         }
 
-        // Par membre : total annuel + 12 mois mensuels
-        Map<UUID, AggregatMensuel>       parMembre      = new LinkedHashMap<>();
-        Map<UUID, List<AggregatMensuel>> moisParMembre  = new LinkedHashMap<>();
+        // Par membre : total annuel + 12 mois mensualisés + 12 mois réels
+        Map<UUID, AggregatMensuel>       parMembre         = new LinkedHashMap<>();
+        Map<UUID, List<AggregatMensuel>> moisParMembre     = new LinkedHashMap<>();
+        Map<UUID, List<AggregatMensuel>> moisParMembreReel = new LinkedHashMap<>();
         for (UUID membreId : params.membres()) {
-            List<AggregatMensuel> moisMembre  = new ArrayList<>(12);
-            AggregatMensuel       totalMembre = AggregatMensuel.zero();
+            List<AggregatMensuel> moisMembre     = new ArrayList<>(12);
+            List<AggregatMensuel> moisMembreReel = new ArrayList<>(12);
+            AggregatMensuel       totalMembre    = AggregatMensuel.zero();
             for (int m = 1; m <= 12; m++) {
-                AggregatMensuel ag = aggregatMembreMois(params, membreId, annee, m);
+                AggregatMensuel ag  = aggregatMembreMois(params, membreId, annee, m);
+                AggregatMensuel agR = aggregatMembreMoisReel(params, membreId, annee, m);
                 moisMembre.add(ag);
+                moisMembreReel.add(agR);
                 totalMembre = totalMembre.plus(ag);
             }
             parMembre.put(membreId, totalMembre);
             moisParMembre.put(membreId, moisMembre);
+            moisParMembreReel.put(membreId, moisMembreReel);
         }
 
-        return new ProjectionAnnuelle(annee, moisFoyer, total, parMembre, moisParMembre);
+        return new ProjectionAnnuelle(annee, moisFoyer, moisFoyerReel, total,
+                parMembre, moisParMembre, moisParMembreReel);
     }
 
     /**

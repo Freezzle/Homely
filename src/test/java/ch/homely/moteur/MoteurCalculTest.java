@@ -35,7 +35,7 @@ class MoteurCalculTest {
                               LocalDate debut, LocalDate fin,
                               ModeComptabilisation mode, MomentPeriode moment) {
         return new PosteCalcul(UUID.randomUUID(), type, montant, "CHF", dMois,
-                debut, fin, mode, moment,
+                debut, fin, mode, moment, ch.homely.poste.NaturePoste.EFFECTIF,
                 List.of(), List.of(), null, null);
     }
 
@@ -383,7 +383,7 @@ class MoteurCalculTest {
         @DisplayName("Multi-devises : taux 1.1 EUR→CHF → contribution convertie")
         void multiDevises() {
             PosteCalcul p = new PosteCalcul(UUID.randomUUID(), REVENU, 1000.0, "EUR", 1,
-                    null, null, MENSUALISE, DEBUT_PERIODE, List.of(), List.of(), null, null);
+                    null, null, MENSUALISE, DEBUT_PERIODE, null, List.of(), List.of(), null, null);
             List<PosteCalcul> postes = List.of(p);
             ParametresScenario params = new ParametresScenario(
                     "CHF", 2026, 0, 1,

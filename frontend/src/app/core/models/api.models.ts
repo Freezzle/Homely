@@ -51,6 +51,7 @@ export interface ScenarioRequest {
 export type TypePoste = 'REVENU' | 'CHARGE' | 'RESERVE';
 export type ModeComptabilisation = 'MENSUALISE' | 'PERIODIQUE';
 export type MomentPeriode = 'DEBUT_PERIODE' | 'FIN_PERIODE';
+export type NaturePoste = 'EFFECTIF' | 'PREVISION';
 
 export interface RepartitionPosteDto { membreId: string; nomMembre: string; quotePart: number; }
 export interface VentilationCompteDto { membreId: string; compteId: string; libelleCompte: string; }
@@ -59,7 +60,7 @@ export interface PosteDto {
   id: string; type: TypePoste; description: string; categorieId?: string;
   montant: number; montantMensualise: number; devise?: string;
   periodiciteMois: number; debut?: string; fin?: string;
-  mode: ModeComptabilisation; moment: MomentPeriode;
+  mode: ModeComptabilisation; moment: MomentPeriode; nature: NaturePoste;
   compteSource?: string; ordre: number;
   repartitions: RepartitionPosteDto[];
   ventilations: VentilationCompteDto[];
@@ -67,7 +68,8 @@ export interface PosteDto {
 export interface PosteRequest {
   type: TypePoste; description: string; categorieId?: string;
   montant: number; devise?: string; periodiciteMois: number;
-  debut?: string; fin?: string; mode: ModeComptabilisation; moment: MomentPeriode;
+  debut?: string; fin?: string;
+  mode: ModeComptabilisation; moment: MomentPeriode; nature: NaturePoste;
   compteSource?: string; ordre: number;
   repartitions?: { membreId: string; quotePart: number; }[];
   ventilations?: { membreId: string; compteId: string; }[];
@@ -90,9 +92,10 @@ export interface ObjectifRequest {
 export interface AggregatDto { revenus: number; charges: number; reserves: number; soldeDisponible: number; }
 export interface MoisDto { numero: number; agregat: AggregatDto; }
 export interface ProjectionAnnuelleDto {
-  annee: number; mois: MoisDto[]; totalAnnuel: AggregatDto;
+  annee: number; mois: MoisDto[]; moisReel: MoisDto[]; totalAnnuel: AggregatDto;
   parMembre: Record<string, AggregatDto>;
   moisParMembre: Record<string, AggregatDto[]>;
+  moisParMembreReel: Record<string, AggregatDto[]>;
 }
 export interface EntreeTresorerieDto { annee: number; soldeAnnuel: number; tresorerieDebutAnnee: number; tresorerieFinAnnee: number; }
 export interface MoisCourbeDto { annee: number; mois: number; tresorerie: number; }

@@ -13,6 +13,7 @@ import ch.homely.moteur.PosteCalcul;
 import ch.homely.moteur.RepartitionCalcul;
 import ch.homely.poste.dto.PosteDto;
 import ch.homely.poste.dto.PosteRequest;
+import ch.homely.poste.NaturePoste;
 import ch.homely.projection.ProjectionService;
 import ch.homely.scenario.Scenario;
 import ch.homely.scenario.ScenarioRepository;
@@ -85,8 +86,15 @@ public class PosteService {
         validerRepartition(req.repartitions(), foyerId);
 
         Poste p = trouver(scenarioId, posteId);
+
+        // Vider les collections enfants AVANT d'appliquer les nouvelles valeurs.
+        // Le saveAndFlush force Hibernate à émettre les DELETE immédiatement,
+        // évitant la violation de contrainte unique (poste_id, membre_id) causée
+        // par le flush tardif qui insérerait avant de supprimer.
         p.getRepartitions().clear();
         p.getVentilations().clear();
+        posteRepo.saveAndFlush(p);
+
         appliquer(p, req, foyerId);
         PosteDto dto = toDto(posteRepo.save(p));
         projectionService.invaliderCache(scenarioId);
@@ -113,6 +121,7 @@ public class PosteService {
         p.setFin(req.fin());
         p.setMode(req.mode());
         p.setMoment(req.moment());
+        p.setNature(req.nature() != null ? req.nature() : NaturePoste.EFFECTIF);
         p.setOrdre(req.ordre());
 
         if (req.categorieId() != null) {
@@ -183,7 +192,7 @@ public class PosteService {
         // Calcul du montantMensualise via le moteur
         PosteCalcul pc = new PosteCalcul(p.getId(), p.getType(),
                 p.getMontant().doubleValue(), p.getDevise(), p.getPeriodiciteMois(),
-                p.getDebut(), p.getFin(), p.getMode(), p.getMoment(),
+                p.getDebut(), p.getFin(), p.getMode(), p.getMoment(), p.getNature(),
                 List.of(), List.of(), null, null);
         BigDecimal mensualise = BigDecimal.valueOf(MoteurCalcul.montantMensualise(pc))
                 .setScale(2, java.math.RoundingMode.HALF_UP);
@@ -201,7 +210,7 @@ public class PosteService {
         return new PosteDto(p.getId(), p.getType(), p.getDescription(),
                 p.getCategorie() != null ? p.getCategorie().getId() : null,
                 p.getMontant(), mensualise, p.getDevise(), p.getPeriodiciteMois(),
-                p.getDebut(), p.getFin(), p.getMode(), p.getMoment(),
+                p.getDebut(), p.getFin(), p.getMode(), p.getMoment(), p.getNature(),
                 p.getCompteSource() != null ? p.getCompteSource().getId() : null,
                 p.getOrdre(), reps, vents);
     }

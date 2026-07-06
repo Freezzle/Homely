@@ -2,6 +2,7 @@ package ch.homely.moteur;
 
 import ch.homely.poste.ModeComptabilisation;
 import ch.homely.poste.MomentPeriode;
+import ch.homely.poste.NaturePoste;
 import ch.homely.poste.TypePoste;
 
 import java.time.LocalDate;
@@ -21,6 +22,7 @@ import java.util.UUID;
  * @param fin            fin de la fenêtre de validité (null = toujours actif)
  * @param mode           MENSUALISE | PERIODIQUE
  * @param moment         DEBUT_PERIODE | FIN_PERIODE (utilisé si mode=PERIODIQUE et D>1)
+ * @param nature         EFFECTIF | ANTICIPE — descriptif ; n'altère pas les calculs
  * @param repartitions   quotes-parts par membre
  * @param ventilations   compte cible par membre
  * @param categorieId    id de la catégorie (pour les ventilations par catégorie)
@@ -36,8 +38,14 @@ public record PosteCalcul(
         LocalDate fin,
         ModeComptabilisation mode,
         MomentPeriode moment,
+        NaturePoste nature,
         List<RepartitionCalcul> repartitions,
         List<VentilationCalcul> ventilations,
         UUID categorieId,
         UUID compteSourceId
-) {}
+) {
+    /** Compact constructor : {@code nature} par défaut {@link NaturePoste#EFFECTIF}. */
+    public PosteCalcul {
+        if (nature == null) nature = NaturePoste.EFFECTIF;
+    }
+}

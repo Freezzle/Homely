@@ -72,12 +72,28 @@ import { FR } from '../../../core/i18n/fr';
         </ng-template>
         <ng-template pTemplate="body" let-p>
           <tr>
-            <td>{{ p.description }}</td>
+            <td>
+              <div class="flex items-center gap-2">
+                <span>{{ p.description }}</span>
+                @if (p.nature === 'PREVISION') {
+                  <p-tag severity="warn" [value]="t.poste.natureOptions.PREVISION" styleClass="text-[10px] py-0" />
+                }
+              </div>
+            </td>
             <td><span class="text-xs text-surface-500">{{ categorieLabel(p.categorieId) }}</span></td>
             <td class="text-right font-medium">{{ p.montant | montant:p.devise }}</td>
             <td class="text-right text-surface-500">{{ p.montantMensualise | montant:p.devise }}</td>
             <td class="text-center text-sm">
-              {{ p.periodiciteMois | periodicite }}
+              <div class="flex items-center justify-center gap-1">
+                @if (p.mode === 'MENSUALISE' || p.periodiciteMois <= 1) {
+                  <i class="pi pi-calendar text-blue-400 text-xs"
+                     [pTooltip]="t.poste.modeOptions.MENSUALISE"></i>
+                } @else {
+                  <i class="pi pi-bolt text-amber-500 text-xs"
+                     [pTooltip]="t.poste.modeOptions.PERIODIQUE + (p.moment === 'FIN_PERIODE' ? ' · ' + t.poste.momentOptions.FIN_PERIODE : ' · ' + t.poste.momentOptions.DEBUT_PERIODE)"></i>
+                }
+                {{ p.periodiciteMois | periodicite }}
+              </div>
             </td>
             <td class="text-xs text-surface-500">{{ p.debut ?? '–' }}</td>
             <td class="text-xs text-surface-500">{{ p.fin ?? '–' }}</td>
@@ -104,23 +120,32 @@ import { FR } from '../../../core/i18n/fr';
     <p-dialog [(visible)]="dialogVisible" [header]="posteEnEdition ? t.commun.modifier : t.commun.creer"
               [modal]="true" styleClass="w-full max-w-2xl">
       <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
+
+        <!-- Ligne 1 : Description pleine largeur -->
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium">{{ t.poste.description }} *</label>
+          <input pInputText formControlName="description" class="w-full" />
+        </div>
+
+        <!-- Ligne 2 : Catégorie + Montant -->
         <div class="grid grid-cols-2 gap-4">
-          <!-- Description -->
-          <div class="col-span-2 flex flex-col gap-1">
-            <label class="text-sm font-medium">{{ t.poste.description }} *</label>
-            <input pInputText formControlName="description" class="w-full" />
-          </div>
-          <!-- Catégorie -->
           <div class="flex flex-col gap-1">
             <label class="text-sm font-medium">{{ t.poste.categorie }}</label>
-            <p-select appendTo="body" formControlName="categorieId" [options]="categories()" optionLabel="libelle"
-                      optionValue="id" [showClear]="true" styleClass="w-full" />
+            <p-select appendTo="body" formControlName="categorieId" [options]="categories()"
+                      optionLabel="libelle" optionValue="id" [showClear]="true" styleClass="w-full" />
           </div>
-          <!-- Montant -->
           <div class="flex flex-col gap-1">
             <label class="text-sm font-medium">{{ t.poste.montant }} *</label>
             <p-inputnumber formControlName="montant" mode="decimal" [minFractionDigits]="2" class="w-full" />
           </div>
+        </div>
+
+        <!-- Ligne 3 : Périodicité | Mode | Moment
+             D=1 → 1 col (mode et moment cachés)
+             D>1 → 3 col (Mode toujours visible ; Moment toujours visible) -->
+        <div class="grid gap-4"
+             [class.grid-cols-1]="(form.value.periodiciteMois ?? 1) === 1"
+             [class.grid-cols-3]="(form.value.periodiciteMois ?? 1) > 1">
           <!-- Périodicité -->
           <div class="flex flex-col gap-1">
             <label class="text-sm font-medium">{{ t.poste.periodicite }}</label>
@@ -128,20 +153,42 @@ import { FR } from '../../../core/i18n/fr';
                       [options]="periodiciteOptions" optionLabel="label" optionValue="value"
                       styleClass="w-full" />
           </div>
-          <!-- Mode -->
-          <div class="flex flex-col gap-1">
-            <label class="text-sm font-medium">{{ t.poste.mode }}</label>
-            <p-select appendTo="body" formControlName="mode" [options]="modeOptions" optionLabel="label" optionValue="value" styleClass="w-full" />
-          </div>
-          <!-- Début -->
+          <!-- Moment : visible dès que D>1, quel que soit le mode -->
+          @if ((form.value.periodiciteMois ?? 1) > 1) {
+            <div class="flex flex-col gap-1">
+              <label class="text-sm font-medium" [pTooltip]="t.poste.momentTooltip">{{ t.poste.moment }}</label>
+              <p-select appendTo="body" formControlName="moment" [options]="momentOptions"
+                        optionLabel="label" optionValue="value" styleClass="w-full" />
+            </div>
+          }
+          <!-- Mode : caché si D=1 (toujours mensualisé) -->
+          @if ((form.value.periodiciteMois ?? 1) > 1) {
+            <div class="flex flex-col gap-1">
+              <label class="text-sm font-medium" [pTooltip]="t.poste.modeTooltip">{{ t.poste.mode }}</label>
+              <p-select appendTo="body" formControlName="mode" [options]="modeOptions"
+                        optionLabel="label" optionValue="value" styleClass="w-full" />
+            </div>
+          }
+        </div>
+
+        <!-- Ligne 4 : Nature (pleine largeur) -->
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium" [pTooltip]="t.poste.natureTooltip">{{ t.poste.nature }}</label>
+          <p-select appendTo="body" formControlName="nature" [options]="natureOptions"
+                    optionLabel="label" optionValue="value" styleClass="w-full" />
+        </div>
+
+        <!-- Ligne 5 : Début + Fin côte à côte -->
+        <div class="grid grid-cols-2 gap-4">
           <div class="flex flex-col gap-1">
             <label class="text-sm font-medium">{{ t.poste.debut }}</label>
-            <p-datepicker appendTo="body" formControlName="debut" dateFormat="dd/mm/yy" [showButtonBar]="true" styleClass="w-full" />
+            <p-datepicker appendTo="body" formControlName="debut" dateFormat="dd/mm/yy"
+                          [showButtonBar]="true" styleClass="w-full"></p-datepicker>
           </div>
-          <!-- Fin -->
           <div class="flex flex-col gap-1">
             <label class="text-sm font-medium">{{ t.poste.fin }}</label>
-            <p-datepicker appendTo="body" formControlName="fin" dateFormat="dd/mm/yy" [showButtonBar]="true" styleClass="w-full" />
+            <p-datepicker appendTo="body" formControlName="fin" dateFormat="dd/mm/yy"
+                          [showButtonBar]="true" styleClass="w-full"></p-datepicker>
           </div>
         </div>
 
@@ -161,7 +208,6 @@ import { FR } from '../../../core/i18n/fr';
           @if (sommeRepartition !== 100 && repartitionsArray.length > 0) {
             <p-message severity="warn" [text]="t.commun.repartitionInvalide" />
           }
-          <!-- En-tête colonnes -->
           @if (repartitionsArray.length > 0) {
             <div class="flex items-center gap-3 text-xs text-surface-400 font-medium px-0">
               <span class="flex-1">{{ t.referentiels.membre.nom }}</span>
@@ -170,12 +216,12 @@ import { FR } from '../../../core/i18n/fr';
             </div>
           }
           <div formArrayName="repartitions" class="flex flex-col gap-2">
-            @for (ctrl of repartitionsArray.controls; track $index) {
+            @for (_ of repartitionsArray.controls; track $index) {
               <div [formGroupName]="$index" class="flex items-center gap-3">
                 <span class="flex-1 text-sm">{{ membres()[$index]?.nom }}</span>
                 <p-inputnumber formControlName="quotePart" [min]="0" [max]="100"
                                suffix="%" [minFractionDigits]="0" styleClass="w-28"
-                               (onInput)="calculerSomme()" />
+                               (onInput)="calculerSomme()"></p-inputnumber>
                 <p-select appendTo="body" formControlName="compteId"
                           [options]="comptes()" optionLabel="libelle" optionValue="id"
                           [placeholder]="t.poste.ventilation" styleClass="w-44"
@@ -237,9 +283,18 @@ export class PostesListeComponent implements OnInit {
     { label: FR.poste.modeOptions.PERIODIQUE, value: 'PERIODIQUE' },
   ];
 
+  momentOptions = [
+    { label: FR.poste.momentOptions.DEBUT_PERIODE, value: 'DEBUT_PERIODE' },
+    { label: FR.poste.momentOptions.FIN_PERIODE,   value: 'FIN_PERIODE' },
+  ];
+
+  natureOptions = [
+    { label: FR.poste.natureOptions.EFFECTIF,  value: 'EFFECTIF' },
+    { label: FR.poste.natureOptions.PREVISION, value: 'PREVISION' },
+  ];
+
   periodiciteOptions = FR.poste.periodiciteLabels.map((label, i) => ({ label, value: i + 1 }));
 
-  /** Tri actuel sélectionné */
   triActuel = signal<'DATE' | 'CATEGORIE' | 'DESCRIPTION'>('DATE');
 
   triOptions = [
@@ -249,15 +304,16 @@ export class PostesListeComponent implements OnInit {
   ];
 
   form = this.fb.group({
-    description: ['', Validators.required],
-    categorieId: [null as string | null],
-    montant: [0, [Validators.required, Validators.min(0)]],
-    periodiciteMois: [1, Validators.min(1)],
-    mode: ['MENSUALISE'],
-    moment: ['DEBUT_PERIODE'],
-    debut: [null as Date | null],
-    fin: [null as Date | null],
-    repartitions: this.fb.array([] as any[]),
+    description:    ['', Validators.required],
+    categorieId:    [null as string | null],
+    montant:        [0, [Validators.required, Validators.min(0)]],
+    periodiciteMois:[1, Validators.min(1)],
+    mode:           ['MENSUALISE'],
+    moment:         ['DEBUT_PERIODE'],
+    nature:         ['EFFECTIF'],
+    debut:          [null as Date | null],
+    fin:            [null as Date | null],
+    repartitions:   this.fb.array([] as any[]),
   });
 
   get repartitionsArray() { return this.form.get('repartitions') as FormArray; }
@@ -266,23 +322,18 @@ export class PostesListeComponent implements OnInit {
     this.postes().reduce((s, p) => s + (p.montantMensualise ?? 0), 0)
   );
 
-  /** Liste triée selon le critère sélectionné dans le dropdown. */
   postesTries = computed(() => {
     const list = [...this.postes()];
     switch (this.triActuel()) {
       case 'DATE':
         return list.sort((a, b) => {
-          const da = a.debut ?? '9999-12';
-          const db = b.debut ?? '9999-12';
+          const da = a.debut ?? '9999-12'; const db = b.debut ?? '9999-12';
           if (da !== db) return da.localeCompare(db);
-          const fa = a.fin ?? '9999-12';
-          const fb = b.fin ?? '9999-12';
-          return fa.localeCompare(fb);
+          return (a.fin ?? '9999-12').localeCompare(b.fin ?? '9999-12');
         });
       case 'CATEGORIE':
         return list.sort((a, b) => {
-          const ca = this.categorieLabel(a.categorieId);
-          const cb = this.categorieLabel(b.categorieId);
+          const ca = this.categorieLabel(a.categorieId); const cb = this.categorieLabel(b.categorieId);
           if (ca !== cb) return ca.localeCompare(cb, 'fr');
           if (a.description !== b.description) return a.description.localeCompare(b.description, 'fr');
           return b.montant - a.montant;
@@ -292,8 +343,7 @@ export class PostesListeComponent implements OnInit {
           if (a.description !== b.description) return a.description.localeCompare(b.description, 'fr');
           return b.montant - a.montant;
         });
-      default:
-        return list;
+      default: return list;
     }
   });
 
@@ -318,10 +368,7 @@ export class PostesListeComponent implements OnInit {
     if (!foyerId || !scenarioId) return;
     this.chargement.set(true);
     this.posteSvc.lister(foyerId, scenarioId).subscribe({
-      next: all => {
-        this.postes.set(all.filter(p => p.type === this.type()));
-        this.chargement.set(false);
-      },
+      next: all => { this.postes.set(all.filter(p => p.type === this.type())); this.chargement.set(false); },
       error: () => this.chargement.set(false),
     });
   }
@@ -337,7 +384,7 @@ export class PostesListeComponent implements OnInit {
 
   ouvrirCreation(): void {
     this.posteEnEdition = null;
-    this.form.reset({ mode: 'MENSUALISE', moment: 'DEBUT_PERIODE', periodiciteMois: 1 });
+    this.form.reset({ mode: 'MENSUALISE', moment: 'DEBUT_PERIODE', nature: 'EFFECTIF', periodiciteMois: 1 });
     this.initialiserRepartitions();
     this.dialogVisible = true;
   }
@@ -347,7 +394,7 @@ export class PostesListeComponent implements OnInit {
     this.form.patchValue({
       description: p.description, categorieId: p.categorieId,
       montant: p.montant, periodiciteMois: p.periodiciteMois,
-      mode: p.mode, moment: p.moment,
+      mode: p.mode, moment: p.moment, nature: p.nature ?? 'EFFECTIF',
       debut: p.debut ? new Date(p.debut) : null,
       fin: p.fin ? new Date(p.fin) : null,
     });
@@ -365,8 +412,7 @@ export class PostesListeComponent implements OnInit {
 
   private defaultCompteId(): string | null {
     const comptes = this.comptes();
-    const courant = comptes.find(c => c.type === 'COURANT');
-    return courant?.id ?? comptes[0]?.id ?? null;
+    return comptes.find(c => c.type === 'COURANT')?.id ?? comptes[0]?.id ?? null;
   }
 
   private initialiserRepartitions(
@@ -374,14 +420,13 @@ export class PostesListeComponent implements OnInit {
     ventilationsExistantes?: VentilationCompteDto[],
   ): void {
     while (this.repartitionsArray.length) this.repartitionsArray.removeAt(0);
-    const membres = this.membres();
-    membres.forEach(m => {
-      const rep = existantes?.find(r => r.membreId === m.id);
+    this.membres().forEach(m => {
+      const rep  = existantes?.find(r => r.membreId === m.id);
       const vent = ventilationsExistantes?.find(v => v.membreId === m.id);
       this.repartitionsArray.push(this.fb.group({
-        membreId: [m.id],
+        membreId:  [m.id],
         quotePart: [rep ? Math.round(rep.quotePart * 100) : 0],
-        compteId: [vent?.compteId ?? this.defaultCompteId()],
+        compteId:  [vent?.compteId ?? this.defaultCompteId()],
       }));
     });
     this.calculerSomme();
@@ -397,9 +442,8 @@ export class PostesListeComponent implements OnInit {
     if (!n) return;
     const part = Math.round(100 / n);
     const reste = 100 - part * (n - 1);
-    this.repartitionsArray.controls.forEach((ctrl, i) => {
-      ctrl.get('quotePart')?.setValue(i === n - 1 ? reste : part);
-    });
+    this.repartitionsArray.controls.forEach((ctrl, i) =>
+      ctrl.get('quotePart')?.setValue(i === n - 1 ? reste : part));
     this.calculerSomme();
   }
 
@@ -407,6 +451,7 @@ export class PostesListeComponent implements OnInit {
     const foyerId = this.contexte.foyerId()!;
     const scenarioId = this.contexte.scenarioId()!;
     const v = this.form.value;
+
     const repartitions = this.repartitionsArray.length
       ? this.repartitionsArray.controls.map(c => ({
           membreId: c.get('membreId')!.value,
@@ -417,22 +462,20 @@ export class PostesListeComponent implements OnInit {
     const ventilations = this.repartitionsArray.length
       ? this.repartitionsArray.controls
           .filter(c => c.get('compteId')?.value)
-          .map(c => ({
-            membreId: c.get('membreId')!.value,
-            compteId: c.get('compteId')!.value,
-          }))
+          .map(c => ({ membreId: c.get('membreId')!.value, compteId: c.get('compteId')!.value }))
       : undefined;
 
     const req = {
-      type: this.type(),
-      description: v.description!,
-      categorieId: v.categorieId ?? undefined,
-      montant: v.montant!,
+      type:            this.type(),
+      description:     v.description!,
+      categorieId:     v.categorieId ?? undefined,
+      montant:         v.montant!,
       periodiciteMois: v.periodiciteMois!,
-      mode: v.mode as any,
-      moment: v.moment as any,
-      debut: v.debut ? this.toIso(v.debut) : undefined,
-      fin: v.fin ? this.toIso(v.fin) : undefined,
+      mode:            v.mode as any,
+      moment:          v.moment as any,
+      nature:          (v.nature ?? 'EFFECTIF') as any,
+      debut:           v.debut ? this.toIso(v.debut) : undefined,
+      fin:             v.fin   ? this.toIso(v.fin)   : undefined,
       ordre: 0,
       repartitions,
       ventilations,
@@ -459,17 +502,12 @@ export class PostesListeComponent implements OnInit {
         const foyerId = this.contexte.foyerId()!;
         const scenarioId = this.contexte.scenarioId()!;
         this.posteSvc.supprimer(foyerId, scenarioId, p.id).subscribe({
-          next: () => {
-            this.toast.add({ severity: 'success', summary: FR.commun.succes });
-            this.charger();
-          },
+          next: () => { this.toast.add({ severity: 'success', summary: FR.commun.succes }); this.charger(); },
           error: () => this.toast.add({ severity: 'error', summary: FR.commun.erreur }),
         });
       },
     });
   }
 
-  private toIso(d: Date): string {
-    return d.toISOString().substring(0, 10);
-  }
+  private toIso(d: Date): string { return d.toISOString().substring(0, 10); }
 }

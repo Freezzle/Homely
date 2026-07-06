@@ -161,36 +161,40 @@ export class DashboardAnnuelComponent implements OnInit {
 
   // ── Computed chart data ─────────────────────────────────────────────────────
 
-  /** ② Graphique mixte : barres empilées charges+réserves, lignes revenus + solde */
-  mixedChartData = computed(() => {
-    const p = this.projection();
-    if (!p) return {};
+  /** ② Flux mensualisés (respecte le mode) — barres empilées charges+réserves, ligne revenus */
+  mixedChartData = computed(() => this.buildFoyerChartData(this.projection()?.mois));
+
+  /** ②-bis Flux réels — imputations effectives (mode forcé PERIODIQUE) */
+  mixedChartDataReel = computed(() => this.buildFoyerChartData(this.projection()?.moisReel));
+
+  private buildFoyerChartData(mois: { agregat: AggregatDto }[] | undefined): object {
+    if (!mois || !mois.length) return {};
     return {
       labels: this.t.mois,
       datasets: [
         {
           type: 'bar', label: this.t.projection.charges,
           backgroundColor: 'rgba(239,68,68,0.75)',
-          data: p.mois.map(m => m.agregat.charges),
+          data: mois.map(m => m.agregat.charges),
           stack: 'depenses',
         },
         {
           type: 'bar', label: this.t.projection.reserves,
           backgroundColor: 'rgba(59,130,246,0.75)',
-          data: p.mois.map(m => m.agregat.reserves),
+          data: mois.map(m => m.agregat.reserves),
           stack: 'depenses',
         },
         {
           type: 'line', label: this.t.projection.revenus,
           borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.08)',
-          data: p.mois.map(m => m.agregat.revenus),
+          data: mois.map(m => m.agregat.revenus),
           tension: 0.3, fill: false, pointRadius: 4, borderWidth: 2,
         },
       ],
     };
-  });
+  }
 
-  /** ③ Un chart par membre — datasets identiques au flux mensuel (barres+lignes) */
+  /** ③ Un chart par membre — mensualisé + réel */
   membreChartsData = computed(() => {
     const p = this.projection();
     if (!p) return [];
@@ -198,31 +202,32 @@ export class DashboardAnnuelComponent implements OnInit {
       membreId: m.id,
       nom:      m.nom,
       couleur:  m.couleur,
-      data:     this.buildMembreChartData(p, m.id),
+      data:     this.buildMembreChartData(p.moisParMembre[m.id]),
+      dataReel: this.buildMembreChartData(p.moisParMembreReel?.[m.id]),
     }));
   });
 
-  private buildMembreChartData(p: ProjectionAnnuelleDto, membreId: string): object {
-    const moisData = (p.moisParMembre)[membreId] ?? [];
+  private buildMembreChartData(moisData: AggregatDto[] | undefined): object {
+    if (!moisData || !moisData.length) return {};
     return {
       labels: this.t.mois,
       datasets: [
         {
           type: 'bar', label: this.t.projection.charges,
           backgroundColor: 'rgba(239,68,68,0.75)',
-          data: moisData.map((ag: AggregatDto) => ag.charges),
+          data: moisData.map(ag => ag.charges),
           stack: 'depenses',
         },
         {
           type: 'bar', label: this.t.projection.reserves,
           backgroundColor: 'rgba(59,130,246,0.75)',
-          data: moisData.map((ag: AggregatDto) => ag.reserves),
+          data: moisData.map(ag => ag.reserves),
           stack: 'depenses',
         },
         {
           type: 'line', label: this.t.projection.revenus,
           borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.08)',
-          data: moisData.map((ag: AggregatDto) => ag.revenus),
+          data: moisData.map(ag => ag.revenus),
           tension: 0.3, fill: false, pointRadius: 4, borderWidth: 2,
         },
       ],

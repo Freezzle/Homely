@@ -64,6 +64,10 @@ export const FR = {
     fin: 'Fin',
     mode: 'Mode',
     moment: 'Moment',
+    nature: 'Nature',
+    modeTooltip: "Mensualisé = montant lissé chaque mois (montant / périodicité). Périodique = montant plein imputé une seule fois par cycle.",
+    momentTooltip: "Le montant plein tombe-t-il au début ou à la fin du cycle de périodicité ?",
+    natureTooltip: "Effectif = charge/revenu certain (loyer, salaire, facture…). Prévision = provision pour frais variables estimés (nourriture, habits, loisirs…).",
     repartition: 'Répartition',
     ventilation: 'Ventilation comptes',
     apercu: 'Aperçu mensuel',
@@ -74,6 +78,10 @@ export const FR = {
     momentOptions: {
       DEBUT_PERIODE: 'Début de période',
       FIN_PERIODE: 'Fin de période',
+    },
+    natureOptions: {
+      EFFECTIF: 'Effectif',
+      PREVISION: 'Prévision',
     },
     periodiciteLabels: [
       'Mensuel',        // 1

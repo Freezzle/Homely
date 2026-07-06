@@ -2,6 +2,7 @@ package ch.homely.poste.dto;
 
 import ch.homely.poste.ModeComptabilisation;
 import ch.homely.poste.MomentPeriode;
+import ch.homely.poste.NaturePoste;
 import ch.homely.poste.TypePoste;
 
 import java.math.BigDecimal;
@@ -22,6 +23,7 @@ public record PosteDto(
         LocalDate fin,
         ModeComptabilisation mode,
         MomentPeriode moment,
+        NaturePoste nature,
         UUID compteSource,
         int ordre,
         List<RepartitionPosteDto> repartitions,

@@ -2,6 +2,7 @@ package ch.homely.poste.dto;
 
 import ch.homely.poste.ModeComptabilisation;
 import ch.homely.poste.MomentPeriode;
+import ch.homely.poste.NaturePoste;
 import ch.homely.poste.TypePoste;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -22,6 +23,7 @@ public record PosteRequest(
         LocalDate fin,
         @NotNull ModeComptabilisation mode,
         @NotNull MomentPeriode moment,
+        @NotNull NaturePoste nature,
         UUID compteSource,
         int ordre,
         @Valid List<RepartitionPosteDto> repartitions,

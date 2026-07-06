@@ -66,6 +66,13 @@ public class Poste {
     @Column(nullable = false, length = 16)
     private MomentPeriode moment = MomentPeriode.DEBUT_PERIODE;
 
+    /**
+     * Nature du poste (descriptif). Défaut {@link NaturePoste#EFFECTIF}.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 16)
+    private NaturePoste nature = NaturePoste.EFFECTIF;
+
     /** Compte source pour les postes RESERVE (débit). */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "compte_source")
