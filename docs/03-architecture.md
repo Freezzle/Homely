@@ -9,7 +9,7 @@
 
 ```
 ┌─────────────────────────┐      HTTPS / REST + JWT       ┌──────────────────────────┐
-│ Angular 22 + PrimeNG 22  │  ─────────────────────────▶  │  Spring Boot 4 (Java 26)  │
+│ Angular 22 + PrimeNG 21  │  ─────────────────────────▶  │  Spring Boot 4 (Java 21)  │
 │ + Tailwind v4 (SPA,      │  ◀─────────────────────────  │  API stateless            │
 │  standalone, signals)    │        JSON DTO               │                          │
 └─────────────────────────┘                               │  ┌────────────────────┐  │
@@ -31,20 +31,22 @@ Principes : **API stateless** (JWT), **moteur de calcul isolé et testable**,
 Découpage par **domaine fonctionnel** puis par couche (préférer un package-by-feature) :
 
 ```
-com.budgetfoyer
+ch.homely
 ├── config/            # Security, CORS, OpenAPI, Jackson, Flyway
 ├── securite/          # JWT, filtres, UserDetails, contexte foyer courant
-├── commun/            # exceptions, ApiError, mappers de base, pagination
-├── utilisateur/       # Utilisateur, Auth (login/refresh/register)
+├── commun/            # exceptions, ApiError
+├── utilisateur/       # Utilisateur, Auth (login/refresh/register/logout)
 ├── foyer/             # Foyer, AccesFoyer, rôles
-├── referentiel/       # Membre, Compte, Categorie, Actif, TauxChange
+├── membre/            # Membre
+├── compte/            # Compte
+├── categorie/         # Categorie
+├── actif/             # Actif
+├── taux/              # TauxChange
 ├── scenario/          # Scenario, RepartitionDefaut, duplication
-├── poste/             # Poste, RepartitionPoste, VentilationCompte
+├── poste/             # Poste, RepartitionPoste, VentilationCompte, NaturePoste
 ├── objectif/          # Objectif
-├── moteur/            # ★ MoteurCalcul (service pur) + modèles de projection
-├── projection/        # endpoints d'agrégation (annuel, mensuel, trésorerie, net worth,
-│                      #   comparaison de scénarios) s'appuyant sur `moteur`
-└── patrimoine/        # projection des comptes/actifs, net worth
+├── moteur/            # ★ MoteurCalcul (pur) + projection réelle/mensualisée
+└── projection/        # endpoints annuel/mensuel/tresorerie/patrimoine/comparaison
 ```
 
 Chaque feature : `controller` (REST) → `service` (métier/validation) → `repository`
@@ -58,6 +60,8 @@ Chaque feature : `controller` (REST) → `service` (métier/validation) → `rep
   unitaires JUnit alimentés par les vecteurs golden (§8-bis doc 1).
 - Le module `projection` fait le pont : charge le scénario (JPA), mappe vers les records
   du moteur, appelle le moteur, mappe les résultats vers des DTO REST, gère le cache.
+- La projection annuelle expose désormais deux séries : `mois` (mensualisée) et
+  `moisReel` (imputations non lissées), idem par membre (`moisParMembre*`).
 
 ### 2.2 Cache de projection
 - Cache applicatif (Caffeine) clé = `(scenarioId, versionScenario)` où `versionScenario`
@@ -68,7 +72,7 @@ Chaque feature : `controller` (REST) → `service` (métier/validation) → `rep
 
 - **JWT** : `access token` (courte durée, ex. 15 min) + `refresh token` (rotation).
   Signature HMAC (secret) ou RSA. Mots de passe **BCrypt**.
-- Endpoints publics : `/api/auth/register`, `/api/auth/login`, `/api/auth/refresh`.
+- Endpoints publics : `/api/auth/register`, `/api/auth/login`, `/api/auth/refresh`, `/api/auth/logout`.
   Tout le reste exige un token valide.
 - **Autorisation multi-tenant** : chaque requête cible un foyer (`/api/foyers/{foyerId}/…`).
   Un filtre/intercepteur vérifie que l'utilisateur courant possède un `AccesFoyer` sur ce
@@ -104,7 +108,7 @@ Chaque feature : `controller` (REST) → `service` (métier/validation) → `rep
 
 - **Angular 22**, **standalone components** (pas de NgModule), **signals** pour l'état
   local, **Angular Router** avec lazy-loading par feature, **strict mode** TS activé.
-- **PrimeNG 22** pour les composants (tables, formulaires, dialogs, menus), **p-chart**
+- **PrimeNG 21.1.x** pour les composants (tables, formulaires, dialogs, menus), **p-chart**
   (Chart.js) pour les graphiques, **PrimeIcons**. Thème par **tokens de design** (preset
   Aura via `@primeng/themes`, mode styled).
 - **Tailwind CSS v4** pour la mise en page, l'espacement et les utilitaires, **couplé à
@@ -132,7 +136,7 @@ src/app/
     └── objectifs/
 ```
 
-### 6.1 Couplage PrimeNG 22 + Tailwind CSS v4 (intégration officielle)
+### 6.1 Couplage PrimeNG + Tailwind CSS v4 (intégration officielle)
 
 Suivre le guide officiel `primeng.dev/tailwind`. Points clés :
 

@@ -13,6 +13,8 @@ import { TooltipModule } from 'primeng/tooltip';
 import { CardModule } from 'primeng/card';
 import { MessageModule } from 'primeng/message';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { SkeletonModule } from 'primeng/skeleton';
+import { CheckboxModule } from 'primeng/checkbox';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ContexteService } from '../../../core/services/contexte.service';
 import { PosteService } from '../../../core/services/scenario-poste.service';
@@ -27,96 +29,184 @@ import { FR } from '../../../core/i18n/fr';
   providers: [ConfirmationService],
   imports: [CommonModule, FormsModule, ReactiveFormsModule, TableModule, ButtonModule, DialogModule,
     InputTextModule, InputNumberModule, SelectModule, DatePickerModule,
-    TagModule, TooltipModule, CardModule, MessageModule, ConfirmDialogModule, MontantPipe, PeriodicitePipe],
+    TagModule, TooltipModule, CardModule, MessageModule, ConfirmDialogModule, SkeletonModule, CheckboxModule,
+    MontantPipe, PeriodicitePipe],
   template: `
     <p-confirmdialog />
     <div class="flex flex-col gap-4">
-      <!-- En-tête -->
-      <div class="flex items-center gap-4 flex-wrap">
-        <h1 class="text-2xl font-bold flex-1">
-          {{ type() === 'REVENU' ? t.nav.revenus : type() === 'CHARGE' ? t.nav.charges : t.nav.reserves }}
-        </h1>
+
+      <!-- ── En-tête ─────────────────────────────────────────── -->
+      <div class="flex items-center gap-3 flex-wrap">
+
+        <!-- Titre + compteur -->
+        <div class="flex items-baseline gap-2 flex-1 min-w-0">
+          <h1 class="text-2xl font-bold leading-tight">
+            {{ type() === 'REVENU' ? t.nav.revenus : type() === 'CHARGE' ? t.nav.charges : t.nav.reserves }}
+          </h1>
+          @if (!chargement()) {
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                         bg-surface-100 dark:bg-surface-800 text-surface-500">
+              {{ postesVisibles().length }}
+            </span>
+          }
+        </div>
+
+        <!-- Total mensuel pill -->
+        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg
+                    bg-surface-100 dark:bg-surface-800 text-sm shrink-0">
+          <i class="pi pi-wallet text-xs text-surface-400"></i>
+          <span class="text-surface-500">{{ t.poste.totalMensuel }} :</span>
+          <span class="font-semibold text-surface-700 dark:text-surface-200">
+            {{ totalMensualise() | montant }}
+          </span>
+        </div>
+
+        <!-- Total annuel pill -->
+        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg
+                    bg-surface-100 dark:bg-surface-800 text-sm shrink-0">
+          <i class="pi pi-calendar text-xs text-surface-400"></i>
+          <span class="text-surface-500">{{ t.poste.totalAnnuel }} :</span>
+          <span class="font-semibold text-surface-700 dark:text-surface-200">
+            {{ totalAnnuel() | montant }}
+          </span>
+        </div>
+
         <!-- Tri -->
         <p-select appendTo="body"
           [ngModel]="triActuel()"
           (onChange)="triActuel.set($event.value)"
           [options]="triOptions"
           optionLabel="label" optionValue="value"
-          styleClass="min-w-64 text-sm" />
-        <!-- Totaux -->
-        <div class="text-sm text-surface-500">
-          Total mensual. :
-          <span class="font-semibold text-surface-700 dark:text-surface-200">
-            {{ totalMensualise() | montant }}
-          </span>
+          styleClass="min-w-52 text-sm shrink-0" />
+
+        <!-- Masquer inactifs -->
+        <div class="flex items-center gap-2 text-sm shrink-0">
+          <p-checkbox inputId="cacher-inactifs" [binary]="true"
+                      [ngModel]="cacherInactifs()"
+                      (onChange)="cacherInactifs.set($event.checked)" />
+          <label for="cacher-inactifs"
+                 class="cursor-pointer text-surface-600 dark:text-surface-400 select-none">
+            {{ t.poste.cacherInactifs }}
+          </label>
         </div>
+
+        <!-- Créer -->
         @if (contexte.estEditor()) {
-          <p-button icon="pi pi-plus" [label]="t.commun.creer" (click)="ouvrirCreation()" />
+          <p-button icon="pi pi-plus" [label]="t.commun.creer" (click)="ouvrirCreation()" styleClass="shrink-0" />
         }
       </div>
 
-      <!-- Tableau -->
-      <p-table [value]="postesTries()" styleClass="p-datatable-sm p-datatable-striped" scrollable [loading]="chargement()">
-        <ng-template pTemplate="header">
-          <tr>
-            <th>{{ t.poste.description }}</th>
-            <th>{{ t.poste.categorie }}</th>
-            <th class="text-right">{{ t.poste.montant }}</th>
-            <th class="text-right">{{ t.poste.montantMensualise }}</th>
-            <th>{{ t.poste.periodicite }}</th>
-            <th>{{ t.poste.debut }}</th>
-            <th>{{ t.poste.fin }}</th>
-            <th>{{ t.poste.repartition }}</th>
-            <th></th>
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="body" let-p>
-          <tr>
-            <td>
-              <div class="flex items-center gap-2">
-                <span>{{ p.description }}</span>
-                @if (p.nature === 'PREVISION') {
-                  <p-tag severity="warn" [value]="t.poste.natureOptions.PREVISION" styleClass="text-[10px] py-0" />
+      <!-- ── État chargement (skeletons) ──────────────────────── -->
+      @if (chargement()) {
+        <div class="flex flex-col gap-2">
+          @for (_ of [1, 2, 3]; track $index) {
+            <div class="flex items-center gap-3 px-4 py-3 rounded-xl border border-surface-200
+                        dark:border-surface-700 bg-white dark:bg-surface-900">
+              <p-skeleton width="3px" height="48px" styleClass="rounded-full shrink-0" />
+              <div class="flex-1 flex flex-col gap-2">
+                <p-skeleton width="35%" height="1rem" />
+                <p-skeleton width="55%" height="0.75rem" />
+              </div>
+              <p-skeleton width="90px" height="1.25rem" styleClass="shrink-0" />
+              <p-skeleton width="72px" height="2rem" styleClass="shrink-0 rounded-lg" />
+            </div>
+          }
+        </div>
+
+      <!-- ── État vide ────────────────────────────────────────── -->
+      } @else if (postesVisibles().length === 0) {
+        <div class="flex flex-col items-center justify-center gap-3 py-16
+                    rounded-xl border border-dashed border-surface-300 dark:border-surface-700
+                    bg-surface-50 dark:bg-surface-900 text-surface-400">
+          <i class="pi pi-inbox text-5xl opacity-30"></i>
+          <span class="text-sm">{{ t.commun.aucunResultat }}</span>
+          @if (contexte.estEditor()) {
+            <p-button icon="pi pi-plus" [label]="t.commun.creer" severity="secondary"
+                      size="small" (click)="ouvrirCreation()" />
+          }
+        </div>
+
+      <!-- ── Liste de cartes ──────────────────────────────────── -->
+      } @else {
+        <div class="flex flex-col gap-2">
+          @for (p of postesVisibles(); track p.id) {
+            <div class="flex items-center gap-3 px-4 py-3 rounded-xl
+                        border border-surface-200 dark:border-surface-700
+                        bg-white dark:bg-surface-900
+                        hover:border-primary/40 hover:shadow-sm
+                        transition-all duration-150">
+
+              <!-- Barre accent (couleur par type) -->
+              <div class="w-0.75 self-stretch rounded-full shrink-0" [ngClass]="typeAccentClass()"></div>
+
+              <!-- Contenu principal -->
+              <div class="flex-1 min-w-0">
+
+                <!-- Description + badge nature -->
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="font-medium text-surface-900 dark:text-surface-100 leading-snug">
+                    {{ p.description }}
+                  </span>
+                  @if (p.nature === 'PREVISION') {
+                    <p-tag severity="warn" [value]="t.poste.natureOptions.PREVISION"
+                           styleClass="text-[10px] py-0 shrink-0" />
+                  }
+                </div>
+
+                <!-- Méta : catégorie · période · périodicité -->
+                <div class="flex items-center flex-wrap gap-x-2 gap-y-0.5 mt-0.5 text-sm text-surface-500">
+                  @if (categorieLabel(p.categorieId) !== '–') {
+                    <span>{{ categorieLabel(p.categorieId) }}</span>
+                    <span class="text-surface-300 dark:text-surface-600 select-none">·</span>
+                  }
+                  <span class="flex items-center gap-1">
+                    <i class="pi pi-calendar text-xs text-surface-400"></i>
+                    {{ formatPeriode(p.debut) }}&nbsp;–&nbsp;{{ formatPeriode(p.fin) }}
+                  </span>
+                  <span class="text-surface-300 dark:text-surface-600 select-none">·</span>
+                  <span class="flex items-center gap-1">
+                    @if (p.mode === 'MENSUALISE' || p.periodiciteMois <= 1) {
+                      <i class="pi pi-calendar-clock text-xs text-blue-400"
+                         [pTooltip]="t.poste.modeOptions.MENSUALISE"></i>
+                    } @else {
+                      <i class="pi pi-bolt text-xs text-amber-500"
+                         [pTooltip]="t.poste.modeOptions.PERIODIQUE + ' · ' + (p.moment === 'FIN_PERIODE' ? t.poste.momentOptions.FIN_PERIODE : t.poste.momentOptions.DEBUT_PERIODE)"></i>
+                    }
+                    {{ p.periodiciteMois | periodicite }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Montants -->
+              <div class="text-right shrink-0 min-w-28">
+                <div class="font-semibold text-surface-700 dark:text-surface-200">
+                  {{ p.montant | montant:p.devise }}
+                </div>
+                @if (p.periodiciteMois > 1) {
+                  <div class="text-sm text-surface-400">
+                    {{ p.montantMensualise | montant:p.devise }}&thinsp;/mois
+                  </div>
                 }
               </div>
-            </td>
-            <td><span class="text-xs text-surface-500">{{ categorieLabel(p.categorieId) }}</span></td>
-            <td class="text-right font-medium">{{ p.montant | montant:p.devise }}</td>
-            <td class="text-right text-surface-500">{{ p.montantMensualise | montant:p.devise }}</td>
-            <td class="text-center text-sm">
-              <div class="flex items-center justify-center gap-1">
-                @if (p.mode === 'MENSUALISE' || p.periodiciteMois <= 1) {
-                  <i class="pi pi-calendar text-blue-400 text-xs"
-                     [pTooltip]="t.poste.modeOptions.MENSUALISE"></i>
-                } @else {
-                  <i class="pi pi-bolt text-amber-500 text-xs"
-                     [pTooltip]="t.poste.modeOptions.PERIODIQUE + (p.moment === 'FIN_PERIODE' ? ' · ' + t.poste.momentOptions.FIN_PERIODE : ' · ' + t.poste.momentOptions.DEBUT_PERIODE)"></i>
-                }
-                {{ p.periodiciteMois | periodicite }}
-              </div>
-            </td>
-            <td class="text-xs text-surface-500">{{ p.debut ?? '–' }}</td>
-            <td class="text-xs text-surface-500">{{ p.fin ?? '–' }}</td>
-            <td class="text-xs">{{ repartitionResume(p) }}</td>
-            <td>
-              <div class="flex gap-1">
+
+              <!-- Actions -->
+              <div class="flex gap-0.5 shrink-0">
                 <p-button icon="pi pi-eye" [text]="true" severity="secondary" size="small"
                           [pTooltip]="t.poste.apercu" (click)="ouvrirApercu(p)" />
                 @if (contexte.estEditor()) {
                   <p-button icon="pi pi-pencil" [text]="true" size="small" (click)="ouvrirEdition(p)" />
-                  <p-button icon="pi pi-trash" [text]="true" severity="danger" size="small" (click)="supprimer(p)" />
+                  <p-button icon="pi pi-trash" [text]="true" severity="danger" size="small"
+                            (click)="supprimer(p)" />
                 }
               </div>
-            </td>
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="emptymessage">
-          <tr><td colspan="9" class="text-center py-8 text-surface-400">{{ t.commun.aucunResultat }}</td></tr>
-        </ng-template>
-      </p-table>
+
+            </div>
+          }
+        </div>
+      }
     </div>
 
-    <!-- Dialog formulaire poste -->
+    <!-- ── Dialog formulaire poste ──────────────────────────────── -->
     <p-dialog [(visible)]="dialogVisible" [header]="posteEnEdition ? t.commun.modifier : t.commun.creer"
               [modal]="true" styleClass="w-full max-w-2xl">
       <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
@@ -296,6 +386,7 @@ export class PostesListeComponent implements OnInit {
   periodiciteOptions = FR.poste.periodiciteLabels.map((label, i) => ({ label, value: i + 1 }));
 
   triActuel = signal<'DATE' | 'CATEGORIE' | 'DESCRIPTION'>('DATE');
+  cacherInactifs = signal(true);
 
   triOptions = [
     { label: FR.poste.triOptions.DATE,        value: 'DATE' as const },
@@ -318,9 +409,41 @@ export class PostesListeComponent implements OnInit {
 
   get repartitionsArray() { return this.form.get('repartitions') as FormArray; }
 
+  // ── Helpers fenêtre de validité ──────────────────────────
+  private readonly _now = new Date();
+  private readonly _moisCourant = (() => {
+    const d = this._now;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  })();
+  private readonly _anneeCourante = this._now.getFullYear();
+
+  private _actifEnMois(p: PosteDto, moisStr: string): boolean {
+    const debut = p.debut ? p.debut.substring(0, 7) : null;
+    const fin   = p.fin   ? p.fin.substring(0, 7)   : null;
+    return (debut === null || debut <= moisStr) && (fin === null || fin >= moisStr);
+  }
+
+  /** Somme des montants mensualisés des postes actifs ce mois-ci. */
   totalMensualise = computed(() =>
-    this.postes().reduce((s, p) => s + (p.montantMensualise ?? 0), 0)
+    this.postes()
+      .filter(p => this._actifEnMois(p, this._moisCourant))
+      .reduce((s, p) => s + (p.montantMensualise ?? 0), 0)
   );
+
+  /** Somme sur les 12 mois de l'année courante des contributions effectives. */
+  totalAnnuel = computed(() => {
+    const annee = this._anneeCourante;
+    let total = 0;
+    for (const p of this.postes()) {
+      for (let m = 1; m <= 12; m++) {
+        const moisStr = `${annee}-${String(m).padStart(2, '0')}`;
+        if (this._actifEnMois(p, moisStr)) {
+          total += p.montantMensualise ?? 0;
+        }
+      }
+    }
+    return total;
+  });
 
   postesTries = computed(() => {
     const list = [...this.postes()];
@@ -345,6 +468,15 @@ export class PostesListeComponent implements OnInit {
         });
       default: return list;
     }
+  });
+
+  /** Liste finale affichée : triée + filtrée selon cacherInactifs. */
+  postesVisibles = computed(() => {
+    const list = this.postesTries();
+    if (!this.cacherInactifs()) return list;
+    return list.filter(p =>
+      !p.fin || p.fin.substring(0, 7) >= this._moisCourant
+    );
   });
 
   private readonly _chargerEffect = effect(() => {
@@ -510,4 +642,23 @@ export class PostesListeComponent implements OnInit {
   }
 
   private toIso(d: Date): string { return d.toISOString().substring(0, 10); }
+
+  typeAccentClass = computed(() => {
+    switch (this.type()) {
+      case 'REVENU':  return 'bg-green-500';
+      case 'CHARGE':  return 'bg-red-400';
+      default:        return 'bg-indigo-400';
+    }
+  });
+
+  formatPeriode(v?: string | null): string {
+    if (!v) return '–';
+    try {
+      const [year, month] = v.split('-');
+      const d = new Date(+year, +month - 1, 1);
+      return new Intl.DateTimeFormat('fr-CH', { month: 'short', year: 'numeric' }).format(d);
+    } catch { return v; }
+  }
 }
+
+

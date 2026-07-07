@@ -1,7 +1,7 @@
 # 02 — Modèle de domaine & modèle de données
 
 > Entités, relations, schéma PostgreSQL, mapping JPA et données de seed. Le langage
-> ubiquitaire est défini dans le [README](../README.md#5-glossaire--langage-ubiquitaire).
+> ubiquitaire est défini dans le [README](README.md#5-glossaire--langage-ubiquitaire).
 
 ---
 
@@ -89,7 +89,8 @@ Ligne budgétaire récurrente. Champs :
 `id`, `scenarioId`, `type` (REVENU | CHARGE | RESERVE), `description`, `categorieId`,
 `montant` (décimal ≥ 0), `devise` (défaut = deviseBase), `periodiciteMois` (int ≥ 0),
 `debut` (date null), `fin` (date null), `mode` (MENSUALISE | PERIODIQUE), `moment`
-(DEBUT_PERIODE | FIN_PERIODE), `compteSource` (FK Compte null — pour RESERVE, §9 doc 1),
+(DEBUT_PERIODE | FIN_PERIODE), `nature` (EFFECTIF | PREVISION, descriptif),
+`compteSource` (FK Compte null — pour RESERVE, §9 doc 1),
 `ordre`, `dateCreation`, `dateModification`.
 
 ### RepartitionPoste
@@ -97,7 +98,7 @@ Override de répartition pour un poste. Champs : `id`, `posteId`, `membreId`, `q
 Si aucune ligne pour un poste → hériter de `RepartitionDefaut`. **Σ par poste = 1** si
 présent (validé).
 
-### VentilationCompte
+### VentilationCompte s
 Compte utilisé par chaque membre pour un poste. Champs : `id`, `posteId`, `membreId`,
 `compteId`. (Optionnel ; sert aux ventilations par compte et au patrimoine.)
 
@@ -114,6 +115,7 @@ TypePoste            = REVENU | CHARGE | RESERVE
 TypeCategorie        = REVENU | CHARGE | RESERVE | PROJET
 ModeComptabilisation = MENSUALISE | PERIODIQUE
 MomentPeriode        = DEBUT_PERIODE | FIN_PERIODE
+NaturePoste          = EFFECTIF | PREVISION
 RoleFoyer            = OWNER | EDITOR | VIEWER
 TypeCompte           = COURANT | EPARGNE | COMMUN | AUTRE   (extensible)
 TypeActif            = COMPTE_EPARGNE | TROISIEME_PILIER | INVESTISSEMENT | CRYPTO
@@ -291,6 +293,9 @@ CREATE INDEX idx_objectif_scenario ON objectif(scenario_id);
 > Migration `V2__seed_demo.sql` : insère le foyer de démonstration (voir §7) pour servir
 > d'exemple et de base aux tests d'intégration.
 
+> Migration `V5__poste_nature.sql` : ajoute la colonne `poste.nature` avec défaut
+> `EFFECTIF` et contrainte `CHECK (nature IN ('EFFECTIF','PREVISION'))`.
+
 ## 5. Mapping JPA (indications)
 
 - Une entité JPA par table, packages `domain` (ou `model`) + `repository` Spring Data.
@@ -316,6 +321,8 @@ CREATE INDEX idx_objectif_scenario ON objectif(scenario_id);
    quotes-parts (choix : **refuser** si des postes le référencent, message explicite).
 6. `devise` d'un poste/compte/actif non nulle doit exister dans `taux_change` du foyer
    (ou == deviseBase) — sinon avertissement + taux 1 par défaut (ne pas bloquer).
+7. Côté API, `periodiciteMois` est validée à `>= 1` ; le moteur garde néanmoins une
+   robustesse interne `Dsafe` pour les cas historiques/tests où `D=0`.
 
 ## 7. Données de seed (foyer de démonstration — issu de l'Excel)
 

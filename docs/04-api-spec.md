@@ -108,6 +108,7 @@ Scopés : `/api/foyers/{foyerId}/scenarios/{scenarioId}/postes`.
   "fin": null,
   "mode": "MENSUALISE",
   "moment": "DEBUT_PERIODE",
+  "nature": "EFFECTIF",
   "compteSource": null,
   "repartition": [ {"membreId":"…","quotePart":0.58}, {"membreId":"…","quotePart":0.42} ],
   "ventilationComptes": [ {"membreId":"…","compteId":"…"} ]
@@ -140,20 +141,36 @@ Toutes en lecture (`GET`), scopées scénario. Le serveur applique le moteur (do
 peut servir depuis le cache.
 
 ### 9.1 Projection annuelle
-`GET …/scenarios/{scenarioId}/projection/annuelle?annee=2026&perimetre=FOYER`
-`perimetre` ∈ `FOYER` | `MEMBRE:{membreId}`. Réponse :
+`GET …/scenarios/{scenarioId}/projection/annuelle?annee=2026`. Réponse :
 ```json
 {
-  "annee": 2026, "perimetre": "FOYER", "devise": "CHF",
+  "annee": 2026,
   "mois": [
-    {"mois":1,"revenus":11000.00,"charges":5172.67,"reserves":410.00,"soldeDisponible":5417.33},
+    {"numero":1,"agregat":{"revenus":11000.00,"charges":5172.67,"reserves":410.00,"soldeDisponible":5417.33}},
     … 12 lignes …
   ],
-  "total": {"revenus":140350.00,"charges":62322.00,"reserves":8520.00,"soldeDisponible":69508.00}
+  "moisReel": [
+    {"numero":1,"agregat":{"revenus":11000.00,"charges":4980.00,"reserves":0.00,"soldeDisponible":6020.00}},
+    … 12 lignes …
+  ],
+  "totalAnnuel": {"revenus":140350.00,"charges":62322.00,"reserves":8520.00,"soldeDisponible":69508.00},
+  "parMembre": {
+    "{membreId}": {"revenus":0,"charges":0,"reserves":0,"soldeDisponible":0}
+  },
+  "moisParMembre": {
+    "{membreId}": [
+      {"revenus":0,"charges":0,"reserves":0,"soldeDisponible":0}
+    ]
+  },
+  "moisParMembreReel": {
+    "{membreId}": [
+      {"revenus":0,"charges":0,"reserves":0,"soldeDisponible":0}
+    ]
+  }
 }
 ```
 Variante « toutes vues » pour le dashboard annuel :
-`GET …/projection/annuelle-complete?annee=2026` → `{foyer:{…}, membres:[{membreId, …}]}`.
+`GET …/projection/annuelle-complete` → `ProjectionAnnuelleDto[]` (une entrée par année de l'horizon).
 
 ### 9.2 Projection pluriannuelle & trésorerie chaînée
 `GET …/scenarios/{scenarioId}/projection/tresorerie` → toutes les années de l'horizon :
@@ -173,15 +190,20 @@ Variante « toutes vues » pour le dashboard annuel :
 `GET …/scenarios/{scenarioId}/projection/mensuelle?annee=2026&mois=6` :
 ```json
 {
-  "annee":2026, "mois":6, "devise":"CHF",
-  "chargesParCategorie":[ {"categorieId":"…","libelle":"Logement","montant": …}, … ],
-  "revenusParCategorie":[ … ],
-  "reservesParCategorie":[ … ],
-  "parCompte": [
-    {"membreId":"…","type":"CHARGE","compteId":"…","libelle":"Compte courant","montant": …},
-    …
-  ],
-  "totaux": {"revenus": …, "charges": …, "reserves": …, "soldeDisponible": …}
+  "annee": 2026,
+  "mois": 6,
+  "agregat": {"revenus": 0, "charges": 0, "reserves": 0, "soldeDisponible": 0},
+  "parMembre": {
+    "{membreId}": {"revenus": 0, "charges": 0, "reserves": 0, "soldeDisponible": 0}
+  },
+  "parCategorie": {
+    "{categorieId}": 1234.56
+  },
+  "parCompteMembre": {
+    "{compteId}": {
+      "{membreId}": 123.45
+    }
+  }
 }
 ```
 
@@ -198,15 +220,18 @@ Variante « toutes vues » pour le dashboard annuel :
 ```
 
 ### 9.5 Comparaison de scénarios (what-if)
-`GET /api/foyers/{foyerId}/projection/comparaison?scenarioIds=A,B,C&metrique=TRESORERIE`
-`metrique` ∈ `TRESORERIE` | `SOLDE_ANNUEL` | `NET_WORTH`. Réponse alignée par année pour
-un graphe multi-séries :
+`GET /api/foyers/{foyerId}/projection/comparaison?scenarioIds=A,B,C`
+Réponse alignée par année pour un graphe multi-séries :
 ```json
 {
-  "metrique":"TRESORERIE", "devise":"CHF",
+  "scenarioIds":["A","B","C"],
+  "nomScenarios":["Prévision principale","Loyer +200","Prime annuelle"],
   "series":[
-    {"scenarioId":"A","nom":"Prévision principale","points":[{"annee":2026,"valeur":69508.00}, …]},
-    {"scenarioId":"B","nom":"Loyer +200","points":[…]}
+    {
+      "annee":2026,
+      "soldeParScenario":{"A":69508.00,"B":67108.00},
+      "tresorerieParScenario":{"A":69508.00,"B":67108.00}
+    }
   ]
 }
 ```

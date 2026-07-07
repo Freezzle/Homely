@@ -13,15 +13,15 @@ Format des tâches : `T<epic>.<n>`.
 ## Jalon 0 — Fondations
 
 ### E0 · Amorçage des dépôts
-- [ ] **T0.1** Backend **Spring Boot 4** (Java 26, Maven) : dépendances Web, Data JPA,
+- [x] **T0.1** Backend **Spring Boot 4** (Java 21, Maven) : dépendances Web, Data JPA,
   Validation, Security, PostgreSQL, Flyway, MapStruct, Lombok, springdoc, Caffeine,
   Testcontainers. *Accept.* : `mvn verify` vert, `/health` répond, Swagger UI accessible.
-- [ ] **T0.2** Frontend **Angular 22** (standalone, strict, signals) + **PrimeNG 22** +
+- [x] **T0.2** Frontend **Angular 22** (standalone, strict, signals) + **PrimeNG 21** +
   PrimeIcons + **Tailwind CSS v4** couplé via `tailwindcss-primeui` et CSS layers (ordre
   `tailwind, primeng`, preset Aura — voir doc 03 §6.1) + Chart.js. *Accept.* : `ng build`
   + `ng lint` verts ; page shell affiche un composant PrimeNG stylé **et** une classe
   utilitaire Tailwind (`bg-primary`) rendue correctement (preuve du couplage).
-- [ ] **T0.3** `docker-compose` dev (PostgreSQL + back + front), `.env.example`,
+- [x] **T0.3** `docker-compose` dev (PostgreSQL + back + front), `.env.example`,
   Dockerfiles multi-stage. *Accept.* : `docker compose up` démarre la stack.
 - [ ] **T0.4** GitHub Actions : jobs back (build+test) et front (build+lint+test) sur PR.
   *Accept.* : pipeline vert sur une PR blanche ; échec bloquant si tests rouges.
@@ -104,6 +104,8 @@ Format des tâches : `T<epic>.<n>`.
   `:definir-reference`. *Accept.* : le duplicata est indépendant de l'original.
 - [ ] **T7.4** CRUD Objectif (support compte XOR actif) + calculs [doc 01 §10](01-business-rules-engine.md).
   *Accept.* : progression/épargne requise/date prévue correctes sur un cas de test.
+- [x] **T7.5** Nature de poste (`EFFECTIF`/`PREVISION`) + migration `V5__poste_nature.sql`.
+  *Accept.* : valeur par défaut `EFFECTIF`, modifiable en création/édition de poste.
 
 ---
 
@@ -119,7 +121,9 @@ Format des tâches : `T<epic>.<n>`.
   cas jouet, soldes projetés = calcul manuel (transfert réserve source→destination géré).
 - [ ] **T8.5** `projection/comparaison` multi-scénarios. *Accept.* : séries alignées par
   année pour 2+ scénarios.
-- [ ] **T8.6** `postes/{id}/apercu?annee=` (contribution mensuelle d'un poste).
+- [x] **T8.6** `postes/{id}/apercu?annee=` (contribution mensuelle d'un poste).
+- [x] **T8.7** Projection annuelle enrichie : `moisReel` et `moisParMembreReel`.
+  *Accept.* : payload annuel inclut les séries mensualisées et réelles.
 
 ---
 
@@ -137,10 +141,14 @@ Format des tâches : `T<epic>.<n>`.
   création/édition/suppression fonctionnelles ; sauvegarde bloquée si somme ≠ 1.
 - [x] **T10.2** Référentiels (CRUD) + Paramètres foyer + Accès (OWNER).
 - [x] **T10.3** Scénarios (liste, hypothèses, duplication, définir référence).
-- [x] **T10.4** **Tableau de bord annuel** : 3 tableaux + total année + barres empilées +
-  courbe de trésorerie. *Accept.* : chiffres affichés == vecteurs T2/T3 sur le seed.
-- [x] **T10.5** **Tableau de bord du mois** : camemberts par catégorie + ventilation
-  compte/membre + cartes de synthèse.
+- [x] **T10.4** **Tableau de bord annuel** : KPI + flux mensuels foyer + flux par membre +
+  tableau détaillé annuel. *Accept.* : chiffres affichés == vecteurs T2 sur le seed.
+- [x] **T10.5** **Tableau de bord du mois** : KPI foyer, catégories séparées
+  revenus/charges/réserves, synthèse par membre et charges par compte.
+- [x] **T10.9** Refonte dashboard mensuel (KPI utiles, listes catégories séparées,
+  synthèse par membre, suppression des visuels peu pertinents).
+- [x] **T10.10** UX dialog poste (nature, affichage conditionnel mode/moment,
+  organisation des champs et icônes de mode en liste).
 - [x] **T10.6** **Patrimoine** : courbe net worth + répartition + tableau comptes/actifs.
 - [x] **T10.7** **Objectifs** : cartes + barres de progression + formulaire.
 - [x] **T10.8** **Comparaison de scénarios** : multi-sélection + graphe multi-séries +

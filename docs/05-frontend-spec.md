@@ -46,28 +46,30 @@ actions d'écriture pour `VIEWER`).
 
 ### 3.1 Tableau de bord annuel  *(reprend « Dashboard annuel » Excel)*
 - Sélecteur d'**année** (dropdown sur l'horizon du scénario).
-- **Trois tableaux** (`p-table`) : Foyer, puis un par membre — colonnes Mois, Revenus,
-  Charges, Réserves, **Solde disponible**, avec ligne **Total année**. Mise en évidence
-  du solde négatif (rouge).
+- **KPI annuels** (revenus/charges/réserves/solde).
+- **Un tableau mensuel foyer** (`p-table`) — colonnes Mois, Revenus, Charges, Réserves,
+  Solde disponible + ligne Total année.
 - Graphiques :
-  - **Barres empilées** (Revenus/Charges/Réserves) par mois + **ligne** du solde.
-  - **Courbe de trésorerie chaînée** pluriannuelle (`GET …/projection/tresorerie`),
-    marqueurs par année, zone négative signalée.
-- Endpoints : `…/projection/annuelle-complete?annee=`, `…/projection/tresorerie`.
+  - **Mixte mensuel foyer** : barres empilées Charges + Réserves + ligne Revenus.
+  - **Un graphique mixte par membre** (même structure) pour visualiser la contribution
+    individuelle.
+- Endpoint principal : `…/projection/annuelle?annee=`.
+- Le DTO expose aussi `moisReel` et `moisParMembreReel` pour la vue « flux réels ».
 
 ### 3.2 Tableau de bord du mois  *(reprend « Dashboard du mois » Excel)*
 - Sélecteurs **année + mois**.
-- **Camemberts / barres** : charges par catégorie, revenus par catégorie, réserves par
-  catégorie.
-- **Ventilation par compte** et **par membre** (`p-table` groupées ou `p-chart`).
-- Cartes de synthèse : total revenus / charges / réserves / solde du mois.
+- **KPI foyer** : revenus / charges / réserves / solde du mois.
+- **3 listes catégories séparées** : revenus, charges, réserves (tri décroissant + total
+  par type) pour éviter tout mélange des types.
+- **Vue par membre** : mini-KPI, badge taux d'effort, et barres horizontales des charges
+  par compte.
 - Endpoint : `…/projection/mensuelle?annee=&mois=`.
 
 ### 3.3 Revenus / Charges / Réserves  *(reprennent les feuilles de saisie)*
 Trois écrans quasi identiques (composant générique paramétré par `type`).
-- **`p-table`** paginée, triable, avec colonnes : Description, Catégorie, Montant,
-  Devise, Périodicité, Début, Fin, **Montant mensualisé** (calculé), Mode, Moment,
-  Répartition (résumé « 58 / 42 »), Comptes. Édition **inline** ou via **`p-dialog`**.
+- **`p-table`** triable avec colonnes : Description (badge nature), Catégorie, Montant,
+  **Montant mensualisé** (calculé), Périodicité (avec icône de mode), Début, Fin,
+  Répartition (résumé). Édition via **`p-dialog`**.
 - Formulaire de poste : champs typés — `p-select` (catégorie, mode, moment, devise),
   `p-inputnumber` (montant, périodicité), `p-datepicker` (début/fin), éditeur de
   **répartition** (une ligne par membre avec `p-inputnumber` en %, **contrôle live que la
@@ -80,6 +82,15 @@ Trois écrans quasi identiques (composant générique paramétré par `type`).
   l'Excel).
 - Validation UX : la sauvegarde est bloquée si la répartition ne somme pas à 1
   (message clair), miroir de la règle backend (422).
+
+Comportement UI actuel du dialog de poste :
+
+- `nature` (`EFFECTIF`/`PREVISION`) avec défaut `EFFECTIF`.
+- `moment` visible dès que `periodiciteMois > 1`.
+- `mode` masqué quand `periodiciteMois == 1` (cas mensuel).
+- `debut` et `fin` sur la même ligne (2 colonnes).
+- Ligne périodicité/mode/moment en grille adaptative (1 ou 3 colonnes).
+- Icônes dans la liste : calendrier pour mensualisé, éclair pour périodique.
 
 ### 3.4 Scénarios & comparaison
 - **Liste** des scénarios (`p-table` / cartes) : nom, référence (badge), année de départ,

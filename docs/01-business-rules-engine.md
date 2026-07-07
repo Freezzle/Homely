@@ -31,6 +31,7 @@
 | `fin` | date \| null | fin de la fenêtre de validité |
 | `mode` | MENSUALISE \| PERIODIQUE | lissé ou montant plein |
 | `moment` | DEBUT_PERIODE \| FIN_PERIODE | mois d'imputation si périodique |
+| `nature` | EFFECTIF \| PREVISION | étiquette métier descriptive (sans impact sur `contribution`) |
 | `repartition` | `{membre → quotePart}` \| null | découpe entre membres (§6) |
 | `ventilationComptes` | `{membre → compte}` | pour la ventilation par compte |
 
@@ -83,6 +84,20 @@ sinon:                              # MENSUALISE, ou D == 1
 ```
 > Le modulo doit être **euclidien** (résultat ≥ 0). En Java : `Math.floorMod(a, Dsafe)`.
 
+### 3.7 Variante — `contributionReelle(poste, année, mois)`
+
+But : visualiser les encaissements/décaissements **effectifs** mois par mois, sans lissage.
+
+- Fenêtre de validité : identique à `contribution`.
+- Si `D == 1` (ou `D == 0`), contribution réelle = `C` chaque mois actif.
+- Si `D > 1`, la logique d'imputation est forcée en périodique (même si le poste est
+  stocké en `MENSUALISE`) :
+  - `moment == DEBUT_PERIODE` → `((mois - ancre) mod Dsafe == 0) ? C : 0`
+  - `moment == FIN_PERIODE` → `((mois - ancre + 1) mod Dsafe == 0) ? C : 0`
+
+Invariant utile : sur une année complète couverte par la fenêtre, la somme des 12 mois
+de `contributionReelle` est égale à la somme des 12 mois de `contribution`.
+
 ### 3.6 Montant mensualisé (champ dérivé, affiché dans les listes)
 ```
 montantMensualise = (C == null OU D == null OU D == 0) ? 0 : C / Dsafe
@@ -114,6 +129,16 @@ soldeDisponible = revenus - charges - reserves
 Pour chaque `M` de 1 à 12, calculer `(revenus, charges, reserves, soldeDisponible)`.
 Le **total annuel** est la somme des 12 mois de chaque colonne. Le tableau de bord
 annuel produit trois projections : **FOYER**, puis **une par membre**.
+
+La réponse annuelle expose désormais deux séries mensuelles :
+
+- `mois` : projection **mensualisée** (respecte `mode`).
+- `moisReel` : projection **réelle** (imputation non lissée, cf. §3.7).
+
+Et côté membre :
+
+- `moisParMembre` : mensualisé.
+- `moisParMembreReel` : réel.
 
 ### 5.2 Trésorerie chaînée (multi-années)
 Soit `H` = horizon (nombre d'années), `Y0` = année de départ, `T0` = trésorerie
@@ -247,6 +272,11 @@ dateAtteintePrevue   = 1er mois où le solde projeté ≥ montantCible (ou null 
 | > 1 | PERIODIQUE | DEBUT_PERIODE | montant plein le mois où `(mois − ancre) mod D == 0` |
 | > 1 | PERIODIQUE | FIN_PERIODE | montant plein le mois où `(mois − ancre + 1) mod D == 0` |
 | 0 | quelconque | — | Dsafe = 1 ⇒ traité comme mensuel |
+
+### Lecture complémentaire — projection réelle
+
+Pour la projection réelle, les lignes `D > 1` se lisent comme si le `Mode` était
+`PERIODIQUE` (le `moment` reste déterminant). Les lignes `D == 1` restent inchangées.
 
 ---
 

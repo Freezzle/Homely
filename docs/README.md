@@ -33,8 +33,12 @@ test dérivés des vraies données** y figurent : le moteur DOIT les reproduire 
   **répartition vectorielle** dont la somme des quotes-parts vaut 1.
 - **Multi-devises** (chaque poste peut être libellé dans une devise, converti vers la
   devise de base du foyer).
-- **Graphiques interactifs** (courbe de trésorerie, répartitions par catégorie/compte,
-  waterfall mensuel, comparaison de scénarios).
+- **Graphiques interactifs** (flux mensuels, tableaux de bord annuel/mensuel, comparaison
+  de scénarios, patrimoine).
+- **Nature de poste descriptive** : `EFFECTIF` ou `PREVISION` (sans impact sur la
+  sémantique du moteur classique).
+- **Double lecture annuelle** : projection mensualisée (historique) + projection réelle
+  (imputations non lissées au mois d'échéance).
 
 ### Modules fonctionnels de la V1
 - **Patrimoine / net worth** : comptes et actifs (3ᵉ pilier, investissements, crypto,
@@ -48,22 +52,21 @@ test dérivés des vraies données** y figurent : le moteur DOIT les reproduire 
 
 | Couche | Choix                                             | Notes |
 |---|---------------------------------------------------|---|
-| Backend | **Spring Boot 4.x**, **Java 26 (LTS)**            | Web, Data JPA, Security, Validation |
+| Backend | **Spring Boot 4.0.0**, **Java 21**                | Web, Data JPA, Security, Validation |
 | Persistance | **PostgreSQL 16+**, **Flyway**                    | Migrations versionnées |
 | Mapping | **MapStruct**, **Lombok**                         | DTO ⇄ entités |
 | Doc API | **springdoc-openapi**                             | Swagger UI |
 | Auth | **JWT** (access + refresh), BCrypt                | Rôles par foyer |
 | Frontend | **Angular 22** (standalone components, signals)   | strict mode |
-| UI Kit | **PrimeNG 22**, PrimeIcons                        | thème par tokens (preset Aura) |
+| UI Kit | **PrimeNG 21.1.x**, PrimeIcons                    | thème par tokens (preset Aura) |
 | CSS / layout | **Tailwind CSS (v4)** couplé à PrimeNG            | plugin officiel `tailwindcss-primeui` + CSS layers (remplace PrimeFlex) |
 | Graphiques | **Chart.js** via `p-chart` (PrimeNG)              | |
 | i18n | Angular i18n + `Intl`                             | formats devise/date localisés |
 | Build/CI | Maven (back), Angular CLI (front), GitHub Actions | |
 
-> ⚠️ Versions **cibles imposées** : Spring Boot **4**, Angular **22**, PrimeNG **22**,
-> Tailwind CSS **v4**. Pour les autres dépendances, épingler la **dernière version
-> stable** compatible au moment de l'initialisation du projet. L'intégration
-> PrimeNG + Tailwind suit le guide officiel `primeng.dev/tailwind` (voir doc 03 §6.1).
+> ⚠️ Socles du projet : Spring Boot **4**, Angular **22**, Tailwind CSS **v4**.
+> L'application tourne actuellement avec PrimeNG **21.1.x** (migration vers 22 à planifier
+> explicitement). Pour les autres dépendances, garder des versions stables compatibles.
 
 ## 4. Comment lire cette spécification
 
@@ -81,6 +84,16 @@ test dérivés des vraies données** y figurent : le moteur DOIT les reproduire 
 **Ordre de développement recommandé** : lire 1 → 2 → 3, puis construire dans l'ordre du
 backlog (6). Le moteur (doc 1) se développe **en test-first** : écrire d'abord les tests
 depuis les vecteurs fournis, puis implémenter jusqu'au vert.
+
+## 4-bis. État actuel (implémenté)
+
+- Auth JWT access + refresh (rotation), logout explicite, guards Angular.
+- CRUD référentiels et scénarios opérationnels avec scoping multi-foyers strict.
+- CRUD postes avec répartition par membre, ventilation compte par membre, aperçu mensuel.
+- Paramètres de poste enrichis : `mode`, `moment`, `nature` (`EFFECTIF`/`PREVISION`).
+- Projection annuelle enrichie : `mois`, `moisReel`, `moisParMembre`, `moisParMembreReel`.
+- Dashboard mensuel : KPI foyer + ventilations catégories + synthèse par membre.
+- Script de dev local `dev.ps1` (PostgreSQL + backend + frontend en hot reload).
 
 ## 5. Glossaire / langage ubiquitaire
 
@@ -101,6 +114,7 @@ Utiliser **ces termes** (FR) de façon cohérente dans le code, les entités et 
 | **Périodicité** | Longueur du cycle en **mois** (1 = mensuel, 3 = trimestriel, 12 = annuel…) | `periodiciteMois` |
 | **Mode** | `MENSUALISE` (lissé) \| `PERIODIQUE` (montant plein sur un mois du cycle) | `ModeComptabilisation` |
 | **Réception/Paiement** | Pour un poste périodique : `DEBUT_PERIODE` \| `FIN_PERIODE` | `MomentPeriode` |
+| **Nature** | `EFFECTIF` \| `PREVISION` (descriptif, sans effet sur les calculs standards) | `NaturePoste` |
 | **Fenêtre de validité** | Période `[debut, fin]` durant laquelle le poste est actif | `debut`, `fin` |
 | **Montant mensualisé** | `montant / periodiciteMois` (montant lissé) | `montantMensualise` |
 | **Répartition** | Ensemble de quotes-parts `{membre → part}` sommant à 1, découpant un poste entre membres | `Repartition` |
