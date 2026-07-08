@@ -19,115 +19,253 @@ import { FR } from '../../../core/i18n/fr';
             SkeletonModule, CardModule, MontantPipe],
   template: `
     <div class="flex flex-col gap-6">
-      <!-- En-tête + sélecteur année -->
-      <div class="flex items-center gap-4">
-        <h1 class="text-2xl font-bold flex-1">{{ t.nav.dashboardAnnuel }}</h1>
+
+      <!-- ── En-tête ───────────────────────────────────────────────────────── -->
+      <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div class="flex-1 min-w-0">
+          <h1 class="text-2xl font-bold">{{ t.nav.dashboardAnnuel }}</h1>
+          <p class="text-sm text-surface-500 mt-0.5">Vue consolidée des flux annuels du foyer</p>
+        </div>
         <p-select appendTo="body" [options]="annees" [(ngModel)]="anneeSelectionnee"
-                  (onChange)="charger()" styleClass="w-28" />
+                  (onChange)="charger()" styleClass="w-32 shrink-0" />
       </div>
 
+      <!-- ── Skeletons ─────────────────────────────────────────────────────── -->
       @if (chargement()) {
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          @for (i of [1,2,3,4]; track i) { <p-skeleton height="96px" /> }
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          @for (i of [1,2,3,4]; track i) { <p-skeleton height="104px" borderRadius="12px" /> }
         </div>
-        <p-skeleton height="340px" />
-        <p-skeleton height="300px" />
+        <p-skeleton height="340px" borderRadius="12px" />
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          @for (i of [1,2]; track i) { <p-skeleton height="260px" borderRadius="12px" /> }
+        </div>
+        <p-skeleton height="400px" borderRadius="12px" />
+
       } @else if (projection()) {
 
-        <!-- ① KPI cards -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <p-card styleClass="text-center">
-            <div class="text-xs text-surface-500 mb-1 uppercase tracking-wide">{{ t.projection.revenus }}</div>
-            <div class="text-xl font-bold text-green-600">{{ projection()!.totalAnnuel.revenus | montant }}</div>
+        <!-- ① KPI annuels — 2 cols mobile · 4 cols desktop ─────────────────── -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+
+          <p-card styleClass="border-l-4 border-green-500">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <div class="text-xs font-semibold text-surface-400 uppercase tracking-wide mb-2">{{ t.projection.revenus }}</div>
+                <div class="text-xl font-bold text-green-600 truncate">{{ projection()!.totalAnnuel.revenus | montant }}</div>
+                <div class="text-xs text-surface-400 mt-1.5">≈ {{ fmtMensuel(projection()!.totalAnnuel.revenus) }}&thinsp;/&thinsp;mois</div>
+              </div>
+              <span class="w-9 h-9 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center shrink-0 mt-0.5">
+                <i class="pi pi-arrow-up text-green-600 text-xs"></i>
+              </span>
+            </div>
           </p-card>
-          <p-card styleClass="text-center">
-            <div class="text-xs text-surface-500 mb-1 uppercase tracking-wide">{{ t.projection.charges }}</div>
-            <div class="text-xl font-bold text-red-500">{{ projection()!.totalAnnuel.charges | montant }}</div>
+
+          <p-card styleClass="border-l-4 border-red-500">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <div class="text-xs font-semibold text-surface-400 uppercase tracking-wide mb-2">{{ t.projection.charges }}</div>
+                <div class="text-xl font-bold text-red-500 truncate">{{ projection()!.totalAnnuel.charges | montant }}</div>
+                <div class="text-xs text-surface-400 mt-1.5">≈ {{ fmtMensuel(projection()!.totalAnnuel.charges) }}&thinsp;/&thinsp;mois</div>
+              </div>
+              <span class="w-9 h-9 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center shrink-0 mt-0.5">
+                <i class="pi pi-arrow-down text-red-500 text-xs"></i>
+              </span>
+            </div>
           </p-card>
-          <p-card styleClass="text-center">
-            <div class="text-xs text-surface-500 mb-1 uppercase tracking-wide">{{ t.projection.reserves }}</div>
-            <div class="text-xl font-bold text-blue-500">{{ projection()!.totalAnnuel.reserves | montant }}</div>
+
+          <p-card styleClass="border-l-4 border-blue-500">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <div class="text-xs font-semibold text-surface-400 uppercase tracking-wide mb-2">{{ t.projection.reserves }}</div>
+                <div class="text-xl font-bold text-blue-500 truncate">{{ projection()!.totalAnnuel.reserves | montant }}</div>
+                <div class="text-xs text-surface-400 mt-1.5">≈ {{ fmtMensuel(projection()!.totalAnnuel.reserves) }}&thinsp;/&thinsp;mois</div>
+              </div>
+              <span class="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center shrink-0 mt-0.5">
+                <i class="pi pi-wallet text-blue-500 text-xs"></i>
+              </span>
+            </div>
           </p-card>
-          <p-card styleClass="text-center">
-            <div class="text-xs text-surface-500 mb-1 uppercase tracking-wide">{{ t.projection.solde }}</div>
-            <div class="text-xl font-bold"
-                 [class.text-green-600]="projection()!.totalAnnuel.soldeDisponible >= 0"
-                 [class.text-red-500]="projection()!.totalAnnuel.soldeDisponible < 0">
-              {{ projection()!.totalAnnuel.soldeDisponible | montant }}
+
+          <p-card [styleClass]="'border-l-4 ' + soldeCardBorder()">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <div class="text-xs font-semibold text-surface-400 uppercase tracking-wide mb-2">{{ t.projection.solde }}</div>
+                <div class="text-xl font-bold truncate"
+                     [class.text-emerald-600]="projection()!.totalAnnuel.soldeDisponible >= 0"
+                     [class.text-red-500]="projection()!.totalAnnuel.soldeDisponible < 0">
+                  {{ projection()!.totalAnnuel.soldeDisponible | montant }}
+                </div>
+                <div class="text-xs text-surface-400 mt-1.5">≈ {{ fmtMensuel(projection()!.totalAnnuel.soldeDisponible) }}&thinsp;/&thinsp;mois</div>
+              </div>
+              <span class="w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5"
+                    [ngClass]="projection()!.totalAnnuel.soldeDisponible >= 0
+                      ? 'bg-emerald-100 dark:bg-emerald-900/20'
+                      : 'bg-red-100 dark:bg-red-900/20'">
+                <i class="pi text-xs"
+                   [ngClass]="projection()!.totalAnnuel.soldeDisponible >= 0
+                     ? 'pi-check-circle text-emerald-600'
+                     : 'pi-exclamation-triangle text-red-500'"></i>
+              </span>
             </div>
           </p-card>
         </div>
 
-        <!-- ② Graphique mixte : barres empilées charges+réserves + lignes revenus/solde -->
+        <!-- ② Graphique mixte foyer — pleine largeur ────────────────────────── -->
         <p-card>
           <ng-template pTemplate="header">
-            <div class="px-4 pt-4 font-semibold">
-              Flux mensuels {{ anneeSelectionnee }}
-              <span class="text-xs font-normal text-surface-400 ml-2">barres = charges+réserves · lignes = revenus · solde</span>
+            <div class="px-5 pt-5 pb-0 flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4">
+              <div class="flex-1">
+                <div class="font-semibold text-base">Flux mensuels {{ anneeSelectionnee }}</div>
+                <div class="text-xs text-surface-400 mt-0.5">Barres empilées = charges + réserves · Ligne verte = revenus</div>
+              </div>
+              <div class="flex flex-wrap gap-3 text-xs text-surface-500 shrink-0">
+                <span class="flex items-center gap-1.5">
+                  <span class="inline-block w-3 h-3 rounded bg-red-400 opacity-80"></span>{{ t.projection.charges }}
+                </span>
+                <span class="flex items-center gap-1.5">
+                  <span class="inline-block w-3 h-3 rounded bg-blue-400 opacity-80"></span>{{ t.projection.reserves }}
+                </span>
+                <span class="flex items-center gap-1.5">
+                  <span class="inline-block w-5 h-0.5 bg-green-500 rounded mt-px"></span>{{ t.projection.revenus }}
+                </span>
+              </div>
             </div>
           </ng-template>
-          <p-chart type="bar" [data]="mixedChartData()" [options]="mixedChartOptions"
-                   styleClass="w-full" style="height:340px" />
+          <div class="pt-4">
+            <p-chart type="bar" [data]="mixedChartData()" [options]="mixedChartOptions"
+                     class="w-full block" style="height:320px" />
+          </div>
         </p-card>
 
-        <!-- ③ Un flux mensuel par membre -->
-        @for (mc of membreChartsData(); track mc.membreId) {
-          <p-card>
-            <ng-template pTemplate="header">
-              <div class="px-4 pt-4 font-semibold flex items-center gap-2">
-                <span class="inline-block w-3 h-3 rounded-full border border-surface-300"
-                      [style.background-color]="mc.couleur"></span>
-                {{ mc.nom }} — {{ anneeSelectionnee }}
-                <span class="text-xs font-normal text-surface-400 ml-1">barres = charges+réserves · lignes = revenus · solde</span>
-              </div>
-            </ng-template>
-            <p-chart type="bar" [data]="mc.data" [options]="mixedChartOptions"
-                     styleClass="w-full" style="height:300px" />
-          </p-card>
-        }
+        <!-- ③ Graphiques par membre — 2 colonnes, toujours visibles ──────────── -->
+        <div>
+          <div class="flex items-center gap-3 mb-4">
+            <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
+            <span class="text-xs font-bold text-surface-400 uppercase tracking-widest flex items-center gap-2">
+              <i class="pi pi-users text-sm"></i>&nbsp;Contribution par membre
+            </span>
+            <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            @for (mc of membreChartsData(); track mc.membreId) {
+              <p-card>
+                <ng-template pTemplate="header">
+                  <div class="px-5 pt-4 pb-2 flex items-center gap-3">
+                    <span class="inline-block w-4 h-4 rounded-full border-2 border-surface-0 shadow"
+                          [style.background-color]="mc.couleur"></span>
+                    <span class="font-semibold">{{ mc.nom }}</span>
+                    <span class="ml-auto text-xs text-surface-400">{{ anneeSelectionnee }}</span>
+                  </div>
+                </ng-template>
+                <p-chart type="bar" [data]="mc.data" [options]="mixedChartOptions"
+                         class="w-full block" style="height:220px" />
+              </p-card>
+            }
+          </div>
+        </div>
 
-        <!-- ④ Tableau mensuel -->
+        <!-- ④ Tableau mensuel détaillé ─────────────────────────────────────── -->
         <p-card>
           <ng-template pTemplate="header">
-            <div class="px-4 pt-4 font-semibold">Détail mensuel {{ anneeSelectionnee }}</div>
+            <div class="px-5 pt-5 pb-3 flex items-center gap-2">
+              <i class="pi pi-table text-surface-400"></i>
+              <span class="font-semibold text-base">Détail mensuel {{ anneeSelectionnee }}</span>
+            </div>
           </ng-template>
-          <p-table [value]="projection()!.mois" styleClass="p-datatable-sm p-datatable-striped" scrollable>
-            <ng-template pTemplate="header">
-              <tr>
-                <th>{{ t.projection.mois }}</th>
-                <th class="text-right">{{ t.projection.revenus }}</th>
-                <th class="text-right">{{ t.projection.charges }}</th>
-                <th class="text-right">{{ t.projection.reserves }}</th>
-                <th class="text-right">{{ t.projection.solde }}</th>
-              </tr>
-            </ng-template>
-            <ng-template pTemplate="body" let-m>
-              <tr>
-                <td>{{ t.mois[m.numero - 1] }}</td>
-                <td class="text-right text-green-600">{{ m.agregat.revenus | montant }}</td>
-                <td class="text-right text-red-500">{{ m.agregat.charges | montant }}</td>
-                <td class="text-right text-blue-500">{{ m.agregat.reserves | montant }}</td>
-                <td class="text-right font-semibold"
-                    [class.text-green-600]="m.agregat.soldeDisponible >= 0"
-                    [class.text-red-500]="m.agregat.soldeDisponible < 0">
-                  {{ m.agregat.soldeDisponible | montant }}
-                </td>
-              </tr>
-            </ng-template>
-            <ng-template pTemplate="footer">
-              <tr class="font-bold bg-surface-100 dark:bg-surface-800">
-                <td>{{ t.projection.totalAnnee }}</td>
-                <td class="text-right text-green-600">{{ projection()!.totalAnnuel.revenus | montant }}</td>
-                <td class="text-right text-red-500">{{ projection()!.totalAnnuel.charges | montant }}</td>
-                <td class="text-right text-blue-500">{{ projection()!.totalAnnuel.reserves | montant }}</td>
-                <td class="text-right"
-                    [class.text-green-600]="projection()!.totalAnnuel.soldeDisponible >= 0"
-                    [class.text-red-500]="projection()!.totalAnnuel.soldeDisponible < 0">
+
+          <!-- Desktop / tablette : table scrollable -->
+          <div class="hidden sm:block overflow-x-auto">
+            <p-table [value]="projection()!.mois" styleClass="p-datatable-sm p-datatable-striped" scrollable>
+              <ng-template pTemplate="header">
+                <tr>
+                  <th class="min-w-16">{{ t.projection.mois }}</th>
+                  <th class="text-right">{{ t.projection.revenus }}</th>
+                  <th class="text-right">{{ t.projection.charges }}</th>
+                  <th class="text-right">{{ t.projection.reserves }}</th>
+                  <th class="text-right">{{ t.projection.solde }}</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-m>
+                <tr>
+                  <td class="font-medium">{{ t.mois[m.numero - 1] }}</td>
+                  <td class="text-right text-green-600 tabular-nums">{{ m.agregat.revenus | montant }}</td>
+                  <td class="text-right text-red-500 tabular-nums">{{ m.agregat.charges | montant }}</td>
+                  <td class="text-right text-blue-500 tabular-nums">{{ m.agregat.reserves | montant }}</td>
+                  <td class="text-right font-semibold tabular-nums"
+                      [class.text-emerald-600]="m.agregat.soldeDisponible >= 0"
+                      [class.text-red-500]="m.agregat.soldeDisponible < 0">
+                    {{ m.agregat.soldeDisponible | montant }}
+                  </td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="footer">
+                <tr class="font-bold bg-surface-100 dark:bg-surface-800">
+                  <td>{{ t.projection.totalAnnee }}</td>
+                  <td class="text-right text-green-600 tabular-nums">{{ projection()!.totalAnnuel.revenus | montant }}</td>
+                  <td class="text-right text-red-500 tabular-nums">{{ projection()!.totalAnnuel.charges | montant }}</td>
+                  <td class="text-right text-blue-500 tabular-nums">{{ projection()!.totalAnnuel.reserves | montant }}</td>
+                  <td class="text-right tabular-nums"
+                      [class.text-emerald-600]="projection()!.totalAnnuel.soldeDisponible >= 0"
+                      [class.text-red-500]="projection()!.totalAnnuel.soldeDisponible < 0">
+                    {{ projection()!.totalAnnuel.soldeDisponible | montant }}
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+
+          <!-- Mobile : cartes compactes par mois -->
+          <div class="sm:hidden space-y-2">
+            @for (m of projection()!.mois; track m.numero) {
+              <div class="rounded-xl bg-surface-50 dark:bg-surface-800 p-3">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="font-semibold text-sm w-10">{{ t.mois[m.numero - 1] }}</span>
+                  <span class="text-sm font-bold tabular-nums"
+                        [class.text-emerald-600]="m.agregat.soldeDisponible >= 0"
+                        [class.text-red-500]="m.agregat.soldeDisponible < 0">
+                    {{ m.agregat.soldeDisponible | montant }}
+                  </span>
+                </div>
+                <div class="grid grid-cols-3 gap-1 text-center">
+                  <div>
+                    <div class="text-xs text-surface-400">Revenus</div>
+                    <div class="text-xs font-semibold text-green-600 tabular-nums">{{ m.agregat.revenus | montant }}</div>
+                  </div>
+                  <div>
+                    <div class="text-xs text-surface-400">Charges</div>
+                    <div class="text-xs font-semibold text-red-500 tabular-nums">{{ m.agregat.charges | montant }}</div>
+                  </div>
+                  <div>
+                    <div class="text-xs text-surface-400">Réserves</div>
+                    <div class="text-xs font-semibold text-blue-500 tabular-nums">{{ m.agregat.reserves | montant }}</div>
+                  </div>
+                </div>
+              </div>
+            }
+            <div class="rounded-xl bg-surface-100 dark:bg-surface-700 p-3 border border-surface-200 dark:border-surface-600">
+              <div class="flex items-center justify-between mb-2">
+                <span class="font-bold text-sm">{{ t.projection.totalAnnee }}</span>
+                <span class="font-bold text-sm tabular-nums"
+                      [class.text-emerald-600]="projection()!.totalAnnuel.soldeDisponible >= 0"
+                      [class.text-red-500]="projection()!.totalAnnuel.soldeDisponible < 0">
                   {{ projection()!.totalAnnuel.soldeDisponible | montant }}
-                </td>
-              </tr>
-            </ng-template>
-          </p-table>
+                </span>
+              </div>
+              <div class="grid grid-cols-3 gap-1 text-center">
+                <div>
+                  <div class="text-xs text-surface-400">Revenus</div>
+                  <div class="text-xs font-semibold text-green-600 tabular-nums">{{ projection()!.totalAnnuel.revenus | montant }}</div>
+                </div>
+                <div>
+                  <div class="text-xs text-surface-400">Charges</div>
+                  <div class="text-xs font-semibold text-red-500 tabular-nums">{{ projection()!.totalAnnuel.charges | montant }}</div>
+                </div>
+                <div>
+                  <div class="text-xs text-surface-400">Réserves</div>
+                  <div class="text-xs font-semibold text-blue-500 tabular-nums">{{ projection()!.totalAnnuel.reserves | montant }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </p-card>
       }
     </div>
@@ -145,27 +283,34 @@ export class DashboardAnnuelComponent implements OnInit {
   anneeSelectionnee = new Date().getFullYear();
   annees: number[]  = Array.from({ length: 9 }, (_, i) => new Date().getFullYear() + i);
 
-  // ── Helpers formatage axes ──────────────────────────────────────────────────
+  // ── Helpers formatage ──────────────────────────────────────��────────────────
   private readonly fmtCompact = (v: number) =>
     Intl.NumberFormat('fr-CH', { notation: 'compact', maximumFractionDigits: 1 }).format(v);
 
-  // ── Options Chart.js — partagées pour tous les graphiques mixtes ────────────
+  readonly fmtMensuel = (v: number) =>
+    Intl.NumberFormat('fr-CH', { notation: 'compact', maximumFractionDigits: 0 }).format(v / 12);
+
+  soldeCardBorder = computed(() =>
+    (this.projection()?.totalAnnuel.soldeDisponible ?? 0) >= 0
+      ? 'border-emerald-500'
+      : 'border-red-500'
+  );
+
+  // ── Options Chart.js ────────────────────────────────────────────────────────
   readonly mixedChartOptions = {
     responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { position: 'bottom' as const } },
+    plugins: { legend: { display: false } },
     scales: {
-      x: {},
-      y: { ticks: { callback: (v: number) => this.fmtCompact(v) } },
+      x: { grid: { display: false } },
+      y: {
+        ticks: { callback: (v: any) => this.fmtCompact(Number(v)) },
+        grid:  { color: 'rgba(128,128,128,0.08)' },
+      },
     },
   };
 
   // ── Computed chart data ─────────────────────────────────────────────────────
-
-  /** ② Flux mensualisés (respecte le mode) — barres empilées charges+réserves, ligne revenus */
   mixedChartData = computed(() => this.buildFoyerChartData(this.projection()?.mois));
-
-  /** ②-bis Flux réels — imputations effectives (mode forcé PERIODIQUE) */
-  mixedChartDataReel = computed(() => this.buildFoyerChartData(this.projection()?.moisReel));
 
   private buildFoyerChartData(mois: { agregat: AggregatDto }[] | undefined): object {
     if (!mois || !mois.length) return {};
@@ -194,7 +339,6 @@ export class DashboardAnnuelComponent implements OnInit {
     };
   }
 
-  /** ③ Un chart par membre — mensualisé + réel */
   membreChartsData = computed(() => {
     const p = this.projection();
     if (!p) return [];
@@ -233,8 +377,6 @@ export class DashboardAnnuelComponent implements OnInit {
       ],
     };
   }
-
-  /** ③b — supprimé (trésorerie pluriannuelle retirée) */
 
   // ── Effets & chargement ─────────────────────────────────────────────────────
 
