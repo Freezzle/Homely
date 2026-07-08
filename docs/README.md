@@ -72,6 +72,7 @@ test dérivés des vraies données** y figurent : le moteur DOIT les reproduire 
 
 | # | Document | Contenu |
 |---|---|---|
+| — | [`../README.md`](../README.md) | Exécution projet (dev/prod), stack runtime, publication OpenAPI |
 | — | [`README.md`](README.md) | Ce fichier : vision, périmètre, stack, glossaire |
 | 1 | [`docs/01-business-rules-engine.md`](docs/01-business-rules-engine.md) | **LE moteur de calcul** (règles exactes + vecteurs de test) — pièce maîtresse |
 | 2 | [`docs/02-domain-and-data-model.md`](docs/02-domain-and-data-model.md) | Modèle de domaine, entités, schéma SQL, mapping JPA |
@@ -79,6 +80,7 @@ test dérivés des vraies données** y figurent : le moteur DOIT les reproduire 
 | 4 | [`docs/04-api-spec.md`](docs/04-api-spec.md) | Contrats REST (endpoints, DTO, erreurs, auth) |
 | 5 | [`docs/05-frontend-spec.md`](docs/05-frontend-spec.md) | Écrans Angular + composants PrimeNG + graphiques |
 | 6 | [`docs/06-backlog-and-tasks.md`](docs/06-backlog-and-tasks.md) | Backlog séquencé (epics → tâches + critères d'acceptation) |
+| — | [`docs/openapi/README.md`](docs/openapi/README.md) | Procédure de publication des snapshots OpenAPI |
 | — | [`.github/copilot-instructions.md`](.github/copilot-instructions.md) | Conventions de code et garde-fous pour l'agent |
 
 **Ordre de développement recommandé** : lire 1 → 2 → 3, puis construire dans l'ordre du

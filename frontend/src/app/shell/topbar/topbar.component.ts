@@ -19,9 +19,9 @@ import { FR } from '../../core/i18n/fr';
   standalone: true,
   imports: [CommonModule, FormsModule, SelectModule, ButtonModule, AvatarModule, MenuModule],
   template: `
-    <div class="flex items-center gap-3 px-4 py-2 bg-surface-0 dark:bg-surface-900 border-b border-surface-200 dark:border-surface-700 shadow-sm">
+    <div class="flex flex-wrap items-center gap-2 md:gap-3 px-3 md:px-4 py-2 bg-surface-0 dark:bg-surface-900 border-b border-surface-200 dark:border-surface-700 shadow-sm">
       <!-- Logo -->
-      <span class="text-primary font-bold text-xl mr-2">🏠 Homely</span>
+      <span class="text-primary font-bold text-lg md:text-xl mr-1 md:mr-2">🏠 Homely</span>
 
       <!-- Sélecteur foyer -->
       <p-select appendTo="body"
@@ -29,7 +29,7 @@ import { FR } from '../../core/i18n/fr';
         [(ngModel)]="foyerSelectionne"
         optionLabel="nom"
         [placeholder]="t.foyer.choisir"
-        styleClass="min-w-44"
+        styleClass="min-w-40 md:min-w-44"
         (onChange)="onFoyerChange($event.value)"
       />
 
@@ -40,7 +40,7 @@ import { FR } from '../../core/i18n/fr';
           [(ngModel)]="scenarioSelectionne"
           optionLabel="nom"
           [placeholder]="t.scenario.choisir"
-          styleClass="min-w-52"
+          styleClass="min-w-44 md:min-w-52"
           (onChange)="onScenarioChange($event.value)"
         >
           <ng-template pTemplate="item" let-s>
@@ -57,6 +57,7 @@ import { FR } from '../../core/i18n/fr';
       <!-- Bouton dark mode -->
       <p-button
         [icon]="contexte.isDark() ? 'pi pi-sun' : 'pi pi-moon'"
+        [ariaLabel]="t.commun.basculerTheme"
         [rounded]="true"
         severity="secondary"
         [text]="true"
@@ -66,6 +67,7 @@ import { FR } from '../../core/i18n/fr';
       <!-- Menu utilisateur -->
       <p-button
         icon="pi pi-user"
+        [ariaLabel]="t.commun.menuUtilisateur"
         [rounded]="true"
         severity="secondary"
         [text]="true"

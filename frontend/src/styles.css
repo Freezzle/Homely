@@ -30,3 +30,10 @@ html, body {
   scrollbar-width: thin;
   scrollbar-color: var(--p-surface-300) transparent;
 }
+
+/* Indicateur focus clavier visible pour améliorer l'accessibilité. */
+:focus-visible {
+  outline: 2px solid var(--p-primary-color);
+  outline-offset: 2px;
+}
+

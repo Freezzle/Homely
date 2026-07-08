@@ -40,6 +40,8 @@ export const FR = {
     nom: 'Nom du foyer',
     deviseBase: 'Devise de base',
     choisir: 'Choisir un foyer',
+    aucun: 'Aucun foyer.',
+    creerPremier: 'Créez le premier !',
     membresInitiaux: 'Membres initiaux',
     membreNom: 'Nom du membre',
     ajouterMembre: 'Ajouter un membre',
@@ -143,6 +145,8 @@ export const FR = {
     repartitionInvalide: 'La somme des quotes-parts doit être égale à 100 %.',
     confirmerSuppression: 'Êtes-vous sûr de vouloir supprimer cet élément ?',
     suppressionImpossible: 'Suppression impossible : cet élément est référencé.',
+    basculerTheme: 'Basculer le thème clair/sombre',
+    menuUtilisateur: 'Ouvrir le menu utilisateur',
   },
   // ── Référentiels ─────────────────────────────────────────
   referentiels: {
