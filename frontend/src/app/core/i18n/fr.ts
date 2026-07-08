@@ -40,6 +40,10 @@ export const FR = {
     nom: 'Nom du foyer',
     deviseBase: 'Devise de base',
     choisir: 'Choisir un foyer',
+    membresInitiaux: 'Membres initiaux',
+    membreNom: 'Nom du membre',
+    ajouterMembre: 'Ajouter un membre',
+    supprimerMembre: 'Supprimer ce membre',
   },
   // ── Scénario ─────────────────────────────────────────────
   scenario: {
@@ -89,18 +93,18 @@ export const FR = {
       PREVISION: 'Prévision',
     },
     periodiciteLabels: [
-      'Mensuel',        // 1
+      'Tous les mois',        // 1
       'Tous les 2 mois', // 2
-      'Trimestriel',    // 3
+      'Tous les 3 mois',    // 3
       'Tous les 4 mois', // 4
       'Tous les 5 mois', // 5
-      'Semestriel',     // 6
+      'Tous les 6 mois',     // 6
       'Tous les 7 mois', // 7
       'Tous les 8 mois', // 8
       'Tous les 9 mois', // 9
       'Tous les 10 mois', // 10
       'Tous les 11 mois', // 11
-      'Annuel',         // 12
+      'Tous les 12 mois', // 12
     ],
     triOptions: {
       DATE:        'Tri par date (début / fin)',

@@ -45,6 +45,18 @@ Compte applicatif d'authentification. Champs : `id`, `email` (unique), `motDePas
 ### Foyer
 Tenant. Champs : `id`, `nom`, `deviseBase` (code ISO 4217, ex. `CHF`), `dateCreation`.
 
+**Initialisation à la création** : la création d'un foyer via `POST /api/foyers` déclenche
+automatiquement, dans la même transaction :
+1. La création du lien `AccesFoyer` (rôle `OWNER`) pour l'utilisateur courant.
+2. La création des **membres initiaux** fournis dans le payload (`membres[{nom, couleur}]`,
+   minimum 1). L'ordre est attribué par position dans la liste ; la couleur défaut est
+   `#6366F1` si absente.
+3. La création d'un **scénario de référence** «&nbsp;Scénario de base&nbsp;» avec les valeurs par
+   défaut : `anneeDepart = année courante`, `tresorerieInitiale = 0`, `horizonAnnees = 25`,
+   `estReference = true`, et des `RepartitionDefaut` équilibrées (2 décimales, somme = 1,00).
+
+Si `membres` est absent ou vide, le backend renvoie `422 FOYER_MEMBRES_INVALIDES`.
+
 ### AccesFoyer
 Lien N–N Utilisateur/Foyer + rôle. Champs : `id`, `utilisateurId`, `foyerId`, `role`
 (`OWNER` | `EDITOR` | `VIEWER`), `dateAjout`. Contrainte d'unicité `(utilisateurId,
@@ -77,8 +89,10 @@ Taux de conversion prévisionnel vers la devise de base. Champs : `id`, `foyerId
 ### Scenario
 Jeu d'hypothèses + postes. Champs : `id`, `foyerId`, `nom`, `estReference` (bool ; un
 seul `true` par foyer), `anneeDepart` (int), `tresorerieInitiale` (décimal, = B8 Excel),
-`horizonAnnees` (int, ex. 9), `dateCreation`, `dateModification`. La **répartition par
-défaut** est portée par `RepartitionDefaut` (voir ci-dessous).
+`horizonAnnees` (int, défaut opérationnel : 25 pour le scénario initial), `dateCreation`,
+`dateModification`. La **répartition par défaut** est portée par `RepartitionDefaut` (voir
+ci-dessous). Un foyer dispose toujours d'au moins un scénario (le scénario de base créé à
+l'initialisation).
 
 ### RepartitionDefaut
 Quotes-parts par défaut du scénario. Champs : `id`, `scenarioId`, `membreId`,

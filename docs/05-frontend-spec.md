@@ -42,6 +42,27 @@
 `AuthGuard` sur `/f/**`, `FoyerAccessGuard` vérifie l'appartenance + rôle (masque les
 actions d'écriture pour `VIEWER`).
 
+### 2.1 Création de foyer — dialog enrichi
+
+La page `/foyers` propose un bouton **« Nouveau foyer »** qui ouvre un `p-dialog` en deux
+étapes :
+
+1. **Informations générales** : nom du foyer, devise de base (dropdown parmi CHF, EUR, USD,
+   GBP, CAD).
+2. **Membres initiaux** : liste dynamique de membres à créer (minimum 1). Chaque ligne
+   comporte un champ texte (nom) et un `<input type="color">` (couleur hex). Des boutons
+   `+` et 🗑 permettent d'ajouter ou de supprimer des membres (le bouton de suppression est
+   désactivé quand il reste un seul membre).
+
+**Règles UX :**
+- Le bouton **Créer** est désactivé tant que le nom du foyer ou le nom d'un membre est vide.
+- La couleur par défaut proposée est `#6366f1` (indigo).
+- À la soumission, le frontend appelle `POST /api/foyers` avec `{ nom, deviseBase, membres }`.
+- Après création, l'utilisateur est redirigé automatiquement vers le dashboard annuel du foyer,
+  le scénario de base étant déjà sélectionné comme référence.
+- Aucune étape de configuration supplémentaire n'est requise pour obtenir un foyer
+  opérationnel.
+
 ## 3. Écrans
 
 ### 3.1 Tableau de bord annuel  *(reprend « Dashboard annuel » Excel)*

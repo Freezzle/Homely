@@ -37,7 +37,7 @@
 ```
 Codes métier au moins : `REPARTITION_INVALIDE`, `SCENARIO_REFERENCE_UNIQUE`,
 `SUPPORT_OBJECTIF_INVALIDE`, `MEMBRE_REFERENCE_SUPPRESSION`, `DEVISE_INCONNUE`,
-`ACCES_FOYER_REFUSE`, `RESSOURCE_INTROUVABLE`.
+`ACCES_FOYER_REFUSE`, `RESSOURCE_INTROUVABLE`, `FOYER_MEMBRES_INVALIDES`.
 
 ## 3. Authentification
 
@@ -56,7 +56,7 @@ Header pour les endpoints protégés : `Authorization: Bearer <accessToken>`.
 | Méthode | Endpoint | Rôle | Description |
 |---|---|---|---|
 | GET | `/api/foyers` | auth | Foyers accessibles à l'utilisateur (+ son rôle) |
-| POST | `/api/foyers` | auth | Créer un foyer (créateur = OWNER). Corps `{nom, deviseBase}` |
+| POST | `/api/foyers` | auth | Créer un foyer (créateur = OWNER). Voir corps ci-dessous. |
 | GET | `/api/foyers/{foyerId}` | membre | Détail foyer |
 | PUT | `/api/foyers/{foyerId}` | OWNER/EDITOR | Modifier (nom, deviseBase) |
 | DELETE | `/api/foyers/{foyerId}` | OWNER | Supprimer le foyer |
@@ -64,6 +64,39 @@ Header pour les endpoints protégés : `Authorization: Bearer <accessToken>`.
 | POST | `/api/foyers/{foyerId}/acces` | OWNER | Inviter `{email, role}` |
 | PATCH | `/api/foyers/{foyerId}/acces/{accesId}` | OWNER | Changer le rôle |
 | DELETE | `/api/foyers/{foyerId}/acces/{accesId}` | OWNER | Retirer un accès |
+
+### 4.1 Création de foyer — payload & effets de bord
+
+**Corps `POST /api/foyers` :**
+```json
+{
+  "nom": "Famille Dupont",
+  "deviseBase": "CHF",
+  "membres": [
+    { "nom": "Alice", "couleur": "#6366F1" },
+    { "nom": "Bob",   "couleur": "#10B981" }
+  ]
+}
+```
+
+- `membres` : **obligatoire, minimum 1 entrée** (sinon `422 FOYER_MEMBRES_INVALIDES`).
+- `couleur` : format hexadécimal `#RRGGBB` ; si absent, défaut `#6366F1`.
+
+**Effets de bord automatiques lors de la création :**
+
+1. L'utilisateur courant devient `OWNER` du foyer.
+2. Les membres listés sont créés dans le foyer (ordre = position dans la liste).
+3. Un **scénario de référence initial** est créé automatiquement avec :
+   - `nom` = `"Scénario de base"`
+   - `estReference` = `true`
+   - `anneeDepart` = année courante (ex. `2026`)
+   - `tresorerieInitiale` = `0.00`
+   - `horizonAnnees` = `25`
+   - `repartitionsDefaut` : quotes-parts équilibrées entre les membres initiaux, arrondies à **2 décimales** (la somme vaut exactement `1.00` — le reste des centièmes est attribué aux premiers membres).
+
+Exemple pour 3 membres : `0.34 / 0.33 / 0.33`.
+
+**Réponse `201` :** `FoyerDto { id, nom, deviseBase, monRole }`. Les membres et le scénario sont accessibles via les endpoints référentiels et scénarios classiques.
 
 ## 5. Référentiels (niveau foyer)
 
@@ -77,6 +110,15 @@ Motif d'URL : `/api/foyers/{foyerId}/{ressource}` (+ `/{id}` pour détail/modif/
 - `GET /api/foyers/{foyerId}/taux-change` → `[{id, devise, tauxVersBase}]`
 
 ## 6. Scénarios
+
+### 6.0 Initialisation automatique
+
+À la **création d'un foyer**, le backend crée automatiquement un **scénario de référence** nommé
+`"Scénario de base"`. Ce scénario est immédiatement utilisable ; ses hypothèses peuvent être
+modifiées via `PUT /api/foyers/{foyerId}/scenarios/{scenarioId}`. Voir §4.1 pour les valeurs
+par défaut.
+
+### 6.1 Endpoints
 
 | Méthode | Endpoint | Description |
 |---|---|---|

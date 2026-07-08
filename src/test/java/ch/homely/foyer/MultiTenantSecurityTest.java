@@ -92,9 +92,14 @@ class MultiTenantSecurityTest {
     }
 
     private String creerFoyer(String token, String nom) {
+        Map<String, Object> payload = Map.of(
+                "nom", nom,
+                "deviseBase", "CHF",
+                "membres", java.util.List.of(Map.of("nom", "Membre 1", "couleur", "#6366F1"))
+        );
         try { String body = client.post().uri("/api/foyers").header("Authorization", "Bearer " + token)
             .contentType(MediaType.APPLICATION_JSON)
-            .body(MAPPER.writeValueAsString(Map.of("nom", nom, "deviseBase", "CHF")))
+            .body(MAPPER.writeValueAsString(payload))
             .retrieve().body(String.class);
             return MAPPER.readTree(body).get("id").asText();
         } catch (Exception e) { throw new RuntimeException(e); }

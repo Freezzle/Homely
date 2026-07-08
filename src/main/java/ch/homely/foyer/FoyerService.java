@@ -2,14 +2,24 @@ package ch.homely.foyer;
 
 import ch.homely.commun.CodesErreur;
 import ch.homely.commun.ConflitException;
+import ch.homely.commun.RegleMetierException;
 import ch.homely.commun.RessourceIntrouvableException;
 import ch.homely.foyer.dto.*;
+import ch.homely.membre.Membre;
+import ch.homely.membre.MembreRepository;
+import ch.homely.scenario.RepartitionDefaut;
+import ch.homely.scenario.Scenario;
+import ch.homely.scenario.ScenarioRepository;
 import ch.homely.securite.MultiTenantService;
 import ch.homely.utilisateur.Utilisateur;
 import ch.homely.utilisateur.UtilisateurRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Year;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,15 +32,21 @@ public class FoyerService {
 
     private final FoyerRepository foyerRepo;
     private final AccesFoyerRepository accesRepo;
+    private final MembreRepository membreRepo;
+    private final ScenarioRepository scenarioRepo;
     private final UtilisateurRepository utilisateurRepo;
     private final MultiTenantService multiTenant;
 
     public FoyerService(FoyerRepository foyerRepo,
                         AccesFoyerRepository accesRepo,
+                        MembreRepository membreRepo,
+                        ScenarioRepository scenarioRepo,
                         UtilisateurRepository utilisateurRepo,
                         MultiTenantService multiTenant) {
         this.foyerRepo       = foyerRepo;
         this.accesRepo       = accesRepo;
+        this.membreRepo      = membreRepo;
+        this.scenarioRepo    = scenarioRepo;
         this.utilisateurRepo = utilisateurRepo;
         this.multiTenant     = multiTenant;
     }
@@ -47,6 +63,10 @@ public class FoyerService {
     /** Crée un foyer ; le créateur devient OWNER. */
     public FoyerDto creer(FoyerRequest req) {
         Utilisateur u = multiTenant.utilisateurCourant();
+        if (req.membres() == null || req.membres().isEmpty()) {
+            throw new RegleMetierException(CodesErreur.FOYER_MEMBRES_INVALIDES,
+                    "Au moins un membre est requis à la création du foyer.");
+        }
 
         Foyer foyer = new Foyer();
         foyer.setNom(req.nom());
@@ -58,6 +78,9 @@ public class FoyerService {
         acces.setUtilisateur(u);
         acces.setRole(RoleFoyer.OWNER);
         accesRepo.save(acces);
+
+        List<Membre> membres = creerMembresInitials(foyer, req.membres());
+        creerScenarioInitial(foyer, membres);
 
         return toDto(foyer, RoleFoyer.OWNER);
     }
@@ -156,5 +179,51 @@ public class FoyerService {
 
     private static FoyerDto toDto(Foyer f, RoleFoyer role) {
         return new FoyerDto(f.getId(), f.getNom(), f.getDeviseBase(), role);
+    }
+
+    private List<Membre> creerMembresInitials(Foyer foyer, List<FoyerRequest.MembreCreationRequest> membresReq) {
+        List<Membre> membres = new ArrayList<>();
+        int ordre = 1;
+        for (FoyerRequest.MembreCreationRequest req : membresReq) {
+            Membre m = new Membre();
+            m.setFoyer(foyer);
+            m.setNom(req.nom());
+            m.setCouleur(req.couleur() != null ? req.couleur().toUpperCase() : "#6366F1");
+            m.setOrdre(ordre++);
+            membres.add(membreRepo.save(m));
+        }
+        return membres;
+    }
+
+    private void creerScenarioInitial(Foyer foyer, List<Membre> membres) {
+        Scenario scenario = new Scenario();
+        scenario.setFoyer(foyer);
+        scenario.setNom("Scénario de base");
+        scenario.setEstReference(true);
+        scenario.setAnneeDepart(Year.now().getValue());
+        scenario.setTresorerieInitiale(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
+        scenario.setHorizonAnnees(25);
+
+        List<BigDecimal> quotes = repartitionEquilibreeDeuxDecimales(membres.size());
+        for (int i = 0; i < membres.size(); i++) {
+            RepartitionDefaut rd = new RepartitionDefaut();
+            rd.setScenario(scenario);
+            rd.setMembre(membres.get(i));
+            rd.setQuotePart(quotes.get(i));
+            scenario.getRepartitionsDefaut().add(rd);
+        }
+
+        scenarioRepo.save(scenario);
+    }
+
+    private List<BigDecimal> repartitionEquilibreeDeuxDecimales(int nbMembres) {
+        int basePct = 100 / nbMembres;
+        int reste = 100 % nbMembres;
+        List<BigDecimal> parts = new ArrayList<>();
+        for (int i = 0; i < nbMembres; i++) {
+            int pct = basePct + (i < reste ? 1 : 0);
+            parts.add(BigDecimal.valueOf(pct).movePointLeft(2).setScale(2, RoundingMode.HALF_UP));
+        }
+        return parts;
     }
 }

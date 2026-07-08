@@ -79,6 +79,11 @@ Format des tâches : `T<epic>.<n>`.
   *Accept.* : accès à un foyer non autorisé → 403/404 ; `VIEWER` bloqué en écriture (403).
   **Test de sécurité d'accès croisé obligatoire.**
 - [ ] **T4.4** Gestion des accès (inviter/retirer/changer rôle) réservée `OWNER`.
+- [x] **T4.5** Création de foyer enrichie : membres initiaux (min. 1, couleur hex) + scénario de
+  référence automatique (`Scénario de base`, année courante, 0 CHF, 25 ans, répartition
+  équilibrée à 2 décimales). *Accept.* : `POST /api/foyers` avec membres → membres créés +
+  scénario créé avec `estReference=true` ; payload sans membres → `422 FOYER_MEMBRES_INVALIDES`.
+  Test d'intégration `FoyerCreationDefaultsTest` vert.
 
 ### E5 · Erreurs & fondations API
 - [ ] **T5.1** `@RestControllerAdvice` → `ApiError` uniforme + codes métier ([doc 04 §2](04-api-spec.md)).
@@ -139,7 +144,8 @@ Format des tâches : `T<epic>.<n>`.
 - [x] **T10.1** Écran générique Revenus/Charges/Réserves : `p-table` + `p-dialog`, éditeur
   de répartition (**somme = 100 % live**), ventilation comptes, aperçu mensuel. *Accept.* :
   création/édition/suppression fonctionnelles ; sauvegarde bloquée si somme ≠ 1.
-- [x] **T10.2** Référentiels (CRUD) + Paramètres foyer + Accès (OWNER).
+- [x] **T10.2** Référentiels (CRUD) + Paramètres foyer + Accès (OWNER) + **dialog création de
+  foyer enrichi** (saisie des membres initiaux, validation min. 1 membre, couleur picker).
 - [x] **T10.3** Scénarios (liste, hypothèses, duplication, définir référence).
 - [x] **T10.4** **Tableau de bord annuel** : KPI + flux mensuels foyer + flux par membre +
   tableau détaillé annuel. *Accept.* : chiffres affichés == vecteurs T2 sur le seed.

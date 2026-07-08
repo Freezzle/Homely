@@ -8,7 +8,11 @@ export interface MoiResponse { id: string; email: string; nomComplet: string; }
 export type RoleFoyer = 'OWNER' | 'EDITOR' | 'VIEWER';
 
 export interface FoyerDto { id: string; nom: string; deviseBase: string; monRole: RoleFoyer; }
-export interface FoyerRequest { nom: string; deviseBase: string; }
+export interface FoyerRequest {
+  nom: string;
+  deviseBase: string;
+  membres?: { nom: string; couleur?: string }[];
+}
 
 export interface AccesFoyerDto {
   id: string; utilisateurId: string; email: string; nomComplet: string; role: RoleFoyer;
