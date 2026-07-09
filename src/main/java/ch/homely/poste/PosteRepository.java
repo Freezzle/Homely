@@ -1,6 +1,7 @@
 package ch.homely.poste;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
@@ -61,4 +62,20 @@ public interface PosteRepository extends JpaRepository<Poste, UUID> {
               AND p.scenario.foyer.id = :foyerId
             """)
     List<Poste> findForMoteurVentilations(UUID scenarioId, UUID foyerId);
+
+    /**
+     * Dissociates all postes referencing the given categorie (sets categorie = NULL).
+     * Must be called before hard-deleting the categorie row to avoid FK violation.
+     */
+    @Modifying
+    @Query("UPDATE Poste p SET p.categorie = NULL WHERE p.categorie.id = :categorieId")
+    int dissocierCategorie(UUID categorieId);
+
+    /**
+     * Migrates all postes from one categorie to another before hard-deleting the source.
+     */
+    @Modifying
+    @Query(value = "UPDATE poste SET categorie_id = :nouvelleCategorieId WHERE categorie_id = :ancienneCategorieId",
+           nativeQuery = true)
+    int migrerCategorie(UUID ancienneCategorieId, UUID nouvelleCategorieId);
 }

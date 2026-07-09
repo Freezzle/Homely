@@ -67,6 +67,7 @@ export const FR = {
     totalMensuel: 'Total mensuel',
     totalAnnuel: 'Total annuel',
     cacherInactifs: 'Masquer les inactifs',
+    cacherFuturs: 'Masquer les postes futurs',
     posteCount: 'poste(s)',
     devise: 'Devise',
     periodicite: 'Périodicité',
@@ -95,24 +96,26 @@ export const FR = {
       PREVISION: 'Prévision',
     },
     periodiciteLabels: [
+      'Une seule fois',       // 0 → one-shot
       'Tous les mois',        // 1
-      'Tous les 2 mois', // 2
-      'Tous les 3 mois',    // 3
-      'Tous les 4 mois', // 4
-      'Tous les 5 mois', // 5
-      'Tous les 6 mois',     // 6
-      'Tous les 7 mois', // 7
-      'Tous les 8 mois', // 8
-      'Tous les 9 mois', // 9
-      'Tous les 10 mois', // 10
-      'Tous les 11 mois', // 11
-      'Tous les 12 mois', // 12
+      'Tous les 2 mois',      // 2
+      'Tous les 3 mois',      // 3
+      'Tous les 4 mois',      // 4
+      'Tous les 5 mois',      // 5
+      'Tous les 6 mois',      // 6
+      'Tous les 7 mois',      // 7
+      'Tous les 8 mois',      // 8
+      'Tous les 9 mois',      // 9
+      'Tous les 10 mois',     // 10
+      'Tous les 11 mois',     // 11
+      'Tous les 12 mois',     // 12
     ],
     triOptions: {
       DATE:        'Tri par date (début / fin)',
       CATEGORIE:   'Tri par catégorie › description › montant',
       DESCRIPTION: 'Tri par description › montant',
     },
+    oneShot: 'Ponctuel',
   },
   // ── Projection ───────────────────────────────────────────
   projection: {
@@ -172,6 +175,11 @@ export const FR = {
       typePoste: 'Type de poste',
       systeme: 'Système',
       ordre: 'Ordre',
+      confirmerSuppression: 'Supprimer cette catégorie ? Les postes associés seront désassociés (catégorie mise à vide).',
+      dialogSuppressionTitre: 'Supprimer la catégorie',
+      dialogSuppressionInfo: 'Les postes associés à cette catégorie seront désassociés. Vous pouvez optionnellement les migrer vers une autre catégorie de même type.',
+      migrerVers: 'Migrer les postes vers',
+      migrerVersPlaceholder: 'Aucune (désassocier les postes)',
     },
     actif: {
       titre: 'Actifs patrimoniaux',

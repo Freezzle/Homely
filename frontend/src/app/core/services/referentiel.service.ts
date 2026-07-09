@@ -54,7 +54,11 @@ export class CategorieService {
   }
   creer(foyerId: string, req: CategorieRequest) { return this.http.post<CategorieDto>(`/api/foyers/${foyerId}/categories`, req); }
   modifier(foyerId: string, id: string, req: CategorieRequest) { return this.http.put<CategorieDto>(`/api/foyers/${foyerId}/categories/${id}`, req); }
-  supprimer(foyerId: string, id: string) { return this.http.delete<void>(`/api/foyers/${foyerId}/categories/${id}`); }
+  supprimer(foyerId: string, id: string, migrerVersCategorieId?: string) {
+    let params = new HttpParams();
+    if (migrerVersCategorieId) params = params.set('migrerVersCategorieId', migrerVersCategorieId);
+    return this.http.delete<void>(`/api/foyers/${foyerId}/categories/${id}`, { params });
+  }
 }
 
 @Injectable({ providedIn: 'root' })

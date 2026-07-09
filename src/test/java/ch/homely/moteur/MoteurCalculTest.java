@@ -305,10 +305,17 @@ class MoteurCalculTest {
     class CasLimites {
 
         @Test
-        @DisplayName("D=0 → traité comme mensuel (Dsafe=1), pas de division par zéro")
+        @DisplayName("D=0 → one-shot (imputé uniquement au mois de début exact)")
         void dZeroTraiteCommeMensuel() {
-            PosteCalcul p = poste(REVENU, 1000, 0, null, null, MENSUALISE, DEBUT_PERIODE);
-            assertThat(MoteurCalcul.contribution(p, 2026, 1)).isCloseTo(1000.0, within(TOLERANCE));
+            // One-shot sans date de début → jamais imputé
+            PosteCalcul pNoDebut = poste(REVENU, 1000, 0, null, null, MENSUALISE, DEBUT_PERIODE);
+            assertThat(MoteurCalcul.contribution(pNoDebut, 2026, 1)).isCloseTo(0.0, within(TOLERANCE));
+
+            // One-shot avec date de début → imputé uniquement au mois exact
+            PosteCalcul pWithDebut = poste(REVENU, 1000, 0, LocalDate.of(2026, 3, 15), null, MENSUALISE, DEBUT_PERIODE);
+            assertThat(MoteurCalcul.contribution(pWithDebut, 2026, 2)).isCloseTo(0.0, within(TOLERANCE));
+            assertThat(MoteurCalcul.contribution(pWithDebut, 2026, 3)).isCloseTo(1000.0, within(TOLERANCE));
+            assertThat(MoteurCalcul.contribution(pWithDebut, 2026, 4)).isCloseTo(0.0, within(TOLERANCE));
         }
 
         @Test

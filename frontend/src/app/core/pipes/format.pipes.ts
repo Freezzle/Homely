@@ -57,14 +57,15 @@ export class PctPipe implements PipeTransform {
 /**
  * Pipe traduction de la périodicité en mois → libellé français.
  * Usage : {{ p.periodiciteMois | periodicite }}
- * Résultat : Mensuel, Trimestriel, Semestriel, Annuel, Tous les N mois…
+ * Résultat : Aucune (0), Mensuel (1), Bimestriel (2), Trimestriel (3), Semestriel (6), Annuel (12), Tous les N mois…
  */
 @Pipe({ name: 'periodicite', standalone: true, pure: true })
 export class PeriodicitePipe implements PipeTransform {
   transform(mois: number | null | undefined): string {
-    if (mois == null || mois < 1) return '–';
+    if (mois == null) return '–';
     const labels = FR.poste.periodiciteLabels;
-    if (mois >= 1 && mois <= 12) return labels[mois - 1];
+    if (mois === 0 && labels[0]) return labels[0];  // "Aucune" pour one-shot
+    if (mois >= 1 && mois <= 12) return labels[mois];  // Index décalé car [0]="Aucune"
     return `Tous les ${mois} mois`;
   }
 }

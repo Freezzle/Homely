@@ -1,6 +1,6 @@
 import { Component, inject, signal, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
+import {FormBuilder, Validators, ReactiveFormsModule, FormsModule} from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -8,8 +8,8 @@ import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { MessageService, ConfirmationService } from 'primeng/api';
+import { MessageModule } from 'primeng/message';
+import { MessageService } from 'primeng/api';
 import { ContexteService } from '../../../core/services/contexte.service';
 import { CategorieService } from '../../../core/services/referentiel.service';
 import { CategorieDto, TypeCategorie } from '../../../core/models/api.models';
@@ -19,15 +19,12 @@ import { FR } from '../../../core/i18n/fr';
 @Component({
   selector: 'app-categories',
   standalone: true,
-  providers: [ConfirmationService],
-  imports: [
-    CommonModule, ReactiveFormsModule,
-    TableModule, ButtonModule, DialogModule, TagModule,
-    InputTextModule, InputNumberModule, SelectModule,
-    ConfirmDialogModule,
-  ],
+             imports: [
+               CommonModule, ReactiveFormsModule,
+               TableModule, ButtonModule, DialogModule, TagModule, MessageModule,
+               InputTextModule, InputNumberModule, SelectModule, FormsModule
+             ],
   template: `
-    <p-confirmdialog />
     <div class="flex flex-col gap-4">
       <div class="flex items-center gap-4">
         <h1 class="text-2xl font-bold flex-1">{{ t.referentiels.categorie.titre }}</h1>
@@ -60,7 +57,7 @@ import { FR } from '../../../core/i18n/fr';
               <div class="flex gap-1">
                 @if (contexte.estEditor() && !c.systeme) {
                   <p-button icon="pi pi-pencil" [text]="true" size="small" (click)="ouvrirEdition(c)" />
-                  <p-button icon="pi pi-trash" [text]="true" severity="danger" size="small" (click)="supprimer(c)" />
+                  <p-button icon="pi pi-trash" [text]="true" severity="danger" size="small" (click)="ouvrirSuppression(c)" />
                 }
               </div>
             </td>
@@ -72,6 +69,7 @@ import { FR } from '../../../core/i18n/fr';
       </p-table>
     </div>
 
+    <!-- Dialog création / édition -->
     <p-dialog [(visible)]="dialogVisible" [header]="categorieEnEdition ? t.commun.modifier : t.commun.creer"
               [modal]="true" styleClass="w-full max-w-md">
       <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
@@ -95,6 +93,36 @@ import { FR } from '../../../core/i18n/fr';
         <p-button [label]="t.commun.enregistrer" (click)="enregistrer()" [disabled]="form.invalid" />
       </ng-template>
     </p-dialog>
+
+    <!-- Dialog suppression avec migration optionnelle -->
+    <p-dialog [(visible)]="suppressionDialogVisible"
+              [header]="t.referentiels.categorie.dialogSuppressionTitre"
+              [modal]="true" styleClass="w-full max-w-lg">
+      @if (categorieASupprimer) {
+        <div class="flex flex-col gap-4 pt-2">
+          <p-message severity="warn" styleClass="w-full">
+            <span>{{ t.referentiels.categorie.dialogSuppressionInfo }}</span>
+          </p-message>
+
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium">{{ t.referentiels.categorie.migrerVers }}</label>
+            <p-select
+              appendTo="body"
+              [(ngModel)]="migrerVersCategorieId"
+              [options]="categoriesMigration()"
+              optionLabel="libelle"
+              optionValue="id"
+              [showClear]="true"
+              [placeholder]="t.referentiels.categorie.migrerVersPlaceholder"
+              styleClass="w-full" />
+          </div>
+        </div>
+      }
+      <ng-template pTemplate="footer">
+        <p-button [label]="t.commun.annuler" severity="secondary" (click)="suppressionDialogVisible = false" />
+        <p-button [label]="t.commun.supprimer" severity="danger" [loading]="suppressionEnCours()" (click)="confirmerSuppression()" />
+      </ng-template>
+    </p-dialog>
   `,
 })
 export class CategoriesComponent implements OnInit {
@@ -102,13 +130,23 @@ export class CategoriesComponent implements OnInit {
   contexte = inject(ContexteService);
   private categorieSvc = inject(CategorieService);
   private toast = inject(MessageService);
-  private confirm = inject(ConfirmationService);
   private fb = inject(FormBuilder);
 
   categories = signal<CategorieDto[]>([]);
   chargement = signal(false);
+  suppressionEnCours = signal(false);
+
+  // Dialog création/édition
   dialogVisible = false;
   categorieEnEdition: CategorieDto | null = null;
+
+  // Dialog suppression
+  suppressionDialogVisible = false;
+  categorieASupprimer: CategorieDto | null = null;
+  migrerVersCategorieId: string | null = null;
+
+  /** Catégories disponibles pour la migration (même typePoste, hors catégorie à supprimer) */
+  categoriesMigration = signal<CategorieDto[]>([]);
 
   private readonly _chargerEffect = effect(() => {
     if (this.contexte.foyerId()) this.charger();
@@ -164,14 +202,33 @@ export class CategoriesComponent implements OnInit {
     });
   }
 
-  supprimer(c: CategorieDto): void {
-    this.confirm.confirm({
-      message: FR.commun.confirmerSuppression,
-      accept: () => this.categorieSvc.supprimer(this.contexte.foyerId()!, c.id).subscribe({
-        next: () => { this.toast.add({ severity: 'success', summary: FR.commun.succes }); this.charger(); },
-        error: () => this.toast.add({ severity: 'error', summary: FR.commun.suppressionImpossible }),
-      }),
-    });
+  ouvrirSuppression(c: CategorieDto): void {
+    this.categorieASupprimer = c;
+    this.migrerVersCategorieId = null;
+    // Proposer uniquement les catégories du même typePoste (hors celle à supprimer)
+    this.categoriesMigration.set(
+      this.categories().filter(cat => cat.typePoste === c.typePoste && cat.id !== c.id)
+    );
+    this.suppressionDialogVisible = true;
+  }
+
+  confirmerSuppression(): void {
+    const foyerId = this.contexte.foyerId()!;
+    const c = this.categorieASupprimer!;
+    this.suppressionEnCours.set(true);
+    this.categorieSvc
+      .supprimer(foyerId, c.id, this.migrerVersCategorieId ?? undefined)
+      .subscribe({
+        next: () => {
+          this.toast.add({ severity: 'success', summary: FR.commun.succes });
+          this.suppressionDialogVisible = false;
+          this.suppressionEnCours.set(false);
+          this.charger();
+        },
+        error: () => {
+          this.toast.add({ severity: 'error', summary: FR.commun.suppressionImpossible });
+          this.suppressionEnCours.set(false);
+        },
+      });
   }
 }
-

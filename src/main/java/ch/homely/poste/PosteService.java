@@ -13,7 +13,6 @@ import ch.homely.moteur.PosteCalcul;
 import ch.homely.moteur.RepartitionCalcul;
 import ch.homely.poste.dto.PosteDto;
 import ch.homely.poste.dto.PosteRequest;
-import ch.homely.poste.NaturePoste;
 import ch.homely.projection.ProjectionService;
 import ch.homely.scenario.Scenario;
 import ch.homely.scenario.ScenarioRepository;
@@ -116,9 +115,16 @@ public class PosteService {
         p.setDescription(req.description());
         p.setMontant(req.montant() != null ? req.montant() : BigDecimal.ZERO);
         p.setDevise(req.devise());
-        p.setPeriodiciteMois(req.periodiciteMois() > 0 ? req.periodiciteMois() : 1);
+
+        // Gère périodicité : 0=one-shot, sinon >= 1
+        int periodicite = (req.periodiciteMois() != null && req.periodiciteMois() >= 0)
+            ? req.periodiciteMois()
+            : 1;
+        p.setPeriodiciteMois(periodicite);
+
         p.setDebut(req.debut());
-        p.setFin(req.fin());
+        // Si one-shot (periodicité=0), forcer fin=null
+        p.setFin(periodicite == 0 ? null : req.fin());
         p.setMode(req.mode());
         p.setMoment(req.moment());
         p.setNature(req.nature() != null ? req.nature() : NaturePoste.EFFECTIF);

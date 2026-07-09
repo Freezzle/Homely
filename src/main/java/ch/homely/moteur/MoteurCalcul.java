@@ -2,7 +2,6 @@ package ch.homely.moteur;
 
 import ch.homely.poste.ModeComptabilisation;
 import ch.homely.poste.MomentPeriode;
-import ch.homely.poste.TypePoste;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -39,7 +38,7 @@ public class MoteurCalcul {
 
         // §3.1 — Diviseur sûr
         int d = poste.periodiciteMois();
-        int dSafe = (d == 0) ? 1 : d;
+        int dSafe = d;
 
         // §3.2 — Fenêtre de validité
         LocalDate premierJour = LocalDate.of(annee, mois, 1);
@@ -52,10 +51,11 @@ public class MoteurCalcul {
         if (!actif) return 0.0;
 
         // §3.3 — Indicateurs de comptabilisation
-        boolean estDebut = (d != 1)
+        boolean estOneShot = (d == 0);  // One-shot : imputé uniquement au mois exact de début
+        boolean estDebut = (d != 1) && !estOneShot
                 && (poste.moment() == MomentPeriode.DEBUT_PERIODE)
                 && (poste.mode()   == ModeComptabilisation.PERIODIQUE);
-        boolean estFin   = (d != 1)
+        boolean estFin   = (d != 1) && !estOneShot
                 && (poste.moment() == MomentPeriode.FIN_PERIODE)
                 && (poste.mode()   == ModeComptabilisation.PERIODIQUE);
 
@@ -64,7 +64,12 @@ public class MoteurCalcul {
 
         // §3.5 — Calcul final
         double c = poste.montant();
-        if (estDebut) {
+        if (estOneShot) {
+            // One-shot : imputé uniquement au mois exact du début
+            if (poste.debut() == null) return 0.0;
+            LocalDate debutPoste = poste.debut();
+            return (debutPoste.getYear() == annee && debutPoste.getMonthValue() == mois) ? c : 0.0;
+        } else if (estDebut) {
             return (Math.floorMod(mois - ancre, dSafe) == 0) ? c : 0.0;
         } else if (estFin) {
             return (Math.floorMod(mois - ancre + 1, dSafe) == 0) ? c : 0.0;
@@ -91,7 +96,7 @@ public class MoteurCalcul {
         if (poste == null || poste.montant() <= 0) return 0.0;
 
         int d = poste.periodiciteMois();
-        int dSafe = (d == 0) ? 1 : d;
+        int dSafe = d;
 
         LocalDate premierJour = LocalDate.of(annee, mois, 1);
         LocalDate finDeMois   = YearMonth.of(annee, mois).atEndOfMonth();
@@ -99,8 +104,14 @@ public class MoteurCalcul {
         boolean actifFin   = poste.fin()   == null || !poste.fin().isBefore(premierJour);
         if (!(actifDebut && actifFin)) return 0.0;
 
-        // Poste mensuel : imputé chaque mois actif (même semantic qu'en mensualisé).
-        if (d == 1 || d == 0) return poste.montant();
+        // One-shot ou mensuel : imputé au mois exact du début (one-shot) ou chaque mois (mensuel)
+        if (d == 0) {
+            // One-shot : imputé uniquement au mois exact du début
+            if (poste.debut() == null) return 0.0;
+            LocalDate debutPoste = poste.debut();
+            return (debutPoste.getYear() == annee && debutPoste.getMonthValue() == mois) ? poste.montant() : 0.0;
+        }
+        if (d == 1) return poste.montant();
 
         int ancre = (poste.debut() == null) ? 1 : poste.debut().getMonthValue();
         boolean fin = poste.moment() == MomentPeriode.FIN_PERIODE;
@@ -110,11 +121,13 @@ public class MoteurCalcul {
 
     /**
      * Montant mensualisé d'un poste (champ dérivé affiché dans les listes) — doc 01 §3.6.
+     * Pour un one-shot (d==0), retourne le montant complet.
      */
     public static double montantMensualise(PosteCalcul poste) {
         if (poste == null || poste.montant() <= 0) return 0.0;
         int d = poste.periodiciteMois();
-        int dSafe = (d == 0) ? 1 : d;
+        if (d == 0) return poste.montant();  // One-shot : montant complet
+        int dSafe = d;
         return poste.montant() / dSafe;
     }
 

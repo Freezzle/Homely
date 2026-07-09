@@ -18,7 +18,7 @@ public record PosteRequest(
         UUID categorieId,
         @NotNull @DecimalMin("0.0") BigDecimal montant,
         @Size(min = 3, max = 3) String devise,
-        @Min(1) int periodiciteMois,
+        @Min(0) Integer periodiciteMois,  // Nullable, accepte 0 (one-shot)
         LocalDate debut,
         LocalDate fin,
         @NotNull ModeComptabilisation mode,

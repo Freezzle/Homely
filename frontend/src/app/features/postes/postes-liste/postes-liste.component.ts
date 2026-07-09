@@ -90,6 +90,17 @@ import { FR } from '../../../core/i18n/fr';
           </label>
         </div>
 
+        <!-- Masquer futurs -->
+        <div class="flex items-center gap-2 text-sm shrink-0">
+          <p-checkbox inputId="cacher-futurs" [binary]="true"
+                      [ngModel]="cacherFuturs()"
+                      (onChange)="cacherFuturs.set($event.checked)" />
+          <label for="cacher-futurs"
+                 class="cursor-pointer text-surface-600 dark:text-surface-400 select-none">
+            {{ t.poste.cacherFuturs }}
+          </label>
+        </div>
+
         <!-- Créer -->
         @if (contexte.estEditor()) {
           <p-button icon="pi pi-plus" [label]="t.commun.creer" (click)="ouvrirCreation()" styleClass="shrink-0" />
@@ -159,21 +170,35 @@ import { FR } from '../../../core/i18n/fr';
                     <span>{{ categorieLabel(p.categorieId) }}</span>
                     <span class="text-surface-300 dark:text-surface-600 select-none">·</span>
                   }
-                  <span class="flex items-center gap-1">
-                    <i class="pi pi-calendar text-xs text-surface-400"></i>
-                    {{ formatPeriode(p.debut) }}&nbsp;–&nbsp;{{ formatPeriode(p.fin) }}
-                  </span>
-                  <span class="text-surface-300 dark:text-surface-600 select-none">·</span>
-                  <span class="flex items-center gap-1">
-                    @if (p.mode === 'MENSUALISE' || p.periodiciteMois <= 1) {
-                      <i class="pi pi-calendar-clock text-xs text-blue-400"
-                         [pTooltip]="t.poste.modeOptions.MENSUALISE"></i>
-                    } @else {
-                      <i class="pi pi-bolt text-xs text-amber-500"
-                         [pTooltip]="t.poste.modeOptions.PERIODIQUE + ' · ' + (p.moment === 'FIN_PERIODE' ? t.poste.momentOptions.FIN_PERIODE : t.poste.momentOptions.DEBUT_PERIODE)"></i>
-                    }
-                    {{ p.periodiciteMois | periodicite }}
-                  </span>
+                  @if (p.periodiciteMois === 0) {
+                    <!-- One-shot : afficher le mode avec icône dédiée puis la date de début -->
+                    <span class="flex items-center gap-1">
+                      <i class="pi pi-calendar text-xs text-surface-400"></i>
+                      {{ formatPeriode(p.debut) }}
+                    </span>
+                    <span class="text-surface-300 dark:text-surface-600 select-none">·</span>
+                    <span class="flex items-center gap-1">
+                      <i class="pi pi-bolt text-xs text-purple-500" [pTooltip]="t.poste.oneShot"></i>
+                      {{t.poste.oneShot}}
+                    </span>
+                  } @else {
+                    <!-- Normal : afficher la période complète et la périodicité -->
+                    <span class="flex items-center gap-1">
+                      <i class="pi pi-calendar text-xs text-surface-400"></i>
+                      {{ formatPeriode(p.debut) }}&nbsp;–&nbsp;{{ formatPeriode(p.fin) }}
+                    </span>
+                    <span class="text-surface-300 dark:text-surface-600 select-none">·</span>
+                    <span class="flex items-center gap-1">
+                      @if (p.mode === 'MENSUALISE' || p.periodiciteMois <= 1) {
+                        <i class="pi pi-calendar-clock text-xs text-blue-400"
+                           [pTooltip]="t.poste.modeOptions.MENSUALISE"></i>
+                      } @else {
+                        <i class="pi pi-bolt text-xs text-amber-500"
+                           [pTooltip]="t.poste.modeOptions.PERIODIQUE + ' · ' + (p.moment === 'FIN_PERIODE' ? t.poste.momentOptions.FIN_PERIODE : t.poste.momentOptions.DEBUT_PERIODE)"></i>
+                      }
+                      {{ p.periodiciteMois | periodicite }}
+                    </span>
+                  }
                 </div>
               </div>
 
@@ -231,10 +256,11 @@ import { FR } from '../../../core/i18n/fr';
         </div>
 
         <!-- Ligne 3 : Périodicité | Mode | Moment
+             D=0 → one-shot, pas de mode/moment (uniquement début)
              D=1 → 1 col (mode et moment cachés)
              D>1 → 3 col (Mode toujours visible ; Moment toujours visible) -->
         <div class="grid gap-4"
-             [class.grid-cols-1]="(form.value.periodiciteMois ?? 1) === 1"
+             [class.grid-cols-1]="(form.value.periodiciteMois ?? 1) === 0 || (form.value.periodiciteMois ?? 1) === 1"
              [class.grid-cols-3]="(form.value.periodiciteMois ?? 1) > 1">
           <!-- Périodicité -->
           <div class="flex flex-col gap-1">
@@ -251,7 +277,7 @@ import { FR } from '../../../core/i18n/fr';
                         optionLabel="label" optionValue="value" styleClass="w-full" />
             </div>
           }
-          <!-- Mode : caché si D=1 (toujours mensualisé) -->
+          <!-- Mode : caché si D=0 ou D=1 (toujours mensualisé) -->
           @if ((form.value.periodiciteMois ?? 1) > 1) {
             <div class="flex flex-col gap-1">
               <label class="text-sm font-medium" [pTooltip]="t.poste.modeTooltip">{{ t.poste.mode }}</label>
@@ -261,25 +287,36 @@ import { FR } from '../../../core/i18n/fr';
           }
         </div>
 
-        <!-- Ligne 4 : Nature (pleine largeur) -->
+        <!-- Ligne 4 : Début + Fin (ou seulement Début si one-shot) -->
+        @if ((form.value.periodiciteMois ?? 1) === 0) {
+          <!-- One-shot : uniquement Début (obligatoire) -->
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium">{{ t.poste.debut }} *</label>
+            <p-datepicker appendTo="body" formControlName="debut" dateFormat="dd/mm/yy"
+                          [showButtonBar]="true" styleClass="w-full"></p-datepicker>
+          </div>
+        } @else {
+          <!-- Normal : Début + Fin (optionnels) -->
+          <div class="grid grid-cols-2 gap-4">
+            <div class="flex flex-col gap-1">
+              <label class="text-sm font-medium">{{ t.poste.debut }}</label>
+              <p-datepicker appendTo="body" formControlName="debut" dateFormat="dd/mm/yy"
+                            [showButtonBar]="true" styleClass="w-full"></p-datepicker>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-sm font-medium">{{ t.poste.fin }}</label>
+              <p-datepicker appendTo="body" formControlName="fin" dateFormat="dd/mm/yy"
+                            [showButtonBar]="true" styleClass="w-full"></p-datepicker>
+            </div>
+          </div>
+        }
+
+
+        <!-- Ligne 5 : Nature (pleine largeur) -->
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium" [pTooltip]="t.poste.natureTooltip">{{ t.poste.nature }}</label>
           <p-select appendTo="body" formControlName="nature" [options]="natureOptions"
                     optionLabel="label" optionValue="value" styleClass="w-full" />
-        </div>
-
-        <!-- Ligne 5 : Début + Fin côte à côte -->
-        <div class="grid grid-cols-2 gap-4">
-          <div class="flex flex-col gap-1">
-            <label class="text-sm font-medium">{{ t.poste.debut }}</label>
-            <p-datepicker appendTo="body" formControlName="debut" dateFormat="dd/mm/yy"
-                          [showButtonBar]="true" styleClass="w-full"></p-datepicker>
-          </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-sm font-medium">{{ t.poste.fin }}</label>
-            <p-datepicker appendTo="body" formControlName="fin" dateFormat="dd/mm/yy"
-                          [showButtonBar]="true" styleClass="w-full"></p-datepicker>
-          </div>
         </div>
 
         <!-- Répartition + Comptes -->
@@ -383,10 +420,14 @@ export class PostesListeComponent implements OnInit {
     { label: FR.poste.natureOptions.PREVISION, value: 'PREVISION' },
   ];
 
-  periodiciteOptions = FR.poste.periodiciteLabels.map((label, i) => ({ label, value: i + 1 }));
+  periodiciteOptions = [
+    { label: FR.poste.periodiciteLabels[0], value: 0 },
+    ...FR.poste.periodiciteLabels.slice(1).map((label, i) => ({ label, value: i + 1 }))
+  ];
 
   triActuel = signal<'DATE' | 'CATEGORIE' | 'DESCRIPTION'>('DATE');
   cacherInactifs = signal(true);
+  cacherFuturs = signal(false);
 
   triOptions = [
     { label: FR.poste.triOptions.DATE,        value: 'DATE' as const },
@@ -398,7 +439,7 @@ export class PostesListeComponent implements OnInit {
     description:    ['', Validators.required],
     categorieId:    [null as string | null],
     montant:        [0, [Validators.required, Validators.min(0)]],
-    periodiciteMois:[1, Validators.min(1)],
+    periodiciteMois:[0, Validators.min(0)],
     mode:           ['MENSUALISE'],
     moment:         ['DEBUT_PERIODE'],
     nature:         ['EFFECTIF'],
@@ -470,13 +511,22 @@ export class PostesListeComponent implements OnInit {
     }
   });
 
-  /** Liste finale affichée : triée + filtrée selon cacherInactifs. */
+  /** Liste finale affichée : triée + filtrée selon les options de masquage. */
   postesVisibles = computed(() => {
-    const list = this.postesTries();
-    if (!this.cacherInactifs()) return list;
-    return list.filter(p =>
-      !p.fin || p.fin.substring(0, 7) >= this._moisCourant
-    );
+    return this.postesTries().filter(p => {
+      const estInactif = !!p.fin && p.fin.substring(0, 7) < this._moisCourant;
+      const estFutur = !!p.debut && p.debut.substring(0, 7) > this._moisCourant;
+
+      if (this.cacherInactifs() && estInactif) {
+        return false;
+      }
+
+      if (this.cacherFuturs() && estFutur) {
+        return false;
+      }
+
+      return true;
+    });
   });
 
   private readonly _chargerEffect = effect(() => {
@@ -516,7 +566,7 @@ export class PostesListeComponent implements OnInit {
 
   ouvrirCreation(): void {
     this.posteEnEdition = null;
-    this.form.reset({ mode: 'MENSUALISE', moment: 'DEBUT_PERIODE', nature: 'EFFECTIF', periodiciteMois: 1 });
+    this.form.reset({ mode: 'MENSUALISE', moment: 'DEBUT_PERIODE', nature: 'EFFECTIF', periodiciteMois: 0 });
     this.initialiserRepartitions();
     this.dialogVisible = true;
   }
@@ -525,7 +575,7 @@ export class PostesListeComponent implements OnInit {
     this.posteEnEdition = p;
     this.form.patchValue({
       description: p.description, categorieId: p.categorieId,
-      montant: p.montant, periodiciteMois: p.periodiciteMois,
+      montant: p.montant, periodiciteMois: p.periodiciteMois ?? 0,
       mode: p.mode, moment: p.moment, nature: p.nature ?? 'EFFECTIF',
       debut: p.debut ? new Date(p.debut) : null,
       fin: p.fin ? new Date(p.fin) : null,
@@ -583,6 +633,17 @@ export class PostesListeComponent implements OnInit {
     const foyerId = this.contexte.foyerId()!;
     const scenarioId = this.contexte.scenarioId()!;
     const v = this.form.value;
+    const periodicite = v.periodiciteMois ?? 0;
+    const estOneShot = periodicite === 0;
+
+    if (estOneShot && !v.debut) {
+      this.toast.add({
+        severity: 'warn',
+        summary: FR.commun.erreur,
+        detail: `${FR.poste.debut} requis pour ${FR.poste.oneShot}`,
+      });
+      return;
+    }
 
     const repartitions = this.repartitionsArray.length
       ? this.repartitionsArray.controls.map(c => ({
@@ -602,12 +663,12 @@ export class PostesListeComponent implements OnInit {
       description:     v.description!,
       categorieId:     v.categorieId ?? undefined,
       montant:         v.montant!,
-      periodiciteMois: v.periodiciteMois!,
-      mode:            v.mode as any,
-      moment:          v.moment as any,
+      periodiciteMois: periodicite,
+      mode:            (estOneShot ? 'MENSUALISE' : v.mode) as any,
+      moment:          (estOneShot ? 'DEBUT_PERIODE' : v.moment) as any,
       nature:          (v.nature ?? 'EFFECTIF') as any,
       debut:           v.debut ? this.toIso(v.debut) : undefined,
-      fin:             v.fin   ? this.toIso(v.fin)   : undefined,
+      fin:             estOneShot ? undefined : (v.fin ? this.toIso(v.fin) : undefined),
       ordre: 0,
       repartitions,
       ventilations,
@@ -660,5 +721,4 @@ export class PostesListeComponent implements OnInit {
     } catch { return v; }
   }
 }
-
 

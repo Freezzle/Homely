@@ -45,8 +45,9 @@ public class CategorieController {
     }
 
     @DeleteMapping("/{categorieId}")
-    public ResponseEntity<Void> supprimer(@PathVariable UUID foyerId, @PathVariable UUID categorieId) {
-        categorieService.supprimer(foyerId, categorieId);
+    public ResponseEntity<Void> supprimer(@PathVariable UUID foyerId, @PathVariable UUID categorieId,
+                                           @RequestParam(required = false) UUID migrerVersCategorieId) {
+        categorieService.supprimer(foyerId, categorieId, migrerVersCategorieId);
         return ResponseEntity.noContent().build();
     }
 }

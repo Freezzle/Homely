@@ -8,6 +8,7 @@ import ch.homely.commun.RessourceIntrouvableException;
 import ch.homely.foyer.Foyer;
 import ch.homely.foyer.FoyerRepository;
 import ch.homely.foyer.RoleFoyer;
+import ch.homely.poste.PosteRepository;
 import ch.homely.securite.MultiTenantService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,12 +23,14 @@ public class CategorieService {
 
     private final CategorieRepository categorieRepo;
     private final FoyerRepository foyerRepo;
+    private final PosteRepository posteRepo;
     private final MultiTenantService multiTenant;
 
     public CategorieService(CategorieRepository categorieRepo, FoyerRepository foyerRepo,
-                             MultiTenantService multiTenant) {
+                             PosteRepository posteRepo, MultiTenantService multiTenant) {
         this.categorieRepo = categorieRepo;
         this.foyerRepo     = foyerRepo;
+        this.posteRepo     = posteRepo;
         this.multiTenant   = multiTenant;
     }
 
@@ -71,15 +74,22 @@ public class CategorieService {
         return toDto(categorieRepo.save(c));
     }
 
-    public void supprimer(UUID foyerId, UUID categorieId) {
+    public void supprimer(UUID foyerId, UUID categorieId, UUID migrerVersCategorieId) {
         multiTenant.verifierAcces(foyerId, RoleFoyer.EDITOR);
         Categorie c = trouver(foyerId, categorieId);
         if (c.isSysteme()) {
             throw new RegleMetierException(CodesErreur.CONFLIT,
                     "Les catégories système ne peuvent pas être supprimées.");
         }
-        c.setActif(false);
-        categorieRepo.save(c);
+        if (migrerVersCategorieId != null) {
+            // Valider que la catégorie cible appartient au même foyer
+            trouver(foyerId, migrerVersCategorieId);
+            posteRepo.migrerCategorie(categorieId, migrerVersCategorieId);
+        } else {
+            // Dissocier les postes (categorie_id → NULL)
+            posteRepo.dissocierCategorie(categorieId);
+        }
+        categorieRepo.delete(c);
     }
 
     private Categorie trouver(UUID foyerId, UUID categorieId) {
