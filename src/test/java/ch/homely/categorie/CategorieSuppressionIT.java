@@ -31,8 +31,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Vérifie que :
  * 1. La ligne catégorie est physiquement supprimée (404 après suppression).
  * 2. Les postes associés ont leur categorie_id mis à NULL (pas supprimés).
- * 3. Les catégories système sont protégées (409).
- * 4. Accès inter-foyers sur la suppression renvoie 403.
+ * 3. Accès inter-foyers sur la suppression renvoie 403.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
@@ -112,34 +111,6 @@ class CategorieSuppressionIT {
                 .isFalse();
     }
 
-    @Test
-    @DisplayName("Suppression d'une catégorie système renvoie 409")
-    void supprimerCategorieSysteme_renvoie409() throws Exception {
-        String token = creerEtLogin("cat_del_sys@test.ch");
-        String foyerId = creerFoyer(token, "Foyer Sys Cat");
-
-        // Trouver une catégorie système dans la liste
-        String catsJson = client.get()
-                .uri("/api/foyers/" + foyerId + "/categories")
-                .header("Authorization", "Bearer " + token)
-                .retrieve().body(String.class);
-
-        JsonNode cats = MAPPER.readTree(catsJson);
-        String sysCatId = null;
-        for (JsonNode c : cats) {
-            if (c.get("systeme").asBoolean()) { sysCatId = c.get("id").asText(); break; }
-        }
-
-        if (sysCatId == null) return; // Pas de catégorie système dans ce foyer → test non applicable
-
-        final String idToDelete = sysCatId;
-        assertThatThrownBy(() -> client.delete()
-                .uri("/api/foyers/" + foyerId + "/categories/" + idToDelete)
-                .header("Authorization", "Bearer " + token)
-                .retrieve().toBodilessEntity())
-                .isInstanceOfSatisfying(HttpClientErrorException.class,
-                        ex -> assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
-    }
 
     @Test
     @DisplayName("Suppression inter-foyers renvoie 403")

@@ -28,9 +28,6 @@ public class Categorie {
     @Column(name = "type_poste", nullable = false, length = 16)
     private TypeCategorie typePoste;
 
-    /** {@code true} pour les catégories livrées par défaut (non supprimables). */
-    @Column(nullable = false)
-    private boolean systeme = false;
 
     @Column(nullable = false)
     private int ordre = 0;

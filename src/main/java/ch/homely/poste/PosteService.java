@@ -68,11 +68,39 @@ public class PosteService {
         multiTenant.verifierAcces(foyerId, RoleFoyer.EDITOR);
         Scenario scenario = verifierScenario(foyerId, scenarioId);
 
-        validerRepartition(req.repartitions(), foyerId);
+        // Si aucune répartition n'est fournie, charger les répartitions par défaut du scénario
+        List<PosteRequest.RepartitionPosteDto> repartitions = req.repartitions();
+        if ((repartitions == null || repartitions.isEmpty()) && !scenario.getRepartitionsDefaut().isEmpty()) {
+            repartitions = scenario.getRepartitionsDefaut().stream()
+                    .map(r -> new PosteRequest.RepartitionPosteDto(r.getMembre().getId(), r.getQuotePart()))
+                    .toList();
+        }
+
+        // Valider les répartitions (après enrichissement par défaut)
+        validerRepartition(repartitions, foyerId);
+
+        // Créer une nouvelle requête avec les répartitions enrichies
+        PosteRequest reqAvecRepartitions = new PosteRequest(
+                req.type(),
+                req.description(),
+                req.categorieId(),
+                req.montant(),
+                req.devise(),
+                req.periodiciteMois(),
+                req.debut(),
+                req.fin(),
+                req.mode(),
+                req.moment(),
+                req.nature(),
+                req.compteSource(),
+                req.ordre(),
+                repartitions,
+                req.ventilations()
+        );
 
         Poste p = new Poste();
         p.setScenario(scenario);
-        appliquer(p, req, foyerId);
+        appliquer(p, reqAvecRepartitions, foyerId);
         PosteDto dto = toDto(posteRepo.save(p));
         projectionService.invaliderCache(scenarioId);
         return dto;

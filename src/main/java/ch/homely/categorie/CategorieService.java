@@ -2,8 +2,6 @@ package ch.homely.categorie;
 
 import ch.homely.categorie.dto.CategorieDto;
 import ch.homely.categorie.dto.CategorieRequest;
-import ch.homely.commun.RegleMetierException;
-import ch.homely.commun.CodesErreur;
 import ch.homely.commun.RessourceIntrouvableException;
 import ch.homely.foyer.Foyer;
 import ch.homely.foyer.FoyerRepository;
@@ -39,7 +37,7 @@ public class CategorieService {
         multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
         List<Categorie> cats = typePoste != null
                 ? categorieRepo.findAllByFoyerIdAndTypePosteAndActifTrueOrderByOrdre(foyerId, typePoste)
-                : categorieRepo.findAllByFoyerIdAndActifTrueOrderByOrdre(foyerId);
+                : categorieRepo.findAllByFoyerIdAndActifTrueOrderByTypePosteAscOrdreAsc(foyerId);
         return cats.stream().map(this::toDto).toList();
     }
 
@@ -58,17 +56,12 @@ public class CategorieService {
         c.setLibelle(req.libelle());
         c.setTypePoste(req.typePoste());
         c.setOrdre(req.ordre());
-        c.setSysteme(false);
         return toDto(categorieRepo.save(c));
     }
 
     public CategorieDto modifier(UUID foyerId, UUID categorieId, CategorieRequest req) {
         multiTenant.verifierAcces(foyerId, RoleFoyer.EDITOR);
         Categorie c = trouver(foyerId, categorieId);
-        if (c.isSysteme()) {
-            throw new RegleMetierException(CodesErreur.CONFLIT,
-                    "Les catégories système ne peuvent pas être modifiées.");
-        }
         c.setLibelle(req.libelle());
         c.setOrdre(req.ordre());
         return toDto(categorieRepo.save(c));
@@ -77,10 +70,6 @@ public class CategorieService {
     public void supprimer(UUID foyerId, UUID categorieId, UUID migrerVersCategorieId) {
         multiTenant.verifierAcces(foyerId, RoleFoyer.EDITOR);
         Categorie c = trouver(foyerId, categorieId);
-        if (c.isSysteme()) {
-            throw new RegleMetierException(CodesErreur.CONFLIT,
-                    "Les catégories système ne peuvent pas être supprimées.");
-        }
         if (migrerVersCategorieId != null) {
             // Valider que la catégorie cible appartient au même foyer
             trouver(foyerId, migrerVersCategorieId);
@@ -100,6 +89,6 @@ public class CategorieService {
 
     private CategorieDto toDto(Categorie c) {
         return new CategorieDto(c.getId(), c.getLibelle(), c.getTypePoste(),
-                c.isSysteme(), c.getOrdre(), c.isActif());
+                c.getOrdre(), c.isActif());
     }
 }

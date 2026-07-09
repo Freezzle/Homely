@@ -200,6 +200,17 @@ import { FR } from '../../../core/i18n/fr';
                     </span>
                   }
                 </div>
+
+                <!-- Répartitions : tags membres + % (si > 0%) -->
+                @if (repartitionsAffichees(p).length > 0) {
+                  <div class="flex items-center gap-2 mt-2 flex-wrap">
+                    @for (rep of repartitionsAffichees(p); track rep.membreId) {
+                      <p-tag [value]="rep.nomMembre + ' · ' + Math.round(rep.quotePart * 100) + '%'"
+                             [style]="{ 'background-color': rep.couleur, color: rep.couleurTexte }"
+                             styleClass="text-xs py-1 px-2 border-none" />
+                    }
+                  </div>
+                }
               </div>
 
               <!-- Montants -->
@@ -343,9 +354,9 @@ import { FR } from '../../../core/i18n/fr';
             </div>
           }
           <div formArrayName="repartitions" class="flex flex-col gap-2">
-            @for (_ of repartitionsArray.controls; track $index) {
-              <div [formGroupName]="$index" class="flex items-center gap-3">
-                <span class="flex-1 text-sm">{{ membres()[$index]?.nom }}</span>
+            @for (ctrl of repartitionsArray.controls; track ctrl; let i = $index) {
+              <div [formGroupName]="i" class="flex items-center gap-3">
+                <span class="flex-1 text-sm">{{ membres()[i]?.nom }}</span>
                 <p-inputnumber formControlName="quotePart" [min]="0" [max]="100"
                                suffix="%" [minFractionDigits]="0" styleClass="w-28"
                                (onInput)="calculerSomme()"></p-inputnumber>
@@ -359,7 +370,7 @@ import { FR } from '../../../core/i18n/fr';
         </div>
       </form>
       <ng-template pTemplate="footer">
-        <p-button [label]="t.commun.annuler" severity="secondary" (click)="dialogVisible = false" />
+        <p-button [label]="t.commun.annuler" severity="secondary" (click)="fermerDialogPoste()" />
         <p-button [label]="t.commun.enregistrer" (click)="enregistrer()"
                   [disabled]="form.invalid || (repartitionsArray.length > 0 && sommeRepartition !== 100)" />
       </ng-template>
@@ -386,6 +397,7 @@ import { FR } from '../../../core/i18n/fr';
 export class PostesListeComponent implements OnInit {
   readonly t = FR;
   readonly type = input<TypePoste>('REVENU');
+  readonly Math = Math; // Exposition pour le template
   contexte = inject(ContexteService);
   private posteSvc = inject(PosteService);
   private categorieSvc = inject(CategorieService);
@@ -564,10 +576,44 @@ export class PostesListeComponent implements OnInit {
     return p.repartitions.map(r => `${Math.round(r.quotePart * 100)}%`).join(' / ');
   }
 
+  repartitionsAffichees(p: PosteDto): { membreId: string; quotePart: number; nomMembre: string; couleur: string; couleurTexte: string }[] {
+    return p.repartitions
+      .filter(r => r.quotePart > 0)
+      .map(r => {
+        const membre = this.membres().find(m => m.id === r.membreId);
+        const couleur = this.normaliserCouleur(membre?.couleur);
+        return {
+          membreId: r.membreId,
+          quotePart: r.quotePart,
+          nomMembre: membre?.nom ?? '',
+          couleur,
+          couleurTexte: this.couleurTexteContraste(couleur),
+        };
+      })
+      .filter(r => r.nomMembre); // Filtre les répartitions dont le membre n'existe pas
+  }
+
+  private normaliserCouleur(couleur?: string): string {
+    if (!couleur) return '#64748b';
+    return couleur.startsWith('#') ? couleur : `#${couleur}`;
+  }
+
+  // Lisibilité minimale des tags, quelle que soit la couleur du membre.
+  private couleurTexteContraste(hexColor: string): string {
+    const hex = hexColor.replace('#', '');
+    if (hex.length !== 6 || /[^0-9a-f]/i.test(hex)) return '#ffffff';
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const luminance = (0.299 * r) + (0.587 * g) + (0.114 * b);
+    return luminance > 170 ? '#111827' : '#ffffff';
+  }
+
   ouvrirCreation(): void {
     this.posteEnEdition = null;
     this.form.reset({ mode: 'MENSUALISE', moment: 'DEBUT_PERIODE', nature: 'EFFECTIF', periodiciteMois: 0 });
-    this.initialiserRepartitions();
+    const repartitions = this.contexte.scenarioCourant()?.repartitions ?? [];
+    this.initialiserRepartitions(repartitions.length > 0 ? repartitions : undefined);
     this.dialogVisible = true;
   }
 
@@ -601,17 +647,39 @@ export class PostesListeComponent implements OnInit {
     existantes?: { membreId: string; quotePart: number; nomMembre: string }[],
     ventilationsExistantes?: VentilationCompteDto[],
   ): void {
-    while (this.repartitionsArray.length) this.repartitionsArray.removeAt(0);
-    this.membres().forEach(m => {
-      const rep  = existantes?.find(r => r.membreId === m.id);
-      const vent = ventilationsExistantes?.find(v => v.membreId === m.id);
-      this.repartitionsArray.push(this.fb.group({
-        membreId:  [m.id],
-        quotePart: [rep ? Math.round(rep.quotePart * 100) : 0],
-        compteId:  [vent?.compteId ?? this.defaultCompteId()],
-      }));
+    const membres = this.membres();
+
+    // Supprimer les contrôles en surplus (ex : changement de foyer)
+    while (this.repartitionsArray.length > membres.length) {
+      this.repartitionsArray.removeAt(this.repartitionsArray.length - 1);
+    }
+
+    membres.forEach((m, i) => {
+      const rep       = existantes?.find(r => r.membreId === m.id);
+      const vent      = ventilationsExistantes?.find(v => v.membreId === m.id);
+      const quotePart = rep ? Math.round(rep.quotePart * 100) : 0;
+      const compteId  = vent?.compteId ?? this.defaultCompteId();
+
+      if (i < this.repartitionsArray.length) {
+        // Mettre à jour en place : le même FormGroup est conservé,
+        // les directives Angular gardent leurs liaisons → les valeurs s'affichent bien.
+        this.repartitionsArray.at(i).patchValue({ membreId: m.id, quotePart, compteId });
+      } else {
+        this.repartitionsArray.push(this.fb.group({
+          membreId:  [m.id],
+          quotePart: [quotePart],
+          compteId:  [compteId],
+        }));
+      }
     });
+
     this.calculerSomme();
+  }
+
+
+  fermerDialogPoste(): void {
+    this.dialogVisible = false;
+    this.posteEnEdition = null;
   }
 
   calculerSomme(): void {

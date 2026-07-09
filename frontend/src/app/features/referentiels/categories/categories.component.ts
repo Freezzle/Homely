@@ -39,7 +39,6 @@ import { FR } from '../../../core/i18n/fr';
             <th pSortableColumn="libelle">{{ t.referentiels.categorie.libelle }} <p-sortIcon field="libelle" /></th>
             <th>{{ t.referentiels.categorie.typePoste }}</th>
             <th class="text-right">{{ t.referentiels.categorie.ordre }}</th>
-            <th class="text-center">{{ t.referentiels.categorie.systeme }}</th>
             <th></th>
           </tr>
         </ng-template>
@@ -50,12 +49,9 @@ import { FR } from '../../../core/i18n/fr';
               <p-tag [value]="c.typePoste" [severity]="c.typePoste === 'REVENU' ? 'success' : c.typePoste === 'CHARGE' ? 'danger' : 'info'" />
             </td>
             <td class="text-right text-surface-500">{{ c.ordre }}</td>
-            <td class="text-center">
-              <i [class]="c.systeme ? 'pi pi-lock text-surface-400' : 'pi pi-user text-primary'"></i>
-            </td>
             <td>
               <div class="flex gap-1">
-                @if (contexte.estEditor() && !c.systeme) {
+                @if (contexte.estEditor()) {
                   <p-button icon="pi pi-pencil" [text]="true" size="small" (click)="ouvrirEdition(c)" />
                   <p-button icon="pi pi-trash" [text]="true" severity="danger" size="small" (click)="ouvrirSuppression(c)" />
                 }
@@ -64,7 +60,7 @@ import { FR } from '../../../core/i18n/fr';
           </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">
-          <tr><td colspan="5" class="text-center py-8 text-surface-400">{{ t.commun.aucunResultat }}</td></tr>
+          <tr><td colspan="4" class="text-center py-8 text-surface-400">{{ t.commun.aucunResultat }}</td></tr>
         </ng-template>
       </p-table>
     </div>
@@ -178,7 +174,7 @@ export class CategoriesComponent implements OnInit {
 
   ouvrirCreation(): void {
     this.categorieEnEdition = null;
-    const ordre = this.categories().filter(c => !c.systeme).length + 1;
+    const ordre = this.categories().length + 1;
     this.form.reset({ libelle: '', typePoste: 'REVENU', ordre });
     this.dialogVisible = true;
   }

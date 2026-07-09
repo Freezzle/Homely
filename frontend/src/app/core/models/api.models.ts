@@ -29,7 +29,7 @@ export interface CompteDto { id: string; libelle: string; type: TypeCompte; sold
 export interface CompteRequest { libelle: string; type: TypeCompte; soldeInitial: number; devise?: string; ordre: number; }
 
 export type TypeCategorie = 'REVENU' | 'CHARGE' | 'RESERVE';
-export interface CategorieDto { id: string; libelle: string; typePoste: TypeCategorie; systeme: boolean; ordre: number; actif: boolean; }
+export interface CategorieDto { id: string; libelle: string; typePoste: TypeCategorie; ordre: number; actif: boolean; }
 export interface CategorieRequest { libelle: string; typePoste: TypeCategorie; ordre: number; }
 
 export type TypeActif = 'IMMOBILIER' | 'FINANCIER' | 'RETRAITE' | 'AUTRE';
