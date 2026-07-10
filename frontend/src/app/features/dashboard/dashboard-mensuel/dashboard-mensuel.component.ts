@@ -244,12 +244,100 @@ import { FR } from '../../../core/i18n/fr';
           </p-card>
         </div>
 
+        <!-- ④ Détail par membre — toutes les catégories visibles ────────────── -->
+        <div>
+          <div class="flex items-center gap-3 mb-4">
+            <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
+            <span class="text-xs font-bold text-surface-400 uppercase tracking-widest flex items-center gap-2">
+              <i class="pi pi-users text-sm"></i>&nbsp;{{ t.projection.parMembre }}
+            </span>
+            <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            @for (mc of membresData(); track mc.id) {
+              <p-card>
+                <ng-template pTemplate="header">
+                  <div class="px-4 pt-4 pb-2 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <span class="inline-block w-4 h-4 rounded-full border-2 border-surface-0 shadow"
+                            [style.background-color]="mc.couleur"></span>
+                      <span class="font-semibold text-base">{{ mc.nom }}</span>
+                    </div>
+                    @if (mc.agregat.revenus > 0) {
+                      <span class="text-xs px-2.5 py-0.5 rounded-full font-semibold"
+                            [class.bg-green-100]="mc.tauxEffort < 50"
+                            [class.text-green-700]="mc.tauxEffort < 50"
+                            [class.bg-amber-100]="mc.tauxEffort >= 50 && mc.tauxEffort < 75"
+                            [class.text-amber-700]="mc.tauxEffort >= 50 && mc.tauxEffort < 75"
+                            [class.bg-red-100]="mc.tauxEffort >= 75"
+                            [class.text-red-700]="mc.tauxEffort >= 75">
+                        Effort {{ mc.tauxEffortStr }}&thinsp;%
+                      </span>
+                    }
+                  </div>
+                </ng-template>
+
+                <div class="grid grid-cols-1 gap-3">
+                  <div class="rounded-lg bg-surface-50 dark:bg-surface-800 p-3">
+                    <div class="flex items-center justify-between mb-2">
+                      <div class="text-xs font-semibold uppercase tracking-wide text-green-600">{{ t.projection.revenus }}</div>
+                      <div class="text-sm font-bold text-green-600 tabular-nums">{{ mc.agregat.revenus | montant }}</div>
+                    </div>
+                    @for (row of mc.categorieDetail.revenus; track row.id) {
+                      <div class="flex justify-between items-center text-xs py-1 border-b border-surface-100 dark:border-surface-700 last:border-0">
+                        <span class="truncate mr-2 text-surface-600 dark:text-surface-300">{{ row.libelle }}</span>
+                        <span class="font-semibold text-green-600 shrink-0 tabular-nums">{{ row.montant | montant }}</span>
+                      </div>
+                    }
+                    @if (mc.categorieDetail.revenus.length === 0) {
+                      <div class="text-xs text-surface-400 italic text-center py-2">{{ t.commun.aucunResultat }}</div>
+                    }
+                  </div>
+
+                  <div class="rounded-lg bg-surface-50 dark:bg-surface-800 p-3">
+                    <div class="flex items-center justify-between mb-2">
+                      <div class="text-xs font-semibold uppercase tracking-wide text-red-500">{{ t.projection.charges }}</div>
+                      <div class="text-sm font-bold text-red-500 tabular-nums">{{ mc.agregat.charges | montant }}</div>
+                    </div>
+                    @for (row of mc.categorieDetail.charges; track row.id) {
+                      <div class="flex justify-between items-center text-xs py-1 border-b border-surface-100 dark:border-surface-700 last:border-0">
+                        <span class="truncate mr-2 text-surface-600 dark:text-surface-300">{{ row.libelle }}</span>
+                        <span class="font-semibold text-red-500 shrink-0 tabular-nums">{{ row.montant | montant }}</span>
+                      </div>
+                    }
+                    @if (mc.categorieDetail.charges.length === 0) {
+                      <div class="text-xs text-surface-400 italic text-center py-2">{{ t.commun.aucunResultat }}</div>
+                    }
+                  </div>
+
+                  <div class="rounded-lg bg-surface-50 dark:bg-surface-800 p-3">
+                    <div class="flex items-center justify-between mb-2">
+                      <div class="text-xs font-semibold uppercase tracking-wide text-blue-500">{{ t.projection.reserves }}</div>
+                      <div class="text-sm font-bold text-blue-500 tabular-nums">{{ mc.agregat.reserves | montant }}</div>
+                    </div>
+                    @for (row of mc.categorieDetail.reserves; track row.id) {
+                      <div class="flex justify-between items-center text-xs py-1 border-b border-surface-100 dark:border-surface-700 last:border-0">
+                        <span class="truncate mr-2 text-surface-600 dark:text-surface-300">{{ row.libelle }}</span>
+                        <span class="font-semibold text-blue-500 shrink-0 tabular-nums">{{ row.montant | montant }}</span>
+                      </div>
+                    }
+                    @if (mc.categorieDetail.reserves.length === 0) {
+                      <div class="text-xs text-surface-400 italic text-center py-2">{{ t.commun.aucunResultat }}</div>
+                    }
+                  </div>
+                </div>
+              </p-card>
+            }
+          </div>
+        </div>
+
         <!-- ④ Par membre — 2 colonnes, toujours visibles ────────────────────── -->
         <div>
           <div class="flex items-center gap-3 mb-4">
             <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
             <span class="text-xs font-bold text-surface-400 uppercase tracking-widest flex items-center gap-2">
-              <i class="pi pi-users text-sm"></i>&nbsp;Par membre
+              <i class="pi pi-users text-sm"></i>&nbsp;{{ t.projection.parMembre }}
             </span>
             <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
           </div>
@@ -368,6 +456,10 @@ export class DashboardMensuelComponent implements OnInit {
     return this.comptes().find(c => c.id === id)?.libelle ?? id.substring(0, 8) + '…';
   }
 
+  private categorieMontantParMembre(categorieId: string, membreId: string): number {
+    return (this.ventilations()?.parCategorieMembre ?? {})[categorieId]?.[membreId] ?? 0;
+  }
+
   // ── Options Chart.js ─────────────────────────────────────────────────────────
 
   readonly membreChartOptions = {
@@ -409,8 +501,29 @@ export class DashboardMensuelComponent implements OnInit {
     };
   });
 
+  membresParType = computed(() => {
+    const v    = this.ventilations();
+    const mems = this.membres();
+    const makeList = (type: keyof VentilationAggregatDto) =>
+      mems
+        .map(m => ({ id: m.id, libelle: m.nom, montant: (v?.parMembre as Record<string, VentilationAggregatDto>)?.[m.id]?.[type] ?? 0 }))
+        .filter(r => r.montant !== 0)
+        .sort((a, b) => b.montant - a.montant);
+    return {
+      revenus:  makeList('revenus'),
+      charges:  makeList('charges'),
+      reserves: makeList('reserves'),
+    };
+  });
+
   totalParType = computed(() => {
     const d   = this.categoriesParType();
+    const sum = (rows: { montant: number }[]) => rows.reduce((s, r) => s + r.montant, 0);
+    return { revenus: sum(d.revenus), charges: sum(d.charges), reserves: sum(d.reserves) };
+  });
+
+  totalParMembreType = computed(() => {
+    const d   = this.membresParType();
     const sum = (rows: { montant: number }[]) => rows.reduce((s, r) => s + r.montant, 0);
     return { revenus: sum(d.revenus), charges: sum(d.charges), reserves: sum(d.reserves) };
   });
@@ -419,6 +532,7 @@ export class DashboardMensuelComponent implements OnInit {
     const v = this.ventilations();
     if (!v) return [];
     const zero: VentilationAggregatDto = { revenus: 0, charges: 0, reserves: 0, soldeDisponible: 0 };
+    const cats = this.categories();
     return this.membres().map(m => {
       const agregat: VentilationAggregatDto = (v.parMembre ?? {})[m.id] ?? zero;
         const tauxEffort = agregat.revenus > 0
@@ -433,9 +547,20 @@ export class DashboardMensuelComponent implements OnInit {
         .filter(c => c.montant > 0)
         .sort((a, b) => b.montant - a.montant);
 
+      const makeList = (type: TypeCategorie) => cats
+        .filter(c => c.typePoste === type)
+        .map(c => ({ id: c.id, libelle: c.libelle, montant: this.categorieMontantParMembre(c.id, m.id) }))
+        .filter(r => r.montant !== 0)
+        .sort((a, b) => b.montant - a.montant);
+
       return {
         id: m.id, nom: m.nom, couleur: m.couleur,
         agregat, tauxEffort, tauxEffortStr, chargesParCompte,
+        categorieDetail: {
+          revenus: makeList('REVENU'),
+          charges: makeList('CHARGE'),
+          reserves: makeList('RESERVE'),
+        },
         chartHeight: Math.max(chargesParCompte.length * 38 + 16, 56),
         chartData: {
           labels: chargesParCompte.map(c => c.libelle),

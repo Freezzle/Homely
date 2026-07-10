@@ -110,6 +110,7 @@ export interface VentilationsDto {
   agregat: VentilationAggregatDto;
   parMembre: Record<string, VentilationAggregatDto>;
   parCategorie: Record<string, number>;
+  parCategorieMembre: Record<string, Record<string, number>>;
   parCompteMembre: Record<string, Record<string, number>>;
 }
 export interface AnneePatrimoineDto { annee: number; patrimoineNet: number; soldesComptes: Record<string, number>; soldesActifs: Record<string, number>; }

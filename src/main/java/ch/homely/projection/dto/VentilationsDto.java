@@ -11,6 +11,7 @@ public record VentilationsDto(
         AggregatDto agregat,
         Map<UUID, AggregatDto> parMembre,
         Map<UUID, BigDecimal> parCategorie,
+        Map<UUID, Map<UUID, BigDecimal>> parCategorieMembre,
         Map<UUID, Map<UUID, BigDecimal>> parCompteMembre
 ) {
     /** Agrégat foyer ou membre pour un mois donné. */

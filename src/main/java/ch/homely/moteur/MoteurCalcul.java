@@ -331,10 +331,11 @@ public class MoteurCalcul {
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
-     * Calcule les ventilations par catégorie et par compte/membre pour un mois (T2.7).
+     * Calcule les ventilations par catégorie, par catégorie/membre et par compte/membre pour un mois (T2.7).
      */
     public static Ventilations ventilations(ParametresScenario params, int annee, int mois) {
         Map<UUID, Double> parCategorie    = new LinkedHashMap<>();
+        Map<UUID, Map<UUID, Double>> parCategorieMembre = new LinkedHashMap<>();
         Map<UUID, Map<UUID, Double>> parCompteMembre = new LinkedHashMap<>();
 
         for (PosteCalcul poste : params.postes()) {
@@ -344,6 +345,15 @@ public class MoteurCalcul {
             // Ventilation par catégorie
             if (poste.categorieId() != null && contrib != 0) {
                 parCategorie.merge(poste.categorieId(), contrib, Double::sum);
+
+                for (UUID membreId : params.membres()) {
+                    double partMembre = contrib * quotePartEffective(poste, membreId, params.repartitionDefaut());
+                    if (partMembre == 0) continue;
+
+                    parCategorieMembre
+                            .computeIfAbsent(poste.categorieId(), k -> new LinkedHashMap<>())
+                            .merge(membreId, partMembre, Double::sum);
+                }
             }
 
             // Ventilation par compte/membre
@@ -361,7 +371,7 @@ public class MoteurCalcul {
             }
         }
 
-        return new Ventilations(annee, mois, parCategorie, parCompteMembre);
+        return new Ventilations(annee, mois, parCategorie, parCategorieMembre, parCompteMembre);
     }
 
     /** Résout le compte cible d'un membre pour un poste (ventilationComptes). */

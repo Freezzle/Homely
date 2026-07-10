@@ -110,15 +110,19 @@ public class ProjectionService {
             parMembre.put(membreId, toVentAggregatDto(ag));
         }
 
-        // Ventilations par catégorie et par compte/membre
+        // Ventilations par catégorie, par catégorie/membre et par compte/membre
         Ventilations v = MoteurCalcul.ventilations(params, annee, mois);
         Map<UUID, BigDecimal> parCat = v.parCategorie().entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> bd(e.getValue())));
+        Map<UUID, Map<UUID, BigDecimal>> parCatMembre = v.parCategorieMembre().entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey,
+                        e -> e.getValue().entrySet().stream()
+                                .collect(Collectors.toMap(Map.Entry::getKey, ie -> bd(ie.getValue())))));
         Map<UUID, Map<UUID, BigDecimal>> parCM = v.parCompteMembre().entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey,
                         e -> e.getValue().entrySet().stream()
                                 .collect(Collectors.toMap(Map.Entry::getKey, ie -> bd(ie.getValue())))));
-        return new VentilationsDto(annee, mois, agregat, parMembre, parCat, parCM);
+        return new VentilationsDto(annee, mois, agregat, parMembre, parCat, parCatMembre, parCM);
     }
 
     private VentilationsDto.AggregatDto toVentAggregatDto(AggregatMensuel ag) {

@@ -333,14 +333,17 @@ import { FR } from '../../../core/i18n/fr';
         <!-- Répartition + Comptes -->
         <div class="flex flex-col gap-2">
           <div class="flex items-center justify-between">
-            <label class="text-sm font-medium">{{ t.poste.repartition }}</label>
-            <div class="flex items-center gap-2">
+            <label class="text-sm font-medium">
+              {{ t.poste.repartition }} 
               <span class="text-sm"
-                    [class.text-green-600]="sommeRepartition === 100"
-                    [class.text-red-500]="sommeRepartition !== 100 && repartitionsArray.length > 0">
+                 [class.text-green-600]="sommeRepartition === 100"
+                 [class.text-red-500]="sommeRepartition !== 100 && repartitionsArray.length > 0">
                 {{ sommeRepartition }}%
-              </span>
-              <p-button label="Équitable" [text]="true" size="small" (click)="repartirEquitablement()" />
+              </span></label>
+            <div class="flex items-center gap-2">
+              <p-button [label]="t.poste.repartitionParDefaut" [text]="true" size="small"
+                        (click)="appliquerRepartitionParDefaut()" [disabled]="!aRepartitionParDefaut()" />
+              <p-button [label]="t.poste.repartitionEquitable" [text]="true" size="small" (click)="repartirEquitablement()" />
             </div>
           </div>
           @if (sommeRepartition !== 100 && repartitionsArray.length > 0) {
@@ -409,6 +412,7 @@ export class PostesListeComponent implements OnInit {
   postes = signal<PosteDto[]>([]);
   categories = signal<CategorieDto[]>([]);
   comptes = signal<CompteDto[]>([]);
+  aRepartitionParDefaut = computed(() => (this.contexte.scenarioCourant()?.repartitions?.length ?? 0) > 0);
   chargement = signal(false);
   dialogVisible = false;
   apercuVisible = false;
@@ -694,6 +698,18 @@ export class PostesListeComponent implements OnInit {
     const reste = 100 - part * (n - 1);
     this.repartitionsArray.controls.forEach((ctrl, i) =>
       ctrl.get('quotePart')?.setValue(i === n - 1 ? reste : part));
+    this.calculerSomme();
+  }
+
+  appliquerRepartitionParDefaut(): void {
+    const repartitions = this.contexte.scenarioCourant()?.repartitions ?? [];
+    if (!repartitions.length) return;
+
+    const quotesParMembre = new Map(repartitions.map(r => [r.membreId, Math.round(r.quotePart * 100)]));
+    this.repartitionsArray.controls.forEach(ctrl => {
+      const membreId = ctrl.get('membreId')?.value as string | undefined;
+      ctrl.get('quotePart')?.setValue(membreId ? (quotesParMembre.get(membreId) ?? 0) : 0);
+    });
     this.calculerSomme();
   }
 

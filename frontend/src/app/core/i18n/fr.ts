@@ -81,6 +81,8 @@ export const FR = {
     momentTooltip: "Le montant plein tombe-t-il au début ou à la fin du cycle de périodicité ?",
     natureTooltip: "Effectif = charge/revenu certain (loyer, salaire, facture…). Prévision = provision pour frais variables estimés (nourriture, habits, loisirs…).",
     repartition: 'Répartition',
+    repartitionParDefaut: 'Par défaut',
+    repartitionEquitable: 'Équitable',
     ventilation: 'Ventilation comptes',
     apercu: 'Aperçu mensuel',
     modeOptions: {
@@ -123,6 +125,9 @@ export const FR = {
     charges: 'Charges',
     reserves: 'Réserves',
     solde: 'Solde disponible',
+    parMembre: 'Par membre',
+    repartitionParMembre: 'Répartition par membre',
+    detailParMembre: 'Détail par membre',
     totalAnnee: 'Total année',
     tresorerie: 'Trésorerie',
     annee: 'Année',
