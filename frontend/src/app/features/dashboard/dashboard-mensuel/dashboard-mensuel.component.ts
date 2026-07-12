@@ -60,7 +60,6 @@ import { FR } from '../../../core/i18n/fr';
               <div class="min-w-0">
                 <div class="text-xs font-semibold text-surface-400 uppercase tracking-wide mb-2">{{ t.projection.revenus }}</div>
                 <div class="text-xl font-bold text-green-600 truncate">{{ ventilations()!.agregat.revenus | montant }}</div>
-                <div class="text-xs text-surface-400 mt-1.5">{{ t.mois[mois - 1] }} {{ annee }}</div>
               </div>
               <span class="w-9 h-9 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center shrink-0 mt-0.5">
                 <i class="pi pi-arrow-up text-green-600 text-xs"></i>
@@ -73,7 +72,6 @@ import { FR } from '../../../core/i18n/fr';
               <div class="min-w-0">
                 <div class="text-xs font-semibold text-surface-400 uppercase tracking-wide mb-2">{{ t.projection.charges }}</div>
                 <div class="text-xl font-bold text-red-500 truncate">{{ ventilations()!.agregat.charges | montant }}</div>
-                <div class="text-xs text-surface-400 mt-1.5">{{ t.mois[mois - 1] }} {{ annee }}</div>
               </div>
               <span class="w-9 h-9 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center shrink-0 mt-0.5">
                 <i class="pi pi-arrow-down text-red-500 text-xs"></i>
@@ -86,7 +84,6 @@ import { FR } from '../../../core/i18n/fr';
               <div class="min-w-0">
                 <div class="text-xs font-semibold text-surface-400 uppercase tracking-wide mb-2">{{ t.projection.reserves }}</div>
                 <div class="text-xl font-bold text-blue-500 truncate">{{ ventilations()!.agregat.reserves | montant }}</div>
-                <div class="text-xs text-surface-400 mt-1.5">{{ t.mois[mois - 1] }} {{ annee }}</div>
               </div>
               <span class="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center shrink-0 mt-0.5">
                 <i class="pi pi-wallet text-blue-500 text-xs"></i>
@@ -103,7 +100,6 @@ import { FR } from '../../../core/i18n/fr';
                      [class.text-red-500]="ventilations()!.agregat.soldeDisponible < 0">
                   {{ ventilations()!.agregat.soldeDisponible | montant }}
                 </div>
-                <div class="text-xs text-surface-400 mt-1.5">{{ t.mois[mois - 1] }} {{ annee }}</div>
               </div>
               <span class="w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5"
                     [ngClass]="ventilations()!.agregat.soldeDisponible >= 0
