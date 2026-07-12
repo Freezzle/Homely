@@ -8,6 +8,8 @@ import ch.homely.moteur.*;
 import ch.homely.poste.Poste;
 import ch.homely.poste.PosteRepository;
 import ch.homely.projection.dto.*;
+import ch.homely.scenario.RepartitionPeriode;
+import ch.homely.scenario.RepartitionPeriodeRepository;
 import ch.homely.scenario.Scenario;
 import ch.homely.scenario.ScenarioRepository;
 import ch.homely.taux.TauxChange;
@@ -35,20 +37,23 @@ public class ProjectionService {
 
     private static final Logger log = LoggerFactory.getLogger(ProjectionService.class);
 
-    private final ScenarioRepository   scenarioRepo;
-    private final PosteRepository      posteRepo;
-    private final TauxChangeRepository tauxRepo;
-    private final CompteRepository     compteRepo;
-    private final ActifRepository      actifRepo;
+    private final ScenarioRepository       scenarioRepo;
+    private final PosteRepository          posteRepo;
+    private final TauxChangeRepository     tauxRepo;
+    private final CompteRepository         compteRepo;
+    private final ActifRepository          actifRepo;
+    private final RepartitionPeriodeRepository periodeRepo;
 
     public ProjectionService(ScenarioRepository scenarioRepo, PosteRepository posteRepo,
                              TauxChangeRepository tauxRepo, CompteRepository compteRepo,
-                             ActifRepository actifRepo) {
+                             ActifRepository actifRepo,
+                             RepartitionPeriodeRepository periodeRepo) {
         this.scenarioRepo = scenarioRepo;
         this.posteRepo    = posteRepo;
         this.tauxRepo     = tauxRepo;
         this.compteRepo   = compteRepo;
         this.actifRepo    = actifRepo;
+        this.periodeRepo  = periodeRepo;
     }
 
     // ── T8.1 ─────────────────────────────────────────────────────────────────
@@ -228,17 +233,47 @@ public class ProjectionService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Scénario %s introuvable pour le foyer %s".formatted(scenarioId, foyerId)));
 
-        List<RepartitionCalcul> repDefaut = scenario.getRepartitionsDefaut().stream()
-                .map(r -> new RepartitionCalcul(r.getMembre().getId(), r.getQuotePart().doubleValue()))
+        // Charger les périodes de répartition (triées par debut ASC)
+        List<ch.homely.scenario.RepartitionPeriode> periodes =
+                periodeRepo.findWithPartsForScenario(scenarioId, foyerId);
+
+        List<RepartitionPeriodeCalcul> periodesCalcul = periodes.stream()
+                .map(p -> new RepartitionPeriodeCalcul(
+                        p.getDebut(), p.getFin(),
+                        p.getParts().stream()
+                                .map(pp -> new RepartitionCalcul(
+                                        pp.getMembre().getId(),
+                                        pp.getQuotePart().doubleValue()))
+                                .toList()))
                 .toList();
-        List<UUID> membres = repDefaut.stream().map(RepartitionCalcul::membreId).toList();
+
+        // Membres actifs = ceux de la période ouverte (fin=null); fallback sur les autres si aucune
+        List<UUID> membres = periodes.stream()
+                .filter(p -> p.getFin() == null)
+                .flatMap(p -> p.getParts().stream().map(pp -> pp.getMembre().getId()))
+                .distinct()
+                .collect(java.util.stream.Collectors.toList());
+        if (membres.isEmpty() && !periodes.isEmpty()) {
+            // Fallback : membres de la dernière période
+            ch.homely.scenario.RepartitionPeriode derniere = periodes.get(periodes.size() - 1);
+            membres = derniere.getParts().stream()
+                    .map(pp -> pp.getMembre().getId()).toList();
+        }
+        if (membres.isEmpty()) {
+            // Ultime fallback : anciennes repartitionsDefaut
+            membres = scenario.getRepartitionsDefaut().stream()
+                    .map(r -> r.getMembre().getId()).toList();
+        }
+
         Map<String, Double> taux = tauxRepo.findAllByFoyerId(foyerId).stream()
                 .collect(Collectors.toMap(TauxChange::getDevise, t -> t.getTauxVersBase().doubleValue()));
 
         List<Poste> postesRep  = posteRepo.findForMoteur(scenarioId, foyerId);
         List<Poste> postesVent = posteRepo.findForMoteurVentilations(scenarioId, foyerId);
-        Map<UUID, Poste> ventIndex = postesVent.stream()
-                .collect(Collectors.toMap(Poste::getId, p -> p));
+        Map<UUID, Poste> ventIndex = new HashMap<>();
+        for (Poste pVent : postesVent) {
+            ventIndex.put(pVent.getId(), pVent);
+        }
 
         List<PosteCalcul> postesCalc = postesRep.stream()
                 .map(p -> mapperPoste(p, ventIndex.get(p.getId()), scenario.getFoyer().getDeviseBase()))
@@ -249,7 +284,7 @@ public class ProjectionService {
                 scenario.getAnneeDepart(),
                 scenario.getTresorerieInitiale().doubleValue(),
                 scenario.getHorizonAnnees(),
-                repDefaut, taux, postesCalc, membres);
+                periodesCalcul, taux, postesCalc, membres);
     }
 
     private PosteCalcul mapperPoste(Poste p, Poste pVent, String deviseBase) {
@@ -265,6 +300,7 @@ public class ProjectionService {
                 p.getDevise() != null ? p.getDevise() : deviseBase,
                 p.getPeriodiciteMois(), p.getDebut(), p.getFin(), p.getMode(), p.getMoment(),
                 p.getNature(),
+                p.getTypeRepartition(),
                 repartitions, ventilations,
                 p.getCategorie() != null ? p.getCategorie().getId() : null,
                 p.getCompteSource() != null ? p.getCompteSource().getId() : null);

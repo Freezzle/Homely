@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { ScenarioDto, ScenarioRequest, PosteDto, PosteRequest, ObjectifDto, ObjectifRequest } from '../models/api.models';
+import { ScenarioDto, ScenarioRequest, PosteDto, PosteRequest, ObjectifDto, ObjectifRequest,
+         RepartitionPeriodeDto, RepartitionPeriodeRequest } from '../models/api.models';
 
 @Injectable({ providedIn: 'root' })
 export class ScenarioService {
@@ -43,3 +44,24 @@ export class ObjectifService {
   modifier(foyerId: string, scenarioId: string, id: string, req: ObjectifRequest) { return this.http.put<ObjectifDto>(`${this.base(foyerId, scenarioId)}/${id}`, req); }
   supprimer(foyerId: string, scenarioId: string, id: string) { return this.http.delete<void>(`${this.base(foyerId, scenarioId)}/${id}`); }
 }
+
+@Injectable({ providedIn: 'root' })
+export class RepartitionPeriodeService {
+  constructor(private http: HttpClient) {}
+  private base(foyerId: string, scenarioId: string) {
+    return `/api/foyers/${foyerId}/scenarios/${scenarioId}/periodes`;
+  }
+  lister(foyerId: string, scenarioId: string) {
+    return this.http.get<RepartitionPeriodeDto[]>(this.base(foyerId, scenarioId));
+  }
+  creer(foyerId: string, scenarioId: string, req: RepartitionPeriodeRequest) {
+    return this.http.post<RepartitionPeriodeDto>(this.base(foyerId, scenarioId), req);
+  }
+  modifier(foyerId: string, scenarioId: string, id: string, req: RepartitionPeriodeRequest) {
+    return this.http.put<RepartitionPeriodeDto>(`${this.base(foyerId, scenarioId)}/${id}`, req);
+  }
+  supprimer(foyerId: string, scenarioId: string, id: string) {
+    return this.http.delete<void>(`${this.base(foyerId, scenarioId)}/${id}`);
+  }
+}
+

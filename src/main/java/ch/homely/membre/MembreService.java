@@ -1,17 +1,17 @@
 package ch.homely.membre;
 
-import ch.homely.commun.CodesErreur;
-import ch.homely.commun.RegleMetierException;
 import ch.homely.commun.RessourceIntrouvableException;
 import ch.homely.foyer.Foyer;
 import ch.homely.foyer.FoyerRepository;
 import ch.homely.foyer.RoleFoyer;
 import ch.homely.membre.dto.MembreDto;
 import ch.homely.membre.dto.MembreRequest;
+import ch.homely.scenario.RepartitionPeriodeService;
 import ch.homely.securite.MultiTenantService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,12 +25,15 @@ public class MembreService {
     private final MembreRepository membreRepo;
     private final FoyerRepository foyerRepo;
     private final MultiTenantService multiTenant;
+    private final RepartitionPeriodeService periodeService;
 
     public MembreService(MembreRepository membreRepo, FoyerRepository foyerRepo,
-                         MultiTenantService multiTenant) {
-        this.membreRepo  = membreRepo;
-        this.foyerRepo   = foyerRepo;
-        this.multiTenant = multiTenant;
+                         MultiTenantService multiTenant,
+                         RepartitionPeriodeService periodeService) {
+        this.membreRepo     = membreRepo;
+        this.foyerRepo      = foyerRepo;
+        this.multiTenant    = multiTenant;
+        this.periodeService = periodeService;
     }
 
     @Transactional(readOnly = true)
@@ -55,7 +58,10 @@ public class MembreService {
         m.setNom(req.nom());
         m.setCouleur(req.couleur());
         m.setOrdre(req.ordre());
-        return toDto(membreRepo.save(m));
+        Membre saved = membreRepo.save(m);
+        // Hook : ajouter le membre avec 0% dans toutes les périodes existantes
+        periodeService.onMembreAjoute(foyerId, saved);
+        return toDto(saved);
     }
 
     public MembreDto modifier(UUID foyerId, UUID membreId, MembreRequest req) {
@@ -70,9 +76,8 @@ public class MembreService {
     public void supprimer(UUID foyerId, UUID membreId) {
         multiTenant.verifierAcces(foyerId, RoleFoyer.EDITOR);
         Membre m = trouver(foyerId, membreId);
-        // Vérification de référence (répartitions) via la suppression JPA en cascade
-        // Si des FK non-cascade existent, JPA lèvera DataIntegrityViolationException
-        // qu'on transforme en RegleMetierException dans le GlobalExceptionHandler.
+        // Hook : fermer la période ouverte et créer une nouvelle période sans ce membre
+        periodeService.onMembreDesactive(foyerId, m, LocalDate.now());
         m.setActif(false);
         membreRepo.save(m);
     }

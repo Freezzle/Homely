@@ -4,6 +4,7 @@ import ch.homely.poste.ModeComptabilisation;
 import ch.homely.poste.MomentPeriode;
 import ch.homely.poste.NaturePoste;
 import ch.homely.poste.TypePoste;
+import ch.homely.poste.TypeRepartition;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -24,6 +25,7 @@ public record PosteDto(
         ModeComptabilisation mode,
         MomentPeriode moment,
         NaturePoste nature,
+        TypeRepartition typeRepartition,
         UUID compteSource,
         int ordre,
         List<RepartitionPosteDto> repartitions,

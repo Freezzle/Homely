@@ -156,30 +156,65 @@ tresorerieDebutAnnee(Yi) = T0 + Σ sur j de 0 à i-1 de soldeAnnuel(Y0 + j)
 On peut aussi exposer `tresorerieFinAnnee(Yi) = tresorerieDebutAnnee(Yi) + soldeAnnuel(Yi)`
 et une **courbe mensuelle** cumulée pour un graphique lissé.
 
-## 6. Répartition entre N membres (généralisation de l'Excel)
+## 6. Répartition entre N membres — périodes temporelles & typeRepartition
 
-**Excel (2 membres)** : un scalaire `prorata M1` (défaut 0,58), `M2 = 1 − M1`,
-surchargeable ligne par ligne. **Généralisation** :
+### 6.1 Modèle de périodes
 
-- Le **scénario** possède une **répartition par défaut** : `{membre → quotePart}` avec
-  `Σ quotePart = 1`.
-- Chaque **poste** peut porter une **répartition propre** (override) sommant aussi à 1 ;
-  sinon il hérite de la répartition par défaut du scénario.
+Le **scénario** possède une liste ordonnée de **périodes de répartition** `[début, fin]`
+(couverture continue recommandée, une seule période ouverte `fin = null`).
+Chaque période porte un vecteur `{membre → quotePart}` avec `Σ quotePart = 1`.
+
+La **période active** pour un mois `(Y, M)` est la première période dont `[début, fin]`
+couvre le `1er jour du mois`.
+
+### 6.2 typeRepartition d'un poste
+
+Chaque **poste** porte un `typeRepartition` :
+
+| Valeur | Comportement |
+|--------|--------------|
+| `AUTO` (défaut) | Utilise la quote-part de la **période active** du scénario |
+| `REVERSE_AUTO` | Inverse normalisé : `(1 − pᵢ) / (N − 1)` ; pour N=2 permute exactement les parts (58/42 → 42/58) |
+| `CUSTOM` | Quote-part stockée ligne par ligne sur le poste (table `repartition_poste`) |
 
 ```
-quotePartEffective(poste, m) =
-    si poste.repartition existe -> poste.repartition[m]  (0 si m absent)
-    sinon                       -> scenario.repartitionDefaut[m]  (0 si m absent)
+quotePartEffective(poste, m, Y, M) =
+    si nbMembres ≤ 1                → 1,0                         (cas mono-membre)
+    si typeRepartition == CUSTOM    → poste.repartition[m]        (0 si absent)
+    si typeRepartition == AUTO      → periodeActive(Y,M)[m]       (0 si absent)
+    si typeRepartition == REVERSE_AUTO
+                                    → (1 − periodeActive(Y,M)[m]) / (N − 1)
 
-partMembre(poste, m, Y, M) = contribution(poste, Y, M) × quotePartEffective(poste, m)
+partMembre(poste, m, Y, M) = contribution(poste, Y, M) × quotePartEffective(poste, m, Y, M)
 ```
 
-**Règle de validation (bloquante)** : pour toute répartition (défaut ou d'un poste),
-`|Σ quotePart − 1| ≤ 1e-6`. Rejeter sinon (HTTP 422).
+### 6.3 Cas mono-membre
 
-> **Compatibilité Excel** : avec exactement 2 membres et une répartition `{M1:0,58 ;
-> M2:0,42}`, ces formules redonnent Part M1 = contribution×0,58 et Part M2 =
-> contribution×0,42 — identiques au classeur.
+Si le scénario n'a qu'un seul membre actif, `quotePartEffective = 1,0` pour tous les
+types ; aucune période ni répartition n'est nécessaire. L'UI masque les contrôles de
+répartition.
+
+### 6.4 Cycle de vie des membres
+
+- **Ajout d'un membre** : toutes les périodes existantes reçoivent `quotePart = 0` pour
+  le nouveau membre (somme reste 1). L'utilisateur doit ajuster les parts via l'éditeur
+  de périodes.
+- **Désactivation d'un membre** :
+  - La période ouverte est fermée (`fin = veille`).
+  - Une nouvelle période ouverte est créée pour les membres restants avec parts
+    équitables (arrondi sur le dernier membre).
+  - Les périodes fermées conservent les données historiques avec le membre désactivé.
+
+### 6.5 Règles de validation (bloquantes)
+
+- `|Σ quotePart − 1| ≤ 1e-6` pour chaque période et chaque poste CUSTOM (HTTP 422).
+- Au plus une période ouverte (`fin = null`) par scénario.
+- Pas de chevauchement entre périodes.
+
+> **Compatibilité Excel** : avec exactement 2 membres, une période unique ouverte
+> `{M1:0,58 ; M2:0,42}` et tous postes `AUTO`, les formules redonnent
+> `Part M1 = contribution × 0,58` et `Part M2 = contribution × 0,42` —
+> **identiques au classeur**. Les golden vectors §8-bis T2 restent verts.
 
 ## 7. Multi-devises (extension)
 

@@ -6,6 +6,7 @@ public final class CodesErreur {
     private CodesErreur() {}
 
     public static final String REPARTITION_INVALIDE           = "REPARTITION_INVALIDE";
+    public static final String PERIODE_INVALIDE               = "PERIODE_INVALIDE";
     public static final String SCENARIO_REFERENCE_UNIQUE      = "SCENARIO_REFERENCE_UNIQUE";
     public static final String SUPPORT_OBJECTIF_INVALIDE      = "SUPPORT_OBJECTIF_INVALIDE";
     public static final String MEMBRE_REFERENCE_SUPPRESSION   = "MEMBRE_REFERENCE_SUPPRESSION";

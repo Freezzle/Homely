@@ -11,6 +11,7 @@ import ch.homely.membre.MembreRepository;
 import ch.homely.moteur.MoteurCalcul;
 import ch.homely.moteur.PosteCalcul;
 import ch.homely.moteur.RepartitionCalcul;
+import ch.homely.poste.TypeRepartition;
 import ch.homely.poste.dto.PosteDto;
 import ch.homely.poste.dto.PosteRequest;
 import ch.homely.projection.ProjectionService;
@@ -68,39 +69,18 @@ public class PosteService {
         multiTenant.verifierAcces(foyerId, RoleFoyer.EDITOR);
         Scenario scenario = verifierScenario(foyerId, scenarioId);
 
-        // Si aucune répartition n'est fournie, charger les répartitions par défaut du scénario
-        List<PosteRequest.RepartitionPosteDto> repartitions = req.repartitions();
-        if ((repartitions == null || repartitions.isEmpty()) && !scenario.getRepartitionsDefaut().isEmpty()) {
-            repartitions = scenario.getRepartitionsDefaut().stream()
-                    .map(r -> new PosteRequest.RepartitionPosteDto(r.getMembre().getId(), r.getQuotePart()))
-                    .toList();
+        TypeRepartition typeRep = req.typeRepartition() != null
+                ? req.typeRepartition() : TypeRepartition.AUTO;
+
+        // Pour CUSTOM : valider les répartitions fournies
+        if (typeRep == TypeRepartition.CUSTOM) {
+            validerRepartitionCustom(req.repartitions(), foyerId);
         }
-
-        // Valider les répartitions (après enrichissement par défaut)
-        validerRepartition(repartitions, foyerId);
-
-        // Créer une nouvelle requête avec les répartitions enrichies
-        PosteRequest reqAvecRepartitions = new PosteRequest(
-                req.type(),
-                req.description(),
-                req.categorieId(),
-                req.montant(),
-                req.devise(),
-                req.periodiciteMois(),
-                req.debut(),
-                req.fin(),
-                req.mode(),
-                req.moment(),
-                req.nature(),
-                req.compteSource(),
-                req.ordre(),
-                repartitions,
-                req.ventilations()
-        );
+        // Pour AUTO/REVERSE_AUTO : les repartitions du poste sont ignorées
 
         Poste p = new Poste();
         p.setScenario(scenario);
-        appliquer(p, reqAvecRepartitions, foyerId);
+        appliquer(p, req, foyerId, typeRep);
         PosteDto dto = toDto(posteRepo.save(p));
         projectionService.invaliderCache(scenarioId);
         return dto;
@@ -110,19 +90,19 @@ public class PosteService {
         multiTenant.verifierAcces(foyerId, RoleFoyer.EDITOR);
         verifierScenario(foyerId, scenarioId);
 
-        validerRepartition(req.repartitions(), foyerId);
+        TypeRepartition typeRep = req.typeRepartition() != null
+                ? req.typeRepartition() : TypeRepartition.AUTO;
+
+        if (typeRep == TypeRepartition.CUSTOM) {
+            validerRepartitionCustom(req.repartitions(), foyerId);
+        }
 
         Poste p = trouver(scenarioId, posteId);
-
-        // Vider les collections enfants AVANT d'appliquer les nouvelles valeurs.
-        // Le saveAndFlush force Hibernate à émettre les DELETE immédiatement,
-        // évitant la violation de contrainte unique (poste_id, membre_id) causée
-        // par le flush tardif qui insérerait avant de supprimer.
         p.getRepartitions().clear();
         p.getVentilations().clear();
         posteRepo.saveAndFlush(p);
 
-        appliquer(p, req, foyerId);
+        appliquer(p, req, foyerId, typeRep);
         PosteDto dto = toDto(posteRepo.save(p));
         projectionService.invaliderCache(scenarioId);
         return dto;
@@ -138,11 +118,12 @@ public class PosteService {
 
     // ── helpers ──────────────────────────────────────────────────────────────
 
-    private void appliquer(Poste p, PosteRequest req, UUID foyerId) {
+    private void appliquer(Poste p, PosteRequest req, UUID foyerId, TypeRepartition typeRep) {
         p.setType(req.type());
         p.setDescription(req.description());
         p.setMontant(req.montant() != null ? req.montant() : BigDecimal.ZERO);
         p.setDevise(req.devise());
+        p.setTypeRepartition(typeRep);
 
         // Gère périodicité : 0=one-shot, sinon >= 1
         int periodicite = (req.periodiciteMois() != null && req.periodiciteMois() >= 0)
@@ -172,7 +153,8 @@ public class PosteService {
             p.setCompteSource(cs);
         }
 
-        if (req.repartitions() != null) {
+        // Stocker les répartitions UNIQUEMENT pour CUSTOM
+        if (typeRep == TypeRepartition.CUSTOM && req.repartitions() != null) {
             for (PosteRequest.RepartitionPosteDto rd : req.repartitions()) {
                 Membre m = membreRepo.findByIdAndFoyerId(rd.membreId(), foyerId)
                         .orElseThrow(() -> new RessourceIntrouvableException(
@@ -202,8 +184,8 @@ public class PosteService {
         }
     }
 
-    private void validerRepartition(List<PosteRequest.RepartitionPosteDto> reps, UUID foyerId) {
-        if (reps == null || reps.isEmpty()) return;
+    private void validerRepartitionCustom(List<PosteRequest.RepartitionPosteDto> reps, UUID foyerId) {
+        if (reps == null || reps.isEmpty()) return; // Toléré même pour CUSTOM (mono-membre)
         List<RepartitionCalcul> rcs = reps.stream()
                 .map(r -> new RepartitionCalcul(r.membreId(), r.quotePart().doubleValue()))
                 .toList();
@@ -227,7 +209,7 @@ public class PosteService {
         PosteCalcul pc = new PosteCalcul(p.getId(), p.getType(),
                 p.getMontant().doubleValue(), p.getDevise(), p.getPeriodiciteMois(),
                 p.getDebut(), p.getFin(), p.getMode(), p.getMoment(), p.getNature(),
-                List.of(), List.of(), null, null);
+                null, List.of(), List.of(), null, null);
         BigDecimal mensualise = BigDecimal.valueOf(MoteurCalcul.montantMensualise(pc))
                 .setScale(2, java.math.RoundingMode.HALF_UP);
 
@@ -245,6 +227,7 @@ public class PosteService {
                 p.getCategorie() != null ? p.getCategorie().getId() : null,
                 p.getMontant(), mensualise, p.getDevise(), p.getPeriodiciteMois(),
                 p.getDebut(), p.getFin(), p.getMode(), p.getMoment(), p.getNature(),
+                p.getTypeRepartition(),
                 p.getCompteSource() != null ? p.getCompteSource().getId() : null,
                 p.getOrdre(), reps, vents);
     }

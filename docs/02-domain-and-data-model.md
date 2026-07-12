@@ -241,6 +241,25 @@ CREATE INDEX idx_scenario_foyer ON scenario(foyer_id);
 -- au plus un scénario de référence par foyer :
 CREATE UNIQUE INDEX uq_scenario_ref ON scenario(foyer_id) WHERE est_reference;
 
+CREATE TABLE repartition_periode (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  scenario_id UUID NOT NULL REFERENCES scenario(id) ON DELETE CASCADE,
+  debut       DATE,
+  fin         DATE,
+  CONSTRAINT chk_repartition_periode_coherence CHECK (fin IS NULL OR debut IS NULL OR debut <= fin)
+);
+CREATE INDEX idx_repartition_periode_scenario ON repartition_periode(scenario_id);
+
+CREATE TABLE repartition_periode_part (
+  id         UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  periode_id UUID         NOT NULL REFERENCES repartition_periode(id) ON DELETE CASCADE,
+  membre_id  UUID         NOT NULL REFERENCES membre(id) ON DELETE CASCADE,
+  quote_part NUMERIC(9,6) NOT NULL,
+  ordre      INT          NOT NULL DEFAULT 0,
+  UNIQUE (periode_id, membre_id)
+);
+
+-- NB : repartition_defaut conservée pour rétro-compat (données historiques)
 CREATE TABLE repartition_defaut (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   scenario_id UUID NOT NULL REFERENCES scenario(id) ON DELETE CASCADE,
@@ -262,6 +281,8 @@ CREATE TABLE poste (
   fin               DATE,
   mode              VARCHAR(16) NOT NULL DEFAULT 'MENSUALISE',
   moment            VARCHAR(16) NOT NULL DEFAULT 'DEBUT_PERIODE',
+  type_repartition  VARCHAR(16) NOT NULL DEFAULT 'AUTO'
+                    CHECK (type_repartition IN ('AUTO','REVERSE_AUTO','CUSTOM')),
   compte_source     UUID REFERENCES compte(id),
   ordre             INT NOT NULL DEFAULT 0,
   date_creation     TIMESTAMPTZ NOT NULL DEFAULT now(),

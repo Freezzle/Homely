@@ -44,6 +44,11 @@ public final class GoldenFixture {
                 new RepartitionCalcul(melanie, 0.42)
         );
 
+        // Période unique ouverte (couvre toute la projection)
+        List<RepartitionPeriodeCalcul> periodes = List.of(
+                new RepartitionPeriodeCalcul(LocalDate.of(2020, 1, 1), null, repDef)
+        );
+
         List<PosteCalcul> postes = List.of(
                 // ── REVENUS ──────────────────────────────────────────────────
                 p(REVENU, 6300, 1, null, null, MENSUALISE, DEBUT_PERIODE),
@@ -84,7 +89,7 @@ public final class GoldenFixture {
 
         return new ParametresScenario(
                 "CHF", 2026, 0.0, 9,
-                repDef, Map.of(), postes, List.of(dylan, melanie)
+                periodes, Map.of(), postes, List.of(dylan, melanie)
         );
     }
 
@@ -94,7 +99,7 @@ public final class GoldenFixture {
                                   LocalDate debut, LocalDate fin,
                                   ModeComptabilisation mode, MomentPeriode moment) {
         return new PosteCalcul(UUID.randomUUID(), type, montant, "CHF", dMois,
-                debut, fin, mode, moment, null, List.of(), List.of(), null, null);
+                debut, fin, mode, moment, null, null, List.of(), List.of(), null, null);
     }
 
     private static LocalDate d(int y, int m, int d) {

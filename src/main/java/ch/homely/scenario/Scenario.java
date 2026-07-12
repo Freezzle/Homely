@@ -54,4 +54,8 @@ public class Scenario {
 
     @OneToMany(mappedBy = "scenario", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RepartitionDefaut> repartitionsDefaut = new ArrayList<>();
+
+    @OneToMany(mappedBy = "scenario", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("debut ASC")
+    private List<RepartitionPeriode> repartitionsPeriodes = new ArrayList<>();
 }

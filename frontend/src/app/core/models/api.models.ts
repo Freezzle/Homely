@@ -41,10 +41,16 @@ export interface TauxChangeRequest { devise: string; tauxVersBase: number; }
 
 // ── Scénario ─────────────────────────────────────────────────────────────────
 export interface RepartitionDefautDto { membreId: string; nomMembre: string; quotePart: number; }
+export interface RepartitionPeriodePartDto { membreId: string; nomMembre: string; couleurMembre?: string; quotePart: number; ordre: number; }
+export interface RepartitionPeriodeDto { id: string; debut?: string; fin?: string; parts: RepartitionPeriodePartDto[]; }
+export interface RepartitionPeriodeRequest { debut?: string; fin?: string; parts: { membreId: string; quotePart: number; }[]; }
+
 export interface ScenarioDto {
   id: string; nom: string; estReference: boolean; anneeDepart: number;
   tresorerieInitiale: number; horizonAnnees: number;
-  repartitions: RepartitionDefautDto[]; dateModification: string;
+  repartitions: RepartitionDefautDto[];
+  periodes: RepartitionPeriodeDto[];
+  dateModification: string;
 }
 export interface ScenarioRequest {
   nom: string; anneeDepart: number; tresorerieInitiale: number; horizonAnnees: number;
@@ -56,6 +62,7 @@ export type TypePoste = 'REVENU' | 'CHARGE' | 'RESERVE';
 export type ModeComptabilisation = 'MENSUALISE' | 'PERIODIQUE';
 export type MomentPeriode = 'DEBUT_PERIODE' | 'FIN_PERIODE';
 export type NaturePoste = 'EFFECTIF' | 'PREVISION';
+export type TypeRepartition = 'AUTO' | 'REVERSE_AUTO' | 'CUSTOM';
 
 export interface RepartitionPosteDto { membreId: string; nomMembre: string; quotePart: number; }
 export interface VentilationCompteDto { membreId: string; compteId: string; libelleCompte: string; }
@@ -65,6 +72,7 @@ export interface PosteDto {
   montant: number; montantMensualise: number; devise?: string;
   periodiciteMois: number; debut?: string; fin?: string;
   mode: ModeComptabilisation; moment: MomentPeriode; nature: NaturePoste;
+  typeRepartition: TypeRepartition;
   compteSource?: string; ordre: number;
   repartitions: RepartitionPosteDto[];
   ventilations: VentilationCompteDto[];
@@ -74,6 +82,7 @@ export interface PosteRequest {
   montant: number; devise?: string; periodiciteMois: number;
   debut?: string; fin?: string;
   mode: ModeComptabilisation; moment: MomentPeriode; nature: NaturePoste;
+  typeRepartition?: TypeRepartition;
   compteSource?: string; ordre: number;
   repartitions?: { membreId: string; quotePart: number; }[];
   ventilations?: { membreId: string; compteId: string; }[];

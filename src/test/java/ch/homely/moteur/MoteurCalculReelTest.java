@@ -21,7 +21,7 @@ class MoteurCalculReelTest {
                              ModeComptabilisation mode, MomentPeriode moment) {
         return new PosteCalcul(UUID.randomUUID(), type, montant, "CHF", dMois,
                 debut, null, mode, moment, NaturePoste.EFFECTIF,
-                List.of(), List.of(), null, null);
+                null, List.of(), List.of(), null, null);
     }
     static ParametresScenario golden() {
         return GoldenFixture.buildScenario2026(DYLAN, MELANIE);
@@ -134,10 +134,10 @@ class MoteurCalculReelTest {
         void natureNimpacteRien() {
             PosteCalcul eff = new PosteCalcul(UUID.randomUUID(), CHARGE, 500.0, "CHF", 3,
                     null, null, MENSUALISE, DEBUT_PERIODE, NaturePoste.EFFECTIF,
-                    List.of(), List.of(), null, null);
+                    null, List.of(), List.of(), null, null);
             PosteCalcul ant = new PosteCalcul(UUID.randomUUID(), CHARGE, 500.0, "CHF", 3,
                     null, null, MENSUALISE, DEBUT_PERIODE, NaturePoste.PREVISION,
-                    List.of(), List.of(), null, null);
+                    null, List.of(), List.of(), null, null);
             for (int m = 1; m <= 12; m++) {
                 assertThat(MoteurCalcul.contribution(eff, 2026, m))
                         .isCloseTo(MoteurCalcul.contribution(ant, 2026, m), within(TOL));
@@ -149,7 +149,7 @@ class MoteurCalculReelTest {
         void natureNullDefautEffectif() {
             PosteCalcul p = new PosteCalcul(UUID.randomUUID(), CHARGE, 100.0, "CHF", 1,
                     null, null, MENSUALISE, DEBUT_PERIODE, null,
-                    List.of(), List.of(), null, null);
+                    null, List.of(), List.of(), null, null);
             assertThat(p.nature()).isEqualTo(NaturePoste.EFFECTIF);
         }
     }

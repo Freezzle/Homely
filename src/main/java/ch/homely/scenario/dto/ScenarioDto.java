@@ -12,7 +12,10 @@ public record ScenarioDto(
         int anneeDepart,
         BigDecimal tresorerieInitiale,
         int horizonAnnees,
+        /** Rétro-compat : répartitions de la période ouverte (pour le bouton "Par défaut" dans postes). */
         List<RepartitionDefautDto> repartitions,
+        /** Liste complète des périodes de répartition (ordonnées par début). */
+        List<RepartitionPeriodeDto> periodes,
         Instant dateModification
 ) {
     public record RepartitionDefautDto(UUID membreId, String nomMembre, BigDecimal quotePart) {}

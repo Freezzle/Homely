@@ -11,17 +11,17 @@ import java.util.UUID;
  * @param anneeDepart         première année de la projection
  * @param tresorerieInitiale  trésorerie au 1er janvier de anneeDepart (T0)
  * @param horizonAnnees       nombre d'années à projeter
- * @param repartitionDefaut   quotes-parts par défaut {membreId → quotePart}
+ * @param periodesDefaut      fenêtres temporelles de répartition par défaut, triées par début
  * @param taux                taux de conversion vers deviseBase {devise → tauxVersBase}
  * @param postes              liste des postes du scénario
- * @param membres             liste des identifiants de membres actifs
+ * @param membres             liste des identifiants de membres actifs (période ouverte)
  */
 public record ParametresScenario(
         String deviseBase,
         int anneeDepart,
         double tresorerieInitiale,
         int horizonAnnees,
-        List<RepartitionCalcul> repartitionDefaut,
+        List<RepartitionPeriodeCalcul> periodesDefaut,
         Map<String, Double> taux,
         List<PosteCalcul> postes,
         List<UUID> membres

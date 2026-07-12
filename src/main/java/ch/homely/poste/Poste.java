@@ -73,6 +73,14 @@ public class Poste {
     @Column(nullable = false, length = 16)
     private NaturePoste nature = NaturePoste.EFFECTIF;
 
+    /**
+     * Mode de calcul de la répartition entre membres.
+     * Défaut {@link TypeRepartition#AUTO} : hérite de la période active du scénario.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type_repartition", nullable = false, length = 16)
+    private TypeRepartition typeRepartition = TypeRepartition.AUTO;
+
     /** Compte source pour les postes RESERVE (débit). */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "compte_source")

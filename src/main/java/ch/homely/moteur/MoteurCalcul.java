@@ -2,6 +2,7 @@ package ch.homely.moteur;
 
 import ch.homely.poste.ModeComptabilisation;
 import ch.homely.poste.MomentPeriode;
+import ch.homely.poste.TypeRepartition;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -132,32 +133,91 @@ public class MoteurCalcul {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // §6 — Quote-part effective d'un membre pour un poste
+    // §6 — Répartition par période + quote-part effective
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
-     * Retourne la quote-part effective du membre pour ce poste.
-     * Si le poste a ses propres répartitions, on les utilise ; sinon on hérite de la répartition
-     * par défaut du scénario.
+     * Retourne la liste des quotes-parts de la période active pour un mois donné.
+     * La période active est la première période dont {@code [debut, fin]} couvre
+     * le premier jour du mois {@code (annee, mois)}.
      *
-     * @param poste              poste calculé
-     * @param membreId           identifiant du membre
-     * @param repartitionDefaut  répartition par défaut du scénario
+     * @return liste des répartitions de la période active, ou une liste vide si aucune
+     *         période ne couvre ce mois
+     */
+    public static List<RepartitionCalcul> periodeActive(
+            List<RepartitionPeriodeCalcul> periodes, int annee, int mois) {
+        if (periodes == null || periodes.isEmpty()) return List.of();
+        LocalDate dateRef = LocalDate.of(annee, mois, 1);
+        return periodes.stream()
+                .filter(p -> {
+                    boolean apresDebut = p.debut() == null || !dateRef.isBefore(p.debut());
+                    boolean avantFin   = p.fin()   == null || !dateRef.isAfter(p.fin());
+                    return apresDebut && avantFin;
+                })
+                .findFirst()
+                .map(RepartitionPeriodeCalcul::repartitions)
+                .orElse(List.of());
+    }
+
+    /**
+     * Retourne la quote-part effective du membre pour ce poste à un mois donné.
+     *
+     * <ul>
+     *   <li>Mono-membre ({@code nbMembres ≤ 1}) → {@code 1.0} toujours.</li>
+     *   <li>{@link TypeRepartition#CUSTOM} → quote-part stockée sur le poste (0 si absente).</li>
+     *   <li>{@link TypeRepartition#AUTO} → part de la période active du scénario (0 si absente).</li>
+     *   <li>{@link TypeRepartition#REVERSE_AUTO} → complément normalisé :
+     *       {@code (1 − pᵢ) / (N − 1)} où N = taille de la période active.
+     *       Pour N=2 cela permute exactement les parts.</li>
+     * </ul>
+     *
+     * @param poste           poste à évaluer
+     * @param membreId        identifiant du membre
+     * @param annee           année du mois de calcul
+     * @param mois            numéro de mois 1..12
+     * @param periodesDefaut  fenêtres temporelles de répartition du scénario
+     * @param nbMembres       nombre de membres actifs dans le scénario
      * @return quote-part ∈ [0,1]
      */
     public static double quotePartEffective(PosteCalcul poste, UUID membreId,
-                                            List<RepartitionCalcul> repartitionDefaut) {
-        List<RepartitionCalcul> source =
-                (poste.repartitions() != null && !poste.repartitions().isEmpty())
-                        ? poste.repartitions()
-                        : repartitionDefaut;
+                                            int annee, int mois,
+                                            List<RepartitionPeriodeCalcul> periodesDefaut,
+                                            int nbMembres) {
+        // Mono-membre : toujours 100 %
+        if (nbMembres <= 1) return 1.0;
 
-        if (source == null) return 0.0;
-        return source.stream()
+        TypeRepartition type = poste.typeRepartition();
+
+        if (type == TypeRepartition.CUSTOM) {
+            List<RepartitionCalcul> source = poste.repartitions();
+            if (source == null || source.isEmpty()) return 0.0;
+            return source.stream()
+                    .filter(r -> membreId.equals(r.membreId()))
+                    .mapToDouble(RepartitionCalcul::quotePart)
+                    .findFirst()
+                    .orElse(0.0);
+        }
+
+        // AUTO ou REVERSE_AUTO : résoudre la période active
+        List<RepartitionCalcul> parts = periodeActive(periodesDefaut, annee, mois);
+
+        if (type == TypeRepartition.AUTO) {
+            return parts.stream()
+                    .filter(r -> membreId.equals(r.membreId()))
+                    .mapToDouble(RepartitionCalcul::quotePart)
+                    .findFirst()
+                    .orElse(0.0);
+        }
+
+        // REVERSE_AUTO : (1 − pᵢ) / (N − 1)
+        int N = parts.size();
+        if (N <= 1) return 1.0;
+        double pi = parts.stream()
                 .filter(r -> membreId.equals(r.membreId()))
                 .mapToDouble(RepartitionCalcul::quotePart)
                 .findFirst()
                 .orElse(0.0);
+        return (1.0 - pi) / (N - 1);
     }
 
     /**
@@ -236,11 +296,12 @@ public class MoteurCalcul {
     private static AggregatMensuel aggregatMembreMoisInterne(ParametresScenario params, UUID membreId,
                                                              int annee, int mois, boolean reel) {
         double revenus = 0, charges = 0, reserves = 0;
+        int nbMembres = params.membres().size();
         for (PosteCalcul poste : params.postes()) {
             double base = reel ? contributionReelle(poste, annee, mois) : contribution(poste, annee, mois);
             double contrib = base
                     * tauxConversion(poste.devise(), params.deviseBase(), params.taux())
-                    * quotePartEffective(poste, membreId, params.repartitionDefaut());
+                    * quotePartEffective(poste, membreId, annee, mois, params.periodesDefaut(), nbMembres);
             switch (poste.type()) {
                 case REVENU  -> revenus  += contrib;
                 case CHARGE  -> charges  += contrib;
@@ -337,6 +398,7 @@ public class MoteurCalcul {
         Map<UUID, Double> parCategorie    = new LinkedHashMap<>();
         Map<UUID, Map<UUID, Double>> parCategorieMembre = new LinkedHashMap<>();
         Map<UUID, Map<UUID, Double>> parCompteMembre = new LinkedHashMap<>();
+        int nbMembres = params.membres().size();
 
         for (PosteCalcul poste : params.postes()) {
             double taux = tauxConversion(poste.devise(), params.deviseBase(), params.taux());
@@ -347,7 +409,8 @@ public class MoteurCalcul {
                 parCategorie.merge(poste.categorieId(), contrib, Double::sum);
 
                 for (UUID membreId : params.membres()) {
-                    double partMembre = contrib * quotePartEffective(poste, membreId, params.repartitionDefaut());
+                    double partMembre = contrib
+                            * quotePartEffective(poste, membreId, annee, mois, params.periodesDefaut(), nbMembres);
                     if (partMembre == 0) continue;
 
                     parCategorieMembre
@@ -359,7 +422,7 @@ public class MoteurCalcul {
             // Ventilation par compte/membre
             for (UUID membreId : params.membres()) {
                 double partMembre = contrib
-                        * quotePartEffective(poste, membreId, params.repartitionDefaut());
+                        * quotePartEffective(poste, membreId, annee, mois, params.periodesDefaut(), nbMembres);
                 if (partMembre == 0) continue;
 
                 UUID compteId = resolveCompte(poste, membreId);

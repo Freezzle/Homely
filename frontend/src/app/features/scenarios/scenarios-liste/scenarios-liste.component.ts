@@ -12,17 +12,18 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ContexteService } from '../../../core/services/contexte.service';
 import { ScenarioService } from '../../../core/services/scenario-poste.service';
-import { MembreService } from '../../../core/services/referentiel.service';
-import { ScenarioDto, MembreDto } from '../../../core/models/api.models';
+import { ScenarioDto } from '../../../core/models/api.models';
 import { MontantPipe } from '../../../core/pipes/format.pipes';
 import { FR } from '../../../core/i18n/fr';
+import { RepartitionPeriodesComponent } from '../repartition-periodes/repartition-periodes.component';
 
 @Component({
   selector: 'app-scenarios-liste',
   standalone: true,
   providers: [ConfirmationService],
   imports: [CommonModule, FormsModule, ReactiveFormsModule, TableModule, ButtonModule,
-    DialogModule, TagModule, InputTextModule, InputNumberModule, TooltipModule, ConfirmDialogModule, MontantPipe],
+    DialogModule, TagModule, InputTextModule, InputNumberModule, TooltipModule,
+    ConfirmDialogModule, MontantPipe, RepartitionPeriodesComponent],
   template: `
     <p-confirmdialog />
     <div class="flex flex-col gap-4">
@@ -56,10 +57,14 @@ import { FR } from '../../../core/i18n/fr';
             <td class="text-right">{{ s.tresorerieInitiale | montant }}</td>
             <td class="text-right">{{ s.horizonAnnees }} ans</td>
             <td>
-              <div class="flex gap-1">
+              <div class="flex gap-1 items-center">
                 @if (contexte.estEditor()) {
                   <p-button icon="pi pi-pencil" [text]="true" size="small" (click)="ouvrirEdition(s)" />
                   <p-button icon="pi pi-copy" [text]="true" size="small" [pTooltip]="t.scenario.dupliquer" (click)="dupliquer(s)" />
+                }
+                <!-- Bouton périodes de prorata (masqué si mono-membre) -->
+                @if (membres().length > 1) {
+                  <app-repartition-periodes [scenarioId]="s.id" />
                 }
                 @if (contexte.estOwner() && !s.estReference) {
                   <p-button icon="pi pi-star" [text]="true" severity="warn" size="small"

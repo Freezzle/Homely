@@ -4,6 +4,7 @@ import ch.homely.poste.ModeComptabilisation;
 import ch.homely.poste.MomentPeriode;
 import ch.homely.poste.NaturePoste;
 import ch.homely.poste.TypePoste;
+import ch.homely.poste.TypeRepartition;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 
@@ -24,6 +25,7 @@ public record PosteRequest(
         @NotNull ModeComptabilisation mode,
         @NotNull MomentPeriode moment,
         @NotNull NaturePoste nature,
+        TypeRepartition typeRepartition,   // null → AUTO
         UUID compteSource,
         int ordre,
         @Valid List<RepartitionPosteDto> repartitions,

@@ -57,6 +57,12 @@ export const FR = {
     repartition: 'Répartition par défaut',
     dupliquer: 'Dupliquer',
     definirReference: 'Définir comme référence',
+    periodes: 'Périodes de prorata',
+    gererPeriodes: 'Gérer les périodes',
+    nouvellePeriode: 'Nouvelle période',
+    periodeOuverte: 'Ouverte',
+    debutPeriode: 'Début',
+    finPeriode: 'Fin (vide = ouverte)',
   },
   // ── Poste ────────────────────────────────────────────────
   poste: {
@@ -81,8 +87,15 @@ export const FR = {
     momentTooltip: "Le montant plein tombe-t-il au début ou à la fin du cycle de périodicité ?",
     natureTooltip: "Effectif = charge/revenu certain (loyer, salaire, facture…). Prévision = provision pour frais variables estimés (nourriture, habits, loisirs…).",
     repartition: 'Répartition',
+    typeRepartition: 'Mode de répartition',
+    typeRepartitionTooltip: "AUTO = suit les périodes de prorata du scénario. Inverse auto = permute les parts. Personnalisé = parts fixes manuelles.",
     repartitionParDefaut: 'Par défaut',
     repartitionEquitable: 'Équitable',
+    typeRepartitionOptions: {
+      AUTO: 'Auto (période du scénario)',
+      REVERSE_AUTO: 'Inverse auto (permutation)',
+      CUSTOM: 'Personnalisé',
+    },
     ventilation: 'Ventilation comptes',
     apercu: 'Aperçu mensuel',
     modeOptions: {

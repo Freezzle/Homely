@@ -1,6 +1,8 @@
 import { Component, inject, signal, computed, OnInit, input, effect } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule, FormArray, FormsModule } from '@angular/forms';
+import { startWith } from 'rxjs';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -19,7 +21,7 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { ContexteService } from '../../../core/services/contexte.service';
 import { PosteService } from '../../../core/services/scenario-poste.service';
 import { CategorieService, CompteService } from '../../../core/services/referentiel.service';
-import { PosteDto, CategorieDto, CompteDto, VentilationCompteDto, TypePoste } from '../../../core/models/api.models';
+import { PosteDto, CategorieDto, CompteDto, VentilationCompteDto, TypePoste, TypeRepartition } from '../../../core/models/api.models';
 import { MontantPipe, PeriodicitePipe } from '../../../core/pipes/format.pipes';
 import { FR } from '../../../core/i18n/fr';
 
@@ -201,11 +203,12 @@ import { FR } from '../../../core/i18n/fr';
                   }
                 </div>
 
-                <!-- Répartitions : tags membres + % (si > 0%) -->
-                @if (repartitionsAffichees(p).length > 0) {
+                <!-- Répartitions : tags membres (AUTO = nom seul, CUSTOM = nom + %) -->
+                @let membresAffiches = membresAffichesPoste(p);
+                @if (membresAffiches.length > 0) {
                   <div class="flex items-center gap-2 mt-2 flex-wrap">
-                    @for (rep of repartitionsAffichees(p); track rep.membreId) {
-                      <p-tag [value]="rep.nomMembre + ' · ' + Math.round(rep.quotePart * 100) + '%'"
+                    @for (rep of membresAffiches; track rep.membreId) {
+                      <p-tag [value]="rep.label"
                              [style]="{ 'background-color': rep.couleur, color: rep.couleurTexte }"
                              styleClass="text-xs py-1 px-2 border-none" />
                     }
@@ -330,52 +333,80 @@ import { FR } from '../../../core/i18n/fr';
                     optionLabel="label" optionValue="value" styleClass="w-full" />
         </div>
 
-        <!-- Répartition + Comptes -->
-        <div class="flex flex-col gap-2">
-          <div class="flex items-center justify-between">
-            <label class="text-sm font-medium">
-              {{ t.poste.repartition }} 
-              <span class="text-sm"
-                 [class.text-green-600]="sommeRepartition === 100"
-                 [class.text-red-500]="sommeRepartition !== 100 && repartitionsArray.length > 0">
-                {{ sommeRepartition }}%
-              </span></label>
-            <div class="flex items-center gap-2">
-              <p-button [label]="t.poste.repartitionParDefaut" [text]="true" size="small"
-                        (click)="appliquerRepartitionParDefaut()" [disabled]="!aRepartitionParDefaut()" />
-              <p-button [label]="t.poste.repartitionEquitable" [text]="true" size="small" (click)="repartirEquitablement()" />
-            </div>
+        <!-- Ligne 6 : Mode répartition (masqué si mono-membre) -->
+        @if (membres().length > 1) {
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium" [pTooltip]="t.poste.typeRepartitionTooltip">
+              {{ t.poste.typeRepartition }}
+            </label>
+            <p-select appendTo="body" formControlName="typeRepartition"
+                      [options]="typeRepartitionOptions"
+                      optionLabel="label" optionValue="value" styleClass="w-full" />
           </div>
-          @if (sommeRepartition !== 100 && repartitionsArray.length > 0) {
-            <p-message severity="warn" [text]="t.commun.repartitionInvalide" />
-          }
-          @if (repartitionsArray.length > 0) {
-            <div class="flex items-center gap-3 text-xs text-surface-400 font-medium px-0">
-              <span class="flex-1">{{ t.referentiels.membre.nom }}</span>
-              <span class="w-28">{{ t.poste.repartition }}</span>
-              <span class="w-44">{{ t.poste.ventilation }}</span>
+        }
+
+        <!-- Répartition + Comptes (uniquement pour CUSTOM multi-membres) -->
+        @if (estCustomMultiMembre()) {
+          <div class="flex flex-col gap-2">
+            <div class="flex items-center justify-between">
+              <label class="text-sm font-medium">
+                {{ t.poste.repartition }}
+                <span class="text-sm"
+                   [class.text-green-600]="sommeRepartition === 100"
+                   [class.text-red-500]="sommeRepartition !== 100 && repartitionsArray.length > 0">
+                  {{ sommeRepartition }}%
+                </span></label>
+              <div class="flex items-center gap-2">
+                <p-button [label]="t.poste.repartitionEquitable" [text]="true" size="small" (click)="repartirEquitablement()" />
+              </div>
             </div>
-          }
-          <div formArrayName="repartitions" class="flex flex-col gap-2">
-            @for (ctrl of repartitionsArray.controls; track ctrl; let i = $index) {
-              <div [formGroupName]="i" class="flex items-center gap-3">
-                <span class="flex-1 text-sm">{{ membres()[i]?.nom }}</span>
-                <p-inputnumber formControlName="quotePart" [min]="0" [max]="100"
-                               suffix="%" [minFractionDigits]="0" styleClass="w-28"
-                               (onInput)="calculerSomme()"></p-inputnumber>
-                <p-select appendTo="body" formControlName="compteId"
-                          [options]="comptes()" optionLabel="libelle" optionValue="id"
-                          [placeholder]="t.poste.ventilation" styleClass="w-44"
-                          [showClear]="false" />
+            @if (sommeRepartition !== 100 && repartitionsArray.length > 0) {
+              <p-message severity="warn" [text]="t.commun.repartitionInvalide" />
+            }
+            @if (repartitionsArray.length > 0) {
+              <div class="grid grid-cols-[1fr_auto_auto] items-center gap-3 text-xs text-surface-400 font-medium px-0">
+                <span>{{ t.referentiels.membre.nom }}</span>
+                <span class="w-24 text-center">{{ t.poste.repartition }}</span>
+                <span class="w-44">{{ t.poste.ventilation }}</span>
               </div>
             }
+            <div formArrayName="repartitions" class="flex flex-col gap-2">
+              @for (ctrl of repartitionsArray.controls; track ctrl; let i = $index) {
+                <div [formGroupName]="i" class="grid grid-cols-[1fr_auto_auto] items-center gap-3">
+                  <span class="text-sm">{{ membres()[i]?.nom }}</span>
+                  <p-inputnumber formControlName="quotePart" [min]="0" [max]="100"
+                                 suffix="%" [minFractionDigits]="0" styleClass="w-24"
+                                 (onInput)="calculerSomme()"></p-inputnumber>
+                  <p-select appendTo="body" formControlName="compteId"
+                            [options]="comptes()" optionLabel="libelle" optionValue="id"
+                            [placeholder]="t.poste.ventilation" styleClass="w-44"
+                            [showClear]="false" />
+                </div>
+              }
+            </div>
           </div>
-        </div>
+        } @else if (membres().length > 0) {
+          <!-- Ventilation comptes uniquement (sans parts pour AUTO/REVERSE_AUTO) -->
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-medium">{{ t.poste.ventilation }}</label>
+            <div formArrayName="repartitions" class="flex flex-col gap-2">
+              @for (ctrl of repartitionsArray.controls; track ctrl; let i = $index) {
+                <div [formGroupName]="i" class="flex items-center gap-3">
+                  <span class="flex-1 text-sm">{{ membres()[i]?.nom }}</span>
+                  <p-select appendTo="body" formControlName="compteId"
+                            [options]="comptes()" optionLabel="libelle" optionValue="id"
+                            [placeholder]="t.poste.ventilation" styleClass="w-44"
+                            [showClear]="false" />
+                </div>
+              }
+            </div>
+          </div>
+        }
       </form>
       <ng-template pTemplate="footer">
         <p-button [label]="t.commun.annuler" severity="secondary" (click)="fermerDialogPoste()" />
         <p-button [label]="t.commun.enregistrer" (click)="enregistrer()"
-                  [disabled]="form.invalid || (repartitionsArray.length > 0 && sommeRepartition !== 100)" />
+                  [disabled]="form.invalid || (estCustomMultiMembre() && sommeRepartition !== 100)" />
       </ng-template>
     </p-dialog>
 
@@ -412,7 +443,6 @@ export class PostesListeComponent implements OnInit {
   postes = signal<PosteDto[]>([]);
   categories = signal<CategorieDto[]>([]);
   comptes = signal<CompteDto[]>([]);
-  aRepartitionParDefaut = computed(() => (this.contexte.scenarioCourant()?.repartitions?.length ?? 0) > 0);
   chargement = signal(false);
   dialogVisible = false;
   apercuVisible = false;
@@ -436,6 +466,12 @@ export class PostesListeComponent implements OnInit {
     { label: FR.poste.natureOptions.PREVISION, value: 'PREVISION' },
   ];
 
+  typeRepartitionOptions = [
+    { label: FR.poste.typeRepartitionOptions.AUTO,         value: 'AUTO' as TypeRepartition },
+    { label: FR.poste.typeRepartitionOptions.REVERSE_AUTO, value: 'REVERSE_AUTO' as TypeRepartition },
+    { label: FR.poste.typeRepartitionOptions.CUSTOM,       value: 'CUSTOM' as TypeRepartition },
+  ];
+
   periodiciteOptions = [
     { label: FR.poste.periodiciteLabels[0], value: 0 },
     ...FR.poste.periodiciteLabels.slice(1).map((label, i) => ({ label, value: i + 1 }))
@@ -452,19 +488,43 @@ export class PostesListeComponent implements OnInit {
   ];
 
   form = this.fb.group({
-    description:    ['', Validators.required],
-    categorieId:    [null as string | null],
-    montant:        [0, [Validators.required, Validators.min(0)]],
-    periodiciteMois:[0, Validators.min(0)],
-    mode:           ['MENSUALISE'],
-    moment:         ['DEBUT_PERIODE'],
-    nature:         ['EFFECTIF'],
-    debut:          [null as Date | null],
-    fin:            [null as Date | null],
-    repartitions:   this.fb.array([] as any[]),
+    description:     ['', Validators.required],
+    categorieId:     [null as string | null],
+    montant:         [0, [Validators.required, Validators.min(0)]],
+    periodiciteMois: [0, Validators.min(0)],
+    mode:            ['MENSUALISE'],
+    moment:          ['DEBUT_PERIODE'],
+    nature:          ['EFFECTIF'],
+    typeRepartition: ['AUTO' as TypeRepartition],
+    debut:           [null as Date | null],
+    fin:             [null as Date | null],
+    repartitions:    this.fb.array([] as any[]),
   });
 
   get repartitionsArray() { return this.form.get('repartitions') as FormArray; }
+
+  /** Signal réactif sur la valeur courante de typeRepartition (réagit aux changements du select) */
+  private typeRepartitionValue = toSignal(
+    this.form.get('typeRepartition')!.valueChanges.pipe(
+      startWith(this.form.get('typeRepartition')!.value as TypeRepartition)
+    ),
+    { initialValue: 'AUTO' as TypeRepartition }
+  );
+
+  /** Vrai si le mode de répartition courant nécessite des parts manuelles (CUSTOM multi-membres) */
+  estCustomMultiMembre = computed(() =>
+    this.typeRepartitionValue() === 'CUSTOM' && this.membres().length > 1
+  );
+
+  /**
+   * Quand l'utilisateur bascule vers CUSTOM et que le FormArray n'est pas encore peuplé
+   * (cas d'une ouverture en création), on initialise les parts à 0.
+   */
+  private readonly _initPartsOnCustom = effect(() => {
+    if (this.typeRepartitionValue() === 'CUSTOM' && this.repartitionsArray.length === 0) {
+      this.initialiserRepartitions(undefined);
+    }
+  });
 
   // ── Helpers fenêtre de validité ──────────────────────────
   private readonly _now = new Date();
@@ -575,11 +635,6 @@ export class PostesListeComponent implements OnInit {
     return this.categories().find(c => c.id === id)?.libelle ?? '–';
   }
 
-  repartitionResume(p: PosteDto): string {
-    if (!p.repartitions.length) return 'défaut';
-    return p.repartitions.map(r => `${Math.round(r.quotePart * 100)}%`).join(' / ');
-  }
-
   repartitionsAffichees(p: PosteDto): { membreId: string; quotePart: number; nomMembre: string; couleur: string; couleurTexte: string }[] {
     return p.repartitions
       .filter(r => r.quotePart > 0)
@@ -594,7 +649,40 @@ export class PostesListeComponent implements OnInit {
           couleurTexte: this.couleurTexteContraste(couleur),
         };
       })
-      .filter(r => r.nomMembre); // Filtre les répartitions dont le membre n'existe pas
+      .filter(r => r.nomMembre);
+  }
+
+  /**
+   * Tags membres à afficher dans la liste des postes.
+   * AUTO / REVERSE_AUTO → nom seul (tous les membres actifs), sans pourcentage.
+   * CUSTOM              → nom + pourcentage (depuis repartition_poste).
+   * Mono-membre         → aucun tag (inutile d'afficher l'unique membre).
+   */
+  membresAffichesPoste(p: PosteDto): { membreId: string; label: string; couleur: string; couleurTexte: string }[] {
+    const membres = this.membres();
+    // Mono-membre : inutile d'afficher un tag
+    if (membres.length <= 1) return [];
+
+    if (p.typeRepartition === 'CUSTOM') {
+      // Parts explicites stockées → afficher avec pourcentage
+      return this.repartitionsAffichees(p).map(r => ({
+        membreId: r.membreId,
+        label: `${r.nomMembre} · ${Math.round(r.quotePart * 100)}%`,
+        couleur: r.couleur,
+        couleurTexte: r.couleurTexte,
+      }));
+    }
+
+    // AUTO ou REVERSE_AUTO (ou null = AUTO) → tous les membres actifs, nom seul
+    return membres.map(m => {
+      const couleur = this.normaliserCouleur(m.couleur);
+      return {
+        membreId: m.id,
+        label: m.nom,
+        couleur,
+        couleurTexte: this.couleurTexteContraste(couleur),
+      };
+    });
   }
 
   private normaliserCouleur(couleur?: string): string {
@@ -615,9 +703,9 @@ export class PostesListeComponent implements OnInit {
 
   ouvrirCreation(): void {
     this.posteEnEdition = null;
-    this.form.reset({ mode: 'MENSUALISE', moment: 'DEBUT_PERIODE', nature: 'EFFECTIF', periodiciteMois: 0 });
-    const repartitions = this.contexte.scenarioCourant()?.repartitions ?? [];
-    this.initialiserRepartitions(repartitions.length > 0 ? repartitions : undefined);
+    this.form.reset({ mode: 'MENSUALISE', moment: 'DEBUT_PERIODE', nature: 'EFFECTIF',
+                      periodiciteMois: 0, typeRepartition: 'AUTO' });
+    this.initialiserRepartitions(undefined);
     this.dialogVisible = true;
   }
 
@@ -627,10 +715,16 @@ export class PostesListeComponent implements OnInit {
       description: p.description, categorieId: p.categorieId,
       montant: p.montant, periodiciteMois: p.periodiciteMois ?? 0,
       mode: p.mode, moment: p.moment, nature: p.nature ?? 'EFFECTIF',
+      typeRepartition: p.typeRepartition ?? 'AUTO',
       debut: p.debut ? new Date(p.debut) : null,
       fin: p.fin ? new Date(p.fin) : null,
     });
-    this.initialiserRepartitions(p.repartitions, p.ventilations);
+    // Initialiser les parts seulement pour CUSTOM
+    if (p.typeRepartition === 'CUSTOM') {
+      this.initialiserRepartitions(p.repartitions, p.ventilations);
+    } else {
+      this.initialiserRepartitions(undefined, p.ventilations);
+    }
     this.dialogVisible = true;
   }
 
@@ -701,18 +795,6 @@ export class PostesListeComponent implements OnInit {
     this.calculerSomme();
   }
 
-  appliquerRepartitionParDefaut(): void {
-    const repartitions = this.contexte.scenarioCourant()?.repartitions ?? [];
-    if (!repartitions.length) return;
-
-    const quotesParMembre = new Map(repartitions.map(r => [r.membreId, Math.round(r.quotePart * 100)]));
-    this.repartitionsArray.controls.forEach(ctrl => {
-      const membreId = ctrl.get('membreId')?.value as string | undefined;
-      ctrl.get('quotePart')?.setValue(membreId ? (quotesParMembre.get(membreId) ?? 0) : 0);
-    });
-    this.calculerSomme();
-  }
-
   enregistrer(): void {
     const foyerId = this.contexte.foyerId()!;
     const scenarioId = this.contexte.scenarioId()!;
@@ -729,12 +811,22 @@ export class PostesListeComponent implements OnInit {
       return;
     }
 
-    const repartitions = this.repartitionsArray.length
+    const typeRepartition = (v.typeRepartition ?? 'AUTO') as TypeRepartition;
+    const isCustom = typeRepartition === 'CUSTOM';
+
+    // Parts uniquement pour CUSTOM
+    const repartitions = isCustom && this.repartitionsArray.length
       ? this.repartitionsArray.controls.map(c => ({
           membreId: c.get('membreId')!.value,
           quotePart: (c.get('quotePart')!.value ?? 0) / 100,
         })).filter(r => r.quotePart > 0)
       : undefined;
+
+    // Validation somme seulement pour CUSTOM multi-membres
+    if (isCustom && this.membres().length > 1 && this.sommeRepartition !== 100) {
+      this.toast.add({ severity: 'warn', summary: FR.commun.erreur, detail: FR.commun.repartitionInvalide });
+      return;
+    }
 
     const ventilations = this.repartitionsArray.length
       ? this.repartitionsArray.controls
@@ -751,6 +843,7 @@ export class PostesListeComponent implements OnInit {
       mode:            (estOneShot ? 'MENSUALISE' : v.mode) as any,
       moment:          (estOneShot ? 'DEBUT_PERIODE' : v.moment) as any,
       nature:          (v.nature ?? 'EFFECTIF') as any,
+      typeRepartition: typeRepartition,
       debut:           v.debut ? this.toIso(v.debut) : undefined,
       fin:             estOneShot ? undefined : (v.fin ? this.toIso(v.fin) : undefined),
       ordre: 0,
