@@ -6,6 +6,11 @@ import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeng/themes/aura';
 import { routes } from './app.routes';
 import { jwtInterceptor } from './core/interceptors/jwt.interceptor';
+import { registerLocaleData } from '@angular/common';
+import localeFrCH from '@angular/common/locales/fr-CH';
+import localeFrCHExtra from '@angular/common/locales/extra/fr-CH';
+
+registerLocaleData(localeFrCH, 'fr-CH', localeFrCHExtra);
 
 export const appConfig: ApplicationConfig = {
   providers: [
