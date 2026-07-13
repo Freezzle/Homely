@@ -26,7 +26,6 @@ public record PosteRequest(
         @NotNull MomentPeriode moment,
         @NotNull NaturePoste nature,
         TypeRepartition typeRepartition,   // null → AUTO
-        UUID compteSource,
         int ordre,
         @Valid List<RepartitionPosteDto> repartitions,
         @Valid List<VentilationCompteDto> ventilations
@@ -37,5 +36,5 @@ public record PosteRequest(
 
     public record VentilationCompteDto(
             @NotNull UUID membreId,
-            @NotNull UUID compteId) {}
+            UUID compteId) {}  // nullable : null = compte désélectionné (ex. membre à 0%)
 }

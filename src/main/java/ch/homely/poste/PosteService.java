@@ -2,6 +2,8 @@ package ch.homely.poste;
 
 import ch.homely.categorie.Categorie;
 import ch.homely.categorie.CategorieRepository;
+import ch.homely.commun.CodesErreur;
+import ch.homely.commun.RegleMetierException;
 import ch.homely.commun.RessourceIntrouvableException;
 import ch.homely.compte.Compte;
 import ch.homely.compte.CompteRepository;
@@ -11,7 +13,6 @@ import ch.homely.membre.MembreRepository;
 import ch.homely.moteur.MoteurCalcul;
 import ch.homely.moteur.PosteCalcul;
 import ch.homely.moteur.RepartitionCalcul;
-import ch.homely.poste.TypeRepartition;
 import ch.homely.poste.dto.PosteDto;
 import ch.homely.poste.dto.PosteRequest;
 import ch.homely.projection.ProjectionService;
@@ -23,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /** T7.2 — CRUD Poste + RepartitionPoste + VentilationCompte. */
@@ -146,12 +148,6 @@ public class PosteService {
             p.setCategorie(cat);
         }
 
-        if (req.compteSource() != null) {
-            Compte cs = compteRepo.findByIdAndFoyerId(req.compteSource(), foyerId)
-                    .orElseThrow(() -> new RessourceIntrouvableException(
-                            "Compte source introuvable : " + req.compteSource()));
-            p.setCompteSource(cs);
-        }
 
         // Stocker les répartitions UNIQUEMENT pour CUSTOM
         if (typeRep == TypeRepartition.CUSTOM && req.repartitions() != null) {
@@ -168,13 +164,35 @@ public class PosteService {
         }
 
         if (req.ventilations() != null) {
+            // Pour CUSTOM : constituer l'ensemble des membres ayant strictement 0%
+            // → leurs ventilations seront ignorées (pas de compte à sauvegarder)
+            final Set<UUID> membresAZero;
+            if (typeRep == TypeRepartition.CUSTOM && req.repartitions() != null) {
+                membresAZero = req.repartitions().stream()
+                        .filter(r -> r.quotePart().compareTo(BigDecimal.ZERO) == 0)
+                        .map(PosteRequest.RepartitionPosteDto::membreId)
+                        .collect(java.util.stream.Collectors.toSet());
+            } else {
+                membresAZero = Set.of();
+            }
+
             for (PosteRequest.VentilationCompteDto vd : req.ventilations()) {
+                // Ignorer si membre à 0% (CUSTOM) ou si compteId absent (sélection vidée)
+                if (membresAZero.contains(vd.membreId()) || vd.compteId() == null) continue;
                 Membre m = membreRepo.findByIdAndFoyerId(vd.membreId(), foyerId)
                         .orElseThrow(() -> new RessourceIntrouvableException(
                                 "Membre introuvable : " + vd.membreId()));
                 Compte c = compteRepo.findByIdAndFoyerId(vd.compteId(), foyerId)
                         .orElseThrow(() -> new RessourceIntrouvableException(
                                 "Compte introuvable : " + vd.compteId()));
+                // Vérifier que le membre est bien rattaché à ce compte
+                boolean rattache = c.getMembres().stream()
+                        .anyMatch(cm -> cm.getId().equals(vd.membreId()));
+                if (!rattache) {
+                    throw new RegleMetierException(
+                            CodesErreur.VENTILATION_COMPTE_NON_RATTACHE,
+                            "Le membre " + vd.membreId() + " n'est pas rattaché au compte " + vd.compteId());
+                }
                 VentilationCompte vc = new VentilationCompte();
                 vc.setPoste(p);
                 vc.setMembre(m);
@@ -209,7 +227,7 @@ public class PosteService {
         PosteCalcul pc = new PosteCalcul(p.getId(), p.getType(),
                 p.getMontant().doubleValue(), p.getDevise(), p.getPeriodiciteMois(),
                 p.getDebut(), p.getFin(), p.getMode(), p.getMoment(), p.getNature(),
-                null, List.of(), List.of(), null, null);
+                null, List.of(), List.of(), null);
         BigDecimal mensualise = BigDecimal.valueOf(MoteurCalcul.montantMensualise(pc))
                 .setScale(2, java.math.RoundingMode.HALF_UP);
 
@@ -228,7 +246,6 @@ public class PosteService {
                 p.getMontant(), mensualise, p.getDevise(), p.getPeriodiciteMois(),
                 p.getDebut(), p.getFin(), p.getMode(), p.getMoment(), p.getNature(),
                 p.getTypeRepartition(),
-                p.getCompteSource() != null ? p.getCompteSource().getId() : null,
                 p.getOrdre(), reps, vents);
     }
 }

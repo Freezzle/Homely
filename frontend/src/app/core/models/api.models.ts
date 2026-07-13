@@ -24,9 +24,8 @@ export interface ChangerRoleRequest { role: RoleFoyer; }
 export interface MembreDto { id: string; nom: string; couleur: string; ordre: number; actif: boolean; }
 export interface MembreRequest { nom: string; couleur: string; ordre: number; }
 
-export type TypeCompte = 'COURANT' | 'EPARGNE' | 'COMMUN' | 'AUTRE';
-export interface CompteDto { id: string; libelle: string; type: TypeCompte; soldeInitial: number; devise: string; ordre: number; actif: boolean; }
-export interface CompteRequest { libelle: string; type: TypeCompte; soldeInitial: number; devise?: string; ordre: number; }
+export interface CompteDto { id: string; libelle: string; soldeInitial: number; devise: string; ordre: number; actif: boolean; membreIds: string[]; }
+export interface CompteRequest { libelle: string; soldeInitial: number; devise?: string; ordre: number; membreIds: string[]; }
 
 export type TypeCategorie = 'REVENU' | 'CHARGE' | 'RESERVE';
 export interface CategorieDto { id: string; libelle: string; typePoste: TypeCategorie; ordre: number; actif: boolean; }
@@ -73,7 +72,7 @@ export interface PosteDto {
   periodiciteMois: number; debut?: string; fin?: string;
   mode: ModeComptabilisation; moment: MomentPeriode; nature: NaturePoste;
   typeRepartition: TypeRepartition;
-  compteSource?: string; ordre: number;
+  ordre: number;
   repartitions: RepartitionPosteDto[];
   ventilations: VentilationCompteDto[];
 }
@@ -83,7 +82,7 @@ export interface PosteRequest {
   debut?: string; fin?: string;
   mode: ModeComptabilisation; moment: MomentPeriode; nature: NaturePoste;
   typeRepartition?: TypeRepartition;
-  compteSource?: string; ordre: number;
+  ordre: number;
   repartitions?: { membreId: string; quotePart: number; }[];
   ventilations?: { membreId: string; compteId: string; }[];
 }

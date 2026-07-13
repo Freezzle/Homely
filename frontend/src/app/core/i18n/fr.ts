@@ -187,11 +187,12 @@ export const FR = {
     compte: {
       titre: 'Comptes bancaires',
       libelle: 'Libellé',
-      type: 'Type',
       soldeInitial: 'Solde initial',
       devise: 'Devise',
       ordre: 'Ordre',
-      types: { COURANT: 'Courant', EPARGNE: 'Épargne', COMMUN: 'Commun', AUTRE: 'Autre' },
+      membres: 'Membres rattachés',
+      membresRequis: 'Au moins un membre actif requis',
+      membresPlaceholder: 'Sélectionner les membres…',
     },
     categorie: {
       titre: 'Catégories',

@@ -7,24 +7,26 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
+import { MultiSelectModule } from 'primeng/multiselect';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { MessageModule } from 'primeng/message';
 import { TagModule } from 'primeng/tag';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ContexteService } from '../../../core/services/contexte.service';
-import { CompteService } from '../../../core/services/referentiel.service';
-import { CompteDto, TypeCompte } from '../../../core/models/api.models';
+import { CompteService, MembreService } from '../../../core/services/referentiel.service';
+import { CompteDto, MembreDto } from '../../../core/models/api.models';
 import { MontantPipe } from '../../../core/pipes/format.pipes';
 import { FR } from '../../../core/i18n/fr';
 
-/** T10.2 — CRUD Comptes */
+/** T10.2 — CRUD Comptes avec rattachement membres */
 @Component({
   selector: 'app-comptes',
   standalone: true,
   providers: [ConfirmationService],
   imports: [
     CommonModule, ReactiveFormsModule,
-    TableModule, ButtonModule, DialogModule, TagModule,
-    InputTextModule, InputNumberModule, SelectModule,
+    TableModule, ButtonModule, DialogModule, TagModule, MessageModule,
+    InputTextModule, InputNumberModule, SelectModule, MultiSelectModule,
     ConfirmDialogModule, MontantPipe,
   ],
   template: `
@@ -41,9 +43,9 @@ import { FR } from '../../../core/i18n/fr';
         <ng-template pTemplate="header">
           <tr>
             <th pSortableColumn="libelle">{{ t.referentiels.compte.libelle }} <p-sortIcon field="libelle" /></th>
-            <th>{{ t.referentiels.compte.type }}</th>
             <th class="text-right">{{ t.referentiels.compte.soldeInitial }}</th>
             <th>{{ t.referentiels.compte.devise }}</th>
+            <th>{{ t.referentiels.compte.membres }}</th>
             <th class="text-right">{{ t.referentiels.compte.ordre }}</th>
             <th></th>
           </tr>
@@ -51,9 +53,15 @@ import { FR } from '../../../core/i18n/fr';
         <ng-template pTemplate="body" let-c>
           <tr>
             <td class="font-medium">{{ c.libelle }}</td>
-            <td><p-tag [value]="typeLabel(c.type)" severity="secondary" /></td>
             <td class="text-right">{{ c.soldeInitial | montant:c.devise }}</td>
             <td class="text-surface-500">{{ c.devise }}</td>
+            <td>
+              <div class="flex flex-wrap gap-1">
+                @for (mid of c.membreIds; track mid) {
+                  <p-tag [value]="nomMembre(mid)" severity="secondary" />
+                }
+              </div>
+            </td>
             <td class="text-right text-surface-500">{{ c.ordre }}</td>
             <td>
               <div class="flex gap-1">
@@ -72,36 +80,49 @@ import { FR } from '../../../core/i18n/fr';
     </div>
 
     <p-dialog [(visible)]="dialogVisible" [header]="compteEnEdition ? t.commun.modifier : t.commun.creer"
-              [modal]="true" styleClass="w-full max-w-md">
+              [modal]="true" styleClass="w-full max-w-lg">
       <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">{{ t.referentiels.compte.libelle }} *</label>
           <input pInputText formControlName="libelle" class="w-full" />
         </div>
+
+        <!-- Membres rattachés -->
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium">{{ t.referentiels.compte.membres }} *</label>
+          <p-multiselect
+            appendTo="body"
+            formControlName="membreIds"
+            [options]="membresActifs()"
+            optionLabel="nom"
+            optionValue="id"
+            [placeholder]="t.referentiels.compte.membresPlaceholder"
+            styleClass="w-full"
+            display="chip" />
+          @if (form.get('membreIds')?.invalid && form.get('membreIds')?.touched) {
+            <p-message severity="warn" [text]="t.referentiels.compte.membresRequis" />
+          }
+        </div>
+
         <div class="grid grid-cols-2 gap-4">
-          <div class="flex flex-col gap-1">
-            <label class="text-sm font-medium">{{ t.referentiels.compte.type }}</label>
-            <p-select appendTo="body" formControlName="type" [options]="typeOptions" optionLabel="label" optionValue="value" styleClass="w-full" />
-          </div>
           <div class="flex flex-col gap-1">
             <label class="text-sm font-medium">{{ t.referentiels.compte.devise }}</label>
             <p-select appendTo="body" formControlName="devise" [options]="devises" styleClass="w-full" />
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-          <div class="flex flex-col gap-1">
-            <label class="text-sm font-medium">{{ t.referentiels.compte.soldeInitial }}</label>
-            <p-inputnumber formControlName="soldeInitial" mode="decimal" [minFractionDigits]="2" class="w-full" />
           </div>
           <div class="flex flex-col gap-1">
             <label class="text-sm font-medium">{{ t.referentiels.compte.ordre }}</label>
             <p-inputnumber formControlName="ordre" [min]="1" class="w-full" />
           </div>
         </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium">{{ t.referentiels.compte.soldeInitial }}</label>
+          <p-inputnumber formControlName="soldeInitial" mode="decimal" [minFractionDigits]="2" class="w-full" />
+        </div>
       </form>
       <ng-template pTemplate="footer">
         <p-button [label]="t.commun.annuler" severity="secondary" (click)="dialogVisible = false" />
-        <p-button [label]="t.commun.enregistrer" (click)="enregistrer()" [disabled]="form.invalid" />
+        <p-button [label]="t.commun.enregistrer" (click)="enregistrer()"
+                  [disabled]="form.invalid || !membreIdsNonVides()" />
       </ng-template>
     </p-dialog>
   `,
@@ -109,38 +130,42 @@ import { FR } from '../../../core/i18n/fr';
 export class ComptesComponent implements OnInit {
   readonly t = FR;
   contexte = inject(ContexteService);
-  private compteSvc = inject(CompteService);
-  private toast = inject(MessageService);
-  private confirm = inject(ConfirmationService);
-  private fb = inject(FormBuilder);
+  private compteSvc  = inject(CompteService);
+  private membreSvc  = inject(MembreService);
+  private toast      = inject(MessageService);
+  private confirm    = inject(ConfirmationService);
+  private fb         = inject(FormBuilder);
 
-  comptes = signal<CompteDto[]>([]);
-  chargement = signal(false);
+  comptes       = signal<CompteDto[]>([]);
+  membresActifs = signal<MembreDto[]>([]);
+  chargement    = signal(false);
   dialogVisible = false;
   compteEnEdition: CompteDto | null = null;
 
-  typeOptions: { label: string; value: TypeCompte }[] = [
-    { label: FR.referentiels.compte.types.COURANT, value: 'COURANT' },
-    { label: FR.referentiels.compte.types.EPARGNE, value: 'EPARGNE' },
-    { label: FR.referentiels.compte.types.COMMUN,  value: 'COMMUN'  },
-    { label: FR.referentiels.compte.types.AUTRE,   value: 'AUTRE'   },
-  ];
   devises = ['CHF', 'EUR', 'USD', 'GBP', 'CAD'];
 
   form = this.fb.group({
     libelle:      ['', Validators.required],
-    type:         ['COURANT' as TypeCompte, Validators.required],
+    membreIds:    [[] as string[], Validators.required],
     soldeInitial: [0],
     devise:       [this.contexte.deviseBase()],
     ordre:        [1, Validators.required],
   });
 
-  typeLabel(type: TypeCompte): string {
-    return FR.referentiels.compte.types[type] ?? type;
+  membreIdsNonVides(): boolean {
+    const ids = this.form.get('membreIds')?.value;
+    return Array.isArray(ids) && ids.length > 0;
+  }
+
+  nomMembre(id: string): string {
+    return this.membresActifs().find(m => m.id === id)?.nom ?? id.substring(0, 8);
   }
 
   private readonly _chargerEffect = effect(() => {
-    if (this.contexte.foyerId()) this.charger();
+    if (this.contexte.foyerId()) {
+      this.charger();
+      this.chargerMembres();
+    }
   });
 
   ngOnInit(): void {}
@@ -155,23 +180,45 @@ export class ComptesComponent implements OnInit {
     });
   }
 
+  chargerMembres(): void {
+    const foyerId = this.contexte.foyerId();
+    if (!foyerId) return;
+    this.membreSvc.lister(foyerId).subscribe({
+      next: m => this.membresActifs.set(m.filter(mb => mb.actif)),
+    });
+  }
+
   ouvrirCreation(): void {
     this.compteEnEdition = null;
     const ordre = this.comptes().length > 0 ? Math.max(...this.comptes().map(c => c.ordre)) + 1 : 1;
-    this.form.reset({ libelle: '', type: 'COURANT', soldeInitial: 0, devise: this.contexte.deviseBase(), ordre });
+    // Pré-sélectionner tous les membres actifs par défaut
+    const tousIds = this.membresActifs().map(m => m.id);
+    this.form.reset({ libelle: '', membreIds: tousIds, soldeInitial: 0, devise: this.contexte.deviseBase(), ordre });
     this.dialogVisible = true;
   }
 
   ouvrirEdition(c: CompteDto): void {
     this.compteEnEdition = c;
-    this.form.patchValue({ libelle: c.libelle, type: c.type, soldeInitial: c.soldeInitial, devise: c.devise, ordre: c.ordre });
+    // membreIds : seulement ceux qui sont actifs (les inactifs sont préservés côté serveur)
+    const membreIdsActifs = c.membreIds.filter(id => this.membresActifs().some(m => m.id === id));
+    this.form.patchValue({
+      libelle: c.libelle, membreIds: membreIdsActifs,
+      soldeInitial: c.soldeInitial, devise: c.devise, ordre: c.ordre,
+    });
     this.dialogVisible = true;
   }
 
   enregistrer(): void {
+    if (!this.membreIdsNonVides()) return;
     const foyerId = this.contexte.foyerId()!;
     const v = this.form.value;
-    const req = { libelle: v.libelle!, type: v.type as TypeCompte, soldeInitial: v.soldeInitial ?? 0, devise: v.devise ?? undefined, ordre: v.ordre! };
+    const req = {
+      libelle: v.libelle!,
+      membreIds: v.membreIds as string[],
+      soldeInitial: v.soldeInitial ?? 0,
+      devise: v.devise ?? undefined,
+      ordre: v.ordre!,
+    };
     const obs = this.compteEnEdition
       ? this.compteSvc.modifier(foyerId, this.compteEnEdition.id, req)
       : this.compteSvc.creer(foyerId, req);

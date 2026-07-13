@@ -261,9 +261,10 @@ Module **nouveau** (absent de l'Excel). Le principe reprend la trésorerie chaî
 - **Flux mensuel imputé à un compte** dérivé des postes :
   - REVENU → `+ partMembre` sur le compte du membre.
   - CHARGE → `− partMembre` sur le compte du membre.
-  - RESERVE → **transfert** : `− partMembre` sur le compte source (défaut = compte
-    « courant » du foyer, configurable au niveau poste via `compteSource`) et
-    `+ partMembre` sur le compte de destination (`ventilationComptes[m]`).
+  - RESERVE → **transfert** : `− partMembre` sur le compte du membre (débit via
+    `ventilationComptes[m]`) et `+ partMembre` sur ce même compte d'épargne/destination.
+    Le compte de débit n'est plus configurable au niveau du poste ; il est entièrement
+    porté par la ventilation du membre.
 - **Solde projeté** d'un compte au mois `t` = `soldeInitial` + cumul des flux imputés
   jusqu'à `t` + appréciation prorata temporis.
 - **Net worth** au mois `t` = Σ (soldes projetés de tous les comptes + actifs).

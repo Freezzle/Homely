@@ -99,7 +99,7 @@ public final class GoldenFixture {
                                   LocalDate debut, LocalDate fin,
                                   ModeComptabilisation mode, MomentPeriode moment) {
         return new PosteCalcul(UUID.randomUUID(), type, montant, "CHF", dMois,
-                debut, fin, mode, moment, null, null, List.of(), List.of(), null, null);
+                debut, fin, mode, moment, null, null, List.of(), List.of(), null);
     }
 
     private static LocalDate d(int y, int m, int d) {

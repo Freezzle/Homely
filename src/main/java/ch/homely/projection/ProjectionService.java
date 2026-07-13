@@ -302,8 +302,7 @@ public class ProjectionService {
                 p.getNature(),
                 p.getTypeRepartition(),
                 repartitions, ventilations,
-                p.getCategorie() != null ? p.getCategorie().getId() : null,
-                p.getCompteSource() != null ? p.getCompteSource().getId() : null);
+                p.getCategorie() != null ? p.getCategorie().getId() : null);
     }
 
     // ── mappers ───────────────────────────────────────────────────────────────

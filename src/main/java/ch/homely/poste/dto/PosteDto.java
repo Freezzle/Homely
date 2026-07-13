@@ -26,7 +26,6 @@ public record PosteDto(
         MomentPeriode moment,
         NaturePoste nature,
         TypeRepartition typeRepartition,
-        UUID compteSource,
         int ordre,
         List<RepartitionPosteDto> repartitions,
         List<VentilationCompteDto> ventilations

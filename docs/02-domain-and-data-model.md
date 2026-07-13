@@ -67,10 +67,16 @@ Personne du budget (Dylan, Mélanie…). Champs : `id`, `foyerId`, `nom`, `coule
 pour les graphiques), `ordre`, `actif`. **N membres autorisés.**
 
 ### Compte
-Compte bancaire du foyer. Champs : `id`, `foyerId`, `libelle`, `type` (voir enum
-`TypeCompte`), `soldeInitial` (décimal, au 1ᵉʳ janvier de l'année de départ du scénario
+Compte bancaire du foyer. Champs : `id`, `foyerId`, `libelle`,
+`soldeInitial` (décimal, au 1ᵉʳ janvier de l'année de départ du scénario
 de référence — utilisé par le module patrimoine), `devise` (défaut = deviseBase),
 `ordre`, `actif`.
+
+Relation N-N avec `Membre` via la table de liaison `compte_membre`. Un compte appartient à
+**1..N membres**. Lors de la création ou modification, seuls les membres **actifs** peuvent
+être rattachés. Si un membre devient inactif après coup, le rattachement est conservé, mais
+il ne peut plus être sélectionné dans les nouveaux postes. Un compte **ne peut pas être créé
+sans au moins un membre**.
 
 ### Categorie
 Classification d'un poste. Champs : `id`, `foyerId`, `libelle`, `typePoste` (REVENU |
@@ -104,17 +110,22 @@ Ligne budgétaire récurrente. Champs :
 `montant` (décimal ≥ 0), `devise` (défaut = deviseBase), `periodiciteMois` (int ≥ 0),
 `debut` (date null), `fin` (date null), `mode` (MENSUALISE | PERIODIQUE), `moment`
 (DEBUT_PERIODE | FIN_PERIODE), `nature` (EFFECTIF | PREVISION, descriptif),
-`compteSource` (FK Compte null — pour RESERVE, §9 doc 1),
 `ordre`, `dateCreation`, `dateModification`.
+
+> **Note** : le champ `compteSource` (anciennement présent sur les postes RESERVE) est
+> supprimé. Le compte de débit d'une réserve est désormais porté par `VentilationCompte`
+> du membre concerné.
 
 ### RepartitionPoste
 Override de répartition pour un poste. Champs : `id`, `posteId`, `membreId`, `quotePart`.
 Si aucune ligne pour un poste → hériter de `RepartitionDefaut`. **Σ par poste = 1** si
 présent (validé).
 
-### VentilationCompte s
+### VentilationCompte
 Compte utilisé par chaque membre pour un poste. Champs : `id`, `posteId`, `membreId`,
 `compteId`. (Optionnel ; sert aux ventilations par compte et au patrimoine.)
+Le membre ne peut sélectionner que les comptes auxquels il est rattaché
+(via `compte_membre`).
 
 ### Objectif
 Cible d'épargne. Champs : `id`, `scenarioId`, `libelle`, `categorieProjetId` (FK
@@ -131,7 +142,6 @@ ModeComptabilisation = MENSUALISE | PERIODIQUE
 MomentPeriode        = DEBUT_PERIODE | FIN_PERIODE
 NaturePoste          = EFFECTIF | PREVISION
 RoleFoyer            = OWNER | EDITOR | VIEWER
-TypeCompte           = COURANT | EPARGNE | COMMUN | AUTRE   (extensible)
 TypeActif            = COMPTE_EPARGNE | TROISIEME_PILIER | INVESTISSEMENT | CRYPTO
                      | IMMOBILIER | VEHICULE | AUTRE
 ```
@@ -186,13 +196,21 @@ CREATE TABLE compte (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   foyer_id      UUID NOT NULL REFERENCES foyer(id) ON DELETE CASCADE,
   libelle       VARCHAR(120) NOT NULL,
-  type          VARCHAR(16) NOT NULL DEFAULT 'AUTRE',
   solde_initial NUMERIC(15,2) NOT NULL DEFAULT 0,
   devise        CHAR(3),
   ordre         INT NOT NULL DEFAULT 0,
   actif         BOOLEAN NOT NULL DEFAULT TRUE
 );
 CREATE INDEX idx_compte_foyer ON compte(foyer_id);
+
+-- Relation N-N compte ↔ membre
+CREATE TABLE compte_membre (
+  compte_id UUID NOT NULL REFERENCES compte(id) ON DELETE CASCADE,
+  membre_id UUID NOT NULL REFERENCES membre(id) ON DELETE CASCADE,
+  CONSTRAINT pk_compte_membre PRIMARY KEY (compte_id, membre_id)
+);
+CREATE INDEX idx_compte_membre_compte ON compte_membre(compte_id);
+CREATE INDEX idx_compte_membre_membre ON compte_membre(membre_id);
 
 CREATE TABLE categorie (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -283,7 +301,6 @@ CREATE TABLE poste (
   moment            VARCHAR(16) NOT NULL DEFAULT 'DEBUT_PERIODE',
   type_repartition  VARCHAR(16) NOT NULL DEFAULT 'AUTO'
                     CHECK (type_repartition IN ('AUTO','REVERSE_AUTO','CUSTOM')),
-  compte_source     UUID REFERENCES compte(id),
   ordre             INT NOT NULL DEFAULT 0,
   date_creation     TIMESTAMPTZ NOT NULL DEFAULT now(),
   date_modification TIMESTAMPTZ NOT NULL DEFAULT now(),

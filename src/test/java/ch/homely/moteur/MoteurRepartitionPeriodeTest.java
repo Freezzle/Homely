@@ -46,7 +46,7 @@ class MoteurRepartitionPeriodeTest {
     private static PosteCalcul poste(TypeRepartition type) {
         return new PosteCalcul(UUID.randomUUID(), TypePoste.CHARGE, 1000.0, "CHF", 1,
                 null, null, ModeComptabilisation.MENSUALISE, MomentPeriode.DEBUT_PERIODE,
-                null, type, List.of(), List.of(), null, null);
+                null, type, List.of(), List.of(), null);
     }
 
     private static PosteCalcul posteCustom(double partDylan, double partMelanie) {
@@ -56,7 +56,7 @@ class MoteurRepartitionPeriodeTest {
         );
         return new PosteCalcul(UUID.randomUUID(), TypePoste.CHARGE, 1000.0, "CHF", 1,
                 null, null, ModeComptabilisation.MENSUALISE, MomentPeriode.DEBUT_PERIODE,
-                null, TypeRepartition.CUSTOM, reps, List.of(), null, null);
+                null, TypeRepartition.CUSTOM, reps, List.of(), null);
     }
 
     private static RepartitionPeriodeCalcul periode(LocalDate debut, LocalDate fin, double d, double m) {
@@ -207,7 +207,7 @@ class MoteurRepartitionPeriodeTest {
 
             var charge = new PosteCalcul(UUID.randomUUID(), TypePoste.CHARGE, 1000.0, "CHF", 1,
                     null, null, ModeComptabilisation.MENSUALISE, MomentPeriode.DEBUT_PERIODE,
-                    null, TypeRepartition.AUTO, List.of(), List.of(), null, null);
+                    null, TypeRepartition.AUTO, List.of(), List.of(), null);
 
             ParametresScenario params = new ParametresScenario(
                     "CHF", 2026, 0.0, 1, periodes, Map.of(),

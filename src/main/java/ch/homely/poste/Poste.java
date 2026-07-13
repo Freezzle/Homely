@@ -1,7 +1,6 @@
 package ch.homely.poste;
 
 import ch.homely.categorie.Categorie;
-import ch.homely.compte.Compte;
 import ch.homely.scenario.Scenario;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -81,10 +80,6 @@ public class Poste {
     @Column(name = "type_repartition", nullable = false, length = 16)
     private TypeRepartition typeRepartition = TypeRepartition.AUTO;
 
-    /** Compte source pour les postes RESERVE (débit). */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "compte_source")
-    private Compte compteSource;
 
     @Column(nullable = false)
     private int ordre = 0;

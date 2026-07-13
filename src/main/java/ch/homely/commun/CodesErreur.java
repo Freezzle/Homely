@@ -17,6 +17,8 @@ public final class CodesErreur {
     public static final String IDENTIFIANTS_INVALIDES         = "IDENTIFIANTS_INVALIDES";
     public static final String TOKEN_INVALIDE                 = "TOKEN_INVALIDE";
     public static final String CONFLIT                        = "CONFLIT";
-    public static final String FOYER_MEMBRES_INVALIDES        = "FOYER_MEMBRES_INVALIDES";
-    public static final String ERREUR_INTERNE                 = "ERREUR_INTERNE";
+    public static final String FOYER_MEMBRES_INVALIDES         = "FOYER_MEMBRES_INVALIDES";
+    public static final String COMPTE_SANS_MEMBRE              = "COMPTE_SANS_MEMBRE";
+    public static final String VENTILATION_COMPTE_NON_RATTACHE = "VENTILATION_COMPTE_NON_RATTACHE";
+    public static final String ERREUR_INTERNE                  = "ERREUR_INTERNE";
 }

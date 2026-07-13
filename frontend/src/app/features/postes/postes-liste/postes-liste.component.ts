@@ -376,11 +376,12 @@ import { FR } from '../../../core/i18n/fr';
                   <span class="text-sm">{{ membres()[i]?.nom }}</span>
                   <p-inputnumber formControlName="quotePart" [min]="0" [max]="100"
                                  suffix="%" [minFractionDigits]="0" styleClass="w-24"
-                                 (onInput)="calculerSomme()"></p-inputnumber>
+                                 (onInput)="onQuotePartChange(i)"></p-inputnumber>
                   <p-select appendTo="body" formControlName="compteId"
-                            [options]="comptes()" optionLabel="libelle" optionValue="id"
+                            [options]="comptesForMembre(membres()[i]?.id)" optionLabel="libelle" optionValue="id"
                             [placeholder]="t.poste.ventilation" styleClass="w-44"
-                            [showClear]="false" />
+                            [showClear]="true"
+                            [disabled]="(ctrl.get('quotePart')?.value ?? 0) === 0" />
                 </div>
               }
             </div>
@@ -394,9 +395,9 @@ import { FR } from '../../../core/i18n/fr';
                 <div [formGroupName]="i" class="flex items-center gap-3">
                   <span class="flex-1 text-sm">{{ membres()[i]?.nom }}</span>
                   <p-select appendTo="body" formControlName="compteId"
-                            [options]="comptes()" optionLabel="libelle" optionValue="id"
+                            [options]="comptesForMembre(membres()[i]?.id)" optionLabel="libelle" optionValue="id"
                             [placeholder]="t.poste.ventilation" styleClass="w-44"
-                            [showClear]="false" />
+                            [showClear]="true" />
                 </div>
               }
             </div>
@@ -738,7 +739,20 @@ export class PostesListeComponent implements OnInit {
 
   private defaultCompteId(): string | null {
     const comptes = this.comptes();
-    return comptes.find(c => c.type === 'COURANT')?.id ?? comptes[0]?.id ?? null;
+    return comptes[0]?.id ?? null;
+  }
+
+  /** Comptes accessibles pour un membre donné (filtre sur membreIds). */
+  comptesForMembre(membreId: string | undefined): CompteDto[] {
+    if (!membreId) return this.comptes();
+    return this.comptes().filter(c => c.membreIds?.includes(membreId));
+  }
+
+  /** Compte par défaut pour un membre : premier compte qui lui est rattaché. */
+  private defaultCompteIdForMembre(membreId: string | undefined): string | null {
+    if (!membreId) return this.defaultCompteId();
+    const rattaches = this.comptesForMembre(membreId);
+    return rattaches[0]?.id ?? this.defaultCompteId();
   }
 
   private initialiserRepartitions(
@@ -756,7 +770,7 @@ export class PostesListeComponent implements OnInit {
       const rep       = existantes?.find(r => r.membreId === m.id);
       const vent      = ventilationsExistantes?.find(v => v.membreId === m.id);
       const quotePart = rep ? Math.round(rep.quotePart * 100) : 0;
-      const compteId  = vent?.compteId ?? this.defaultCompteId();
+      const compteId  = vent?.compteId ?? this.defaultCompteIdForMembre(m.id);
 
       if (i < this.repartitionsArray.length) {
         // Mettre à jour en place : le même FormGroup est conservé,
@@ -783,6 +797,18 @@ export class PostesListeComponent implements OnInit {
   calculerSomme(): void {
     this.sommeRepartition = this.repartitionsArray.controls
       .reduce((s, c) => s + (c.get('quotePart')?.value ?? 0), 0);
+  }
+
+  /**
+   * Appelé à chaque modification de quotePart dans le bloc CUSTOM.
+   * Si le membre passe à 0%, on vide automatiquement son compte sélectionné.
+   */
+  onQuotePartChange(index: number): void {
+    const ctrl = this.repartitionsArray.at(index);
+    if ((ctrl.get('quotePart')?.value ?? 0) === 0) {
+      ctrl.get('compteId')?.setValue(null, { emitEvent: false });
+    }
+    this.calculerSomme();
   }
 
   repartirEquitablement(): void {

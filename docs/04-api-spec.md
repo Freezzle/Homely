@@ -37,7 +37,9 @@
 ```
 Codes métier au moins : `REPARTITION_INVALIDE`, `SCENARIO_REFERENCE_UNIQUE`,
 `SUPPORT_OBJECTIF_INVALIDE`, `MEMBRE_REFERENCE_SUPPRESSION`, `DEVISE_INCONNUE`,
-`ACCES_FOYER_REFUSE`, `RESSOURCE_INTROUVABLE`, `FOYER_MEMBRES_INVALIDES`.
+`ACCES_FOYER_REFUSE`, `RESSOURCE_INTROUVABLE`, `FOYER_MEMBRES_INVALIDES`,
+`COMPTE_SANS_MEMBRE` (création/modification d'un compte sans membre actif → 422),
+`VENTILATION_COMPTE_NON_RATTACHE` (un membre tente de ventiler vers un compte qui ne lui est pas rattaché → 422).
 
 ## 3. Authentification
 
@@ -104,7 +106,9 @@ CRUD standard pour **Membres**, **Comptes**, **Catégories**, **Actifs**, **Taux
 Motif d'URL : `/api/foyers/{foyerId}/{ressource}` (+ `/{id}` pour détail/modif/suppr).
 
 - `GET /api/foyers/{foyerId}/membres` → `[{id, nom, couleur, ordre, actif}]`
-- `GET /api/foyers/{foyerId}/comptes` → `[{id, libelle, type, soldeInitial, devise, ordre}]`
+- `GET /api/foyers/{foyerId}/comptes` → `[{id, libelle, soldeInitial, devise, ordre, actif, membreIds:[uuid]}]`
+- `POST /api/foyers/{foyerId}/comptes` → corps : `{libelle, soldeInitial, devise?, ordre, membreIds:[uuid]}` — **au moins un membreId actif requis** ; sinon 422 `COMPTE_SANS_MEMBRE`
+- `PUT /api/foyers/{foyerId}/comptes/{id}` → même corps ; les membres inactifs déjà rattachés sont **conservés** côté serveur indépendamment du payload
 - `GET /api/foyers/{foyerId}/categories?typePoste=CHARGE` → filtrable par type
 - `GET /api/foyers/{foyerId}/actifs` → `[{id, libelle, typeActif, soldeInitial, tauxCroissanceAnnuel}]`
 - `GET /api/foyers/{foyerId}/taux-change` → `[{id, devise, tauxVersBase}]`
@@ -151,13 +155,13 @@ Scopés : `/api/foyers/{foyerId}/scenarios/{scenarioId}/postes`.
   "mode": "MENSUALISE",
   "moment": "DEBUT_PERIODE",
   "nature": "EFFECTIF",
-  "compteSource": null,
-  "repartition": [ {"membreId":"…","quotePart":0.58}, {"membreId":"…","quotePart":0.42} ],
-  "ventilationComptes": [ {"membreId":"…","compteId":"…"} ]
+  "repartitions": [ {"membreId":"…","quotePart":0.58}, {"membreId":"…","quotePart":0.42} ],
+  "ventilations": [ {"membreId":"…","compteId":"…"} ]
 }
 ```
-`repartition` **facultatif** (null → hérite du défaut scénario). Si présent, doit sommer
-à 1.
+`repartitions` **facultatif** (null → hérite du défaut scénario). Si présent, doit sommer
+à 1. Chaque `ventilation.compteId` doit appartenir à un compte rattaché au membre concerné
+(via `compte_membre`) ; sinon → 422 `VENTILATION_COMPTE_NON_RATTACHE`.
 - `GET …/postes/{id}` → détail (avec `montantMensualise` calculé).
 - `PUT …/postes/{id}` / `PATCH …/postes/{id}` → modification.
 - `DELETE …/postes/{id}` → suppression.
