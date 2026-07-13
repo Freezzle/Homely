@@ -2,6 +2,7 @@ import { Component, inject, signal, computed, OnInit, effect } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SelectModule } from 'primeng/select';
+import { SelectButtonModule } from 'primeng/selectbutton';
 import { TableModule } from 'primeng/table';
 import { ChartModule } from 'primeng/chart';
 import { SkeletonModule } from 'primeng/skeleton';
@@ -15,7 +16,7 @@ import { FR } from '../../../core/i18n/fr';
 @Component({
   selector: 'app-dashboard-annuel',
   standalone: true,
-  imports: [CommonModule, FormsModule, SelectModule, TableModule, ChartModule,
+  imports: [CommonModule, FormsModule, SelectModule, SelectButtonModule, TableModule, ChartModule,
             SkeletonModule, CardModule, MontantPipe],
   template: `
     <div class="flex flex-col gap-6">
@@ -26,6 +27,11 @@ import { FR } from '../../../core/i18n/fr';
           <h1 class="text-2xl font-bold">{{ t.nav.dashboardAnnuel }}</h1>
           <p class="text-sm text-surface-500 mt-0.5">Vue consolidée des flux annuels du foyer</p>
         </div>
+        @if (afficherParMembre()) {
+          <p-selectButton [options]="vueOptions" [ngModel]="vue()" (ngModelChange)="vue.set($event)"
+                          optionLabel="label" optionValue="value" [allowEmpty]="false"
+                          styleClass="shrink-0" />
+        }
         <p-select appendTo="body" [options]="annees" [(ngModel)]="anneeSelectionnee"
                   (onChange)="charger()" styleClass="w-32 shrink-0" />
       </div>
@@ -110,6 +116,7 @@ import { FR } from '../../../core/i18n/fr';
         </div>
 
         <!-- ② Graphique mixte foyer — pleine largeur ────────────────────────── -->
+        @if (vue() !== 'MEMBRE') {
         <p-card>
           <ng-template pTemplate="header">
             <div class="px-5 pt-5 pb-0 flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4">
@@ -135,8 +142,10 @@ import { FR } from '../../../core/i18n/fr';
                      class="w-full block" style="height:320px" />
           </div>
         </p-card>
+        }
 
         <!-- ③ Graphiques par membre — 2 colonnes, toujours visibles ──────────── -->
+        @if (afficherParMembre() && vue() !== 'FOYER') {
         <div>
           <div class="flex items-center gap-3 mb-4">
             <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
@@ -158,12 +167,116 @@ import { FR } from '../../../core/i18n/fr';
                 </ng-template>
                 <p-chart type="bar" [data]="mc.data" [options]="mixedChartOptions"
                          class="w-full block" style="height:220px" />
+
+                <!-- Détail mensuel par membre -->
+                <div class="mt-4">
+                  <div class="text-xs font-semibold text-surface-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                    <i class="pi pi-table text-xs"></i>{{ t.projection.detailMensuelParMembre }}
+                  </div>
+
+                  <!-- Desktop / tablette : table scrollable -->
+                  <div class="hidden sm:block overflow-x-auto">
+                    <p-table [value]="mc.mois" styleClass="p-datatable-sm p-datatable-striped" scrollable>
+                      <ng-template pTemplate="header">
+                        <tr>
+                          <th class="min-w-14">{{ t.projection.mois }}</th>
+                          <th class="text-right">{{ t.projection.revenus }}</th>
+                          <th class="text-right">{{ t.projection.charges }}</th>
+                          <th class="text-right">{{ t.projection.reserves }}</th>
+                          <th class="text-right">{{ t.projection.solde }}</th>
+                        </tr>
+                      </ng-template>
+                      <ng-template pTemplate="body" let-m>
+                        <tr>
+                          <td class="font-medium">{{ t.mois[m.numero - 1] }}</td>
+                          <td class="text-right text-green-600 tabular-nums">{{ m.agregat.revenus | montant }}</td>
+                          <td class="text-right text-red-500 tabular-nums">{{ m.agregat.charges | montant }}</td>
+                          <td class="text-right text-blue-500 tabular-nums">{{ m.agregat.reserves | montant }}</td>
+                          <td class="text-right font-semibold tabular-nums"
+                              [class.text-emerald-600]="m.agregat.soldeDisponible >= 0"
+                              [class.text-red-500]="m.agregat.soldeDisponible < 0">
+                            {{ m.agregat.soldeDisponible | montant }}
+                          </td>
+                        </tr>
+                      </ng-template>
+                      <ng-template pTemplate="footer">
+                        <tr class="font-bold bg-surface-100 dark:bg-surface-800">
+                          <td>{{ t.projection.totalAnnee }}</td>
+                          <td class="text-right text-green-600 tabular-nums">{{ mc.total.revenus | montant }}</td>
+                          <td class="text-right text-red-500 tabular-nums">{{ mc.total.charges | montant }}</td>
+                          <td class="text-right text-blue-500 tabular-nums">{{ mc.total.reserves | montant }}</td>
+                          <td class="text-right tabular-nums"
+                              [class.text-emerald-600]="mc.total.soldeDisponible >= 0"
+                              [class.text-red-500]="mc.total.soldeDisponible < 0">
+                            {{ mc.total.soldeDisponible | montant }}
+                          </td>
+                        </tr>
+                      </ng-template>
+                    </p-table>
+                  </div>
+
+                  <!-- Mobile : cartes compactes par mois -->
+                  <div class="sm:hidden space-y-2">
+                    @for (m of mc.mois; track m.numero) {
+                      <div class="rounded-xl bg-surface-50 dark:bg-surface-800 p-3">
+                        <div class="flex items-center justify-between mb-2">
+                          <span class="font-semibold text-sm w-10">{{ t.mois[m.numero - 1] }}</span>
+                          <span class="text-sm font-bold tabular-nums"
+                                [class.text-emerald-600]="m.agregat.soldeDisponible >= 0"
+                                [class.text-red-500]="m.agregat.soldeDisponible < 0">
+                            {{ m.agregat.soldeDisponible | montant }}
+                          </span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-1 text-center">
+                          <div>
+                            <div class="text-xs text-surface-400">{{ t.projection.revenus }}</div>
+                            <div class="text-xs font-semibold text-green-600 tabular-nums">{{ m.agregat.revenus | montant }}</div>
+                          </div>
+                          <div>
+                            <div class="text-xs text-surface-400">{{ t.projection.charges }}</div>
+                            <div class="text-xs font-semibold text-red-500 tabular-nums">{{ m.agregat.charges | montant }}</div>
+                          </div>
+                          <div>
+                            <div class="text-xs text-surface-400">{{ t.projection.reserves }}</div>
+                            <div class="text-xs font-semibold text-blue-500 tabular-nums">{{ m.agregat.reserves | montant }}</div>
+                          </div>
+                        </div>
+                      </div>
+                    }
+                    <div class="rounded-xl bg-surface-100 dark:bg-surface-700 p-3 border border-surface-200 dark:border-surface-600">
+                      <div class="flex items-center justify-between mb-2">
+                        <span class="font-bold text-sm">{{ t.projection.totalAnnee }}</span>
+                        <span class="font-bold text-sm tabular-nums"
+                              [class.text-emerald-600]="mc.total.soldeDisponible >= 0"
+                              [class.text-red-500]="mc.total.soldeDisponible < 0">
+                          {{ mc.total.soldeDisponible | montant }}
+                        </span>
+                      </div>
+                      <div class="grid grid-cols-3 gap-1 text-center">
+                        <div>
+                          <div class="text-xs text-surface-400">{{ t.projection.revenus }}</div>
+                          <div class="text-xs font-semibold text-green-600 tabular-nums">{{ mc.total.revenus | montant }}</div>
+                        </div>
+                        <div>
+                          <div class="text-xs text-surface-400">{{ t.projection.charges }}</div>
+                          <div class="text-xs font-semibold text-red-500 tabular-nums">{{ mc.total.charges | montant }}</div>
+                        </div>
+                        <div>
+                          <div class="text-xs text-surface-400">{{ t.projection.reserves }}</div>
+                          <div class="text-xs font-semibold text-blue-500 tabular-nums">{{ mc.total.reserves | montant }}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </p-card>
             }
           </div>
         </div>
+        }
 
         <!-- ④ Tableau mensuel détaillé ─────────────────────────────────────── -->
+        @if (vue() !== 'MEMBRE') {
         <p-card>
           <ng-template pTemplate="header">
             <div class="px-5 pt-5 pb-3 flex items-center gap-2">
@@ -267,6 +380,7 @@ import { FR } from '../../../core/i18n/fr';
             </div>
           </div>
         </p-card>
+        }
       }
     </div>
   `,
@@ -279,6 +393,15 @@ export class DashboardAnnuelComponent implements OnInit {
   projection  = signal<ProjectionAnnuelleDto | null>(null);
   chargement  = signal(false);
   membres     = this.contexte.membres;
+
+  // ── Vue Foyer / Par membre / Les deux ────────────────────────────────────────
+  vue = signal<'FOYER' | 'MEMBRE' | 'TOUT'>('MEMBRE');
+  afficherParMembre = computed(() => this.membres().length > 1);
+  readonly vueOptions = [
+    { label: this.t.projection.vueFoyer,     value: 'FOYER'  },
+    { label: this.t.projection.vueParMembre, value: 'MEMBRE' },
+    { label: this.t.projection.vueTout,      value: 'TOUT'   },
+  ];
 
   anneeSelectionnee = new Date().getFullYear();
   annees: number[]  = Array.from({ length: 9 }, (_, i) => new Date().getFullYear() + i);
@@ -342,14 +465,35 @@ export class DashboardAnnuelComponent implements OnInit {
   membreChartsData = computed(() => {
     const p = this.projection();
     if (!p) return [];
-    return this.membres().map(m => ({
-      membreId: m.id,
-      nom:      m.nom,
-      couleur:  m.couleur,
-      data:     this.buildMembreChartData(p.moisParMembre[m.id]),
-      dataReel: this.buildMembreChartData(p.moisParMembreReel?.[m.id]),
-    }));
+    return this.membres().map(m => {
+      const moisData = p.moisParMembre[m.id];
+      return {
+        membreId: m.id,
+        nom:      m.nom,
+        couleur:  m.couleur,
+        data:     this.buildMembreChartData(moisData),
+        dataReel: this.buildMembreChartData(p.moisParMembreReel?.[m.id]),
+        mois:     this.buildMembreMois(moisData),
+        total:    this.buildMembreTotal(moisData),
+      };
+    });
   });
+
+  private buildMembreMois(moisData: AggregatDto[] | undefined): { numero: number; agregat: AggregatDto }[] {
+    if (!moisData || !moisData.length) return [];
+    return moisData.map((agregat, i) => ({ numero: i + 1, agregat }));
+  }
+
+  private buildMembreTotal(moisData: AggregatDto[] | undefined): AggregatDto {
+    const zero: AggregatDto = { revenus: 0, charges: 0, reserves: 0, soldeDisponible: 0 };
+    if (!moisData || !moisData.length) return zero;
+    return moisData.reduce((acc, ag) => ({
+      revenus:         acc.revenus + ag.revenus,
+      charges:         acc.charges + ag.charges,
+      reserves:        acc.reserves + ag.reserves,
+      soldeDisponible: acc.soldeDisponible + ag.soldeDisponible,
+    }), zero);
+  }
 
   private buildMembreChartData(moisData: AggregatDto[] | undefined): object {
     if (!moisData || !moisData.length) return {};

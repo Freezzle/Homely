@@ -13,7 +13,7 @@ import { ScenarioService } from '../core/services/scenario-poste.service';
   standalone: true,
   imports: [RouterOutlet, CommonModule, TopbarComponent, SidebarMenuComponent],
   template: `
-    <div class="flex flex-col h-screen bg-surface-50 dark:bg-surface-950 mx-auto w-full md:max-w-7xl">
+    <div class="flex flex-col h-screen bg-surface-50 dark:bg-surface-950 mx-auto w-full md:max-w-2/3">
       <app-topbar class="sticky top-0 z-50" />
       <div class="flex flex-1 overflow-hidden">
         <app-sidebar-menu class="hidden md:flex" />

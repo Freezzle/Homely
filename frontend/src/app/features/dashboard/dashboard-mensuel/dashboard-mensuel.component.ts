@@ -2,6 +2,7 @@ import { Component, inject, signal, computed, OnInit, effect } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SelectModule } from 'primeng/select';
+import { SelectButtonModule } from 'primeng/selectbutton';
 import { ChartModule } from 'primeng/chart';
 import { CardModule } from 'primeng/card';
 import { SkeletonModule } from 'primeng/skeleton';
@@ -16,7 +17,7 @@ import { FR } from '../../../core/i18n/fr';
 @Component({
   selector: 'app-dashboard-mensuel',
   standalone: true,
-  imports: [CommonModule, FormsModule, SelectModule, ChartModule, CardModule, SkeletonModule, MontantPipe],
+  imports: [CommonModule, FormsModule, SelectModule, SelectButtonModule, ChartModule, CardModule, SkeletonModule, MontantPipe],
   template: `
     <div class="flex flex-col gap-6">
 
@@ -29,6 +30,10 @@ import { FR } from '../../../core/i18n/fr';
           </p>
         </div>
         <div class="flex gap-2 shrink-0">
+          @if (afficherParMembre()) {
+            <p-selectButton [options]="vueOptions" [ngModel]="vue()" (ngModelChange)="vue.set($event)"
+                            optionLabel="label" optionValue="value" [allowEmpty]="false" />
+          }
           <p-select appendTo="body" [options]="annees" [(ngModel)]="annee"
                     (onChange)="charger()" styleClass="w-28" />
           <p-select appendTo="body" [options]="moisOptions" [(ngModel)]="mois"
@@ -53,6 +58,7 @@ import { FR } from '../../../core/i18n/fr';
       } @else if (ventilations()) {
 
         <!-- ① KPI foyer — 2 cols mobile · 4 cols desktop ───────────────────── -->
+        @if (vue() !== 'MEMBRE') {
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
 
           <p-card styleClass="border-l-4 border-green-500">
@@ -239,13 +245,15 @@ import { FR } from '../../../core/i18n/fr';
             </div>
           </p-card>
         </div>
+        }
 
         <!-- ④ Détail par membre — toutes les catégories visibles ────────────── -->
+        @if (afficherParMembre() && vue() !== 'FOYER') {
         <div>
           <div class="flex items-center gap-3 mb-4">
             <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
             <span class="text-xs font-bold text-surface-400 uppercase tracking-widest flex items-center gap-2">
-              <i class="pi pi-users text-sm"></i>&nbsp;{{ t.projection.parMembre }}
+              <i class="pi pi-users text-sm"></i>&nbsp;{{ t.projection.contributionCategorieMembre }}
             </span>
             <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
           </div>
@@ -327,13 +335,15 @@ import { FR } from '../../../core/i18n/fr';
             }
           </div>
         </div>
+        }
 
-        <!-- ④ Par membre — 2 colonnes, toujours visibles ────────────────────── -->
+        <!-- ④ bis · Répartition par compte et par membre ────────────────────── -->
+        @if (afficherParMembre() && vue() !== 'FOYER') {
         <div>
           <div class="flex items-center gap-3 mb-4">
             <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
             <span class="text-xs font-bold text-surface-400 uppercase tracking-widest flex items-center gap-2">
-              <i class="pi pi-users text-sm"></i>&nbsp;{{ t.projection.parMembre }}
+              <i class="pi pi-chart-bar text-sm"></i>&nbsp;{{ t.projection.repartitionCompteMembre }}
             </span>
             <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
           </div>
@@ -402,6 +412,7 @@ import { FR } from '../../../core/i18n/fr';
             }
           </div>
         </div>
+        }
       }
     </div>
   `,
@@ -420,6 +431,15 @@ export class DashboardMensuelComponent implements OnInit {
 
   // membres provient du contexte global (chargé par le Shell)
   readonly membres = this.contexte.membres;
+
+  // ── Vue Foyer / Par membre / Les deux ────────────────────────────────────────
+  vue = signal<'FOYER' | 'MEMBRE' | 'TOUT'>('MEMBRE');
+  afficherParMembre = computed(() => this.membres().length > 1);
+  readonly vueOptions = [
+    { label: this.t.projection.vueFoyer,     value: 'FOYER'  },
+    { label: this.t.projection.vueParMembre, value: 'MEMBRE' },
+    { label: this.t.projection.vueTout,      value: 'TOUT'   },
+  ];
 
   annee = new Date().getFullYear();
   mois  = new Date().getMonth() + 1;
