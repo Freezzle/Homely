@@ -655,34 +655,38 @@ export class PostesListeComponent implements OnInit {
 
   /**
    * Tags membres à afficher dans la liste des postes.
-   * AUTO / REVERSE_AUTO → nom seul (tous les membres actifs), sans pourcentage.
-   * CUSTOM              → nom + pourcentage (depuis repartition_poste).
+   * AUTO / REVERSE_AUTO → "Nom · Compte" (tous les membres actifs).
+   * CUSTOM              → "Nom · XX% · Compte" (uniquement les membres avec quotePart > 0).
    * Mono-membre         → aucun tag (inutile d'afficher l'unique membre).
+   * Si aucune ventilation pour le membre, le compte est omis du label.
    */
   membresAffichesPoste(p: PosteDto): { membreId: string; label: string; couleur: string; couleurTexte: string }[] {
     const membres = this.membres();
     // Mono-membre : inutile d'afficher un tag
     if (membres.length <= 1) return [];
 
+    /** Helper : libellé du compte ventilé pour un membre donné (ou '' si absent). */
+    const compteLabel = (membreId: string): string =>
+      p.ventilations?.find(v => v.membreId === membreId)?.libelleCompte ?? '';
+
     if (p.typeRepartition === 'CUSTOM') {
-      // Parts explicites stockées → afficher avec pourcentage
-      return this.repartitionsAffichees(p).map(r => ({
-        membreId: r.membreId,
-        label: `${r.nomMembre} · ${Math.round(r.quotePart * 100)}%`,
-        couleur: r.couleur,
-        couleurTexte: r.couleurTexte,
-      }));
+      // Parts explicites stockées → afficher avec pourcentage + compte
+      return this.repartitionsAffichees(p).map(r => {
+        const compte = compteLabel(r.membreId);
+        const label = compte
+          ? `${r.nomMembre} · ${Math.round(r.quotePart * 100)}% · ${compte}`
+          : `${r.nomMembre} · ${Math.round(r.quotePart * 100)}%`;
+        return { membreId: r.membreId, label, couleur: r.couleur, couleurTexte: r.couleurTexte };
+      });
     }
 
-    // AUTO ou REVERSE_AUTO (ou null = AUTO) → tous les membres actifs, nom seul
+    // AUTO ou REVERSE_AUTO (ou null = AUTO) → tous les membres actifs, nom + compte
     return membres.map(m => {
       const couleur = this.normaliserCouleur(m.couleur);
-      return {
-        membreId: m.id,
-        label: m.nom,
-        couleur,
-        couleurTexte: this.couleurTexteContraste(couleur),
-      };
+      const couleurTexte = this.couleurTexteContraste(couleur);
+      const compte = compteLabel(m.id);
+      const label = compte ? `${m.nom} · ${compte}` : m.nom;
+      return { membreId: m.id, label, couleur, couleurTexte };
     });
   }
 
