@@ -9,6 +9,7 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
+import { MultiSelectModule } from 'primeng/multiselect';
 import { DatePickerModule } from 'primeng/datepicker';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
@@ -21,7 +22,7 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { ContexteService } from '../../../core/services/contexte.service';
 import { PosteService } from '../../../core/services/scenario-poste.service';
 import { CategorieService, CompteService } from '../../../core/services/referentiel.service';
-import { PosteDto, CategorieDto, CompteDto, VentilationCompteDto, TypePoste, TypeRepartition } from '../../../core/models/api.models';
+import { PosteDto, CategorieDto, CompteDto, MembreDto, VentilationCompteDto, TypePoste, TypeRepartition } from '../../../core/models/api.models';
 import { MontantPipe, PeriodicitePipe } from '../../../core/pipes/format.pipes';
 import { FR } from '../../../core/i18n/fr';
 
@@ -30,7 +31,7 @@ import { FR } from '../../../core/i18n/fr';
   standalone: true,
   providers: [ConfirmationService],
   imports: [CommonModule, FormsModule, ReactiveFormsModule, TableModule, ButtonModule, DialogModule,
-    InputTextModule, InputNumberModule, SelectModule, DatePickerModule,
+    InputTextModule, InputNumberModule, SelectModule, MultiSelectModule, DatePickerModule,
     TagModule, TooltipModule, CardModule, MessageModule, ConfirmDialogModule, SkeletonModule, CheckboxModule,
     MontantPipe, PeriodicitePipe],
   template: `
@@ -51,26 +52,6 @@ import { FR } from '../../../core/i18n/fr';
               {{ postesVisibles().length }}
             </span>
           }
-        </div>
-
-        <!-- Total mensuel pill -->
-        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg
-                    bg-surface-100 dark:bg-surface-800 text-sm shrink-0">
-          <i class="pi pi-wallet text-xs text-surface-400"></i>
-          <span class="text-surface-500">{{ t.poste.totalMensuel }} :</span>
-          <span class="font-semibold text-surface-700 dark:text-surface-200">
-            {{ totalMensualise() | montant }}
-          </span>
-        </div>
-
-        <!-- Total annuel pill -->
-        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg
-                    bg-surface-100 dark:bg-surface-800 text-sm shrink-0">
-          <i class="pi pi-calendar text-xs text-surface-400"></i>
-          <span class="text-surface-500">{{ t.poste.totalAnnuel }} :</span>
-          <span class="font-semibold text-surface-700 dark:text-surface-200">
-            {{ totalAnnuel() | montant }}
-          </span>
         </div>
 
         <!-- Tri -->
@@ -102,6 +83,39 @@ import { FR } from '../../../core/i18n/fr';
             {{ t.poste.cacherFuturs }}
           </label>
         </div>
+
+        <!-- Filtre comptes -->
+        <p-multiselect appendTo="body"
+          [ngModel]="filtreCompteIds()"
+          (ngModelChange)="filtreCompteIds.set($event)"
+          [options]="comptes()"
+          optionLabel="libelle" optionValue="id"
+          [placeholder]="t.poste.filtreComptes"
+          [showClear]="true"
+          styleClass="min-w-44 text-sm shrink-0">
+          <ng-template pTemplate="item" let-compte>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span>{{ compte.libelle }}</span>
+              @for (m of membresForCompte(compte); track m.id) {
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium leading-none"
+                      [style.background-color]="normaliserCouleur(m.couleur)"
+                      [style.color]="couleurTexteContraste(normaliserCouleur(m.couleur))">
+                  {{ m.nom }}
+                </span>
+              }
+            </div>
+          </ng-template>
+        </p-multiselect>
+
+        <!-- Filtre membres -->
+        <p-multiselect appendTo="body"
+          [ngModel]="filtreMembreIds()"
+          (ngModelChange)="filtreMembreIds.set($event)"
+          [options]="membres()"
+          optionLabel="nom" optionValue="id"
+          [placeholder]="t.poste.filtreMembres"
+          [showClear]="true"
+          styleClass="min-w-44 text-sm shrink-0" />
 
         <!-- Créer -->
         @if (contexte.estEditor()) {
@@ -481,6 +495,8 @@ export class PostesListeComponent implements OnInit {
   triActuel = signal<'DATE' | 'CATEGORIE' | 'DESCRIPTION'>('DATE');
   cacherInactifs = signal(true);
   cacherFuturs = signal(false);
+  filtreCompteIds = signal<string[]>([]);
+  filtreMembreIds = signal<string[]>([]);
 
   triOptions = [
     { label: FR.poste.triOptions.DATE,        value: 'DATE' as const },
@@ -533,35 +549,6 @@ export class PostesListeComponent implements OnInit {
     const d = this._now;
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   })();
-  private readonly _anneeCourante = this._now.getFullYear();
-
-  private _actifEnMois(p: PosteDto, moisStr: string): boolean {
-    const debut = p.debut ? p.debut.substring(0, 7) : null;
-    const fin   = p.fin   ? p.fin.substring(0, 7)   : null;
-    return (debut === null || debut <= moisStr) && (fin === null || fin >= moisStr);
-  }
-
-  /** Somme des montants mensualisés des postes actifs ce mois-ci. */
-  totalMensualise = computed(() =>
-    this.postes()
-      .filter(p => this._actifEnMois(p, this._moisCourant))
-      .reduce((s, p) => s + (p.montantMensualise ?? 0), 0)
-  );
-
-  /** Somme sur les 12 mois de l'année courante des contributions effectives. */
-  totalAnnuel = computed(() => {
-    const annee = this._anneeCourante;
-    let total = 0;
-    for (const p of this.postes()) {
-      for (let m = 1; m <= 12; m++) {
-        const moisStr = `${annee}-${String(m).padStart(2, '0')}`;
-        if (this._actifEnMois(p, moisStr)) {
-          total += p.montantMensualise ?? 0;
-        }
-      }
-    }
-    return total;
-  });
 
   postesTries = computed(() => {
     const list = [...this.postes()];
@@ -588,18 +575,38 @@ export class PostesListeComponent implements OnInit {
     }
   });
 
-  /** Liste finale affichée : triée + filtrée selon les options de masquage. */
+  /** Liste finale affichée : triée + filtrée selon les options de masquage et les filtres comptes/membres. */
   postesVisibles = computed(() => {
+    const compteIds  = this.filtreCompteIds();
+    const membreIds  = this.filtreMembreIds();
+    const tousMembreIds = this.membres().map(m => m.id);
+
     return this.postesTries().filter(p => {
       const estInactif = !!p.fin && p.fin.substring(0, 7) < this._moisCourant;
-      const estFutur = !!p.debut && p.debut.substring(0, 7) > this._moisCourant;
+      const estFutur   = !!p.debut && p.debut.substring(0, 7) > this._moisCourant;
 
-      if (this.cacherInactifs() && estInactif) {
-        return false;
+      if (this.cacherInactifs() && estInactif) return false;
+      if (this.cacherFuturs()   && estFutur)   return false;
+
+      // Filtre comptes : au moins une ventilation rattachée à un compte sélectionné
+      if (compteIds.length > 0) {
+        const match = (p.ventilations ?? []).some(v => compteIds.includes(v.compteId));
+        if (!match) return false;
       }
 
-      if (this.cacherFuturs() && estFutur) {
-        return false;
+      // Filtre membres :
+      //   CUSTOM       → au moins une répartition avec quotePart > 0 pour un membre sélectionné
+      //   AUTO / REVERSE_AUTO → tous les membres actifs sont implicitement concernés ;
+      //                         conserver si au moins un membre sélectionné est actif dans le foyer
+      if (membreIds.length > 0) {
+        let match: boolean;
+        if (p.typeRepartition === 'CUSTOM') {
+          match = (p.repartitions ?? []).some(r => r.quotePart > 0 && membreIds.includes(r.membreId));
+        } else {
+          // AUTO / REVERSE_AUTO : postes partagés par tous les membres actifs du foyer
+          match = tousMembreIds.some(id => membreIds.includes(id));
+        }
+        if (!match) return false;
       }
 
       return true;
@@ -690,13 +697,18 @@ export class PostesListeComponent implements OnInit {
     });
   }
 
-  private normaliserCouleur(couleur?: string): string {
+  /** Membres rattachés à un compte (pour l'affichage dans le filtre). */
+  membresForCompte(compte: CompteDto): MembreDto[] {
+    return this.membres().filter(m => compte.membreIds?.includes(m.id));
+  }
+
+  normaliserCouleur(couleur?: string): string {
     if (!couleur) return '#64748b';
     return couleur.startsWith('#') ? couleur : `#${couleur}`;
   }
 
   // Lisibilité minimale des tags, quelle que soit la couleur du membre.
-  private couleurTexteContraste(hexColor: string): string {
+  couleurTexteContraste(hexColor: string): string {
     const hex = hexColor.replace('#', '');
     if (hex.length !== 6 || /[^0-9a-f]/i.test(hex)) return '#ffffff';
     const r = parseInt(hex.substring(0, 2), 16);

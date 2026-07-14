@@ -70,8 +70,6 @@ export const FR = {
     categorie: 'Catégorie',
     montant: 'Montant',
     montantMensualise: 'Mensual.',
-    totalMensuel: 'Total mensuel',
-    totalAnnuel: 'Total annuel',
     cacherInactifs: 'Masquer les inactifs',
     cacherFuturs: 'Masquer les postes futurs',
     posteCount: 'poste(s)',
@@ -130,6 +128,8 @@ export const FR = {
       CATEGORIE:   'Tri par catégorie › description › montant',
       DESCRIPTION: 'Tri par description › montant',
     },
+    filtreComptes: 'Filtrer par compte',
+    filtreMembres: 'Filtrer par membre',
     oneShot: 'Ponctuel',
   },
   // ── Projection ───────────────────────────────────────────

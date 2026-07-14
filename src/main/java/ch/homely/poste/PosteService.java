@@ -164,21 +164,27 @@ public class PosteService {
         }
 
         if (req.ventilations() != null) {
-            // Pour CUSTOM : constituer l'ensemble des membres ayant strictement 0%
-            // → leurs ventilations seront ignorées (pas de compte à sauvegarder)
-            final Set<UUID> membresAZero;
-            if (typeRep == TypeRepartition.CUSTOM && req.repartitions() != null) {
-                membresAZero = req.repartitions().stream()
-                        .filter(r -> r.quotePart().compareTo(BigDecimal.ZERO) == 0)
-                        .map(PosteRequest.RepartitionPosteDto::membreId)
-                        .collect(java.util.stream.Collectors.toSet());
+            // Pour CUSTOM : seuls les membres présents dans req.repartitions()
+            // (donc avec quotePart > 0) sont autorisés à avoir une ventilation.
+            // Un membre absent de la liste (quotePart == 0, filtré côté frontend)
+            // ne doit pas avoir de VentilationCompte enregistrée.
+            final Set<UUID> membresAutorisesVentilation;
+            if (typeRep == TypeRepartition.CUSTOM) {
+                membresAutorisesVentilation = req.repartitions() != null
+                        ? req.repartitions().stream()
+                                .filter(r -> r.quotePart().compareTo(BigDecimal.ZERO) > 0)
+                                .map(PosteRequest.RepartitionPosteDto::membreId)
+                                .collect(java.util.stream.Collectors.toSet())
+                        : Set.of();
             } else {
-                membresAZero = Set.of();
+                membresAutorisesVentilation = null; // null = aucune restriction (AUTO / REVERSE_AUTO)
             }
 
             for (PosteRequest.VentilationCompteDto vd : req.ventilations()) {
-                // Ignorer si membre à 0% (CUSTOM) ou si compteId absent (sélection vidée)
-                if (membresAZero.contains(vd.membreId()) || vd.compteId() == null) continue;
+                // Ignorer si compteId absent (sélection vidée dans l'UI)
+                if (vd.compteId() == null) continue;
+                // Pour CUSTOM : ignorer si le membre a 0% (pas dans la liste blanche)
+                if (membresAutorisesVentilation != null && !membresAutorisesVentilation.contains(vd.membreId())) continue;
                 Membre m = membreRepo.findByIdAndFoyerId(vd.membreId(), foyerId)
                         .orElseThrow(() -> new RessourceIntrouvableException(
                                 "Membre introuvable : " + vd.membreId()));
