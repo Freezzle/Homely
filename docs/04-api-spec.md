@@ -48,7 +48,7 @@ Codes métier au moins : `REPARTITION_INVALIDE`, `SCENARIO_REFERENCE_UNIQUE`,
 | POST | `/api/auth/register` | `{email, motDePasse, nomComplet}` → `201 {utilisateur}` |
 | POST | `/api/auth/login` | `{email, motDePasse}` → `200 {accessToken, refreshToken, expiresIn, utilisateur}` |
 | POST | `/api/auth/refresh` | `{refreshToken}` → `200 {accessToken, refreshToken, expiresIn}` |
-| POST | `/api/auth/logout` | `{refreshToken}` → `204` (révoque le refresh) |
+| POST | `/api/auth/logout` | `{refreshToken}` → `204` (révoque le refresh token) |
 | GET | `/api/auth/moi` | → `200 {utilisateur, foyers:[{foyerId, nom, role}]}` |
 
 Header pour les endpoints protégés : `Authorization: Bearer <accessToken>`.
@@ -93,12 +93,14 @@ Header pour les endpoints protégés : `Authorization: Bearer <accessToken>`.
    - `estReference` = `true`
    - `anneeDepart` = année courante (ex. `2026`)
    - `tresorerieInitiale` = `0.00`
-   - `horizonAnnees` = `25`
-   - `repartitionsDefaut` : quotes-parts équilibrées entre les membres initiaux, arrondies à **2 décimales** (la somme vaut exactement `1.00` — le reste des centièmes est attribué aux premiers membres).
+   - `horizonAnnees` = **`9`**
+   - Une `RepartitionPeriode` ouverte avec des quotes-parts équilibrées entre les membres
+     initiaux, arrondies à **2 décimales** (la somme vaut exactement `1.00`).
 
 Exemple pour 3 membres : `0.34 / 0.33 / 0.33`.
 
-**Réponse `201` :** `FoyerDto { id, nom, deviseBase, monRole }`. Les membres et le scénario sont accessibles via les endpoints référentiels et scénarios classiques.
+**Réponse `201` :** `FoyerDto { id, nom, deviseBase, monRole }`. Les membres et le scénario
+sont accessibles via les endpoints référentiels et scénarios classiques.
 
 ## 5. Référentiels (niveau foyer)
 
@@ -110,38 +112,77 @@ Motif d'URL : `/api/foyers/{foyerId}/{ressource}` (+ `/{id}` pour détail/modif/
 - `POST /api/foyers/{foyerId}/comptes` → corps : `{libelle, soldeInitial, devise?, ordre, membreIds:[uuid]}` — **au moins un membreId actif requis** ; sinon 422 `COMPTE_SANS_MEMBRE`
 - `PUT /api/foyers/{foyerId}/comptes/{id}` → même corps ; les membres inactifs déjà rattachés sont **conservés** côté serveur indépendamment du payload
 - `GET /api/foyers/{foyerId}/categories?typePoste=CHARGE` → filtrable par type
-- `GET /api/foyers/{foyerId}/actifs` → `[{id, libelle, typeActif, soldeInitial, tauxCroissanceAnnuel}]`
+- `GET /api/foyers/{foyerId}/actifs` → `[{id, libelle, typeActif, soldeInitial, devise, tauxCroissanceAnnuel, ordre, actif}]`
+  - `typeActif` ∈ `COMPTE_EPARGNE | TROISIEME_PILIER | INVESTISSEMENT | CRYPTO | IMMOBILIER | VEHICULE | AUTRE`
 - `GET /api/foyers/{foyerId}/taux-change` → `[{id, devise, tauxVersBase}]`
 
 ## 6. Scénarios
 
 ### 6.0 Initialisation automatique
 
-À la **création d'un foyer**, le backend crée automatiquement un **scénario de référence** nommé
-`"Scénario de base"`. Ce scénario est immédiatement utilisable ; ses hypothèses peuvent être
-modifiées via `PUT /api/foyers/{foyerId}/scenarios/{scenarioId}`. Voir §4.1 pour les valeurs
-par défaut.
+À la **création d'un foyer**, le backend crée automatiquement un **scénario de référence**
+nommé `"Scénario de base"` (voir §4.1). Ce scénario est immédiatement utilisable ; ses
+hypothèses peuvent être modifiées via `PUT /api/foyers/{foyerId}/scenarios/{scenarioId}`.
 
 ### 6.1 Endpoints
 
 | Méthode | Endpoint | Description |
 |---|---|---|
 | GET | `/api/foyers/{foyerId}/scenarios` | Liste (dont `estReference`) |
-| POST | `/api/foyers/{foyerId}/scenarios` | Créer `{nom, anneeDepart, tresorerieInitiale, horizonAnnees, repartitionDefaut:[{membreId, quotePart}]}` |
-| GET | `/api/foyers/{foyerId}/scenarios/{scenarioId}` | Détail + hypothèses + répartition défaut |
-| PUT | `/api/foyers/{foyerId}/scenarios/{scenarioId}` | Modifier hypothèses + répartition |
+| POST | `/api/foyers/{foyerId}/scenarios` | Créer `{nom, anneeDepart, tresorerieInitiale, horizonAnnees, repartitions:[{membreId, quotePart}]}` |
+| GET | `/api/foyers/{foyerId}/scenarios/{scenarioId}` | Détail + hypothèses + périodes de répartition |
+| PUT | `/api/foyers/{foyerId}/scenarios/{scenarioId}` | Modifier hypothèses + répartition par défaut |
 | DELETE | `/api/…/scenarios/{scenarioId}` | Supprimer (interdit si `estReference` et seul) |
-| POST | `/api/…/scenarios/{scenarioId}:dupliquer` | **Duplication profonde** (copie postes, objectifs, répartitions) → `201 {scenario}` |
+| POST | `/api/…/scenarios/{scenarioId}:dupliquer` | **Duplication profonde** (copie postes, objectifs, périodes de répartition) → `201 {scenario}` |
 | POST | `/api/…/scenarios/{scenarioId}:definir-reference` | Marquer comme référence (retire le flag de l'ancien) |
 
-Validation : `repartitionDefaut` doit sommer à 1 (sinon 422 `REPARTITION_INVALIDE`).
+Validation : `repartitions` (dans `PUT`) doit sommer à 1 (sinon 422 `REPARTITION_INVALIDE`).
+
+### 6.2 Périodes de répartition (prorata temporel)
+
+Permettent de faire varier les quotes-parts au fil du temps (ex. : congé parental, entrée
+progressive dans les finances communes). Chaque période a une fenêtre `debut` / `fin`
+(null = ouverte). La période active pour un mois donné est celle dont la fenêtre inclut ce
+mois.
+
+| Méthode | Endpoint | Description |
+|---|---|---|
+| GET | `/api/foyers/{foyerId}/scenarios/{scenarioId}/repartition-periodes` | Liste des périodes du scénario |
+| POST | `/api/foyers/{foyerId}/scenarios/{scenarioId}/repartition-periodes` | Créer une période |
+| PUT | `/api/…/repartition-periodes/{periodeId}` | Modifier une période |
+| DELETE | `/api/…/repartition-periodes/{periodeId}` | Supprimer une période |
+
+Corps `POST`/`PUT` :
+```json
+{
+  "debut": "2026-01-01",
+  "fin": null,
+  "parts": [
+    { "membreId": "…", "quotePart": 0.58 },
+    { "membreId": "…", "quotePart": 0.42 }
+  ]
+}
+```
+Validation : `parts` doit sommer à 1 (sinon 422 `REPARTITION_INVALIDE`).
+
+Réponse :
+```json
+{
+  "id": "…", "debut": "2026-01-01", "fin": null,
+  "parts": [
+    { "membreId": "…", "nomMembre": "Dylan", "couleurMembre": "#6366f1", "quotePart": 0.58, "ordre": 0 },
+    { "membreId": "…", "nomMembre": "Mélanie", "couleurMembre": "#10b981", "quotePart": 0.42, "ordre": 1 }
+  ]
+}
+```
 
 ## 7. Postes (niveau scénario)
 
 Scopés : `/api/foyers/{foyerId}/scenarios/{scenarioId}/postes`.
 
-- `GET …/postes?type=CHARGE&page=&size=&sort=` → liste paginée.
+- `GET …/postes?type=CHARGE&page=&size=&sort=` → liste paginée avec `montantMensualise` calculé.
 - `POST …/postes` → création. Corps :
+
 ```json
 {
   "type": "CHARGE",
@@ -155,31 +196,74 @@ Scopés : `/api/foyers/{foyerId}/scenarios/{scenarioId}/postes`.
   "mode": "MENSUALISE",
   "moment": "DEBUT_PERIODE",
   "nature": "EFFECTIF",
-  "repartitions": [ {"membreId":"…","quotePart":0.58}, {"membreId":"…","quotePart":0.42} ],
+  "typeRepartition": "AUTO",
+  "ordre": 0,
+  "repartitions": null,
   "ventilations": [ {"membreId":"…","compteId":"…"} ]
 }
 ```
-`repartitions` **facultatif** (null → hérite du défaut scénario). Si présent, doit sommer
-à 1. Chaque `ventilation.compteId` doit appartenir à un compte rattaché au membre concerné
-(via `compte_membre`) ; sinon → 422 `VENTILATION_COMPTE_NON_RATTACHE`.
+
+**Règles sur `periodiciteMois`** :
+- `>= 1` : récurrent (mensuel si 1, trimestriel si 3, annuel si 12, etc.).
+- `= 0` : **one-shot ponctuel** — le montant est imputé en totalité au mois de `debut`.
+  `fin` est ignorée ; `mode` et `moment` sont sans effet.
+
+**Règles sur `typeRepartition`** :
+- `AUTO` (défaut) : quotes-parts issues de la `RepartitionPeriode` active du scénario.
+  `repartitions` doit être `null` ou absent.
+- `REVERSE_AUTO` : chaque membre reçoit `(1 − part_auto) / (N − 1)`.
+  `repartitions` doit être `null` ou absent.
+- `CUSTOM` : quotes-parts fixes. `repartitions` **obligatoire** et doit sommer à 1
+  (sinon 422 `REPARTITION_INVALIDE`). Chaque `ventilation.compteId` doit appartenir à
+  un compte rattaché au membre (via `compte_membre`) ; sinon 422
+  `VENTILATION_COMPTE_NON_RATTACHE`.
+
 - `GET …/postes/{id}` → détail (avec `montantMensualise` calculé).
-- `PUT …/postes/{id}` / `PATCH …/postes/{id}` → modification.
+- `PUT …/postes/{id}` / `PATCH …/postes/{id}` → modification (mêmes règles que POST).
 - `DELETE …/postes/{id}` → suppression.
 - `POST …/postes/{id}:dupliquer` → duplication d'un poste (confort de saisie).
+
+### 7.1 Aperçu mensuel d'un poste
+
+`GET …/postes/{id}/apercu?annee=2026`
+
+Renvoie la contribution du poste mois par mois sur l'année demandée (utile pour
+comprendre le lissage mensualisé vs le périodique) :
+
+```json
+{
+  "annee": 2026,
+  "contributions": [
+    { "mois": 1,  "contribution": 52.50 },
+    { "mois": 2,  "contribution": 52.50 },
+    { "mois": 3,  "contribution": 52.50 },
+    …
+    { "mois": 12, "contribution": 52.50 }
+  ]
+}
+```
 
 ## 8. Objectifs (niveau scénario)
 
 `/api/foyers/{foyerId}/scenarios/{scenarioId}/objectifs` — CRUD.
-Corps : `{libelle, categorieProjetId?, montantCible, echeance, compteId? , actifId?}`
+Corps : `{libelle, categorieProjetId?, montantCible, echeance?, compteId?, actifId?}`
 (exactement un support). Réponse enrichie du calcul (doc 1 §10) :
+
 ```json
 {
-  "id":"…", "libelle":"Vacances 2027", "montantCible":8000, "echeance":"2027-06-30",
-  "compteId":"…",
-  "soldeCourant": 3200.00, "progressionPct": 40.0,
-  "epargneMensuelleRequise": 480.00, "dateAtteintePrevue": "2027-05-01"
+  "id": "…", "libelle": "Vacances 2027", "montantCible": 8000, "echeance": "2027-06-30",
+  "compteId": "…", "actifId": null,
+  "soldeActuel": 3200.00,
+  "progression": 0.40,
+  "epargneRequise": 480.00
 }
 ```
+
+Champs calculés :
+- `soldeActuel` : solde courant du compte ou de l'actif lié.
+- `progression` : `soldeActuel / montantCible` ∈ [0, 1].
+- `epargneRequise` : épargne mensuelle nécessaire pour atteindre `montantCible` avant
+  `echeance` (0 si déjà atteint ou si `echeance` est null).
 
 ## 9. Projections (endpoints de calcul — ★)
 
@@ -193,11 +277,11 @@ peut servir depuis le cache.
   "annee": 2026,
   "mois": [
     {"numero":1,"agregat":{"revenus":11000.00,"charges":5172.67,"reserves":410.00,"soldeDisponible":5417.33}},
-    … 12 lignes …
+    "… 12 lignes …"
   ],
   "moisReel": [
     {"numero":1,"agregat":{"revenus":11000.00,"charges":4980.00,"reserves":0.00,"soldeDisponible":6020.00}},
-    … 12 lignes …
+    "… 12 lignes …"
   ],
   "totalAnnuel": {"revenus":140350.00,"charges":62322.00,"reserves":8520.00,"soldeDisponible":69508.00},
   "parMembre": {
@@ -215,20 +299,35 @@ peut servir depuis le cache.
   }
 }
 ```
-Variante « toutes vues » pour le dashboard annuel :
-`GET …/projection/annuelle-complete` → `ProjectionAnnuelleDto[]` (une entrée par année de l'horizon).
+
+`moisReel` et `moisParMembreReel` représentent les flux du mois en cours calendaire
+(charges/revenus effectivement tombés), utiles pour la comparaison prévision vs réalisé.
 
 ### 9.2 Projection pluriannuelle & trésorerie chaînée
-`GET …/scenarios/{scenarioId}/projection/tresorerie` → toutes les années de l'horizon :
+`GET …/scenarios/{scenarioId}/projection/tresorerie`
+
+Renvoie la trésorerie cumulée sur toutes les années de l'horizon :
 ```json
 {
-  "anneeDepart":2026, "horizonAnnees":9, "tresorerieInitiale":0, "devise":"CHF",
-  "annees":[
-    {"annee":2026,"soldeAnnuel":69508.00,"tresorerieDebutAnnee":0.00,"tresorerieFinAnnee":69508.00},
-    {"annee":2027,"soldeAnnuel":58968.00,"tresorerieDebutAnnee":69508.00,"tresorerieFinAnnee":128476.00},
-    …
+  "annees": [
+    {
+      "annee": 2026,
+      "soldeAnnuel": 69508.00,
+      "tresorerieDebutAnnee": 0.00,
+      "tresorerieFinAnnee": 69508.00
+    },
+    {
+      "annee": 2027,
+      "soldeAnnuel": 58968.00,
+      "tresorerieDebutAnnee": 69508.00,
+      "tresorerieFinAnnee": 128476.00
+    }
   ],
-  "courbeMensuelle":[ {"annee":2026,"mois":1,"tresorerieCumulee": …}, … ]
+  "courbe": [
+    { "annee": 2026, "mois": 1, "tresorerie": 5417.33 },
+    { "annee": 2026, "mois": 2, "tresorerie": 11234.66 },
+    "…"
+  ]
 }
 ```
 
@@ -245,6 +344,11 @@ Variante « toutes vues » pour le dashboard annuel :
   "parCategorie": {
     "{categorieId}": 1234.56
   },
+  "parCategorieMembre": {
+    "{categorieId}": {
+      "{membreId}": 567.89
+    }
+  },
   "parCompteMembre": {
     "{compteId}": {
       "{membreId}": 123.45
@@ -253,30 +357,47 @@ Variante « toutes vues » pour le dashboard annuel :
 }
 ```
 
+`parCategorieMembre` permet de décomposer chaque catégorie par membre (vue croisée).
+`parCompteMembre` permet d'afficher les charges par compte et par membre (graphique
+horizontal dans le dashboard mensuel).
+
 ### 9.4 Patrimoine / net worth
-`GET …/scenarios/{scenarioId}/projection/patrimoine?jusquAnnee=2034` :
+`GET …/scenarios/{scenarioId}/projection/patrimoine` :
 ```json
 {
-  "devise":"CHF",
-  "points":[ {"annee":2026,"mois":1,"netWorth": …,
-              "parCompte":[{"compteId":"…","solde": …}],
-              "parActif":[{"actifId":"…","solde": …}]}, … ],
-  "resume":{"netWorthInitial": …, "netWorthFinal": …}
+  "annees": [
+    {
+      "annee": 2026,
+      "patrimoineNet": 145000.00,
+      "soldesComptes": {
+        "{compteId}": 12500.00,
+        "{compteId}": 8000.00
+      },
+      "soldesActifs": {
+        "{actifId}": 95000.00,
+        "{actifId}": 29500.00
+      }
+    },
+    "…"
+  ]
 }
 ```
+
+`patrimoineNet` = somme des `soldesComptes` + somme des `soldesActifs`. Les actifs sont
+projetés en appliquant `tauxCroissanceAnnuel` capitalisé année par année.
 
 ### 9.5 Comparaison de scénarios (what-if)
 `GET /api/foyers/{foyerId}/projection/comparaison?scenarioIds=A,B,C`
 Réponse alignée par année pour un graphe multi-séries :
 ```json
 {
-  "scenarioIds":["A","B","C"],
-  "nomScenarios":["Prévision principale","Loyer +200","Prime annuelle"],
-  "series":[
+  "scenarioIds": ["A","B","C"],
+  "nomScenarios": ["Prévision principale","Loyer +200","Prime annuelle"],
+  "series": [
     {
-      "annee":2026,
-      "soldeParScenario":{"A":69508.00,"B":67108.00},
-      "tresorerieParScenario":{"A":69508.00,"B":67108.00}
+      "annee": 2026,
+      "soldeParScenario":      {"A":69508.00,"B":67108.00,"C":72008.00},
+      "tresorerieParScenario": {"A":69508.00,"B":67108.00,"C":72008.00}
     }
   ]
 }
@@ -288,7 +409,6 @@ Réponse alignée par année pour un graphe multi-séries :
   privilégier des DTO immuables (records).
 - Renvoyer `devise` = `deviseBase` du foyer dans toutes les projections (montants déjà
   convertis).
-- Prévoir un endpoint utilitaire `GET …/scenarios/{scenarioId}/postes/{id}/apercu?annee=`
-  renvoyant la contribution mois par mois d'**un** poste (aide au débogage/UX « voir la
-  répartition mensuelle de cette ligne »).
 - Journaliser toute violation de scoping multi-tenant (tentative d'accès croisé).
+- L'endpoint `apercu` (§7.1) peut être mis en cache côté serveur ; il est particulièrement
+  utile côté UX pour expliquer le lissage mensualisé d'un poste trimestriel/annuel.

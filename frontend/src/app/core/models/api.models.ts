@@ -31,7 +31,7 @@ export type TypeCategorie = 'REVENU' | 'CHARGE' | 'RESERVE';
 export interface CategorieDto { id: string; libelle: string; typePoste: TypeCategorie; ordre: number; actif: boolean; }
 export interface CategorieRequest { libelle: string; typePoste: TypeCategorie; ordre: number; }
 
-export type TypeActif = 'IMMOBILIER' | 'FINANCIER' | 'RETRAITE' | 'AUTRE';
+export type TypeActif = 'COMPTE_EPARGNE' | 'TROISIEME_PILIER' | 'INVESTISSEMENT' | 'CRYPTO' | 'IMMOBILIER' | 'VEHICULE' | 'AUTRE';
 export interface ActifDto { id: string; libelle: string; typeActif: TypeActif; soldeInitial: number; devise: string; tauxCroissanceAnnuel: number; ordre: number; actif: boolean; }
 export interface ActifRequest { libelle: string; typeActif: TypeActif; soldeInitial: number; devise?: string; tauxCroissanceAnnuel: number; ordre: number; }
 

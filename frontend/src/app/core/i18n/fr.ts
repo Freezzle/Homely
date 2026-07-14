@@ -213,7 +213,15 @@ export const FR = {
       devise: 'Devise',
       tauxCroissance: 'Taux croissance/an (%)',
       ordre: 'Ordre',
-      types: { IMMOBILIER: 'Immobilier', FINANCIER: 'Financier', RETRAITE: 'Retraite', AUTRE: 'Autre' },
+      types: {
+        COMPTE_EPARGNE:   'Compte épargne',
+        TROISIEME_PILIER: '3ᵉ pilier',
+        INVESTISSEMENT:   'Investissement',
+        CRYPTO:           'Crypto',
+        IMMOBILIER:       'Immobilier',
+        VEHICULE:         'Véhicule',
+        AUTRE:            'Autre',
+      },
     },
     taux: {
       titre: 'Taux de change',

@@ -129,16 +129,19 @@ export class ActifsComponent implements OnInit {
   });
 
   typeOptions: { label: string; value: TypeActif }[] = [
-    { label: FR.referentiels.actif.types.IMMOBILIER, value: 'IMMOBILIER' },
-    { label: FR.referentiels.actif.types.FINANCIER, value: 'FINANCIER' },
-    { label: FR.referentiels.actif.types.RETRAITE, value: 'RETRAITE' },
-    { label: FR.referentiels.actif.types.AUTRE, value: 'AUTRE' },
+    { label: FR.referentiels.actif.types.COMPTE_EPARGNE,   value: 'COMPTE_EPARGNE' },
+    { label: FR.referentiels.actif.types.TROISIEME_PILIER, value: 'TROISIEME_PILIER' },
+    { label: FR.referentiels.actif.types.INVESTISSEMENT,   value: 'INVESTISSEMENT' },
+    { label: FR.referentiels.actif.types.CRYPTO,           value: 'CRYPTO' },
+    { label: FR.referentiels.actif.types.IMMOBILIER,       value: 'IMMOBILIER' },
+    { label: FR.referentiels.actif.types.VEHICULE,         value: 'VEHICULE' },
+    { label: FR.referentiels.actif.types.AUTRE,            value: 'AUTRE' },
   ];
   devises = ['CHF', 'EUR', 'USD', 'GBP', 'CAD'];
 
   form = this.fb.group({
     libelle: ['', Validators.required],
-    typeActif: ['FINANCIER' as TypeActif, Validators.required],
+    typeActif: ['AUTRE' as TypeActif, Validators.required],
     soldeInitial: [0],
     devise: [this.contexte.deviseBase()],
     tauxCroissanceAnnuel: [0],
@@ -164,7 +167,7 @@ export class ActifsComponent implements OnInit {
   ouvrirCreation(): void {
     this.actifEnEdition = null;
     const ordre = this.actifs().length > 0 ? Math.max(...this.actifs().map(a => a.ordre)) + 1 : 1;
-    this.form.reset({ libelle: '', typeActif: 'FINANCIER', soldeInitial: 0, devise: this.contexte.deviseBase(), tauxCroissanceAnnuel: 0, ordre });
+    this.form.reset({ libelle: '', typeActif: 'AUTRE', soldeInitial: 0, devise: this.contexte.deviseBase(), tauxCroissanceAnnuel: 0, ordre });
     this.dialogVisible = true;
   }
 
