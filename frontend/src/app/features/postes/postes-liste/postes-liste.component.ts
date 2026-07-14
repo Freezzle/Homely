@@ -84,6 +84,16 @@ import { FR } from '../../../core/i18n/fr';
           </label>
         </div>
 
+        <!-- Filtre catégories -->
+        <p-multiselect appendTo="body"
+          [ngModel]="filtreCategorieIds()"
+          (ngModelChange)="filtreCategorieIds.set($event)"
+          [options]="categories()"
+          optionLabel="libelle" optionValue="id"
+          [placeholder]="t.poste.filtreCategories"
+          [showClear]="true"
+          styleClass="min-w-44 text-sm shrink-0" />
+
         <!-- Filtre comptes -->
         <p-multiselect appendTo="body"
           [ngModel]="filtreCompteIds()"
@@ -497,6 +507,7 @@ export class PostesListeComponent implements OnInit {
   cacherFuturs = signal(false);
   filtreCompteIds = signal<string[]>([]);
   filtreMembreIds = signal<string[]>([]);
+  filtreCategorieIds = signal<string[]>([]);
 
   triOptions = [
     { label: FR.poste.triOptions.DATE,        value: 'DATE' as const },
@@ -575,10 +586,11 @@ export class PostesListeComponent implements OnInit {
     }
   });
 
-  /** Liste finale affichée : triée + filtrée selon les options de masquage et les filtres comptes/membres. */
+  /** Liste finale affichée : triée + filtrée selon les options de masquage et les filtres comptes/membres/catégories. */
   postesVisibles = computed(() => {
-    const compteIds  = this.filtreCompteIds();
-    const membreIds  = this.filtreMembreIds();
+    const compteIds     = this.filtreCompteIds();
+    const membreIds     = this.filtreMembreIds();
+    const categorieIds  = this.filtreCategorieIds();
     const tousMembreIds = this.membres().map(m => m.id);
 
     return this.postesTries().filter(p => {
@@ -587,6 +599,9 @@ export class PostesListeComponent implements OnInit {
 
       if (this.cacherInactifs() && estInactif) return false;
       if (this.cacherFuturs()   && estFutur)   return false;
+
+      // Filtre catégories
+      if (categorieIds.length > 0 && !categorieIds.includes(p.categorieId ?? '')) return false;
 
       // Filtre comptes : au moins une ventilation rattachée à un compte sélectionné
       if (compteIds.length > 0) {

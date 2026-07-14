@@ -130,6 +130,7 @@ export const FR = {
     },
     filtreComptes: 'Filtrer par compte',
     filtreMembres: 'Filtrer par membre',
+    filtreCategories: 'Filtrer par catégorie',
     oneShot: 'Ponctuel',
   },
   // ── Projection ───────────────────────────────────────────
