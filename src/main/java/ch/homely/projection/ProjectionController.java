@@ -58,12 +58,4 @@ public class ProjectionController {
         multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
         return projectionService.ventilations(foyerId, scenarioId, annee, mois);
     }
-
-    /** T8.4 — Patrimoine (net worth pluriannuel) */
-    @GetMapping("/patrimoine")
-    public PatrimoineDto patrimoine(@PathVariable UUID foyerId,
-                                     @PathVariable UUID scenarioId) {
-        multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
-        return projectionService.patrimoine(foyerId, scenarioId);
-    }
 }

@@ -23,7 +23,6 @@ export const FR = {
     reserves: 'Réserves',
     scenarios: 'Scénarios',
     comparaison: 'Comparaison',
-    patrimoine: 'Patrimoine',
     objectifs: 'Objectifs',
     referentiels: 'Référentiels',
     comptes: 'Comptes',
@@ -150,6 +149,7 @@ export const FR = {
     vueTout: 'Les deux',
     totalAnnee: 'Total année',
     tresorerie: 'Trésorerie',
+    cascade: 'Cascade de trésorerie',
     annee: 'Année',
     mois: 'Mois',
     foyer: 'Foyer',
@@ -246,15 +246,6 @@ export const FR = {
     role: 'Rôle',
     roles: { OWNER: 'Propriétaire', EDITOR: 'Éditeur', VIEWER: 'Lecteur' },
     retirer: 'Retirer l\'accès',
-  },
-  // ── Patrimoine ────────────────────────────────────────────
-  patrimoine: {
-    titre: 'Patrimoine',
-    patrimoineNet: 'Patrimoine net',
-    soldesComptes: 'Soldes des comptes',
-    soldesActifs: 'Valeur des actifs',
-    annee: 'Année',
-    courbe: 'Évolution du patrimoine net',
   },
   // ── Objectifs ─────────────────────────────────────────────
   objectif: {

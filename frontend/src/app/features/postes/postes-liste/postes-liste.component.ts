@@ -165,105 +165,113 @@ import { FR } from '../../../core/i18n/fr';
 
       <!-- ── Liste de cartes ──────────────────────────────────── -->
       } @else {
-        <div class="flex flex-col gap-2">
-          @for (p of postesVisibles(); track p.id) {
-            <div class="flex items-center gap-3 px-4 py-3 rounded-xl
-                        border border-surface-200 dark:border-surface-700
-                        bg-white dark:bg-surface-900
-                        hover:border-primary/40 hover:shadow-sm
-                        transition-all duration-150">
+        <div class="flex flex-col gap-1">
+          @for (item of postesAvecSeparateurs(); track $index) {
 
-              <!-- Barre accent (couleur par type) -->
-              <div class="w-0.75 self-stretch rounded-full shrink-0" [ngClass]="typeAccentClass()"></div>
+            @if (isSeparator(item)) {
+              <!-- ── Séparateur de groupe ── -->
+              <div class="text-xs font-bold uppercase tracking-wider bg-surface-700 text-surface-0
+                          px-3 pt-3 pb-3 select-none">
+                {{ item.separator }}
+              </div>
 
-              <!-- Contenu principal -->
-              <div class="flex-1 min-w-0">
+            } @else {
+              @let p = asPoste(item);
+              <div class="flex items-center gap-3 px-4 py-3
+                          border border-surface-200 dark:border-surface-700
+                          bg-white dark:bg-surface-900
+                          hover:border-primary/40 hover:shadow-sm
+                          transition-all duration-150">
+                
+                <!-- Contenu principal -->
+                <div class="flex-1 min-w-0">
 
-                <!-- Description + badge nature -->
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="font-medium text-surface-900 dark:text-surface-100 leading-snug">
-                    {{ p.description }}
-                  </span>
-                  @if (p.nature === 'PREVISION') {
-                    <p-tag severity="warn" [value]="t.poste.natureOptions.PREVISION"
-                           styleClass="text-[10px] py-0 shrink-0" />
-                  }
-                </div>
-
-                <!-- Méta : catégorie · période · périodicité -->
-                <div class="flex items-center flex-wrap gap-x-2 gap-y-0.5 mt-0.5 text-sm text-surface-500">
-                  @if (categorieLabel(p.categorieId) !== '–') {
-                    <span>{{ categorieLabel(p.categorieId) }}</span>
-                    <span class="text-surface-300 dark:text-surface-600 select-none">·</span>
-                  }
-                  @if (p.periodiciteMois === 0) {
-                    <!-- One-shot : afficher le mode avec icône dédiée puis la date de début -->
-                    <span class="flex items-center gap-1">
-                      <i class="pi pi-calendar text-xs text-surface-400"></i>
-                      {{ formatPeriode(p.debut) }}
+                  <!-- Description + badge nature -->
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-medium text-surface-900 dark:text-surface-100 leading-snug">
+                      {{ p.description }}
                     </span>
-                    <span class="text-surface-300 dark:text-surface-600 select-none">·</span>
-                    <span class="flex items-center gap-1">
-                      <i class="pi pi-bolt text-xs text-purple-500" [pTooltip]="t.poste.oneShot"></i>
-                      {{t.poste.oneShot}}
-                    </span>
-                  } @else {
-                    <!-- Normal : afficher la période complète et la périodicité -->
-                    <span class="flex items-center gap-1">
-                      <i class="pi pi-calendar text-xs text-surface-400"></i>
-                      {{ formatPeriode(p.debut) }}&nbsp;–&nbsp;{{ formatPeriode(p.fin) }}
-                    </span>
-                    <span class="text-surface-300 dark:text-surface-600 select-none">·</span>
-                    <span class="flex items-center gap-1">
-                      @if (p.mode === 'MENSUALISE' || p.periodiciteMois <= 1) {
-                        <i class="pi pi-calendar-clock text-xs text-blue-400"
-                           [pTooltip]="t.poste.modeOptions.MENSUALISE"></i>
-                      } @else {
-                        <i class="pi pi-bolt text-xs text-amber-500"
-                           [pTooltip]="t.poste.modeOptions.PERIODIQUE + ' · ' + (p.moment === 'FIN_PERIODE' ? t.poste.momentOptions.FIN_PERIODE : t.poste.momentOptions.DEBUT_PERIODE)"></i>
-                      }
-                      {{ p.periodiciteMois | periodicite }}
-                    </span>
-                  }
-                </div>
-
-                <!-- Répartitions : tags membres (AUTO = nom seul, CUSTOM = nom + %) -->
-                @let membresAffiches = membresAffichesPoste(p);
-                @if (membresAffiches.length > 0) {
-                  <div class="flex items-center gap-2 mt-2 flex-wrap">
-                    @for (rep of membresAffiches; track rep.membreId) {
-                      <p-tag [value]="rep.label"
-                             [style]="{ 'background-color': rep.couleur, color: rep.couleurTexte }"
-                             styleClass="text-xs py-1 px-2 border-none" />
+                    @if (p.nature === 'PREVISION') {
+                      <p-tag severity="warn" [value]="t.poste.natureOptions.PREVISION"
+                             styleClass="text-[10px] py-0 shrink-0" />
                     }
                   </div>
-                }
-              </div>
 
-              <!-- Montants -->
-              <div class="text-right shrink-0 min-w-28">
-                <div class="font-semibold text-surface-700 dark:text-surface-200">
-                  {{ p.montant | montant:p.devise }}
-                </div>
-                @if (p.periodiciteMois > 1) {
-                  <div class="text-sm text-surface-400">
-                    {{ p.montantMensualise | montant:p.devise }}&thinsp;/mois
+                  <!-- Méta : catégorie (masquée si tri=CATEGORIE) · période · périodicité -->
+                  <div class="flex items-center flex-wrap gap-x-2 gap-y-0.5 mt-0.5 text-sm text-surface-500">
+                    @if (categorieLabel(p.categorieId) !== '–' && triActuel() !== 'CATEGORIE') {
+                      <span>{{ categorieLabel(p.categorieId) }}</span>
+                      <span class="text-surface-300 dark:text-surface-600 select-none">·</span>
+                    }
+                    @if (p.periodiciteMois === 0) {
+                      <!-- One-shot : afficher le mode avec icône dédiée puis la date de début -->
+                      <span class="flex items-center gap-1">
+                        <i class="pi pi-calendar text-xs text-surface-400"></i>
+                        {{ formatPeriode(p.debut) }}
+                      </span>
+                      <span class="text-surface-300 dark:text-surface-600 select-none">·</span>
+                      <span class="flex items-center gap-1">
+                        <i class="pi pi-bolt text-xs text-purple-500" [pTooltip]="t.poste.oneShot"></i>
+                        {{t.poste.oneShot}}
+                      </span>
+                    } @else {
+                      <!-- Normal : afficher la période complète et la périodicité -->
+                      <span class="flex items-center gap-1">
+                        <i class="pi pi-calendar text-xs text-surface-400"></i>
+                        {{ formatPeriode(p.debut) }}&nbsp;–&nbsp;{{ formatPeriode(p.fin) }}
+                      </span>
+                      <span class="text-surface-300 dark:text-surface-600 select-none">·</span>
+                      <span class="flex items-center gap-1">
+                        @if (p.mode === 'MENSUALISE' || p.periodiciteMois <= 1) {
+                          <i class="pi pi-calendar-clock text-xs text-blue-400"
+                             [pTooltip]="t.poste.modeOptions.MENSUALISE"></i>
+                        } @else {
+                          <i class="pi pi-bolt text-xs text-amber-500"
+                             [pTooltip]="t.poste.modeOptions.PERIODIQUE + ' · ' + (p.moment === 'FIN_PERIODE' ? t.poste.momentOptions.FIN_PERIODE : t.poste.momentOptions.DEBUT_PERIODE)"></i>
+                        }
+                        {{ p.periodiciteMois | periodicite }}
+                      </span>
+                    }
                   </div>
-                }
-              </div>
 
-              <!-- Actions -->
-              <div class="flex gap-0.5 shrink-0">
-                <p-button icon="pi pi-eye" [text]="true" severity="secondary" size="small"
-                          [pTooltip]="t.poste.apercu" (click)="ouvrirApercu(p)" />
-                @if (contexte.estEditor()) {
-                  <p-button icon="pi pi-pencil" [text]="true" size="small" (click)="ouvrirEdition(p)" />
-                  <p-button icon="pi pi-trash" [text]="true" severity="danger" size="small"
-                            (click)="supprimer(p)" />
-                }
-              </div>
+                  <!-- Répartitions : tags membres (AUTO = nom seul, CUSTOM = nom + %) -->
+                  @let membresAffiches = membresAffichesPoste(p);
+                  @if (membresAffiches.length > 0) {
+                    <div class="flex items-center gap-2 mt-2 flex-wrap">
+                      @for (rep of membresAffiches; track rep.membreId) {
+                        <p-tag [value]="rep.label"
+                               [style]="{ 'background-color': rep.couleur, color: rep.couleurTexte }"
+                               styleClass="text-xs py-1 px-2 border-none" />
+                      }
+                    </div>
+                  }
+                </div>
 
-            </div>
+                <!-- Montants -->
+                <div class="text-right shrink-0 min-w-28">
+                  <div class="font-semibold text-surface-700 dark:text-surface-200">
+                    {{ p.montant | montant:p.devise }}
+                  </div>
+                  @if (p.periodiciteMois > 1) {
+                    <div class="text-sm text-surface-400">
+                      {{ p.montantMensualise | montant:p.devise }}&thinsp;/mois
+                    </div>
+                  }
+                </div>
+
+                <!-- Actions -->
+                <div class="flex gap-0.5 shrink-0">
+                  <p-button icon="pi pi-eye" [text]="true" severity="secondary" size="small"
+                            [pTooltip]="t.poste.apercu" (click)="ouvrirApercu(p)" />
+                  @if (contexte.estEditor()) {
+                    <p-button icon="pi pi-pencil" [text]="true" size="small" (click)="ouvrirEdition(p)" />
+                    <p-button icon="pi pi-trash" [text]="true" severity="danger" size="small"
+                              (click)="supprimer(p)" />
+                  }
+                </div>
+
+              </div>
+            }
           }
         </div>
       }
@@ -502,7 +510,7 @@ export class PostesListeComponent implements OnInit {
     ...FR.poste.periodiciteLabels.slice(1).map((label, i) => ({ label, value: i + 1 }))
   ];
 
-  triActuel = signal<'DATE' | 'CATEGORIE' | 'DESCRIPTION'>('DATE');
+  triActuel = signal<'DATE' | 'CATEGORIE' | 'DESCRIPTION'>('CATEGORIE');
   cacherInactifs = signal(true);
   cacherFuturs = signal(false);
   filtreCompteIds = signal<string[]>([]);
@@ -586,6 +594,59 @@ export class PostesListeComponent implements OnInit {
     }
   });
 
+  // ── Séparateurs de groupe ─────────────────────────────────
+  /** Type discriminant : un élément de la liste est soit un poste, soit un séparateur. */
+  isSeparator(item: PosteDto | { separator: string }): item is { separator: string } {
+    return 'separator' in item;
+  }
+
+  /** Cast sûr côté template après discrimination par isSeparator(). */
+  asPoste(item: PosteDto | { separator: string }): PosteDto {
+    return item as PosteDto;
+  }
+
+  /**
+   * Liste affichée avec séparateurs de groupe insérés selon le tri actuel :
+   *  - DATE        → [mois.année] selon p.debut
+   *  - CATÉGORIE   → [nom catégorie]
+   *  - DESCRIPTION → [première lettre majuscule]
+   */
+  postesAvecSeparateurs = computed<(PosteDto | { separator: string })[]>(() => {
+    const result: (PosteDto | { separator: string })[] = [];
+    let lastKey: string | null = null;
+    const tri = this.triActuel();
+
+    for (const p of this.postesVisibles()) {
+      let key: string;
+      let label: string;
+
+      switch (tri) {
+        case 'DATE':
+          key   = p.debut?.substring(0, 7) ?? '–';
+          label = this.formatPeriode(p.debut ?? null);
+          break;
+        case 'CATEGORIE':
+          key   = this.categorieLabel(p.categorieId);
+          label = key;
+          break;
+        case 'DESCRIPTION':
+          key   = p.description.charAt(0).toUpperCase();
+          label = key;
+          break;
+        default:
+          key   = '';
+          label = '';
+      }
+
+      if (key !== lastKey) {
+        result.push({ separator: label });
+        lastKey = key;
+      }
+      result.push(p);
+    }
+    return result;
+  });
+
   /** Liste finale affichée : triée + filtrée selon les options de masquage et les filtres comptes/membres/catégories. */
   postesVisibles = computed(() => {
     const compteIds     = this.filtreCompteIds();
@@ -609,17 +670,17 @@ export class PostesListeComponent implements OnInit {
         if (!match) return false;
       }
 
-      // Filtre membres :
-      //   CUSTOM       → au moins une répartition avec quotePart > 0 pour un membre sélectionné
+      // Filtre membres (AND) :
+      //   CUSTOM       → tous les membres sélectionnés doivent avoir quotePart > 0
       //   AUTO / REVERSE_AUTO → tous les membres actifs sont implicitement concernés ;
-      //                         conserver si au moins un membre sélectionné est actif dans le foyer
+      //                         conserver si chaque membre sélectionné appartient au foyer
       if (membreIds.length > 0) {
         let match: boolean;
         if (p.typeRepartition === 'CUSTOM') {
-          match = (p.repartitions ?? []).some(r => r.quotePart > 0 && membreIds.includes(r.membreId));
+          match = membreIds.every(id => (p.repartitions ?? []).some(r => r.quotePart > 0 && r.membreId === id));
         } else {
-          // AUTO / REVERSE_AUTO : postes partagés par tous les membres actifs du foyer
-          match = tousMembreIds.some(id => membreIds.includes(id));
+          // AUTO / REVERSE_AUTO : tous les membres du foyer sont concernés
+          match = membreIds.every(id => tousMembreIds.includes(id));
         }
         if (!match) return false;
       }

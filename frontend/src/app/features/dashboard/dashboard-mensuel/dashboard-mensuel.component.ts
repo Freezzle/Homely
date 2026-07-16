@@ -10,7 +10,8 @@ import { forkJoin } from 'rxjs';
 import { ContexteService } from '../../../core/services/contexte.service';
 import { ProjectionService } from '../../../core/services/projection.service';
 import { CategorieService, CompteService } from '../../../core/services/referentiel.service';
-import { VentilationsDto, VentilationAggregatDto, CategorieDto, CompteDto, TypeCategorie } from '../../../core/models/api.models';
+import { PosteService } from '../../../core/services/scenario-poste.service';
+import { VentilationsDto, VentilationAggregatDto, CategorieDto, CompteDto, TypeCategorie, PosteDto } from '../../../core/models/api.models';
 import { MontantPipe } from '../../../core/pipes/format.pipes';
 import { FR } from '../../../core/i18n/fr';
 
@@ -247,6 +248,52 @@ import { FR } from '../../../core/i18n/fr';
         </div>
         }
 
+        <!-- ③ bis · Cascade de trésorerie ──────────────────────── -->
+        @if (cascadeFoyer()) {
+        <div>
+          <div class="flex items-center gap-3 mb-4">
+            <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
+            <span class="text-xs font-bold text-surface-400 uppercase tracking-widest flex items-center gap-2">
+              <i class="pi pi-chart-bar text-sm"></i>&nbsp;{{ t.projection.cascade }}
+            </span>
+            <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
+          </div>
+
+          <!-- Cascade foyer (vue FOYER, TOUT, ou mono-membre) -->
+          @if (!afficherParMembre() || vue() !== 'MEMBRE') {
+            <p-card>
+              <p-chart type="bar"
+                       [data]="cascadeFoyer()!.chartData"
+                       [options]="cascadeOptionsFor(cascadeXMaxFoyer())"
+                       [style.height.px]="cascadeFoyer()!.chartHeight"
+                       class="w-full block" />
+            </p-card>
+          }
+
+          <!-- Cascades par membre (vue MEMBRE ou TOUT, multi-membres) -->
+          @if (afficherParMembre() && vue() !== 'FOYER') {
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4" [class.mt-4]="vue() === 'TOUT'">
+              @for (mc of cascadeMembreData(); track mc.membreId) {
+                <p-card>
+                  <ng-template pTemplate="header">
+                    <div class="px-4 pt-4 pb-2 flex items-center gap-2">
+                      <span class="inline-block w-3.5 h-3.5 rounded-full shrink-0"
+                            [style.background-color]="mc.couleur"></span>
+                      <span class="font-semibold">{{ mc.nom }}</span>
+                    </div>
+                  </ng-template>
+                  <p-chart type="bar"
+                           [data]="mc.chartData"
+                           [options]="cascadeOptionsFor(mc.xMax)"
+                           [style.height.px]="mc.chartHeight"
+                           class="w-full block" />
+                </p-card>
+              }
+            </div>
+          }
+        </div>
+        }
+
         <!-- ④ Détail par membre — toutes les catégories visibles ────────────── -->
         @if (afficherParMembre() && vue() !== 'FOYER') {
         <div>
@@ -423,10 +470,12 @@ export class DashboardMensuelComponent implements OnInit {
   private projSvc      = inject(ProjectionService);
   private categorieSvc = inject(CategorieService);
   private compteSvc    = inject(CompteService);
+  private posteSvc     = inject(PosteService);
 
   ventilations = signal<VentilationsDto | null>(null);
   categories   = signal<CategorieDto[]>([]);
   comptes      = signal<CompteDto[]>([]);
+  postes       = signal<PosteDto[]>([]);
   chargement   = signal(false);
 
   // membres provient du contexte global (chargé par le Shell)
@@ -544,6 +593,300 @@ export class DashboardMensuelComponent implements OnInit {
     return { revenus: sum(d.revenus), charges: sum(d.charges), reserves: sum(d.reserves) };
   });
 
+  // ── Cascade de trésorerie ──────────────────────────────────────────────────
+
+  private buildCascadeChartData(
+    etapes: { label: string; valeur: number; couleur: string; isSummary: boolean }[]
+  ) {
+    const spacers: number[] = [];
+    const bars: number[]    = [];
+    const couleurs           = etapes.map(e => e.couleur);
+    let running              = 0;
+
+    for (const e of etapes) {
+      if (e.isSummary) {
+        spacers.push(0);
+        bars.push(Math.abs(e.valeur));
+      } else if (e.valeur >= 0) {
+        spacers.push(running);
+        bars.push(e.valeur);
+        running += e.valeur;
+      } else {
+        const abs = Math.abs(e.valeur);
+        spacers.push(Math.max(0, running - abs));
+        bars.push(abs);
+        running -= abs;
+      }
+    }
+
+    return {
+      labels: etapes.map(e => e.label),
+      datasets: [
+        { data: spacers, backgroundColor: 'rgba(0,0,0,0)', borderColor: 'rgba(0,0,0,0)', borderWidth: 0, stack: 'cascade' },
+        { data: bars, backgroundColor: couleurs, borderRadius: 4, borderWidth: 0, stack: 'cascade' },
+      ],
+    };
+  }
+
+  /** Étapes foyer : 4 barres (revenus / charges / réserves / disponible) */
+  private cascadeEtapesFromAgregat(ag: VentilationAggregatDto) {
+    return [
+      { label: FR.projection.revenus,               valeur:  ag.revenus,         couleur: '#22c55e', isSummary: false },
+      { label: '\u2212\u2009' + FR.projection.charges,   valeur: -ag.charges,    couleur: '#ef4444', isSummary: false },
+      { label: '\u2212\u2009' + FR.projection.reserves,  valeur: -ag.reserves,   couleur: '#3b82f6', isSummary: false },
+      { label: '=\u2009' + FR.projection.solde,     valeur:  ag.soldeDisponible, couleur: ag.soldeDisponible >= 0 ? '#10b981' : '#ef4444', isSummary: true },
+    ];
+  }
+
+  /** Un poste est actif dans le mois sélectionné. */
+  private posteActifDansMois(p: PosteDto, moisStr: string): boolean {
+    const debutM = p.debut ? String(p.debut).substring(0, 7) : null;
+    const finM   = p.fin   ? String(p.fin).substring(0, 7)   : null;
+    // One-shot : actif uniquement dans son mois de début
+    if (p.periodiciteMois === 0) return debutM === moisStr;
+    if (debutM && debutM > moisStr) return false;
+    if (finM   && finM   < moisStr) return false;
+    return true;
+  }
+
+  /** QuotePart du membre dans un poste AUTO / REVERSE_AUTO pour le mois courant. */
+  private quotePartAutoMois(membreId: string, typeRep: string): number {
+    const sc = this.contexte.scenarioCourant();
+    if (!sc) return 0;
+    const moisStr = `${this.annee}-${String(this.mois).padStart(2, '0')}`;
+
+    // Trouver la période active (debut ≤ mois ≤ fin)
+    const periodeActive = sc.periodes.find(p => {
+      const d = p.debut?.substring(0, 7) ?? '0000-01';
+      const f = p.fin?.substring(0, 7)   ?? '9999-12';
+      return d <= moisStr && moisStr <= f;
+    });
+
+    const parts = periodeActive
+      ? [...periodeActive.parts]
+      : sc.repartitions.map((r, i) => ({ membreId: r.membreId, quotePart: r.quotePart, ordre: i }));
+
+    if (typeRep === 'REVERSE_AUTO') {
+      // Permuter les quoteParts dans l'ordre inverse (tri par ordre)
+      const sorted = [...parts].sort((a, b) => (a as any).ordre - (b as any).ordre);
+      const qps    = sorted.map(p => Number(p.quotePart));
+      qps.reverse();
+      const idx = sorted.findIndex(p => String(p.membreId) === membreId);
+      return idx >= 0 ? qps[idx] : 0;
+    }
+
+    const part = parts.find(p => String(p.membreId) === membreId);
+    return part ? Number(part.quotePart) : 0;
+  }
+
+  /** QuotePart effective du membre dans un poste (CUSTOM via repartitions[], AUTO/REVERSE_AUTO via périodes). */
+  private quotePartMembre(p: PosteDto, membreId: string): number {
+    if (p.typeRepartition === 'CUSTOM') {
+      const rep = (p.repartitions ?? []).find(r => String(r.membreId) === membreId);
+      return rep ? Number(rep.quotePart) : 0;
+    }
+    return this.quotePartAutoMois(membreId, p.typeRepartition);
+  }
+
+  /**
+   * Un poste CUSTOM est personnel si le membre est le SEUL avec quotePart > 0.
+   * Les postes AUTO/REVERSE_AUTO impliquent tous les membres → toujours partagé.
+   */
+  private estPersonnel(p: PosteDto, membreId: string): boolean {
+    if (p.typeRepartition !== 'CUSTOM') return false;
+    const nonZero = (p.repartitions ?? []).filter(r => Number(r.quotePart) > 0);
+    return nonZero.length === 1 && String(nonZero[0].membreId) === membreId;
+  }
+
+  /**
+   * Répartit le total serveur (parMembre[m][type]) en personnel vs partagé,
+   * en utilisant les proportions des montantsMensualisés des postes actifs.
+   * Le total reste toujours exactement égal au total serveur.
+   */
+  private splitPersonnelPartage(
+    membreId: string,
+    type: string,
+    totalServeur: number,
+    moisStr: string,
+  ): { personnel: number; partage: number } {
+    if (totalServeur === 0) return { personnel: 0, partage: 0 };
+
+    let persoRaw = 0;
+    let partageRaw = 0;
+
+    for (const p of this.postes()) {
+      if (p.type !== type) continue;
+      if (!this.posteActifDansMois(p, moisStr)) continue;
+      const qp = this.quotePartMembre(p, membreId);
+      if (qp <= 0) continue;
+      const montant = p.montantMensualise * qp;
+      if (this.estPersonnel(p, membreId)) { persoRaw += montant; }
+      else                                 { partageRaw += montant; }
+    }
+
+    const totalRaw = persoRaw + partageRaw;
+    if (totalRaw <= 0) return { personnel: 0, partage: totalServeur };
+
+    const personnel = totalServeur * (persoRaw / totalRaw);
+    return { personnel, partage: totalServeur - personnel };
+  }
+
+  /**
+   * Construit les étapes de la cascade pour un membre (multi-membres) :
+   * jusqu'à 7 barres (rev perso, rev partagé, -chg perso, -chg partagé,
+   * -res perso, -res partagé, = disponible). Les étapes à 0 sont omises.
+   */
+  private cascadeEtapesMembre(
+    membreId: string,
+    ag: VentilationAggregatDto,
+  ): { label: string; valeur: number; couleur: string; isSummary: boolean }[] {
+    const moisStr = `${this.annee}-${String(this.mois).padStart(2, '0')}`;
+    const rev = this.splitPersonnelPartage(membreId, 'REVENU',  ag.revenus,  moisStr);
+    const chg = this.splitPersonnelPartage(membreId, 'CHARGE',  ag.charges,  moisStr);
+    const res = this.splitPersonnelPartage(membreId, 'RESERVE', ag.reserves, moisStr);
+
+    const etapes: { label: string; valeur: number; couleur: string; isSummary: boolean }[] = [];
+    const push = (label: string, valeur: number, couleur: string) => {
+      if (Math.abs(valeur) >= 0.005) etapes.push({ label, valeur, couleur, isSummary: false });
+    };
+
+    push('Revenus perso.',         rev.personnel, '#22c55e');
+    push('Revenus partagés',       rev.partage,   'rgba(34,197,94,0.55)');
+    push('− Charges perso.',      -chg.personnel, '#ef4444');
+    push('− Charges partagées',   -chg.partage,   'rgba(239,68,68,0.55)');
+    push('− Réserves perso.',     -res.personnel, '#3b82f6');
+    push('− Réserves partagées',  -res.partage,   'rgba(59,130,246,0.55)');
+
+    etapes.push({
+      label: '=\u2009' + FR.projection.solde,
+      valeur: ag.soldeDisponible,
+      couleur: ag.soldeDisponible >= 0 ? '#10b981' : '#ef4444',
+      isSummary: true,
+    });
+
+    return etapes;
+  }
+
+  /**
+   * Étapes foyer multi-membres : même structure que la cascade par membre
+   * (perso / partagé par type), avec les TOTAUX foyer = somme de tous les membres.
+   */
+  private cascadeEtapesFoyerSplit(v: VentilationsDto) {
+    const moisStr = `${this.annee}-${String(this.mois).padStart(2, '0')}`;
+    const zero    = { revenus: 0, charges: 0, reserves: 0, soldeDisponible: 0 };
+
+    let revPerso = 0, revPartage = 0;
+    let chgPerso = 0, chgPartage = 0;
+    let resPerso = 0, resPartage = 0;
+
+    for (const m of this.membres()) {
+      const ag  = (v.parMembre ?? {})[m.id] ?? zero;
+      const rev = this.splitPersonnelPartage(m.id, 'REVENU',  ag.revenus,  moisStr);
+      const chg = this.splitPersonnelPartage(m.id, 'CHARGE',  ag.charges,  moisStr);
+      const res = this.splitPersonnelPartage(m.id, 'RESERVE', ag.reserves, moisStr);
+      revPerso  += rev.personnel; revPartage  += rev.partage;
+      chgPerso  += chg.personnel; chgPartage  += chg.partage;
+      resPerso  += res.personnel; resPartage  += res.partage;
+    }
+
+    const etapes: { label: string; valeur: number; couleur: string; isSummary: boolean }[] = [];
+    const push = (label: string, valeur: number, couleur: string) => {
+      if (Math.abs(valeur) >= 0.005) etapes.push({ label, valeur, couleur, isSummary: false });
+    };
+
+    push('Revenus perso.',         revPerso,    '#22c55e');
+    push('Revenus partagés',       revPartage,  'rgba(34,197,94,0.55)');
+    push('− Charges perso.',      -chgPerso,    '#ef4444');
+    push('− Charges partagées',   -chgPartage,  'rgba(239,68,68,0.55)');
+    push('− Réserves perso.',     -resPerso,    '#3b82f6');
+    push('− Réserves partagées',  -resPartage,  'rgba(59,130,246,0.55)');
+
+    const solde = v.agregat.soldeDisponible;
+    etapes.push({ label: '=\u2009' + FR.projection.solde, valeur: solde, couleur: solde >= 0 ? '#10b981' : '#ef4444', isSummary: true });
+    return etapes;
+  }
+
+  /** Données + hauteur pour la cascade foyer. */
+  cascadeFoyer = computed(() => {
+    const v       = this.ventilations();
+    const membres = this.membres();
+    if (!v) return null;
+    const etapes = membres.length > 1
+      ? this.cascadeEtapesFoyerSplit(v)
+      : this.cascadeEtapesFromAgregat(v.agregat);
+    return {
+      chartData:   this.buildCascadeChartData(etapes),
+      chartHeight: Math.max(192, etapes.length * 46),
+    };
+  });
+
+  cascadeMembreData = computed(() => {
+    const v       = this.ventilations();
+    const multiM  = this.membres().length > 1;
+    const zero: VentilationAggregatDto = { revenus: 0, charges: 0, reserves: 0, soldeDisponible: 0 };
+    if (!v) return [];
+    return this.membres().map(m => {
+      const ag     = (v.parMembre ?? {})[m.id] ?? zero;
+      const etapes = multiM
+        ? this.cascadeEtapesMembre(m.id, ag)
+        : this.cascadeEtapesFromAgregat(ag);
+      return {
+        membreId:    m.id,
+        nom:         m.nom,
+        couleur:     m.couleur,
+        chartData:   this.buildCascadeChartData(etapes),
+        chartHeight: Math.max(192, etapes.length * 46),
+        xMax:        ag.revenus > 0 ? ag.revenus : 100,
+      };
+    });
+  });
+
+  cascadeXMax = computed(() => {
+    const v = this.ventilations();
+    if (!v) return 100;
+    let max = v.agregat.revenus;
+    for (const ag of Object.values(v.parMembre ?? {})) {
+      max = Math.max(max, (ag as VentilationAggregatDto).revenus);
+    }
+    return max > 0 ? max * 1.1 : 100;
+  });
+
+  /** Échelle X pour la cascade foyer (= total revenus foyer). */
+  cascadeXMaxFoyer = computed(() => {
+    const rev = this.ventilations()?.agregat.revenus ?? 0;
+    return rev > 0 ? rev : 100;
+  });
+
+  /** Options Chart.js pour un max X donné (utilisé par les cascades foyer et membres séparément). */
+  cascadeOptionsFor(max: number) {
+    const fmt = this.fmtCompact;
+    return {
+      indexAxis: 'y' as const,
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          filter: (item: any) => item.datasetIndex === 1,
+          callbacks: {
+            label: (ctx: any) => {
+              const v = Number(ctx.raw);
+              return ' ' + Intl.NumberFormat('fr-CH', { maximumFractionDigits: 0 }).format(v) + ' CHF';
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          stacked: true, min: 0, max,
+          ticks: { callback: (v: any) => fmt(Number(v)) },
+          grid: { color: 'rgba(128,128,128,0.08)' },
+        },
+        y: { stacked: true, grid: { display: false } },
+      },
+    };
+  }
+
   membresData = computed(() => {
     const v = this.ventilations();
     if (!v) return [];
@@ -603,9 +946,11 @@ export class DashboardMensuelComponent implements OnInit {
       forkJoin([
         this.categorieSvc.lister(foyerId),
         this.compteSvc.lister(foyerId),
-      ]).subscribe(([cats, cptes]) => {
+        this.posteSvc.lister(foyerId, sc.id),
+      ]).subscribe(([cats, cptes, postes]) => {
         this.categories.set(cats);
         this.comptes.set(cptes);
+        this.postes.set(postes);
         this.charger();
       });
     }

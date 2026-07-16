@@ -135,39 +135,6 @@ public class ProjectionService {
                 bd(ag.revenus()), bd(ag.charges()), bd(ag.reserves()), bd(ag.soldeDisponible()));
     }
 
-    // ── T8.4 ─────────────────────────────────────────────────────────────────
-
-    @Cacheable(value = "projections",
-               key = "#scenarioId + '-pat-' + T(ch.homely.projection.ProjectionService).versionKey(#foyerId, #scenarioId, @scenarioRepository)")
-    public PatrimoineDto patrimoine(UUID foyerId, UUID scenarioId) {
-        ParametresScenario params = chargerParametres(foyerId, scenarioId);
-        List<Compte> comptes = compteRepo.findAllByFoyerIdAndActifTrueOrderByOrdre(foyerId);
-        List<Actif>  actifs  = actifRepo.findAllByFoyerIdAndActifTrueOrderByOrdre(foyerId);
-        ProjectionPluriannuelle pp = MoteurCalcul.projectionPluriannuelle(params);
-
-        List<PatrimoineDto.AnneePatrimoineDto> annees = new ArrayList<>();
-        for (ProjectionAnnuelle pa : pp.annees()) {
-            double tresoFin = pp.tresorerie().stream()
-                    .filter(t -> t.annee() == pa.annee()).findFirst()
-                    .map(ProjectionPluriannuelle.EntreeTresorerie::tresorerieFinAnnee).orElse(0.0);
-
-            int idx = pa.annee() - params.anneeDepart() + 1;
-            Map<UUID, BigDecimal> saBd = actifs.stream().collect(Collectors.toMap(
-                    Actif::getId,
-                    a -> bd(a.getSoldeInitial().doubleValue()
-                            * Math.pow(1 + a.getTauxCroissanceAnnuel().doubleValue(), idx))));
-
-            double totalActifs = saBd.values().stream()
-                    .mapToDouble(BigDecimal::doubleValue).sum();
-
-            Map<UUID, BigDecimal> scBd = comptes.stream()
-                    .collect(Collectors.toMap(Compte::getId, c -> bd(c.getSoldeInitial().doubleValue())));
-
-            annees.add(new PatrimoineDto.AnneePatrimoineDto(
-                    pa.annee(), bd(tresoFin + totalActifs), scBd, saBd));
-        }
-        return new PatrimoineDto(annees);
-    }
 
     // ── T8.5 ─────────────────────────────────────────────────────────────────
 

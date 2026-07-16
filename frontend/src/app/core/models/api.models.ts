@@ -121,8 +121,6 @@ export interface VentilationsDto {
   parCategorieMembre: Record<string, Record<string, number>>;
   parCompteMembre: Record<string, Record<string, number>>;
 }
-export interface AnneePatrimoineDto { annee: number; patrimoineNet: number; soldesComptes: Record<string, number>; soldesActifs: Record<string, number>; }
-export interface PatrimoineDto { annees: AnneePatrimoineDto[]; }
 export interface SerieAnnuelleDto { annee: number; soldeParScenario: Record<string, number>; tresorerieParScenario: Record<string, number>; }
 export interface ComparaisonDto { scenarioIds: string[]; nomScenarios: string[]; series: SerieAnnuelleDto[]; }
 export interface ApercuPosteDto { annee: number; contributions: { mois: number; contribution: number; }[]; }

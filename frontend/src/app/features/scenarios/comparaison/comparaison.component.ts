@@ -77,7 +77,7 @@ import { FR } from '../../../core/i18n/fr';
           <p-table [value]="comparaison()!.series" styleClass="p-datatable-sm p-datatable-striped" scrollable>
             <ng-template pTemplate="header">
               <tr>
-                <th>{{ t.patrimoine.annee }}</th>
+                <th>{{ t.projection.annee }}</th>
                 @for (nom of comparaison()!.nomScenarios; track nom) {
                   <th class="text-right text-xs">{{ nom }}</th>
                 }

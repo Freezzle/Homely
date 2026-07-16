@@ -61,10 +61,6 @@ export const routes: Routes = [
             loadComponent: () => import('./features/scenarios/comparaison/comparaison.component').then(m => m.ComparaisonComponent),
           },
           {
-            path: 'patrimoine',
-            loadComponent: () => import('./features/patrimoine/patrimoine.component').then(m => m.PatrimoineComponent),
-          },
-          {
             path: 'objectifs',
             loadComponent: () => import('./features/objectifs/objectifs.component').then(m => m.ObjectifsComponent),
           },
