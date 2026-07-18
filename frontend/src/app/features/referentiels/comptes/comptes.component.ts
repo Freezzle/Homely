@@ -45,23 +45,29 @@ import { FR } from '../../../core/i18n/fr';
             <th pSortableColumn="libelle">{{ t.referentiels.compte.libelle }} <p-sortIcon field="libelle" /></th>
             <th class="text-right">{{ t.referentiels.compte.soldeInitial }}</th>
             <th>{{ t.referentiels.compte.devise }}</th>
-            <th>{{ t.referentiels.compte.membres }}</th>
             <th class="text-right">{{ t.referentiels.compte.ordre }}</th>
             <th></th>
           </tr>
         </ng-template>
         <ng-template pTemplate="body" let-c>
           <tr>
-            <td class="font-medium">{{ c.libelle }}</td>
-            <td class="text-right">{{ c.soldeInitial | montant:c.devise }}</td>
-            <td class="text-surface-500">{{ c.devise }}</td>
             <td>
-              <div class="flex flex-wrap gap-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-medium">{{ c.libelle }}</span>
                 @for (mid of c.membreIds; track mid) {
-                  <p-tag [value]="nomMembre(mid)" severity="secondary" />
+                  @let m = membreParId(mid);
+                  @if (m) {
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium leading-none"
+                          [style.background-color]="normaliserCouleur(m.couleur)"
+                          [style.color]="couleurTexteContraste(normaliserCouleur(m.couleur))">
+                      {{ m.nom }}
+                    </span>
+                  }
                 }
               </div>
             </td>
+            <td class="text-right">{{ c.soldeInitial | montant:c.devise }}</td>
+            <td class="text-surface-500">{{ c.devise }}</td>
             <td class="text-right text-surface-500">{{ c.ordre }}</td>
             <td>
               <div class="flex gap-1">
@@ -74,7 +80,7 @@ import { FR } from '../../../core/i18n/fr';
           </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">
-          <tr><td colspan="6" class="text-center py-8 text-surface-400">{{ t.commun.aucunResultat }}</td></tr>
+          <tr><td colspan="5" class="text-center py-8 text-surface-400">{{ t.commun.aucunResultat }}</td></tr>
         </ng-template>
       </p-table>
     </div>
@@ -157,8 +163,23 @@ export class ComptesComponent implements OnInit {
     return Array.isArray(ids) && ids.length > 0;
   }
 
-  nomMembre(id: string): string {
-    return this.membresActifs().find(m => m.id === id)?.nom ?? id.substring(0, 8);
+  membreParId(id: string): MembreDto | undefined {
+    return this.membresActifs().find(m => m.id === id);
+  }
+
+  normaliserCouleur(couleur?: string): string {
+    if (!couleur) return '#64748b';
+    return couleur.startsWith('#') ? couleur : `#${couleur}`;
+  }
+
+  couleurTexteContraste(hexColor: string): string {
+    const hex = hexColor.replace('#', '');
+    if (hex.length !== 6 || /[^0-9a-f]/i.test(hex)) return '#ffffff';
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const luminance = (0.299 * r) + (0.587 * g) + (0.114 * b);
+    return luminance > 170 ? '#111827' : '#ffffff';
   }
 
   private readonly _chargerEffect = effect(() => {

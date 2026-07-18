@@ -521,6 +521,20 @@ export class DashboardMensuelComponent implements OnInit {
     return this.comptes().find(c => c.id === id)?.libelle ?? id.substring(0, 8) + '…';
   }
 
+  private compteLibellePourMembre(compteId: string, membreId: string): string {
+    const compte = this.comptes().find(c => c.id === compteId);
+    const libelle = compte?.libelle ?? this.compteLibelle(compteId);
+    if (!compte || compte.membreIds?.includes(membreId)) return libelle;
+
+    const mapMembres = new Map(this.membres().map(m => [m.id, m.nom]));
+    const nomsMembres = (compte.membreIds ?? [])
+      .map(id => mapMembres.get(id))
+      .filter((nom): nom is string => !!nom)
+      .join(', ');
+
+    return nomsMembres ? `${libelle} ${this.t.commun.de} ${nomsMembres}` : libelle;
+  }
+
   private categorieMontantParMembre(categorieId: string, membreId: string): number {
     return (this.ventilations()?.parCategorieMembre ?? {})[categorieId]?.[membreId] ?? 0;
   }
@@ -900,7 +914,7 @@ export class DashboardMensuelComponent implements OnInit {
       const tauxEffortStr = this.formatPct(tauxEffort);
       const chargesParCompte = Object.entries(v.parCompteMembre ?? {})
         .map(([compteId, memMap]) => ({
-          libelle: this.compteLibelle(compteId),
+          libelle: this.compteLibellePourMembre(compteId, m.id),
           montant: memMap[m.id] ?? 0,
         }))
         .filter(c => c.montant > 0)

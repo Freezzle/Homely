@@ -2,8 +2,6 @@ package ch.homely.poste;
 
 import ch.homely.categorie.Categorie;
 import ch.homely.categorie.CategorieRepository;
-import ch.homely.commun.CodesErreur;
-import ch.homely.commun.RegleMetierException;
 import ch.homely.commun.RessourceIntrouvableException;
 import ch.homely.compte.Compte;
 import ch.homely.compte.CompteRepository;
@@ -191,14 +189,6 @@ public class PosteService {
                 Compte c = compteRepo.findByIdAndFoyerId(vd.compteId(), foyerId)
                         .orElseThrow(() -> new RessourceIntrouvableException(
                                 "Compte introuvable : " + vd.compteId()));
-                // Vérifier que le membre est bien rattaché à ce compte
-                boolean rattache = c.getMembres().stream()
-                        .anyMatch(cm -> cm.getId().equals(vd.membreId()));
-                if (!rattache) {
-                    throw new RegleMetierException(
-                            CodesErreur.VENTILATION_COMPTE_NON_RATTACHE,
-                            "Le membre " + vd.membreId() + " n'est pas rattaché au compte " + vd.compteId());
-                }
                 VentilationCompte vc = new VentilationCompte();
                 vc.setPoste(p);
                 vc.setMembre(m);

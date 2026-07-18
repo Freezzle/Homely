@@ -158,6 +158,8 @@ export const FR = {
   },
   // ── Commun ───────────────────────────────────────────────
   commun: {
+    actions: 'Actions',
+    de: 'de',
     creer: 'Créer',
     modifier: 'Modifier',
     supprimer: 'Supprimer',
