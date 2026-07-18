@@ -71,26 +71,25 @@ interface ScenarioLocal {
   providers: [MessageService],
   template: `
     <p-toast />
-    <div class="max-w-4xl mx-auto py-8 px-4">
+    <div class="max-w-6xl mx-auto py-8 px-4">
       <h1 class="text-2xl font-bold mb-6">{{ t.foyer.onboarding.titre }}</h1>
 
-      <p-stepper [value]="etapeActive()" (valueChange)="etapeActive.set($event ?? 0)" [linear]="true">
+      <p-stepper [value]="etapeActive()" (valueChange)="etapeActive.set($event ?? 1)" [linear]="true">
 
         <!-- ── Barre de navigation horizontale ── -->
         <p-step-list>
-          <p-step [value]="0">{{ t.foyer.onboarding.etapes.foyer }}</p-step>
-          <p-step [value]="1">{{ t.foyer.onboarding.etapes.membres }}</p-step>
+          <p-step [value]="1">{{ t.foyer.onboarding.etapes.foyer }}</p-step>
           <p-step [value]="2">{{ t.foyer.onboarding.etapes.comptes }}</p-step>
           <p-step [value]="3">{{ t.foyer.onboarding.etapes.categories }}</p-step>
           <p-step [value]="4">{{ t.foyer.onboarding.etapes.scenario }}</p-step>
         </p-step-list>
 
-        <!-- ════ ÉTAPE 0 : FOYER ════════════════════════════════════════════ -->
+        <!-- ════ ÉTAPE 1 : FOYER + MEMBRES ═══════════════════════════════════ -->
         <p-step-panels>
-          <p-step-panel [value]="0">
+          <p-step-panel [value]="1">
             <ng-template #content let-activateCallback="activateCallback">
               <div class="flex flex-col gap-4">
-                <p-message severity="info" [closable]="false"
+                <p-message severity="info" icon="pi pi-sparkles" [closable]="false"
                   [text]="t.foyer.onboarding.info.foyer" styleClass="w-full" />
 
                 <div class="flex flex-col gap-1">
@@ -112,66 +111,47 @@ interface ScenarioLocal {
                      styleClass="w-full" />
                  </div>
 
+                <!-- ── Section Membres ── -->
+                <div class="flex flex-col gap-1">
+
+                  <label class="text-sm font-medium">{{ t.foyer.onboarding.champs.membresDuFoyer }}</label>
+                  <div class="flex flex-col gap-2">
+                    @for (membre of membres(); track membre.ordre; let i = $index) {
+                      <div class="flex items-center gap-2">
+                        <input pInputText
+                          [ngModel]="membres()[i].nom"
+                          (ngModelChange)="updateMembreNom(i, $event)"
+                          [placeholder]="t.foyer.membreNom"
+                          class="flex-1" />
+                        <input
+                          [ngModel]="membres()[i].couleur"
+                          (ngModelChange)="updateMembreCouleur(i, $event)"
+                          type="color"
+                          [attr.aria-label]="t.referentiels.membre.couleur"
+                          class="h-9 w-11 border border-surface-300 rounded cursor-pointer" />
+                        <p-button
+                          icon="pi pi-times"
+                          [text]="true"
+                          severity="danger"
+                          size="small"
+                          [ariaLabel]="t.foyer.onboarding.champs.supprimerLigne"
+                          [disabled]="membres().length <= 1"
+                          (click)="supprimerMembre(i)" />
+                      </div>
+                    }
+                  </div>
+
+                  <div>
+                    <p-button
+                      icon="pi pi-plus"
+                      [text]="true"
+                      [label]="t.foyer.onboarding.boutons.ajouter"
+                      [disabled]="membres().length >= 3"
+                      (click)="ajouterMembre()" />
+                  </div>
+                </div>
+
                 <div class="flex justify-end">
-                  <p-button
-                    [label]="t.foyer.onboarding.boutons.suivant"
-                    icon="pi pi-arrow-right"
-                    iconPos="right"
-                    [disabled]="!etape0Valide()"
-                    (click)="activateCallback(1)" />
-                </div>
-              </div>
-            </ng-template>
-          </p-step-panel>
-
-          <!-- ════ ÉTAPE 1 : MEMBRES ════════════════════════════════════════ -->
-          <p-step-panel [value]="1">
-            <ng-template #content let-activateCallback="activateCallback">
-              <div class="flex flex-col gap-4">
-                <p-message severity="info" [closable]="false"
-                  [text]="t.foyer.onboarding.info.membres" styleClass="w-full" />
-
-                <div class="flex flex-col gap-2">
-                  @for (membre of membres(); track membre.ordre; let i = $index) {
-                    <div class="flex items-center gap-2">
-                      <input pInputText
-                        [ngModel]="membres()[i].nom"
-                        (ngModelChange)="updateMembreNom(i, $event)"
-                        [placeholder]="t.foyer.membreNom"
-                        class="flex-1" />
-                      <input
-                        [ngModel]="membres()[i].couleur"
-                        (ngModelChange)="updateMembreCouleur(i, $event)"
-                        type="color"
-                        [attr.aria-label]="t.referentiels.membre.couleur"
-                        class="h-9 w-11 border border-surface-300 rounded cursor-pointer" />
-                      <p-button
-                        icon="pi pi-times"
-                        [text]="true"
-                        severity="danger"
-                        size="small"
-                        [ariaLabel]="t.foyer.onboarding.champs.supprimerLigne"
-                        [disabled]="membres().length <= 1"
-                        (click)="supprimerMembre(i)" />
-                    </div>
-                  }
-                </div>
-
-                <div>
-                  <p-button
-                    icon="pi pi-plus"
-                    [text]="true"
-                    [label]="t.foyer.onboarding.boutons.ajouter"
-                    [disabled]="membres().length >= 3"
-                    (click)="ajouterMembre()" />
-                </div>
-
-                <div class="flex justify-between">
-                  <p-button
-                    [label]="t.foyer.onboarding.boutons.retour"
-                    icon="pi pi-arrow-left"
-                    severity="secondary"
-                    (click)="activateCallback(0)" />
                   <p-button
                     [label]="t.foyer.onboarding.boutons.suivant"
                     icon="pi pi-arrow-right"
@@ -187,7 +167,7 @@ interface ScenarioLocal {
           <p-step-panel [value]="2">
             <ng-template #content let-activateCallback="activateCallback">
               <div class="flex flex-col gap-4">
-                <p-message severity="info" [closable]="false"
+                <p-message severity="info" icon="pi pi-sparkles" [closable]="false"
                   [text]="t.foyer.onboarding.info.comptes" styleClass="w-full" />
 
                 <div class="flex flex-col gap-3">
@@ -268,7 +248,7 @@ interface ScenarioLocal {
           <p-step-panel [value]="3">
             <ng-template #content let-activateCallback="activateCallback">
               <div class="flex flex-col gap-4">
-                <p-message severity="info" [closable]="false"
+                <p-message severity="info" icon="pi pi-sparkles" [closable]="false"
                   [text]="t.foyer.onboarding.info.categories" styleClass="w-full" />
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -353,7 +333,7 @@ interface ScenarioLocal {
           <p-step-panel [value]="4">
             <ng-template #content let-activateCallback="activateCallback">
               <div class="flex flex-col gap-4">
-                <p-message severity="info" [closable]="false"
+                <p-message severity="info" icon="pi pi-sparkles" [closable]="false"
                   [text]="t.foyer.onboarding.info.scenario" styleClass="w-full" />
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -384,7 +364,7 @@ interface ScenarioLocal {
                        mode="decimal"
                        [minFractionDigits]="2"
                        [maxFractionDigits]="2"
-                       styleClass="w-full">
+                       class="w-full">
                      </p-inputnumber>
                    </div>
                  </div>
@@ -402,8 +382,7 @@ interface ScenarioLocal {
                         [max]="100"
                         [minFractionDigits]="0"
                         [maxFractionDigits]="2"
-                        suffix=" %"
-                        styleClass="w-32">
+                        suffix=" %">
                       </p-inputnumber>
                     </div>
                   }
@@ -448,11 +427,11 @@ export class FoyerCreationComponent implements OnInit {
   private toast = inject(MessageService);
 
   // ── État global du wizard ────────────────────────────────────────────────
-  etapeActive = signal<number>(0);
+  etapeActive = signal<number>(1);
   enCours = signal(false);
 
   // ── Étape 0 : Foyer ──────────────────────────────────────────────────────
-  foyerNom = signal<string>('');
+  foyerNom = signal<string>(FR.foyer.onboarding.defaults.foyerNom);
   foyerDevise = signal<string>('CHF');
 
   readonly devises = ['CHF', 'EUR', 'USD', 'GBP', 'CAD'];
@@ -502,8 +481,8 @@ export class FoyerCreationComponent implements OnInit {
   readonly repartitionValide = computed(() => Math.abs(this.sommeRepartitions() - 100) < 0.01);
 
   // ── Validation par étape ─────────────────────────────────────────────────
-  readonly etape0Valide = computed(() => this.foyerNom().trim().length > 0);
   readonly etape1Valide = computed(() =>
+                                       this.foyerNom().trim().length > 0 &&
     this.membres().length >= 1 &&
     this.membres().every(m => m.nom.trim().length > 0)
   );
@@ -598,7 +577,7 @@ export class FoyerCreationComponent implements OnInit {
   entrerEtape2(): void {
     if (this.comptes().length > 0) return; // ne pas réinitialiser si déjà rempli
     const comptes: CompteLocal[] = this.membres().map(m => ({
-      libelle: `${FR.foyer.onboarding.defaults.compteLibelle}${format(FR.foyer.onboarding.defaults.compteSuffixe, { membre: m.nom || format(FR.foyer.onboarding.defaults.membreNomTemplate, { index: m.ordre }) })}`,
+      libelle: `${FR.foyer.onboarding.defaults.compteLibelle}`,
       soldeInitial: 0,
       membreOrdres: [m.ordre],
     }));

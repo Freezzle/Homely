@@ -61,8 +61,7 @@ export const FR = {
         ajouter: 'Ajouter',
       },
       info: {
-        foyer: "Donnez un nom à votre foyer et choisissez la devise dans laquelle vos montants seront affichés et calculés.",
-        membres: "Ajoutez les personnes qui partageront les revenus et les dépenses du foyer (1 à 3 membres). Vous pourrez ajuster ces membres à tout moment depuis les paramètres.",
+        foyer: "Donnez un nom à votre foyer et choisissez la devise dans laquelle vos montants seront affichés et calculés. Ajoutez les personnes qui partageront les revenus et les dépenses du foyer (1 à 3 membres). Vous pourrez ajuster ces membres à tout moment depuis les paramètres.",
         comptes: "Déclarez les comptes bancaires du foyer et associez-les aux membres qui les utilisent. Le solde initial servira de point de départ au calcul de la trésorerie.",
         categories: "Les catégories vous permettent de regrouper vos revenus, charges et réserves pour une meilleure lisibilité dans vos tableaux de bord et vos rapports. Une sélection courante vous est proposée : personnalisez-la librement.",
         scenario: "Un scénario regroupe vos revenus, vos charges, vos réserves ainsi que la répartition des coûts entre membres. Vous pourrez en créer plusieurs (par exemple « avec enfant » ou « sans enfant ») pour comparer différentes situations financières.",
@@ -77,14 +76,15 @@ export const FR = {
         nomScenario: 'Nom du scénario',
         anneeDepart: 'Année de départ',
         tresorerieInitiale: 'Trésorerie initiale',
-        repartition: 'Répartition (%)',
+        repartition: 'Répartition par défaut (%)',
         sommeAttendue100: 'La somme des répartitions doit être égale à 100 %.',
         supprimerLigne: 'Supprimer cette ligne',
+        membresDuFoyer: 'Les membres du foyer',
       },
       defaults: {
+        foyerNom: 'Mon foyer',
         membreNomTemplate: 'Membre {index}',
         compteLibelle: 'Compte courant',
-        compteSuffixe: ' — {membre}',
         scenarioNom: 'Scénario par défaut',
         categories: {
           revenu: ['Salaire', 'Prime / Bonus', 'Aide / Subvention', 'Revenu passif'],
