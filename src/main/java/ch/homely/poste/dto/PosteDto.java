@@ -25,6 +25,7 @@ public record PosteDto(
         ModeComptabilisation mode,
         MomentPeriode moment,
         NaturePoste nature,
+        BigDecimal estimPourcentage,  // Pourcentage d'estimation (nullable si nature=EFFECTIF)
         TypeRepartition typeRepartition,
         int ordre,
         List<RepartitionPosteDto> repartitions,

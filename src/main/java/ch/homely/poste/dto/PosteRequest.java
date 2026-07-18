@@ -25,6 +25,7 @@ public record PosteRequest(
         @NotNull ModeComptabilisation mode,
         @NotNull MomentPeriode moment,
         @NotNull NaturePoste nature,
+        @DecimalMin("0.0") @DecimalMax("100.0") BigDecimal estimPourcentage,  // Obligatoire si nature=ESTIMATION, sinon nullable
         TypeRepartition typeRepartition,   // null → AUTO
         int ordre,
         @Valid List<RepartitionPosteDto> repartitions,

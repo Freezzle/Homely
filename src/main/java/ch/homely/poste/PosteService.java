@@ -251,6 +251,7 @@ public class PosteService {
                 p.getCategorie() != null ? p.getCategorie().getId() : null,
                 p.getMontant(), mensualise, p.getDevise(), p.getPeriodiciteMois(),
                 p.getDebut(), p.getFin(), p.getMode(), p.getMoment(), p.getNature(),
+                p.getEstimPourcentage(),
                 p.getTypeRepartition(),
                 p.getOrdre(), reps, vents);
     }

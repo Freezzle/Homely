@@ -31,7 +31,8 @@
 | `fin` | date \| null | fin de la fenêtre de validité |
 | `mode` | MENSUALISE \| PERIODIQUE | lissé ou montant plein |
 | `moment` | DEBUT_PERIODE \| FIN_PERIODE | mois d'imputation si périodique |
-| `nature` | EFFECTIF \| PREVISION | étiquette métier descriptive (sans impact sur `contribution`) |
+| `nature` | EFFECTIF \| ESTIMATION | étiquette métier descriptive (sans impact sur `contribution`) |
+| `estimPourcentage` | décimal ∈ [0, 100] \| null | **descriptif uniquement — réservé usage futur** : plage ±% du montant si `nature=ESTIMATION`. Le moteur actuel n'utilise pas ce champ (projections basées sur `montant` seul). |
 | `repartition` | `{membre → quotePart}` \| null | découpe entre membres (§6) |
 | `ventilationComptes` | `{membre → compte}` | pour la ventilation par compte |
 

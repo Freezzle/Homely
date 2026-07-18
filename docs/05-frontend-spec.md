@@ -165,7 +165,8 @@ Composant unique `PostesListeComponent` paramétré par `type` via `input<TypePo
 
 **Liste de postes** (cartes flex, non `p-table`) :
 - Barre accent colorée gauche (vert REVENU / rouge CHARGE / indigo RESERVE).
-- Description + badge `PRÉVISION` (si `nature = PREVISION`).
+- Description + badge `ESTIMATION ± X.X%` (si `nature = ESTIMATION`, affiche le
+  pourcentage d'estimation au format 1 décimale, ex. « Estimation ± 10.0% »).
 - Méta : catégorie · période · périodicité avec icônes :
   - ⚡ one-shot (`periodiciteMois = 0`, libellé « Ponctuel »).
   - 🗓 mensualisé ou périodicité ≤ 1 mois.
@@ -196,7 +197,15 @@ Composant unique `PostesListeComponent` paramétré par `type` via `input<TypePo
   - `D = 1` : mode et moment cachés (toujours mensualisé).
   - `D > 1` : grille 3 colonnes Périodicité · Moment · Mode.
 - **Début** / **Fin** : `p-datepicker`, en 2 colonnes (sauf one-shot).
-- **Nature** : EFFECTIF / PRÉVISION (défaut EFFECTIF).
+- **Nature** : EFFECTIF / ESTIMATION (défaut EFFECTIF).
+- **Pourcentage d'estimation** *(visible uniquement si `nature = ESTIMATION`)* :
+  - `p-inputnumber` (min=0, max=100, 1 décimale, suffixe `%`).
+  - Pré-rempli automatiquement à **10.0 %** quand on bascule EFFECTIF → ESTIMATION.
+  - Remis à `null` (champ masqué) quand on revient en EFFECTIF.
+  - **Obligatoire** si ESTIMATION : le bouton Enregistrer reste désactivé tant que la valeur
+    est absente ou nulle.
+  - Tooltip : « Plage de variation du montant. Ex : 100 CHF ± 10 % = montant peut varier
+    entre 90 et 110 CHF. »
 - **Mode de répartition** (masqué si mono-membre) :
   - `AUTO` / `REVERSE_AUTO` : pas de saisie de parts.
   - `CUSTOM` : bloc de parts par membre (`p-inputnumber` %), somme affichée en temps réel

@@ -136,7 +136,7 @@ class MoteurCalculReelTest {
                     null, null, MENSUALISE, DEBUT_PERIODE, NaturePoste.EFFECTIF,
                     null, List.of(), List.of(), null);
             PosteCalcul ant = new PosteCalcul(UUID.randomUUID(), CHARGE, 500.0, "CHF", 3,
-                    null, null, MENSUALISE, DEBUT_PERIODE, NaturePoste.PREVISION,
+                    null, null, MENSUALISE, DEBUT_PERIODE, NaturePoste.ESTIMATION,
                     null, List.of(), List.of(), null);
             for (int m = 1; m <= 12; m++) {
                 assertThat(MoteurCalcul.contribution(eff, 2026, m))

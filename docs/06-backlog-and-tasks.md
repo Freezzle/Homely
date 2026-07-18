@@ -109,8 +109,21 @@ Format des tâches : `T<epic>.<n>`.
   `:definir-reference`. *Accept.* : le duplicata est indépendant de l'original.
 - [x] **T7.4** CRUD Objectif (support compte XOR actif) + calculs [doc 01 §10](01-business-rules-engine.md).
   *Accept.* : progression/épargne requise/date prévue correctes sur un cas de test.
-- [x] **T7.5** Nature de poste (`EFFECTIF`/`PREVISION`) + migration `V5__poste_nature.sql`.
+- [x] **T7.5** Nature de poste (`EFFECTIF`/`ESTIMATION`) + migration `V5__poste_nature.sql`.
   *Accept.* : valeur par défaut `EFFECTIF`, modifiable en création/édition de poste.
+- [x] **T7.6** Pourcentage d'estimation (`estimPourcentage`) + migration `V10__poste_estim_pourcentage.sql`.
+  *Objectif* : permettre de saisir une plage de variation ±% sur les postes `ESTIMATION`.
+  *Accept.* :
+  - Colonne `estim_pourcentage NUMERIC(3,1)` ajoutée, nullable (null = EFFECTIF).
+  - Postes existants avec `nature='ESTIMATION'` migrés à 10.0 % automatiquement.
+  - Validation backend (via `PosteValidator`) : obligatoire si ESTIMATION → 422
+    `ESTIMATION_POURCENTAGE_REQUIS` ; nul si EFFECTIF.
+  - UI : section conditionnelle (visible uniquement si ESTIMATION) avec `p-inputnumber`
+    (min=0, max=100, 1 décimale, suffixe %). Auto-peuplage à 10 % EFFECTIF→ESTIMATION ;
+    remise à null ESTIMATION→EFFECTIF.
+  - Liste postes : badge Nature affiche « Estimation ± X.X% » (formaté 1 décimale).
+  - Champ descriptif : le moteur ne l'utilise pas dans les projections (réservé usage futur
+    de stress-test / plage min–max).
 
 ---
 

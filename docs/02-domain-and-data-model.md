@@ -128,9 +128,11 @@ Ligne budgétaire récurrente. Champs :
 `id`, `scenarioId`, `type` (REVENU | CHARGE | RESERVE), `description`, `categorieId`,
 `montant` (décimal ≥ 0), `devise` (défaut = deviseBase), `periodiciteMois` (int **≥ 0** ;
 0 = ponctuel one-shot), `debut` (date null), `fin` (date null), `mode` (MENSUALISE |
-PERIODIQUE), `moment` (DEBUT_PERIODE | FIN_PERIODE), `nature` (EFFECTIF | PREVISION,
-descriptif), `typeRepartition` (AUTO | REVERSE_AUTO | CUSTOM, défaut AUTO),
-`ordre`, `dateCreation`, `dateModification`.
+PERIODIQUE), `moment` (DEBUT_PERIODE | FIN_PERIODE), `nature` (EFFECTIF | ESTIMATION,
+descriptif), `estimPourcentage` (NUMERIC(3,1), nullable — obligatoire si nature=ESTIMATION,
+null si nature=EFFECTIF ; représente la plage de variation ± du montant, ex. 10.0 signifie
+montant peut varier de montant×0.90 à montant×1.10), `typeRepartition` (AUTO | REVERSE_AUTO
+| CUSTOM, défaut AUTO), `ordre`, `dateCreation`, `dateModification`.
 
 **Sémantique de `typeRepartition`** :
 - `AUTO` : les quotes-parts suivent la `RepartitionPeriode` active du scénario à la date
@@ -167,7 +169,7 @@ TypePoste            = REVENU | CHARGE | RESERVE
 TypeCategorie        = REVENU | CHARGE | RESERVE | PROJET
 ModeComptabilisation = MENSUALISE | PERIODIQUE
 MomentPeriode        = DEBUT_PERIODE | FIN_PERIODE
-NaturePoste          = EFFECTIF | PREVISION
+NaturePoste          = EFFECTIF | ESTIMATION
 TypeRepartition      = AUTO | REVERSE_AUTO | CUSTOM
 RoleFoyer            = OWNER | EDITOR | VIEWER
 TypeActif            = COMPTE_EPARGNE | TROISIEME_PILIER | INVESTISSEMENT | CRYPTO
@@ -178,7 +180,7 @@ Correspondance des libellés Excel → enums (à respecter dans le seed) :
 - Mode : `mensualisé` → `MENSUALISE`, `périodique` → `PERIODIQUE`.
 - Moment : `début périodicité` → `DEBUT_PERIODE`, `fin périodicité` → `FIN_PERIODE`.
 
-## 4. Schéma SQL (PostgreSQL) — état consolidé après V1→V9
+## 4. Schéma SQL (PostgreSQL) — état consolidé après V1→V10
 
 > Conventions : `snake_case`, PK `uuid` (`gen_random_uuid()`), montants `NUMERIC(15,2)`,
 > taux `NUMERIC(10,6)`, `TIMESTAMPTZ` pour les dates système, `DATE` pour les dates métier.
@@ -363,17 +365,20 @@ CREATE TABLE poste (
   moment            VARCHAR(16)   NOT NULL DEFAULT 'DEBUT_PERIODE'
                     CHECK (moment IN ('DEBUT_PERIODE','FIN_PERIODE')),
   nature            VARCHAR(16)   NOT NULL DEFAULT 'EFFECTIF'
-                    CHECK (nature IN ('EFFECTIF','PREVISION')),
+                    CHECK (nature IN ('EFFECTIF','ESTIMATION')),
+  estim_pourcentage NUMERIC(3,1),          -- NULL si nature=EFFECTIF, obligatoire si ESTIMATION
   type_repartition  VARCHAR(16)   NOT NULL DEFAULT 'AUTO'
                     CHECK (type_repartition IN ('AUTO','REVERSE_AUTO','CUSTOM')),
   ordre             INT           NOT NULL DEFAULT 0,
   date_creation     TIMESTAMPTZ   NOT NULL DEFAULT now(),
   date_modification TIMESTAMPTZ   NOT NULL DEFAULT now(),
   CONSTRAINT chk_periodicite CHECK (periodicite_mois >= 0),   -- 0 = one-shot
-  CONSTRAINT chk_montant     CHECK (montant >= 0)
+  CONSTRAINT chk_montant     CHECK (montant >= 0),
+  CONSTRAINT chk_estim_pct   CHECK (estim_pourcentage IS NULL OR (estim_pourcentage >= 0 AND estim_pourcentage <= 100))
 );
 CREATE INDEX idx_poste_scenario_type ON poste (scenario_id, type);
 CREATE INDEX idx_poste_nature        ON poste (nature);
+CREATE INDEX idx_poste_estim_pourcentage ON poste (estim_pourcentage);
 
 -- ── Répartitions par poste (CUSTOM uniquement) ──────────────────────────────
 CREATE TABLE repartition_poste (
@@ -415,7 +420,11 @@ CREATE INDEX idx_objectif_scenario ON objectif (scenario_id);
 > Migrations appliquées : V1 (schéma initial) → V2 (seed démo) → V3 (token_refresh) →
 > V4 (seed réel) → V5 (poste.nature) → V6 (suppression categorie.systeme) →
 > V7 (repartition_periode + type_repartition) → V8 (compte_membre, suppression
-> compte.type et poste.compte_source) → V9 (nettoyage ventilations à 0%).
+> compte.type et poste.compte_source) → V9 (nettoyage ventilations à 0%) →
+> **V10 (poste.estim_pourcentage — plage de variation ± pour les postes ESTIMATION)**.
+>
+> Migration V10 : postes existants avec `nature='ESTIMATION'` reçoivent automatiquement
+> `estim_pourcentage = 10.0` (valeur par défaut). Postes `EFFECTIF` conservent `NULL`.
 
 ## 5. Mapping JPA (indications)
 
@@ -449,6 +458,13 @@ CREATE INDEX idx_objectif_scenario ON objectif (scenario_id);
    concerné via `compte_membre` → sinon 422 `VENTILATION_COMPTE_NON_RATTACHE`.
 9. Un compte **ne peut pas être créé sans au moins un membre actif** → 422
    `COMPTE_SANS_MEMBRE`.
+10. **`estimPourcentage`** : obligatoire (non nul, > 0) si `nature = ESTIMATION` → sinon 422
+    `ESTIMATION_POURCENTAGE_REQUIS`. Doit être nul si `nature = EFFECTIF`. Valeur comprise
+    dans `[0, 100]`. Interprétation : le montant réel peut varier de `montant × (1 − estimPourcentage/100)`
+    à `montant × (1 + estimPourcentage/100)`. Exemple : 100 CHF à ±10 % → plage [90, 110].
+    Ce champ est **purement descriptif** pour le moment : le moteur de calcul utilise
+    uniquement `montant` dans ses projections (les plages min/max sont réservées à un
+    usage futur de stress-test). Valeur par défaut à la création : **10.0 %**.
 
 ## 7. Données de seed (foyer de démonstration — issu de l'Excel)
 

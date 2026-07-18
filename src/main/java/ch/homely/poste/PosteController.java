@@ -5,6 +5,7 @@ import ch.homely.poste.dto.PosteRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,9 +17,16 @@ import java.util.UUID;
 public class PosteController {
 
     private final PosteService posteService;
+    private final PosteValidator posteValidator;
 
-    public PosteController(PosteService posteService) {
+    public PosteController(PosteService posteService, PosteValidator posteValidator) {
         this.posteService = posteService;
+        this.posteValidator = posteValidator;
+    }
+
+    @InitBinder
+    public void initBinder(WebDataBinder binder) {
+        binder.addValidators(posteValidator);
     }
 
     @GetMapping

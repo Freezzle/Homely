@@ -14,7 +14,7 @@ package ch.homely.poste;
  */
 public enum NaturePoste {
     EFFECTIF,
-    PREVISION
+    ESTIMATION
 }
 
 

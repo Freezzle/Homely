@@ -60,7 +60,7 @@ export interface ScenarioRequest {
 export type TypePoste = 'REVENU' | 'CHARGE' | 'RESERVE';
 export type ModeComptabilisation = 'MENSUALISE' | 'PERIODIQUE';
 export type MomentPeriode = 'DEBUT_PERIODE' | 'FIN_PERIODE';
-export type NaturePoste = 'EFFECTIF' | 'PREVISION';
+export type NaturePoste = 'EFFECTIF' | 'ESTIMATION';
 export type TypeRepartition = 'AUTO' | 'REVERSE_AUTO' | 'CUSTOM';
 
 export interface RepartitionPosteDto { membreId: string; nomMembre: string; quotePart: number; }
@@ -71,6 +71,7 @@ export interface PosteDto {
   montant: number; montantMensualise: number; devise?: string;
   periodiciteMois: number; debut?: string; fin?: string;
   mode: ModeComptabilisation; moment: MomentPeriode; nature: NaturePoste;
+  estimPourcentage?: number;  // Pourcentage d'estimation (nullable si nature=EFFECTIF)
   typeRepartition: TypeRepartition;
   ordre: number;
   repartitions: RepartitionPosteDto[];
@@ -81,6 +82,7 @@ export interface PosteRequest {
   montant: number; devise?: string; periodiciteMois: number;
   debut?: string; fin?: string;
   mode: ModeComptabilisation; moment: MomentPeriode; nature: NaturePoste;
+  estimPourcentage?: number;  // Obligatoire si nature=ESTIMATION
   typeRepartition?: TypeRepartition;
   ordre: number;
   repartitions?: { membreId: string; quotePart: number; }[];

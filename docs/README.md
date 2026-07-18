@@ -35,7 +35,7 @@ test dérivés des vraies données** y figurent : le moteur DOIT les reproduire 
   devise de base du foyer).
 - **Graphiques interactifs** (flux mensuels, tableaux de bord annuel/mensuel, comparaison
   de scénarios, patrimoine).
-- **Nature de poste descriptive** : `EFFECTIF` ou `PREVISION` (sans impact sur la
+- **Nature de poste descriptive** : `EFFECTIF` ou `ESTIMATION` (sans impact sur la
   sémantique du moteur classique).
 - **Double lecture annuelle** : projection mensualisée (historique) + projection réelle
   (imputations non lissées au mois d'échéance).
@@ -92,7 +92,7 @@ depuis les vecteurs fournis, puis implémenter jusqu'au vert.
 - Auth JWT access + refresh (rotation), logout explicite, guards Angular.
 - CRUD référentiels et scénarios opérationnels avec scoping multi-foyers strict.
 - CRUD postes avec répartition par membre, ventilation compte par membre, aperçu mensuel.
-- Paramètres de poste enrichis : `mode`, `moment`, `nature` (`EFFECTIF`/`PREVISION`).
+- Paramètres de poste enrichis : `mode`, `moment`, `nature` (`EFFECTIF`/`ESTIMATION`).
 - Projection annuelle enrichie : `mois`, `moisReel`, `moisParMembre`, `moisParMembreReel`.
 - Dashboard mensuel : KPI foyer + ventilations catégories + synthèse par membre.
 - Script de dev local `dev.ps1` (PostgreSQL + backend + frontend en hot reload).
@@ -116,7 +116,7 @@ Utiliser **ces termes** (FR) de façon cohérente dans le code, les entités et 
 | **Périodicité** | Longueur du cycle en **mois** (1 = mensuel, 3 = trimestriel, 12 = annuel…) | `periodiciteMois` |
 | **Mode** | `MENSUALISE` (lissé) \| `PERIODIQUE` (montant plein sur un mois du cycle) | `ModeComptabilisation` |
 | **Réception/Paiement** | Pour un poste périodique : `DEBUT_PERIODE` \| `FIN_PERIODE` | `MomentPeriode` |
-| **Nature** | `EFFECTIF` \| `PREVISION` (descriptif, sans effet sur les calculs standards) | `NaturePoste` |
+| **Nature** | `EFFECTIF` \| `ESTIMATION` (descriptif, sans effet sur les calculs standards) | `NaturePoste` |
 | **Fenêtre de validité** | Période `[debut, fin]` durant laquelle le poste est actif | `debut`, `fin` |
 | **Montant mensualisé** | `montant / periodiciteMois` (montant lissé) | `montantMensualise` |
 | **Répartition** | Ensemble de quotes-parts `{membre → part}` sommant à 1, découpant un poste entre membres | `Repartition` |

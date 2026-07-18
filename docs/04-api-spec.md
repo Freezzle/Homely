@@ -39,7 +39,8 @@ Codes métier au moins : `REPARTITION_INVALIDE`, `SCENARIO_REFERENCE_UNIQUE`,
 `SUPPORT_OBJECTIF_INVALIDE`, `MEMBRE_REFERENCE_SUPPRESSION`, `DEVISE_INCONNUE`,
 `ACCES_FOYER_REFUSE`, `RESSOURCE_INTROUVABLE`, `FOYER_MEMBRES_INVALIDES`,
 `COMPTE_SANS_MEMBRE` (création/modification d'un compte sans membre actif → 422),
-`VENTILATION_COMPTE_NON_RATTACHE` (un membre tente de ventiler vers un compte qui ne lui est pas rattaché → 422).
+`VENTILATION_COMPTE_NON_RATTACHE` (un membre tente de ventiler vers un compte qui ne lui est pas rattaché → 422),
+`ESTIMATION_POURCENTAGE_REQUIS` (nature=ESTIMATION sans estimPourcentage renseigné → 422).
 
 ## 3. Authentification
 
@@ -196,12 +197,39 @@ Scopés : `/api/foyers/{foyerId}/scenarios/{scenarioId}/postes`.
   "mode": "MENSUALISE",
   "moment": "DEBUT_PERIODE",
   "nature": "EFFECTIF",
+  "estimPourcentage": null,
   "typeRepartition": "AUTO",
   "ordre": 0,
   "repartitions": null,
   "ventilations": [ {"membreId":"…","compteId":"…"} ]
 }
 ```
+
+Exemple poste ESTIMATION (nourriture variable) :
+
+```json
+{
+  "type": "CHARGE",
+  "description": "Alimentation",
+  "categorieId": "…",
+  "montant": 800.00,
+  "periodiciteMois": 1,
+  "mode": "MENSUALISE",
+  "moment": "DEBUT_PERIODE",
+  "nature": "ESTIMATION",
+  "estimPourcentage": 15.0,
+  "typeRepartition": "AUTO",
+  "ordre": 0
+}
+```
+
+**Règle `estimPourcentage`** :
+- Obligatoire (non nul, > 0) si `nature = ESTIMATION` → sinon 422 `ESTIMATION_POURCENTAGE_REQUIS`.
+- Doit être nul (absent) si `nature = EFFECTIF`.
+- Valeur ∈ [0.0, 100.0], 1 décimale recommandée.
+- **Purement descriptif** — n'affecte pas les calculs du moteur à ce stade.
+  Interprétation : montant réel peut varier de `montant × (1 − pct/100)` à `montant × (1 + pct/100)`.
+- Valeur par défaut proposée en UI : **10.0 %**.
 
 **Règles sur `periodiciteMois`** :
 - `>= 1` : récurrent (mensuel si 1, trimestriel si 3, annuel si 12, etc.).

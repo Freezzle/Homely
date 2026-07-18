@@ -79,11 +79,13 @@ export const FR = {
     fin: 'Fin',
     mode: 'Mode',
     moment: 'Moment',
-    nature: 'Nature',
-    modeTooltip: "Mensualisé = montant lissé chaque mois (montant / périodicité). Périodique = montant plein imputé une seule fois par cycle.",
-    momentTooltip: "Le montant plein tombe-t-il au début ou à la fin du cycle de périodicité ?",
-    natureTooltip: "Effectif = charge/revenu certain (loyer, salaire, facture…). Prévision = provision pour frais variables estimés (nourriture, habits, loisirs…).",
-    repartition: 'Répartition',
+     nature: 'Nature',
+     modeTooltip: "Mensualisé = montant lissé chaque mois (montant / périodicité). Périodique = montant plein imputé une seule fois par cycle.",
+     momentTooltip: "Le montant plein tombe-t-il au début ou à la fin du cycle de périodicité ?",
+     natureTooltip: "Effectif = charge/revenu certain (loyer, salaire, facture…). Estimation = provision pour frais variables estimés (nourriture, habits, loisirs…).",
+     estimationPourcentage: 'Pourcentage d\'estimation',
+     estimationTooltip: 'Plage de variation du montant. Ex : 100 CHF ± 10% = montant peut varier entre 90 et 110 CHF.',
+     repartition: 'Répartition',
     typeRepartition: 'Mode de répartition',
     typeRepartitionTooltip: "AUTO = suit les périodes de prorata du scénario. Inverse auto = permute les parts. Personnalisé = parts fixes manuelles.",
     repartitionParDefaut: 'Par défaut',
@@ -105,7 +107,7 @@ export const FR = {
     },
     natureOptions: {
       EFFECTIF: 'Effectif',
-      PREVISION: 'Prévision',
+      ESTIMATION: 'Estimation',
     },
     periodiciteLabels: [
       'Une seule fois',       // 0 → one-shot

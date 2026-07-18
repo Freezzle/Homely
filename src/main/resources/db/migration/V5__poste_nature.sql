@@ -16,7 +16,7 @@
 
 ALTER TABLE poste
     ADD COLUMN nature VARCHAR(16) NOT NULL DEFAULT 'EFFECTIF'
-        CHECK (nature IN ('EFFECTIF', 'PREVISION'));
+        CHECK (nature IN ('EFFECTIF', 'ESTIMATION'));
 
 CREATE INDEX idx_poste_nature ON poste (nature);
 

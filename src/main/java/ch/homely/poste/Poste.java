@@ -73,6 +73,14 @@ public class Poste {
     private NaturePoste nature = NaturePoste.EFFECTIF;
 
     /**
+     * Pourcentage d'estimation (variation min/max) pour nature=ESTIMATION.
+     * Ex : montant=100, estimPourcentage=10.0 → plage 90–110.
+     * Nullable pour les postes EFFECTIF. Obligatoire si nature=ESTIMATION.
+     */
+    @Column(precision = 3, scale = 1)
+    private BigDecimal estimPourcentage;
+
+    /**
      * Mode de calcul de la répartition entre membres.
      * Défaut {@link TypeRepartition#AUTO} : hérite de la période active du scénario.
      */

@@ -191,8 +191,9 @@ import { FR } from '../../../core/i18n/fr';
                     <span class="font-medium text-surface-900 dark:text-surface-100 leading-snug">
                       {{ p.description }}
                     </span>
-                    @if (p.nature === 'PREVISION') {
-                      <p-tag severity="warn" [value]="t.poste.natureOptions.PREVISION"
+                    @if (p.nature === 'ESTIMATION') {
+                      <p-tag [value]="t.poste.natureOptions.ESTIMATION + (p.estimPourcentage !== null && p.estimPourcentage !== undefined ? ' ± ' + formatEstimationPourcentage(p.estimPourcentage) + '%' : '')"
+                             severity="warn"
                              styleClass="text-[10px] py-0 shrink-0" />
                     }
                   </div>
@@ -359,11 +360,29 @@ import { FR } from '../../../core/i18n/fr';
 
 
         <!-- Ligne 5 : Nature (pleine largeur) -->
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium" [pTooltip]="t.poste.natureTooltip">{{ t.poste.nature }}</label>
-          <p-select appendTo="body" formControlName="nature" [options]="natureOptions"
-                    optionLabel="label" optionValue="value" styleClass="w-full" />
+        <div class="grid grid-cols-{{ form.value.nature === 'ESTIMATION' ? '2' : '1' }} gap-4">
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium" [pTooltip]="t.poste.natureTooltip">{{ t.poste.nature }}</label>
+            <p-select appendTo="body" formControlName="nature" [options]="natureOptions"
+                      optionLabel="label" optionValue="value" styleClass="w-full" />
+          </div>
+          <!-- Ligne 5b : Pourcentage d'estimation (visible si nature=ESTIMATION) -->
+          @if (form.value.nature === 'ESTIMATION') {
+            <div class="flex flex-col gap-1">
+              <label class="text-sm font-medium" [pTooltip]="t.poste.estimationTooltip">
+                {{ t.poste.estimationPourcentage }} *
+              </label>
+              <p-inputnumber formControlName="estimPourcentage"
+                             [min]="0" [max]="100"
+                             [minFractionDigits]="1" [maxFractionDigits]="1"
+                             suffix="%" styleClass="w-full"
+                             placeholder="Ex: 10.0" />
+            </div>
+          }
         </div>
+
+
+
 
         <!-- Ligne 6 : Mode répartition (masqué si mono-membre) -->
         @if (membres().length > 1) {
@@ -436,11 +455,11 @@ import { FR } from '../../../core/i18n/fr';
           </div>
         }
       </form>
-      <ng-template pTemplate="footer">
-        <p-button [label]="t.commun.annuler" severity="secondary" (click)="fermerDialogPoste()" />
-        <p-button [label]="t.commun.enregistrer" (click)="enregistrer()"
-                  [disabled]="form.invalid || (estCustomMultiMembre() && sommeRepartition !== 100)" />
-      </ng-template>
+       <ng-template pTemplate="footer">
+         <p-button [label]="t.commun.annuler" severity="secondary" (click)="fermerDialogPoste()" />
+         <p-button [label]="t.commun.enregistrer" (click)="enregistrer()"
+                   [disabled]="!isFormValid()" />
+       </ng-template>
     </p-dialog>
 
     <!-- Dialog aperçu mensuel -->
@@ -496,7 +515,7 @@ export class PostesListeComponent implements OnInit {
 
   natureOptions = [
     { label: FR.poste.natureOptions.EFFECTIF,  value: 'EFFECTIF' },
-    { label: FR.poste.natureOptions.PREVISION, value: 'PREVISION' },
+    { label: FR.poste.natureOptions.ESTIMATION, value: 'ESTIMATION' },
   ];
 
   typeRepartitionOptions = [
@@ -531,6 +550,7 @@ export class PostesListeComponent implements OnInit {
     mode:            ['MENSUALISE'],
     moment:          ['DEBUT_PERIODE'],
     nature:          ['EFFECTIF'],
+    estimPourcentage: [null as number | null, [Validators.min(0), Validators.max(100)]],  // Obligatoire si nature=ESTIMATION
     typeRepartition: ['AUTO' as TypeRepartition],
     debut:           [null as Date | null],
     fin:             [null as Date | null],
@@ -547,10 +567,42 @@ export class PostesListeComponent implements OnInit {
     { initialValue: 'AUTO' as TypeRepartition }
   );
 
+  /** Signal réactif sur la nature du poste (bascule EFFECTIF ↔ ESTIMATION) */
+  private natureValue = toSignal(
+    this.form.get('nature')!.valueChanges.pipe(
+      startWith(this.form.get('nature')!.value)
+    ),
+    { initialValue: 'EFFECTIF' }
+  );
+
   /** Vrai si le mode de répartition courant nécessite des parts manuelles (CUSTOM multi-membres) */
   estCustomMultiMembre = computed(() =>
     this.typeRepartitionValue() === 'CUSTOM' && this.membres().length > 1
   );
+
+  /** Vrai si le formulaire est valide, incluant la validation du pourcentage d'estimation */
+  isFormValid = computed(() => {
+    const isBaseValid = this.form.valid;
+    const nature = this.form.value.nature;
+    const estimPct = this.form.value.estimPourcentage;
+    // Si nature=ESTIMATION, estimPourcentage doit être non-null
+    const isEstimationValid = nature === 'ESTIMATION' ? estimPct !== null && estimPct !== undefined && estimPct > 0 : true;
+    return isBaseValid && isEstimationValid && (!this.estCustomMultiMembre() || this.sommeRepartition === 100);
+  });
+
+  /** Effet : bascule Nature EFFECTIF→ESTIMATION pré-remplit 10%, ESTIMATION→EFFECTIF vide (null) */
+  private readonly _initEstimPourcentageOnNatureChange = effect(() => {
+    const nature = this.natureValue();
+    if (nature === 'ESTIMATION') {
+      // Ne mettre 10% que si le champ est actuellement vide
+      if (this.form.get('estimPourcentage')?.value === null) {
+        this.form.get('estimPourcentage')?.setValue(10.0, { emitEvent: false });
+      }
+    } else {
+      // Vider si nature=EFFECTIF
+      this.form.get('estimPourcentage')?.setValue(null, { emitEvent: false });
+    }
+  });
 
   /**
    * Quand l'utilisateur bascule vers CUSTOM et que le FormArray n'est pas encore peuplé
@@ -797,7 +849,7 @@ export class PostesListeComponent implements OnInit {
   ouvrirCreation(): void {
     this.posteEnEdition = null;
     this.form.reset({ mode: 'MENSUALISE', moment: 'DEBUT_PERIODE', nature: 'EFFECTIF',
-                      periodiciteMois: 0, typeRepartition: 'AUTO' });
+                      periodiciteMois: 0, typeRepartition: 'AUTO', estimPourcentage: null });
     this.initialiserRepartitions(undefined);
     this.dialogVisible = true;
   }
@@ -808,6 +860,7 @@ export class PostesListeComponent implements OnInit {
       description: p.description, categorieId: p.categorieId,
       montant: p.montant, periodiciteMois: p.periodiciteMois ?? 0,
       mode: p.mode, moment: p.moment, nature: p.nature ?? 'EFFECTIF',
+      estimPourcentage: p.estimPourcentage ?? null,
       typeRepartition: p.typeRepartition ?? 'AUTO',
       debut: p.debut ? new Date(p.debut) : null,
       fin: p.fin ? new Date(p.fin) : null,
@@ -961,6 +1014,7 @@ export class PostesListeComponent implements OnInit {
       mode:            (estOneShot ? 'MENSUALISE' : v.mode) as any,
       moment:          (estOneShot ? 'DEBUT_PERIODE' : v.moment) as any,
       nature:          (v.nature ?? 'EFFECTIF') as any,
+      estimPourcentage: v.nature === 'ESTIMATION' ? v.estimPourcentage ?? undefined : undefined,
       typeRepartition: typeRepartition,
       debut:           v.debut ? this.toIso(v.debut) : undefined,
       fin:             estOneShot ? undefined : (v.fin ? this.toIso(v.fin) : undefined),
@@ -998,6 +1052,11 @@ export class PostesListeComponent implements OnInit {
   }
 
   private toIso(d: Date): string { return d.toISOString().substring(0, 10); }
+
+  /** Formater un pourcentage avec 1 décimale */
+  formatEstimationPourcentage(pct: number): string {
+    return new Intl.NumberFormat('fr-CH', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(pct);
+  }
 
   typeAccentClass = computed(() => {
     switch (this.type()) {
