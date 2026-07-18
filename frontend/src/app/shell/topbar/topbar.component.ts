@@ -73,7 +73,8 @@ import { FR } from '../../core/i18n/fr';
         [text]="true"
         (click)="menuUser.toggle($event)"
       />
-      <p-menu #menuUser [popup]="true" [model]="userMenuItems" />
+      <p-menu #menuUser [popup]="true" [model]="userMenuItems"
+              appendTo="body" />
     </div>
   `,
 })

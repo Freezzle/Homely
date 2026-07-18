@@ -5,9 +5,17 @@ import ch.homely.commun.ConflitException;
 import ch.homely.commun.RegleMetierException;
 import ch.homely.commun.RessourceIntrouvableException;
 import ch.homely.foyer.dto.*;
+import ch.homely.categorie.Categorie;
+import ch.homely.categorie.CategorieRepository;
+import ch.homely.compte.Compte;
+import ch.homely.compte.CompteRepository;
 import ch.homely.membre.Membre;
 import ch.homely.membre.MembreRepository;
+import ch.homely.moteur.MoteurCalcul;
+import ch.homely.moteur.RepartitionCalcul;
 import ch.homely.scenario.RepartitionDefaut;
+import ch.homely.scenario.RepartitionPeriode;
+import ch.homely.scenario.RepartitionPeriodePart;
 import ch.homely.scenario.Scenario;
 import ch.homely.scenario.ScenarioRepository;
 import ch.homely.securite.MultiTenantService;
@@ -18,9 +26,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.Year;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -36,19 +48,25 @@ public class FoyerService {
     private final ScenarioRepository scenarioRepo;
     private final UtilisateurRepository utilisateurRepo;
     private final MultiTenantService multiTenant;
+    private final CategorieRepository categorieRepo;
+    private final CompteRepository compteRepo;
 
     public FoyerService(FoyerRepository foyerRepo,
                         AccesFoyerRepository accesRepo,
                         MembreRepository membreRepo,
                         ScenarioRepository scenarioRepo,
                         UtilisateurRepository utilisateurRepo,
-                        MultiTenantService multiTenant) {
+                        MultiTenantService multiTenant,
+                        CategorieRepository categorieRepo,
+                        CompteRepository compteRepo) {
         this.foyerRepo       = foyerRepo;
         this.accesRepo       = accesRepo;
         this.membreRepo      = membreRepo;
         this.scenarioRepo    = scenarioRepo;
         this.utilisateurRepo = utilisateurRepo;
         this.multiTenant     = multiTenant;
+        this.categorieRepo   = categorieRepo;
+        this.compteRepo      = compteRepo;
     }
 
     /** Liste les foyers accessibles à l'utilisateur courant. */
@@ -85,7 +103,136 @@ public class FoyerService {
         return toDto(foyer, RoleFoyer.OWNER);
     }
 
-    /** Retourne le détail d'un foyer (vérifie l'appartenance). */
+    /**
+     * Wizard d'onboarding : crée en une transaction le foyer complet
+     * (membres, catégories, comptes, scénario de référence).
+     * Les membres sont référencés par leur ordre local (1-based) dans le DTO.
+     */
+    public FoyerOnboardingResponse creerAvecOnboarding(FoyerOnboardingRequest req) {
+        Utilisateur u = multiTenant.utilisateurCourant();
+
+        // 1. Foyer
+        Foyer foyer = new Foyer();
+        foyer.setNom(req.nom());
+        foyer.setDeviseBase(req.deviseBase() != null ? req.deviseBase().toUpperCase() : "CHF");
+        foyerRepo.save(foyer);
+
+        // 2. Accès OWNER
+        AccesFoyer acces = new AccesFoyer();
+        acces.setFoyer(foyer);
+        acces.setUtilisateur(u);
+        acces.setRole(RoleFoyer.OWNER);
+        accesRepo.save(acces);
+
+        // 3. Membres — on garde une map ordre → Membre pour résoudre les références locales
+        Map<Integer, Membre> parOrdre = new HashMap<>();
+        for (int i = 0; i < req.membres().size(); i++) {
+            FoyerOnboardingRequest.MembreCreation mc = req.membres().get(i);
+            Membre m = new Membre();
+            m.setFoyer(foyer);
+            m.setNom(mc.nom());
+            m.setCouleur(mc.couleur() != null ? mc.couleur().toUpperCase() : "#6366F1");
+            m.setOrdre(i + 1);
+            membreRepo.save(m);
+            parOrdre.put(i + 1, m);
+        }
+
+        // 4. Catégories — ordre auto-incrémenté par type
+        Map<ch.homely.categorie.TypeCategorie, Integer> ordresParType = new HashMap<>();
+        for (FoyerOnboardingRequest.CategorieCreation cc : req.categories()) {
+            int ordre = ordresParType.merge(cc.typePoste(), 1, Integer::sum);
+            Categorie cat = new Categorie();
+            cat.setFoyer(foyer);
+            cat.setLibelle(cc.libelle());
+            cat.setTypePoste(cc.typePoste());
+            cat.setOrdre(ordre);
+            categorieRepo.save(cat);
+        }
+
+        // 5. Comptes
+        for (int i = 0; i < req.comptes().size(); i++) {
+            FoyerOnboardingRequest.CompteCreation cc = req.comptes().get(i);
+            Compte compte = new Compte();
+            compte.setFoyer(foyer);
+            compte.setLibelle(cc.libelle());
+            compte.setSoldeInitial(cc.soldeInitial() != null
+                    ? cc.soldeInitial() : BigDecimal.ZERO);
+            compte.setOrdre(i);
+            // Résolution des membres par ordre local
+            for (Integer ordre : cc.membreOrdres()) {
+                Membre m = parOrdre.get(ordre);
+                if (m == null) {
+                    throw new RegleMetierException(
+                            CodesErreur.ONBOARDING_ORDRE_INVALIDE,
+                            "Ordre de membre inconnu dans les comptes : " + ordre);
+                }
+                compte.getMembres().add(m);
+            }
+            if (compte.getMembres().isEmpty()) {
+                throw new RegleMetierException(
+                        CodesErreur.COMPTE_SANS_MEMBRE,
+                        "Un compte doit avoir au moins un membre rattaché.");
+            }
+            compteRepo.save(compte);
+        }
+
+        // 6. Scénario de référence (horizon forcé à 40 ans)
+        FoyerOnboardingRequest.ScenarioCreation sc = req.scenario();
+        Scenario scenario = new Scenario();
+        scenario.setFoyer(foyer);
+        scenario.setNom(sc.nom());
+        scenario.setEstReference(true);
+        scenario.setAnneeDepart(sc.anneeDepart());
+        scenario.setTresorerieInitiale(sc.tresorerieInitiale() != null
+                ? sc.tresorerieInitiale() : BigDecimal.ZERO);
+        scenario.setHorizonAnnees(40);
+
+        // 7. Validation + création répartitions
+        List<RepartitionCalcul> calculs = new ArrayList<>();
+        for (FoyerOnboardingRequest.RepartitionCreation rc : sc.repartitions()) {
+            Membre m = parOrdre.get(rc.membreOrdre());
+            if (m == null) {
+                throw new RegleMetierException(
+                        CodesErreur.ONBOARDING_ORDRE_INVALIDE,
+                        "Ordre de membre inconnu dans les répartitions : " + rc.membreOrdre());
+            }
+            calculs.add(new RepartitionCalcul(m.getId(), rc.quotePart().doubleValue()));
+        }
+        MoteurCalcul.validerRepartition(calculs);
+
+        // RepartitionDefaut (rétrocompat)
+        for (int i = 0; i < sc.repartitions().size(); i++) {
+            FoyerOnboardingRequest.RepartitionCreation rc = sc.repartitions().get(i);
+            Membre m = parOrdre.get(rc.membreOrdre());
+            RepartitionDefaut rd = new RepartitionDefaut();
+            rd.setScenario(scenario);
+            rd.setMembre(m);
+            rd.setQuotePart(rc.quotePart());
+            scenario.getRepartitionsDefaut().add(rd);
+        }
+
+        scenarioRepo.save(scenario);
+
+        // RepartitionPeriode ouverte (début = anneeDepart-01-01, fin = null)
+        RepartitionPeriode periode = new RepartitionPeriode();
+        periode.setScenario(scenario);
+        periode.setDebut(LocalDate.of(sc.anneeDepart(), 1, 1));
+        periode.setFin(null);
+        for (int i = 0; i < sc.repartitions().size(); i++) {
+            FoyerOnboardingRequest.RepartitionCreation rc = sc.repartitions().get(i);
+            Membre m = parOrdre.get(rc.membreOrdre());
+            RepartitionPeriodePart part = new RepartitionPeriodePart();
+            part.setPeriode(periode);
+            part.setMembre(m);
+            part.setQuotePart(rc.quotePart());
+            part.setOrdre(i);
+            periode.getParts().add(part);
+        }
+        scenario.getRepartitionsPeriodes().add(periode);
+        scenarioRepo.save(scenario);
+
+        return new FoyerOnboardingResponse(toDto(foyer, RoleFoyer.OWNER), scenario.getId());
+    }
     @Transactional(readOnly = true)
     public FoyerDto obtenir(UUID foyerId) {
         AccesFoyer acces = multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);

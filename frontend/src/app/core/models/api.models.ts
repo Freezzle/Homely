@@ -14,6 +14,22 @@ export interface FoyerRequest {
   membres?: { nom: string; couleur?: string }[];
 }
 
+/** DTO du wizard d'onboarding — créé en une seule transaction côté serveur. */
+export interface FoyerOnboardingRequest {
+  nom: string;
+  deviseBase: string;
+  membres: { nom: string; couleur?: string }[];
+  comptes: { libelle: string; soldeInitial: number; membreOrdres: number[] }[];
+  categories: { libelle: string; typePoste: TypeCategorie }[];
+  scenario: {
+    nom: string;
+    anneeDepart: number;
+    tresorerieInitiale: number;
+    repartitions: { membreOrdre: number; quotePart: number }[];
+  };
+}
+export interface FoyerOnboardingResponse { foyer: FoyerDto; scenarioId: string; }
+
 export interface AccesFoyerDto {
   id: string; utilisateurId: string; email: string; nomComplet: string; role: RoleFoyer;
 }

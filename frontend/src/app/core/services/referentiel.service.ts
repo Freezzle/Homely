@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import {
-  FoyerDto, FoyerRequest,
+  FoyerDto, FoyerRequest, FoyerOnboardingRequest, FoyerOnboardingResponse,
   AccesFoyerDto, InviterAccesRequest, ChangerRoleRequest,
   MembreDto, MembreRequest,
   CompteDto, CompteRequest,
@@ -20,6 +20,7 @@ export class FoyerService {
   creer(req: FoyerRequest) { return this.http.post<FoyerDto>('/api/foyers', req); }
   modifier(id: string, req: FoyerRequest) { return this.http.put<FoyerDto>(`/api/foyers/${id}`, req); }
   supprimer(id: string) { return this.http.delete<void>(`/api/foyers/${id}`); }
+  onboarding(req: FoyerOnboardingRequest) { return this.http.post<FoyerOnboardingResponse>('/api/foyers/onboarding', req); }
   listerAcces(foyerId: string) { return this.http.get<AccesFoyerDto[]>(`/api/foyers/${foyerId}/acces`); }
   inviter(foyerId: string, req: InviterAccesRequest) { return this.http.post<AccesFoyerDto>(`/api/foyers/${foyerId}/acces`, req); }
   changerRole(foyerId: string, accesId: string, req: ChangerRoleRequest) { return this.http.patch<AccesFoyerDto>(`/api/foyers/${foyerId}/acces/${accesId}`, req); }

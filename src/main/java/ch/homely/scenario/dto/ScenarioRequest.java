@@ -11,7 +11,7 @@ public record ScenarioRequest(
         @NotBlank @Size(max = 160) String nom,
         @NotNull @Min(2020) int anneeDepart,
         BigDecimal tresorerieInitiale,
-        @Min(1) @Max(30) int horizonAnnees,
+        @Min(1) @Max(100) int horizonAnnees,
         @NotEmpty @Valid List<RepartitionDefautDto> repartitions
 ) {
     public record RepartitionDefautDto(

@@ -24,6 +24,10 @@ export const routes: Routes = [
         path: 'foyers',
         loadComponent: () => import('./features/foyer/foyer-liste/foyer-liste.component').then(m => m.FoyerListeComponent),
       },
+      {
+        path: 'foyers/nouveau',
+        loadComponent: () => import('./features/foyer/foyer-creation/foyer-creation.component').then(m => m.FoyerCreationComponent),
+      },
       // Foyer courant
       {
         path: 'f/:foyerId',

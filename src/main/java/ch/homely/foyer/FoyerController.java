@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
 
 import java.util.List;
 import java.util.UUID;
@@ -33,6 +34,18 @@ public class FoyerController {
     @PostMapping
     public ResponseEntity<FoyerDto> creer(@Valid @RequestBody FoyerRequest req) {
         return ResponseEntity.status(HttpStatus.CREATED).body(foyerService.creer(req));
+    }
+
+    /**
+     * POST /api/foyers/onboarding — wizard de création guidée d'un foyer.
+     * Crée en une transaction : foyer, membres, catégories, comptes, scénario de référence.
+     */
+    @Operation(summary = "Wizard d'onboarding : crée un foyer complet en une transaction")
+    @PostMapping("/onboarding")
+    public ResponseEntity<FoyerOnboardingResponse> creerAvecOnboarding(
+            @Valid @RequestBody FoyerOnboardingRequest req) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(foyerService.creerAvecOnboarding(req));
     }
 
     /** GET /api/foyers/{foyerId} */
