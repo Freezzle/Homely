@@ -27,87 +27,85 @@ interface NavSection {
   selector: 'app-sidebar-menu',
   standalone: true,
   imports: [CommonModule, RouterLink, RouterLinkActive, SidebarModule, ButtonModule],
+             styles: [`:host { display: contents; }`],
   template: `
       <p-sidebar
               id="main-nav"
               side="left"
               variant="sidebar"
-              collapsible="offcanvas"
+              [collapsible]="viewport.estCompact() ? 'offcanvas' : 'icon'"
               width="14rem"
               [overlay]="viewport.estCompact()"
               [open]="contexte.sidebarOuverte()"
               (openChange)="contexte.sidebarOuverte.set($event)"
               [dismissable]="viewport.estCompact()">
 
-          <p-sidebar-header>
-              <div class="flex items-center justify-between gap-2 w-full px-1">
-                <!-- Logo -->
-                <span class="text-primary font-bold text-lg md:text-xl mr-1 md:mr-2">🏠 Homely</span>
+          <p-sidebar-spacer/>
+          <p-sidebar-aside>
+              <p-sidebar-panel>
+                  <p-sidebar-header>
+                      <div class="flex items-center justify-between gap-2 w-full px-1">
+                          <span class="text-primary font-bold text-lg md:text-xl mr-1 md:mr-2">🏠 Homely</span>
+                          @if (viewport.estCompact()) {
+                              <button type="button" pButton pSidebarTrigger target="main-nav"
+                                      icon="pi pi-times" [text]="true" severity="secondary"
+                                      class="shrink-0" [attr.aria-label]="t.commun.fermer"></button>
+                          }
+                      </div>
+                  </p-sidebar-header>
 
-                @if (viewport.estCompact()) {
-                      <button type="button"
-                              pButton
-                              pSidebarTrigger
-                              target="main-nav"
-                              icon="pi pi-times"
-                              [text]="true"
-                              severity="secondary"
-                              class="shrink-0"
-                              [attr.aria-label]="t.commun.fermer"></button>
-                  }
-              </div>
-          </p-sidebar-header>
-
-          <p-sidebar-content>
-              @for (section of sections(); track $index) {
-                  <p-sidebar-group>
-                      @if (section.label) {
-                          <p-sidebar-group-label>{{ section.label }}</p-sidebar-group-label>
-                      }
-                      <p-sidebar-group-content>
-                          <p-sidebar-menu>
-                              @for (item of section.items; track item.label) {
-                                  @if (item.children && item.children.length > 0) {
-                                      <p-sidebar-menu-item collapsible [defaultOpen]="item.defaultOpen">
-                                          <button type="button" pSidebarMenuButton>
-                                              <i [class]="item.icon"></i>
-                                              <span>{{ item.label }}</span>
-                                          </button>
-                                          <p-sidebar-menu-sub>
-                                              @for (child of item.children; track child.label) {
-                                                  <p-sidebar-menu-sub-item>
-                                                      <a [routerLink]="child.route!"
-                                                         routerLinkActive
-                                                         #rla="routerLinkActive"
-                                                         pSidebarMenuSubButton
-                                                         [isActive]="rla.isActive"
-                                                         (click)="fermerSiMobile()">
-                                                          <i [class]="child.icon"></i>
-                                                          <span>{{ child.label }}</span>
-                                                      </a>
-                                                  </p-sidebar-menu-sub-item>
-                                              }
-                                          </p-sidebar-menu-sub>
-                                      </p-sidebar-menu-item>
-                                  } @else {
-                                      <p-sidebar-menu-item>
-                                          <a [routerLink]="item.route!"
-                                             routerLinkActive
-                                             #rla="routerLinkActive"
-                                             pSidebarMenuButton
-                                             [isActive]="rla.isActive"
-                                             (click)="fermerSiMobile()">
-                                              <i [class]="item.icon"></i>
-                                              <span>{{ item.label }}</span>
-                                          </a>
-                                      </p-sidebar-menu-item>
-                                  }
+                  <p-sidebar-content>
+                      @for (section of sections(); track $index) {
+                          <p-sidebar-group>
+                              @if (section.label) {
+                                  <p-sidebar-group-label>{{ section.label }}</p-sidebar-group-label>
                               }
-                          </p-sidebar-menu>
-                      </p-sidebar-group-content>
-                  </p-sidebar-group>
-              }
-          </p-sidebar-content>
+                              <p-sidebar-group-content>
+                                  <p-sidebar-menu>
+                                      @for (item of section.items; track item.label) {
+                                          @if (item.children && item.children.length > 0) {
+                                              <p-sidebar-menu-item collapsible [defaultOpen]="item.defaultOpen">
+                                                  <button type="button" pSidebarMenuButton>
+                                                      <i [class]="item.icon"></i>
+                                                      <span>{{ item.label }}</span>
+                                                  </button>
+                                                  <p-sidebar-menu-sub>
+                                                      @for (child of item.children; track child.label) {
+                                                          <p-sidebar-menu-sub-item>
+                                                              <a [routerLink]="child.route!"
+                                                                 routerLinkActive
+                                                                 #rla="routerLinkActive"
+                                                                 pSidebarMenuSubButton
+                                                                 [isActive]="rla.isActive"
+                                                                 (click)="fermerSiMobile()">
+                                                                  <i [class]="child.icon"></i>
+                                                                  <span>{{ child.label }}</span>
+                                                              </a>
+                                                          </p-sidebar-menu-sub-item>
+                                                      }
+                                                  </p-sidebar-menu-sub>
+                                              </p-sidebar-menu-item>
+                                          } @else {
+                                              <p-sidebar-menu-item>
+                                                  <a [routerLink]="item.route!"
+                                                     routerLinkActive
+                                                     #rla="routerLinkActive"
+                                                     pSidebarMenuButton
+                                                     [isActive]="rla.isActive"
+                                                     (click)="fermerSiMobile()">
+                                                      <i [class]="item.icon"></i>
+                                                      <span>{{ item.label }}</span>
+                                                  </a>
+                                              </p-sidebar-menu-item>
+                                          }
+                                      }
+                                  </p-sidebar-menu>
+                              </p-sidebar-group-content>
+                          </p-sidebar-group>
+                      }
+                  </p-sidebar-content>
+              </p-sidebar-panel>
+          </p-sidebar-aside>
       </p-sidebar>
   `,
 })

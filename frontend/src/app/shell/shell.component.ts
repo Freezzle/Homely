@@ -8,27 +8,32 @@ import { SidebarMenuComponent } from './sidebar-menu/sidebar-menu.component';
 import { ContexteService } from '../core/services/contexte.service';
 import { FoyerService, MembreService } from '../core/services/referentiel.service';
 import { ScenarioService } from '../core/services/scenario-poste.service';
+import {ViewportService} from '../core/services/viewport.service';
 
 @Component({
   selector: 'app-shell',
   standalone: true,
   imports: [RouterOutlet, CommonModule, SidebarModule, TopbarComponent, SidebarMenuComponent],
   template: `
-    <p-sidebar-layout class="flex h-screen bg-surface-50 dark:bg-surface-950 mx-auto w-full xl:max-w-2/3">
-      @if (contexte.foyerId()) {
-        <app-sidebar-menu />
-      }
-      <p-sidebar-main class="flex flex-col flex-1 overflow-hidden">
-        <app-topbar class="sticky top-0 z-50" />
-        <main class="flex-1 overflow-y-auto p-4 md:p-6">
-          <router-outlet />
-        </main>
-      </p-sidebar-main>
-    </p-sidebar-layout>
+      <p-sidebar-layout class="flex h-screen bg-surface-50 dark:bg-surface-950 mx-auto w-full xl:max-w-2/3">
+          @if (contexte.foyerId()) {
+              @if (viewport.estCompact() && contexte.sidebarOuverte()) {
+                  <p-sidebar-backdrop />
+              }
+              <app-sidebar-menu />
+          }
+          <p-sidebar-main class="flex flex-col flex-1 overflow-hidden">
+              <app-topbar class="sticky top-0 z-10" />
+              <main class="flex-1 overflow-y-auto p-4 md:p-6">
+                  <router-outlet />
+              </main>
+          </p-sidebar-main>
+      </p-sidebar-layout>
   `,
 })
 export class ShellComponent implements OnInit, OnDestroy {
   contexte             = inject(ContexteService);
+    viewport = inject(ViewportService);
   private foyerSvc     = inject(FoyerService);
   private membreSvc    = inject(MembreService);
   private scenarioSvc  = inject(ScenarioService);
