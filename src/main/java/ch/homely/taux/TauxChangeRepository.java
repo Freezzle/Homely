@@ -11,4 +11,6 @@ public interface TauxChangeRepository extends JpaRepository<TauxChange, UUID> {
     List<TauxChange> findAllByFoyerId(UUID foyerId);
 
     Optional<TauxChange> findByFoyerIdAndDevise(UUID foyerId, String devise);
+
+    int deleteAllByFoyerId(UUID foyerId);
 }

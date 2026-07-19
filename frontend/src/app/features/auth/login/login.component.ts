@@ -3,7 +3,6 @@ import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { InputTextModule } from 'primeng/inputtext';
-import { PasswordModule } from 'primeng/password';
 import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
 import { CardModule } from 'primeng/card';
@@ -14,7 +13,7 @@ import { FR } from '../../../core/i18n/fr';
   selector: 'app-login',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink,
-    CardModule, InputTextModule, PasswordModule, ButtonModule, MessageModule],
+    CardModule, InputTextModule, ButtonModule, MessageModule],
   template: `
     <div class="min-h-screen flex items-center justify-center bg-surface-50 dark:bg-surface-950">
       <p-card styleClass="w-full max-w-sm shadow-xl">
@@ -31,8 +30,7 @@ import { FR } from '../../../core/i18n/fr';
           </div>
           <div class="flex flex-col gap-1">
             <label class="text-sm font-medium">{{ t.auth.password }}</label>
-            <p-password formControlName="password" [feedback]="false"
-                        [toggleMask]="true" styleClass="w-full" inputStyleClass="w-full" />
+            <input pInputText formControlName="password" type="password" class="w-full" />
           </div>
           @if (erreur()) {
             <p-message severity="error" [text]="erreur()!" />

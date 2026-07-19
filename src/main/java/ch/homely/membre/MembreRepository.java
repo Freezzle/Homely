@@ -17,4 +17,7 @@ public interface MembreRepository extends JpaRepository<Membre, UUID> {
 
     /** Chargement batch de membres actifs d'un foyer, utilisé pour valider les rattachements de comptes. */
     List<Membre> findAllByIdInAndFoyerIdAndActifTrue(Collection<UUID> ids, UUID foyerId);
+
+    /** Suppression bulk de tous les membres d'un foyer pour finaliser la purge hard-delete. */
+    int deleteAllByFoyerId(UUID foyerId);
 }

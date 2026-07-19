@@ -11,4 +11,6 @@ public interface ActifRepository extends JpaRepository<Actif, UUID> {
     List<Actif> findAllByFoyerIdAndActifTrueOrderByOrdre(UUID foyerId);
 
     Optional<Actif> findByIdAndFoyerId(UUID id, UUID foyerId);
+
+    int deleteAllByFoyerId(UUID foyerId);
 }

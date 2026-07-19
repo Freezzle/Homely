@@ -15,4 +15,6 @@ public interface AccesFoyerRepository extends JpaRepository<AccesFoyer, UUID> {
     List<AccesFoyer> findAllByUtilisateurId(UUID utilisateurId);
 
     boolean existsByUtilisateurIdAndFoyerId(UUID utilisateurId, UUID foyerId);
+
+    void deleteAllByFoyerId(UUID foyerId);
 }

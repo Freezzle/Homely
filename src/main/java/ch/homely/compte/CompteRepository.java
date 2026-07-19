@@ -11,4 +11,6 @@ public interface CompteRepository extends JpaRepository<Compte, UUID> {
     List<Compte> findAllByFoyerIdAndActifTrueOrderByOrdre(UUID foyerId);
 
     Optional<Compte> findByIdAndFoyerId(UUID id, UUID foyerId);
+
+    int deleteAllByFoyerId(UUID foyerId);
 }

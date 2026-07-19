@@ -1,5 +1,6 @@
 package ch.homely.foyer;
 
+import ch.homely.actif.ActifRepository;
 import ch.homely.commun.CodesErreur;
 import ch.homely.commun.ConflitException;
 import ch.homely.commun.RegleMetierException;
@@ -13,12 +14,14 @@ import ch.homely.membre.Membre;
 import ch.homely.membre.MembreRepository;
 import ch.homely.moteur.MoteurCalcul;
 import ch.homely.moteur.RepartitionCalcul;
+import ch.homely.projection.ProjectionService;
 import ch.homely.scenario.RepartitionDefaut;
 import ch.homely.scenario.RepartitionPeriode;
 import ch.homely.scenario.RepartitionPeriodePart;
 import ch.homely.scenario.Scenario;
 import ch.homely.scenario.ScenarioRepository;
 import ch.homely.securite.MultiTenantService;
+import ch.homely.taux.TauxChangeRepository;
 import ch.homely.utilisateur.Utilisateur;
 import ch.homely.utilisateur.UtilisateurRepository;
 import org.springframework.stereotype.Service;
@@ -30,7 +33,6 @@ import java.time.LocalDate;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -50,6 +52,9 @@ public class FoyerService {
     private final MultiTenantService multiTenant;
     private final CategorieRepository categorieRepo;
     private final CompteRepository compteRepo;
+    private final ActifRepository actifRepo;
+    private final TauxChangeRepository tauxChangeRepo;
+    private final ProjectionService projectionService;
 
     public FoyerService(FoyerRepository foyerRepo,
                         AccesFoyerRepository accesRepo,
@@ -58,7 +63,10 @@ public class FoyerService {
                         UtilisateurRepository utilisateurRepo,
                         MultiTenantService multiTenant,
                         CategorieRepository categorieRepo,
-                        CompteRepository compteRepo) {
+                        CompteRepository compteRepo,
+                        ActifRepository actifRepo,
+                        TauxChangeRepository tauxChangeRepo,
+                        ProjectionService projectionService) {
         this.foyerRepo       = foyerRepo;
         this.accesRepo       = accesRepo;
         this.membreRepo      = membreRepo;
@@ -67,6 +75,9 @@ public class FoyerService {
         this.multiTenant     = multiTenant;
         this.categorieRepo   = categorieRepo;
         this.compteRepo      = compteRepo;
+        this.actifRepo       = actifRepo;
+        this.tauxChangeRepo  = tauxChangeRepo;
+        this.projectionService = projectionService;
     }
 
     /** Liste les foyers accessibles à l'utilisateur courant. */
@@ -252,7 +263,22 @@ public class FoyerService {
     /** Supprime un foyer (OWNER uniquement). */
     public void supprimer(UUID foyerId) {
         multiTenant.verifierAcces(foyerId, RoleFoyer.OWNER);
+
+        // Suppression explicite en bulk pour garantir un hard-delete complet.
+        List<UUID> scenarioIds = scenarioRepo.findIdsByFoyerId(foyerId);
+        scenarioRepo.deleteAllByFoyerId(foyerId);
+        categorieRepo.deleteAllByFoyerId(foyerId);
+        compteRepo.deleteAllByFoyerId(foyerId);
+        membreRepo.deleteAllByFoyerId(foyerId);
+        actifRepo.deleteAllByFoyerId(foyerId);
+        tauxChangeRepo.deleteAllByFoyerId(foyerId);
+        accesRepo.deleteAllByFoyerId(foyerId);
+
         foyerRepo.deleteById(foyerId);
+
+        for (UUID scenarioId : scenarioIds) {
+            projectionService.invaliderCache(scenarioId);
+        }
     }
 
     // ── Accès (T4.4) ─────────────────────────────────────────────────────────

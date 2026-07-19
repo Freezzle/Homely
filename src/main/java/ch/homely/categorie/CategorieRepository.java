@@ -13,4 +13,6 @@ public interface CategorieRepository extends JpaRepository<Categorie, UUID> {
     List<Categorie> findAllByFoyerIdAndTypePosteAndActifTrueOrderByOrdre(UUID foyerId, TypeCategorie typePoste);
 
     Optional<Categorie> findByIdAndFoyerId(UUID id, UUID foyerId);
+
+    int deleteAllByFoyerId(UUID foyerId);
 }
