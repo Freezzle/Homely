@@ -14,7 +14,7 @@ import { ScenarioService } from '../core/services/scenario-poste.service';
   standalone: true,
   imports: [RouterOutlet, CommonModule, SidebarModule, TopbarComponent, SidebarMenuComponent],
   template: `
-    <p-sidebar-layout class="flex h-screen bg-surface-50 dark:bg-surface-950 mx-auto w-full md:max-w-2/3">
+    <p-sidebar-layout class="flex h-screen bg-surface-50 dark:bg-surface-950 mx-auto w-full xl:max-w-2/3">
       @if (contexte.foyerId()) {
         <app-sidebar-menu />
       }

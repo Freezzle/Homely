@@ -114,7 +114,7 @@ import { RepartitionPeriodesComponent } from '../repartition-periodes/repartitio
           @for (m of membres(); track m.id) {
             <div class="flex items-center gap-3">
               <span class="flex-1 text-sm">{{ m.nom }}</span>
-              <input pInputText [value]="repsMap[m.id] ?? 0" type="number" min="0" max="100"
+              <input pInputText [value]="repsMap[m.id]" type="number" min="0" max="100"
                      class="w-24 text-right" (input)="onRepChange(m.id, $any($event.target).value)" />
               <span class="text-sm">%</span>
             </div>

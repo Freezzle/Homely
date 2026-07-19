@@ -44,7 +44,7 @@ import { FR } from '../../../core/i18n/fr';
           <div class="flex flex-col gap-3">
 
               <!-- Ligne 1 : titre à gauche, créer à droite -->
-              <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+              <div class="grid gap-3 grid-cols-[minmax(0,1fr)_auto] md:items-center">
                   <div class="flex items-baseline gap-2 min-w-0">
                       <h1 class="text-2xl font-bold leading-tight truncate">
                           {{ type() === 'REVENU' ? t.nav.revenus : type() === 'CHARGE' ? t.nav.charges : t.nav.reserves }}
@@ -60,7 +60,7 @@ import { FR } from '../../../core/i18n/fr';
               </div>
 
               <!-- Ligne 2 : tri à gauche, menu à droite -->
-              <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+              <div class="grid gap-3 grid-cols-[minmax(0,1fr)_auto] md:items-center">
                   <div class="flex justify-start">
                       <p-select appendTo="body"
                                 [ngModel]="triActuel()"

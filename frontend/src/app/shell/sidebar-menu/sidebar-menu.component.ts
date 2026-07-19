@@ -1,7 +1,8 @@
-import { Component, inject, computed } from '@angular/core';
+import { Component, inject, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { SidebarModule } from 'primeng/sidebar';
+import { ButtonModule } from 'primeng/button';
 import { ContexteService } from '../../core/services/contexte.service';
 import { ViewportService } from '../../core/services/viewport.service';
 import { FR } from '../../core/i18n/fr';
@@ -25,78 +26,93 @@ interface NavSection {
 @Component({
   selector: 'app-sidebar-menu',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, SidebarModule],
+  imports: [CommonModule, RouterLink, RouterLinkActive, SidebarModule, ButtonModule],
   template: `
-    <p-sidebar
-      id="main-nav"
-      side="left"
-      variant="sidebar"
-      collapsible="offcanvas"
-      width="14rem"
-      [overlay]="viewport.estMobile()"
-      [(open)]="contexte.sidebarOuverte"
-      [dismissable]="true">
+      <p-sidebar
+              id="main-nav"
+              side="left"
+              variant="sidebar"
+              collapsible="offcanvas"
+              width="14rem"
+              [overlay]="viewport.estCompact()"
+              [open]="contexte.sidebarOuverte()"
+              (openChange)="contexte.sidebarOuverte.set($event)"
+              [dismissable]="viewport.estCompact()">
 
-      <p-sidebar-header>
-        <span class="text-base font-semibold px-1">Homely</span>
-      </p-sidebar-header>
-
-      <p-sidebar-content>
-        @for (section of sections(); track $index) {
-          <p-sidebar-group>
-            @if (section.label) {
-              <p-sidebar-group-label>{{ section.label }}</p-sidebar-group-label>
-            }
-            <p-sidebar-group-content>
-              <p-sidebar-menu>
-                @for (item of section.items; track item.label) {
-                  @if (item.children && item.children.length > 0) {
-                    <p-sidebar-menu-item collapsible [defaultOpen]="item.defaultOpen">
-                      <button type="button" pSidebarMenuButton>
-                        <i [class]="item.icon"></i>
-                        <span>{{ item.label }}</span>
-                      </button>
-                      <p-sidebar-menu-sub>
-                        @for (child of item.children; track child.label) {
-                          <p-sidebar-menu-sub-item>
-                            <a [routerLink]="child.route!"
-                               routerLinkActive
-                               #rla="routerLinkActive"
-                               pSidebarMenuSubButton
-                               [isActive]="rla.isActive">
-                              <i [class]="child.icon"></i>
-                              <span>{{ child.label }}</span>
-                            </a>
-                          </p-sidebar-menu-sub-item>
-                        }
-                      </p-sidebar-menu-sub>
-                    </p-sidebar-menu-item>
-                  } @else {
-                    <p-sidebar-menu-item>
-                      <a [routerLink]="item.route!"
-                         routerLinkActive
-                         #rla="routerLinkActive"
-                         pSidebarMenuButton
-                         [isActive]="rla.isActive"
-                         (click)="fermerSiMobile()">
-                        <i [class]="item.icon"></i>
-                        <span>{{ item.label }}</span>
-                      </a>
-                    </p-sidebar-menu-item>
+          <p-sidebar-header>
+              <div class="flex items-center justify-between gap-2 w-full px-1">
+                  @if (viewport.estCompact()) {
+                      <button type="button"
+                              pButton
+                              pSidebarTrigger
+                              target="main-nav"
+                              icon="pi pi-times"
+                              [text]="true"
+                              severity="secondary"
+                              class="shrink-0"
+                              [attr.aria-label]="t.commun.fermer"></button>
                   }
-                }
-              </p-sidebar-menu>
-            </p-sidebar-group-content>
-          </p-sidebar-group>
-        }
-      </p-sidebar-content>
-    </p-sidebar>
+              </div>
+          </p-sidebar-header>
+
+          <p-sidebar-content>
+              @for (section of sections(); track $index) {
+                  <p-sidebar-group>
+                      @if (section.label) {
+                          <p-sidebar-group-label>{{ section.label }}</p-sidebar-group-label>
+                      }
+                      <p-sidebar-group-content>
+                          <p-sidebar-menu>
+                              @for (item of section.items; track item.label) {
+                                  @if (item.children && item.children.length > 0) {
+                                      <p-sidebar-menu-item collapsible [defaultOpen]="item.defaultOpen">
+                                          <button type="button" pSidebarMenuButton>
+                                              <i [class]="item.icon"></i>
+                                              <span>{{ item.label }}</span>
+                                          </button>
+                                          <p-sidebar-menu-sub>
+                                              @for (child of item.children; track child.label) {
+                                                  <p-sidebar-menu-sub-item>
+                                                      <a [routerLink]="child.route!"
+                                                         routerLinkActive
+                                                         #rla="routerLinkActive"
+                                                         pSidebarMenuSubButton
+                                                         [isActive]="rla.isActive"
+                                                         (click)="fermerSiMobile()">
+                                                          <i [class]="child.icon"></i>
+                                                          <span>{{ child.label }}</span>
+                                                      </a>
+                                                  </p-sidebar-menu-sub-item>
+                                              }
+                                          </p-sidebar-menu-sub>
+                                      </p-sidebar-menu-item>
+                                  } @else {
+                                      <p-sidebar-menu-item>
+                                          <a [routerLink]="item.route!"
+                                             routerLinkActive
+                                             #rla="routerLinkActive"
+                                             pSidebarMenuButton
+                                             [isActive]="rla.isActive"
+                                             (click)="fermerSiMobile()">
+                                              <i [class]="item.icon"></i>
+                                              <span>{{ item.label }}</span>
+                                          </a>
+                                      </p-sidebar-menu-item>
+                                  }
+                              }
+                          </p-sidebar-menu>
+                      </p-sidebar-group-content>
+                  </p-sidebar-group>
+              }
+          </p-sidebar-content>
+      </p-sidebar>
   `,
 })
 export class SidebarMenuComponent {
   readonly t = FR;
   readonly contexte = inject(ContexteService);
   readonly viewport = inject(ViewportService);
+  private precedentCompact: boolean | null = null;
 
   readonly sections = computed<NavSection[]>(() => {
     const foyerId = this.contexte.foyerId();
@@ -144,10 +160,24 @@ export class SidebarMenuComponent {
     return sections;
   });
 
-  /** Ferme automatiquement la sidebar après navigation en mode overlay (mobile). */
-  fermerSiMobile(): void {
-    if (this.viewport.estMobile()) {
-      this.contexte.sidebarOuverte.set(false);
+  private readonly _syncSidebarMode = effect(() => {
+    const compact = this.viewport.estCompact();
+    if (this.precedentCompact === compact) {
+      return;
     }
+
+    this.precedentCompact = compact;
+    this.contexte.sidebarOuverte.set(!compact);
+  });
+
+  /** Ferme automatiquement la sidebar après navigation en mode overlay (mobile + tablette). */
+  fermerSiMobile(): void {
+    if (this.viewport.estCompact()) {
+      this.fermerSidebar();
+    }
+  }
+
+  fermerSidebar(): void {
+    this.contexte.sidebarOuverte.set(false);
   }
 }

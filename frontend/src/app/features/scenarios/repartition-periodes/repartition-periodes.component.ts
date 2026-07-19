@@ -33,13 +33,13 @@ import { FR } from '../../../core/i18n/fr';
     TableModule, TagModule, InputNumberModule, DatePickerModule, MessageModule,
     ConfirmDialogModule, TooltipModule, PctPipe],
   template: `
-    <p-confirmdialog />
+    <p-confirmdialog/>
 
     <!-- Bouton déclencheur : icône seule + tooltip, style cohérent avec les autres actions -->
     @if (membres().length > 1) {
       <p-button icon="pi pi-calendar-plus" [text]="true" size="small"
                 [pTooltip]="t.scenario.gererPeriodes" tooltipPosition="top"
-                (click)="ouvrirDialog()" />
+                (click)="ouvrirDialog()"/>
     }
 
     <!-- Dialog liste des périodes -->
@@ -63,7 +63,7 @@ import { FR } from '../../../core/i18n/fr';
                 <td>{{ p.debut | date:'dd.MM.yyyy' }}</td>
                 <td>
                   @if (!p.fin) {
-                    <p-tag [value]="t.scenario.periodeOuverte" severity="success" />
+                    <p-tag [value]="t.scenario.periodeOuverte" severity="success"/>
                   } @else {
                     {{ p.fin | date:'dd.MM.yyyy' }}
                   }
@@ -83,9 +83,9 @@ import { FR } from '../../../core/i18n/fr';
                   @if (contexte.estEditor()) {
                     <div class="flex gap-1 justify-end">
                       <p-button icon="pi pi-pencil" [text]="true" size="small"
-                                (click)="ouvrirEdition(p)" />
+                                (click)="ouvrirEdition(p)"/>
                       <p-button icon="pi pi-trash" [text]="true" severity="danger" size="small"
-                                (click)="confirmerSuppression(p)" />
+                                (click)="confirmerSuppression(p)"/>
                     </div>
                   }
                 </td>
@@ -98,7 +98,7 @@ import { FR } from '../../../core/i18n/fr';
 
         @if (contexte.estEditor()) {
           <p-button [label]="t.scenario.nouvellePeriode" icon="pi pi-plus"
-                    size="small" (click)="ouvrirCreation()" />
+                    size="small" (click)="ouvrirCreation()"/>
         }
       </div>
     </p-dialog>
@@ -112,12 +112,12 @@ import { FR } from '../../../core/i18n/fr';
           <div class="flex flex-col gap-1">
             <label class="text-sm font-medium">{{ t.scenario.debutPeriode }} *</label>
             <p-datepicker formControlName="debut" dateFormat="dd.mm.yy" class="w-full" appendTo="body"
-                          [showButtonBar]="true" />
+                          [showButtonBar]="true"/>
           </div>
           <div class="flex flex-col gap-1">
             <label class="text-sm font-medium">{{ t.scenario.finPeriode }}</label>
             <p-datepicker formControlName="fin" dateFormat="dd.mm.yy" class="w-full" appendTo="body"
-                          [showButtonBar]="true" [showClear]="true" />
+                          [showButtonBar]="true" [showClear]="true"/>
           </div>
         </div>
 
@@ -140,16 +140,16 @@ import { FR } from '../../../core/i18n/fr';
                 <span class="text-sm">{{ membres()[i]?.nom }}</span>
                 <p-inputnumber formControlName="quotePart" [min]="0" [max]="100"
                                suffix="%" [minFractionDigits]="0"
-                               (onInput)="calculerSomme()" />
+                               (onInput)="calculerSomme()"/>
               </div>
             }
           </div>
         </div>
       </form>
       <ng-template #footer>
-        <p-button [label]="t.commun.annuler" severity="secondary" (click)="formVisible = false" />
+        <p-button [label]="t.commun.annuler" severity="secondary" (click)="formVisible = false"/>
         <p-button [label]="t.commun.enregistrer" (click)="enregistrer()"
-                  [disabled]="form.invalid || sommeParts !== 100" />
+                  [disabled]="form.invalid || sommeParts !== 100"/>
       </ng-template>
     </p-dialog>
   `,

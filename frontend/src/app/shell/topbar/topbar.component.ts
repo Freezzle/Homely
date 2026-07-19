@@ -23,8 +23,10 @@ import { FR } from '../../core/i18n/fr';
     <div class="flex flex-wrap items-center gap-2 md:gap-3 px-3 md:px-4 py-2 bg-surface-0 dark:bg-surface-900 border-b border-surface-200 dark:border-surface-700 shadow-sm">
       <!-- Bouton toggle sidebar (mobile uniquement) -->
       @if (contexte.foyerId()) {
-        <button type="button" pSidebarTrigger target="main-nav"
-                class="md:hidden inline-flex items-center justify-center w-9 h-9 rounded hover:bg-surface-100 dark:hover:bg-surface-800 text-surface-700 dark:text-surface-200"
+        <button type="button"
+                pSidebarTrigger
+                target="main-nav"
+                class="lg:hidden inline-flex items-center justify-center w-9 h-9 rounded hover:bg-surface-100 dark:hover:bg-surface-800 text-surface-700 dark:text-surface-200"
                 [attr.aria-label]="t.nav.ouvrirMenu">
           <i class="pi pi-bars"></i>
         </button>
