@@ -59,7 +59,7 @@ import { FR } from '../../../core/i18n/fr';
       } @else if (ventilations()) {
 
         <!-- ① KPI foyer — 2 cols mobile · 4 cols desktop ───────────────────── -->
-        @if (vue() !== 'MEMBRE') {
+        @if (vueEffective() !== 'MEMBRE') {
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
 
           <p-card styleClass="border-l-4 border-green-500">
@@ -260,7 +260,7 @@ import { FR } from '../../../core/i18n/fr';
           </div>
 
           <!-- Cascade foyer (vue FOYER, TOUT, ou mono-membre) -->
-          @if (!afficherParMembre() || vue() !== 'MEMBRE') {
+          @if (vueEffective() !== 'MEMBRE') {
             <p-card>
               <p-chart type="bar"
                        [data]="cascadeFoyer()!.chartData"
@@ -271,8 +271,8 @@ import { FR } from '../../../core/i18n/fr';
           }
 
           <!-- Cascades par membre (vue MEMBRE ou TOUT, multi-membres) -->
-          @if (afficherParMembre() && vue() !== 'FOYER') {
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4" [class.mt-4]="vue() === 'TOUT'">
+          @if (afficherParMembre() && vueEffective() !== 'FOYER') {
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4" [class.mt-4]="vueEffective() === 'TOUT'">
               @for (mc of cascadeMembreData(); track mc.membreId) {
                 <p-card>
                   <ng-template pTemplate="header">
@@ -295,7 +295,7 @@ import { FR } from '../../../core/i18n/fr';
         }
 
         <!-- ④ Détail par membre — toutes les catégories visibles ────────────── -->
-        @if (afficherParMembre() && vue() !== 'FOYER') {
+        @if (afficherParMembre() && vueEffective() !== 'FOYER') {
         <div>
           <div class="flex items-center gap-3 mb-4">
             <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
@@ -385,7 +385,7 @@ import { FR } from '../../../core/i18n/fr';
         }
 
         <!-- ④ bis · Répartition par compte et par membre ────────────────────── -->
-        @if (afficherParMembre() && vue() !== 'FOYER') {
+        @if (afficherParMembre() && vueEffective() !== 'FOYER') {
         <div>
           <div class="flex items-center gap-3 mb-4">
             <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
@@ -484,11 +484,16 @@ export class DashboardMensuelComponent implements OnInit {
   // ── Vue Foyer / Par membre / Les deux ────────────────────────────────────────
   vue = signal<'FOYER' | 'MEMBRE' | 'TOUT'>('MEMBRE');
   afficherParMembre = computed(() => this.membres().length > 1);
+  vueEffective = computed<'FOYER' | 'MEMBRE' | 'TOUT'>(() =>
+    this.afficherParMembre() ? this.vue() : 'FOYER'
+  );
   readonly vueOptions = [
     { label: this.t.projection.vueFoyer,     value: 'FOYER'  },
     { label: this.t.projection.vueParMembre, value: 'MEMBRE' },
     { label: this.t.projection.vueTout,      value: 'TOUT'   },
   ];
+
+  private etaitMonoMembre = false;
 
   annee = new Date().getFullYear();
   mois  = new Date().getMonth() + 1;
@@ -967,6 +972,19 @@ export class DashboardMensuelComponent implements OnInit {
         this.postes.set(postes);
         this.charger();
       });
+    }
+  });
+
+  private readonly _normaliserVueEffect = effect(() => {
+    const multiMembres = this.afficherParMembre();
+    if (!multiMembres) {
+      this.etaitMonoMembre = true;
+      if (this.vue() !== 'FOYER') this.vue.set('FOYER');
+      return;
+    }
+    if (this.etaitMonoMembre) {
+      this.etaitMonoMembre = false;
+      if (this.vue() !== 'MEMBRE') this.vue.set('MEMBRE');
     }
   });
 

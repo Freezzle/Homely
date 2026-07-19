@@ -116,7 +116,7 @@ import { FR } from '../../../core/i18n/fr';
         </div>
 
         <!-- ② Graphique mixte foyer — pleine largeur ────────────────────────── -->
-        @if (vue() !== 'MEMBRE') {
+        @if (vueEffective() !== 'MEMBRE') {
         <p-card>
           <ng-template pTemplate="header">
             <div class="px-5 pt-5 pb-0 flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4">
@@ -145,7 +145,7 @@ import { FR } from '../../../core/i18n/fr';
         }
 
         <!-- ③ Graphiques par membre — 2 colonnes, toujours visibles ──────────── -->
-        @if (afficherParMembre() && vue() !== 'FOYER') {
+        @if (afficherParMembre() && vueEffective() !== 'FOYER') {
         <div>
           <div class="flex items-center gap-3 mb-4">
             <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
@@ -276,7 +276,7 @@ import { FR } from '../../../core/i18n/fr';
         }
 
         <!-- ④ Tableau mensuel détaillé ─────────────────────────────────────── -->
-        @if (vue() !== 'MEMBRE') {
+        @if (vueEffective() !== 'MEMBRE') {
         <p-card>
           <ng-template pTemplate="header">
             <div class="px-5 pt-5 pb-3 flex items-center gap-2">
@@ -397,11 +397,16 @@ export class DashboardAnnuelComponent implements OnInit {
   // ── Vue Foyer / Par membre / Les deux ────────────────────────────────────────
   vue = signal<'FOYER' | 'MEMBRE' | 'TOUT'>('MEMBRE');
   afficherParMembre = computed(() => this.membres().length > 1);
+  vueEffective = computed<'FOYER' | 'MEMBRE' | 'TOUT'>(() =>
+    this.afficherParMembre() ? this.vue() : 'FOYER'
+  );
   readonly vueOptions = [
     { label: this.t.projection.vueFoyer,     value: 'FOYER'  },
     { label: this.t.projection.vueParMembre, value: 'MEMBRE' },
     { label: this.t.projection.vueTout,      value: 'TOUT'   },
   ];
+
+  private etaitMonoMembre = false;
 
   anneeSelectionnee = new Date().getFullYear();
   annees: number[]  = Array.from({ length: 9 }, (_, i) => new Date().getFullYear() + i);
@@ -532,6 +537,19 @@ export class DashboardAnnuelComponent implements OnInit {
       this.anneeSelectionnee = sc.anneeDepart;
     }
     if (foyerId && sc) this.charger();
+  });
+
+  private readonly _normaliserVueEffect = effect(() => {
+    const multiMembres = this.afficherParMembre();
+    if (!multiMembres) {
+      this.etaitMonoMembre = true;
+      if (this.vue() !== 'FOYER') this.vue.set('FOYER');
+      return;
+    }
+    if (this.etaitMonoMembre) {
+      this.etaitMonoMembre = false;
+      if (this.vue() !== 'MEMBRE') this.vue.set('MEMBRE');
+    }
   });
 
   ngOnInit(): void {}

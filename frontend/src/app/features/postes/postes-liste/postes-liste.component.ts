@@ -662,15 +662,15 @@ export class PostesListeComponent implements OnInit {
     this.typeRepartitionValue() === 'CUSTOM' && this.membres().length > 1
   );
 
-  /** Vrai si le formulaire est valide, incluant la validation du pourcentage d'estimation */
-  isFormValid = computed(() => {
+  /** Vrai si le formulaire est valide, incluant la validation du pourcentage d'estimation. */
+  isFormValid(): boolean {
     const isBaseValid = this.form.valid;
     const nature = this.form.value.nature;
     const estimPct = this.form.value.estimPourcentage;
     // Si nature=ESTIMATION, estimPourcentage doit être non-null
     const isEstimationValid = nature === 'ESTIMATION' ? estimPct !== null && estimPct !== undefined && estimPct > 0 : true;
     return isBaseValid && isEstimationValid && (!this.estCustomMultiMembre() || this.sommeRepartition === 100);
-  });
+  }
 
   /** Effet : bascule Nature EFFECTIF→ESTIMATION pré-remplit 10%, ESTIMATION→EFFECTIF vide (null) */
   private readonly _initEstimPourcentageOnNatureChange = effect(() => {
