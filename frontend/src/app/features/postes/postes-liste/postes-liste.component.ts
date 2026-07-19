@@ -421,34 +421,34 @@ import { FR } from '../../../core/i18n/fr';
                                     [class.text-red-500]="sommeRepartition !== 100 && repartitionsArray.length > 0">
                   {{ sommeRepartition }}%
                 </span></label>
-                          <div class="flex items-center gap-2">
-                              <p-button [label]="t.poste.repartitionEquitable" [text]="true" size="small"
-                                        (click)="repartirEquitablement()"/>
-                          </div>
                       </div>
                       @if (sommeRepartition !== 100 && repartitionsArray.length > 0) {
                           <p-message severity="warn" [text]="t.commun.repartitionInvalide"/>
                       }
                       @if (repartitionsArray.length > 0) {
-                          <div class="grid grid-cols-[1fr_auto_auto] items-center gap-3 text-xs text-surface-400 font-medium px-0">
-                              <span>{{ t.referentiels.membre.nom }}</span>
-                              <span class="w-24 text-center">{{ t.poste.repartition }}</span>
-                              <span class="w-44">{{ t.poste.ventilation }}</span>
+                          <div class="w-full grid grid-cols-12 items-center gap-3 text-xs text-surface-400 font-medium px-0">
+                              <span class="col-span-4 truncate">{{ t.referentiels.membre.nom }}</span>
+                              <span class="col-span-3 text-center">{{ t.poste.repartition }}</span>
+                              <span class="col-span-5">{{ t.poste.ventilation }}</span>
                           </div>
                       }
                       <div formArrayName="repartitions" class="flex flex-col gap-2">
                           @for (ctrl of repartitionsArray.controls; track ctrl; let i = $index) {
-                              <div [formGroupName]="i" class="grid grid-cols-[1fr_auto_auto] items-center gap-3">
-                                  <span class="text-sm">{{ membres()[i]?.nom }}</span>
-                                  <p-inputnumber formControlName="quotePart" [min]="0" [max]="100"
-                                                 suffix="%" [minFractionDigits]="0" styleClass="w-24"
-                                                 (onInput)="onQuotePartChange(i)"></p-inputnumber>
-                                  <p-select appendTo="body" formControlName="compteId"
-                                            [options]="comptes()" optionLabel="libelle"
-                                            optionValue="id"
-                                            [placeholder]="t.poste.ventilation" styleClass="w-44"
-                                            [showClear]="true"
-                                            [disabled]="(ctrl.get('quotePart')?.value ?? 0) === 0">
+                              <div [formGroupName]="i" class="w-full grid grid-cols-12 items-center gap-3">
+                                  <span class="col-span-4 text-sm truncate">{{ membres()[i]?.nom }}</span>
+                                  <div class="col-span-3 min-w-[7.5rem]">
+                                      <p-inputnumber formControlName="quotePart" [min]="0" [max]="100"
+                                                     suffix="%" [minFractionDigits]="0" class="w-full"
+                                                     inputStyleClass="w-full"
+                                                     (onInput)="onQuotePartChange(i)"></p-inputnumber>
+                                  </div>
+                                  <div class="col-span-5 min-w-0">
+                                      <p-select appendTo="body" formControlName="compteId"
+                                                [options]="comptes()" optionLabel="libelle"
+                                                optionValue="id"
+                                                [placeholder]="t.poste.ventilation" styleClass="w-full"
+                                                [showClear]="true"
+                                                [disabled]="(ctrl.get('quotePart')?.value ?? 0) === 0">
                                       <ng-template pTemplate="selectedItem" let-compte>
                                           @if (compte) {
                                               <div class="flex items-center gap-1.5 flex-wrap">
@@ -475,7 +475,8 @@ import { FR } from '../../../core/i18n/fr';
                                               }
                                           </div>
                                       </ng-template>
-                                  </p-select>
+                                      </p-select>
+                                  </div>
                               </div>
                           }
                       </div>
@@ -486,13 +487,14 @@ import { FR } from '../../../core/i18n/fr';
                       <label class="text-sm font-medium">{{ t.poste.ventilation }}</label>
                       <div formArrayName="repartitions" class="flex flex-col gap-2">
                           @for (ctrl of repartitionsArray.controls; track ctrl; let i = $index) {
-                              <div [formGroupName]="i" class="flex items-center gap-3">
-                                  <span class="flex-1 text-sm">{{ membres()[i]?.nom }}</span>
-                                  <p-select appendTo="body" formControlName="compteId"
-                                            [options]="comptes()" optionLabel="libelle"
-                                            optionValue="id"
-                                            [placeholder]="t.poste.ventilation" styleClass="w-44"
-                                            [showClear]="true">
+                              <div [formGroupName]="i" class="w-full grid grid-cols-12 items-center gap-3">
+                                  <span class="col-span-5 text-sm truncate">{{ membres()[i]?.nom }}</span>
+                                  <div class="col-span-7 min-w-0">
+                                      <p-select appendTo="body" formControlName="compteId"
+                                                [options]="comptes()" optionLabel="libelle"
+                                                optionValue="id"
+                                                [placeholder]="t.poste.ventilation" styleClass="w-full"
+                                                [showClear]="true">
                                       <ng-template pTemplate="selectedItem" let-compte>
                                           @if (compte) {
                                               <div class="flex items-center gap-1.5 flex-wrap">
@@ -519,7 +521,8 @@ import { FR } from '../../../core/i18n/fr';
                                               }
                                           </div>
                                       </ng-template>
-                                  </p-select>
+                                      </p-select>
+                                  </div>
                               </div>
                           }
                       </div>
@@ -1081,16 +1084,6 @@ export class PostesListeComponent implements OnInit {
     if ((ctrl.get('quotePart')?.value ?? 0) === 0) {
       ctrl.get('compteId')?.setValue(null, { emitEvent: false });
     }
-    this.calculerSomme();
-  }
-
-  repartirEquitablement(): void {
-    const n = this.membres().length;
-    if (!n) return;
-    const part = Math.round(100 / n);
-    const reste = 100 - part * (n - 1);
-    this.repartitionsArray.controls.forEach((ctrl, i) =>
-      ctrl.get('quotePart')?.setValue(i === n - 1 ? reste : part));
     this.calculerSomme();
   }
 

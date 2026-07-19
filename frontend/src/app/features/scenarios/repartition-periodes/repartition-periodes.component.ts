@@ -130,8 +130,6 @@ import { FR } from '../../../core/i18n/fr';
                 {{ sommeParts }}%
               </span>
             </label>
-            <p-button [label]="t.poste.repartitionEquitable" [text]="true" size="small"
-                      (click)="repartirEquitablement()" />
           </div>
           @if (sommeParts !== 100) {
             <p-message severity="warn" [text]="t.commun.repartitionInvalide" />
@@ -233,15 +231,6 @@ export class RepartitionPeriodesComponent implements OnInit {
 
   calculerSomme(): void {
     this.sommeParts = this.partsArray.controls.reduce((s, c) => s + (c.get('quotePart')?.value ?? 0), 0);
-  }
-
-  repartirEquitablement(): void {
-    const n = this.membres().length;
-    if (!n) return;
-    const part = Math.round(100 / n);
-    const reste = 100 - part * (n - 1);
-    this.partsArray.controls.forEach((c, i) => c.get('quotePart')?.setValue(i === n - 1 ? reste : part));
-    this.calculerSomme();
   }
 
   enregistrer(): void {
