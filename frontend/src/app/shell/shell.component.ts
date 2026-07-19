@@ -16,7 +16,9 @@ import { ScenarioService } from '../core/services/scenario-poste.service';
     <div class="flex flex-col h-screen bg-surface-50 dark:bg-surface-950 mx-auto w-full md:max-w-2/3">
       <app-topbar class="sticky top-0 z-50" />
       <div class="flex flex-1 overflow-hidden">
-        <app-sidebar-menu class="hidden md:flex" />
+        @if (contexte.foyerId()) {
+          <app-sidebar-menu class="hidden md:flex" />
+        }
         <main class="flex-1 overflow-y-auto p-4 md:p-6">
           <router-outlet />
         </main>
@@ -25,7 +27,7 @@ import { ScenarioService } from '../core/services/scenario-poste.service';
   `,
 })
 export class ShellComponent implements OnInit, OnDestroy {
-  private contexte     = inject(ContexteService);
+  contexte             = inject(ContexteService);
   private foyerSvc     = inject(FoyerService);
   private membreSvc    = inject(MembreService);
   private scenarioSvc  = inject(ScenarioService);
@@ -66,6 +68,9 @@ export class ShellComponent implements OnInit, OnDestroy {
         this.chargerContexteFoyer(foyerId);
       }
     } else {
+      if (this.contexte.foyerId()) {
+        this.contexte.setFoyer(null);
+      }
       // Pas de foyerId dans l'URL → tenter auto-sélection si un seul foyer
       if (!this.contexte.foyerId()) {
         this.foyerSvc.lister().subscribe(foyers => {

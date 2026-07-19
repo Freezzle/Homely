@@ -33,13 +33,19 @@ export class ContexteService {
   private readonly _membres = signal<MembreDto[]>([]);
   readonly membres = this._membres.asReadonly();
 
+  // Version incrémentale pour notifier les composants shell/topbar d'un refresh.
+  private readonly _refreshVersion = signal<number>(0);
+  readonly refreshVersion = this._refreshVersion.asReadonly();
+
   // ── Thème dark/light ──────────────────────────────────────────────────────
   private readonly _dark = signal<boolean>(false);
   readonly isDark = this._dark.asReadonly();
 
   setFoyer(foyer: FoyerDto | null): void {
+    const foyerAvant = this._foyer();
     this._foyer.set(foyer);
-    if (!foyer) {
+    // En cas de changement de foyer (ou suppression), vider le sous-contexte lié.
+    if (!foyer || foyerAvant?.id !== foyer.id) {
       this._scenario.set(null);
       this._membres.set([]);
     }
@@ -51,6 +57,19 @@ export class ContexteService {
 
   setMembres(membres: MembreDto[]): void {
     this._membres.set(membres);
+  }
+
+  /** Force le rafraichissement des listes dépendantes (foyers/scenarios) dans le shell. */
+  notifierRefresh(): void {
+    this._refreshVersion.update(v => v + 1);
+  }
+
+  /** Réinitialise tout le contexte métier lors d'un changement de session. */
+  reset(): void {
+    this._foyer.set(null);
+    this._scenario.set(null);
+    this._membres.set([]);
+    this.notifierRefresh();
   }
 
   toggleDark(): void {

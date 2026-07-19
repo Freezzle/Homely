@@ -160,7 +160,14 @@ export class ScenariosListeComponent implements OnInit {
     if (!foyerId) return;
     this.chargement.set(true);
     this.scenarioSvc.lister(foyerId).subscribe({
-      next: s => { this.scenarios.set(s); this.chargement.set(false); },
+      next: s => {
+        this.scenarios.set(s);
+        const courant = this.contexte.scenarioCourant();
+        const reference = s.find(x => x.estReference) ?? s[0] ?? null;
+        const scenarioActif = courant ? (s.find(x => x.id === courant.id) ?? reference) : reference;
+        this.contexte.setScenario(scenarioActif);
+        this.chargement.set(false);
+      },
       error: () => this.chargement.set(false),
     });
   }
@@ -212,20 +219,25 @@ export class ScenariosListeComponent implements OnInit {
       ? this.scenarioSvc.modifier(foyerId, this.scenarioEnEdition.id, req)
       : this.scenarioSvc.creer(foyerId, req);
     obs.subscribe({
-      next: () => { this.toast.add({ severity: 'success', summary: FR.commun.succes }); this.dialogVisible = false; this.charger(); },
+      next: () => {
+        this.toast.add({ severity: 'success', summary: FR.commun.succes });
+        this.dialogVisible = false;
+        this.charger();
+        this.contexte.notifierRefresh();
+      },
       error: (e) => this.toast.add({ severity: 'error', summary: FR.commun.erreur, detail: e?.error?.message }),
     });
   }
 
   dupliquer(s: ScenarioDto): void {
     this.scenarioSvc.dupliquer(this.contexte.foyerId()!, s.id).subscribe({
-      next: () => { this.toast.add({ severity: 'success', summary: FR.commun.succes }); this.charger(); },
+      next: () => { this.toast.add({ severity: 'success', summary: FR.commun.succes }); this.charger(); this.contexte.notifierRefresh(); },
     });
   }
 
   definirReference(s: ScenarioDto): void {
     this.scenarioSvc.definirReference(this.contexte.foyerId()!, s.id).subscribe({
-      next: () => { this.toast.add({ severity: 'success', summary: FR.commun.succes }); this.charger(); },
+      next: () => { this.toast.add({ severity: 'success', summary: FR.commun.succes }); this.charger(); this.contexte.notifierRefresh(); },
     });
   }
 
@@ -233,7 +245,7 @@ export class ScenariosListeComponent implements OnInit {
     this.confirm.confirm({
       message: FR.commun.confirmerSuppression,
       accept: () => this.scenarioSvc.supprimer(this.contexte.foyerId()!, s.id).subscribe({
-        next: () => { this.toast.add({ severity: 'success', summary: FR.commun.succes }); this.charger(); },
+        next: () => { this.toast.add({ severity: 'success', summary: FR.commun.succes }); this.charger(); this.contexte.notifierRefresh(); },
       }),
     });
   }

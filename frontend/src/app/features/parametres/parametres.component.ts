@@ -91,6 +91,7 @@ export class ParametresComponent implements OnInit {
     this.foyerSvc.modifier(foyerId, { nom: v.nom!, deviseBase: v.deviseBase! }).subscribe({
       next: foyer => {
         this.contexte.setFoyer(foyer);
+        this.contexte.notifierRefresh();
         this.sauvegarde.set(false);
       },
       error: () => this.sauvegarde.set(false),
@@ -105,6 +106,7 @@ export class ParametresComponent implements OnInit {
         this.foyerSvc.supprimer(foyerId).subscribe({
           next: () => {
             this.contexte.setFoyer(null);
+            this.contexte.notifierRefresh();
             this.router.navigate(['/foyers']);
           },
           error: () => this.sauvegarde.set(false),

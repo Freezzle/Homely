@@ -41,99 +41,105 @@ import { FR } from '../../../core/i18n/fr';
       <div class="flex flex-col gap-4">
 
           <!-- ── En-tête ─────────────────────────────────────────── -->
-          <div class="flex items-center gap-3 flex-wrap">
+          <div class="flex flex-col gap-3">
 
-              <!-- Titre + compteur -->
-              <div class="flex items-baseline gap-2 flex-1 min-w-0">
-                  <h1 class="text-2xl font-bold leading-tight">
-                      {{ type() === 'REVENU' ? t.nav.revenus : type() === 'CHARGE' ? t.nav.charges : t.nav.reserves }}
-                  </h1>
-                  @if (!chargement()) {
-                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
-                         bg-surface-100 dark:bg-surface-800 text-surface-500">
-              {{ postesVisibles().length }}
-            </span>
-                  }
+              <!-- Ligne 1 : titre à gauche, créer à droite -->
+              <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                  <div class="flex items-baseline gap-2 min-w-0">
+                      <h1 class="text-2xl font-bold leading-tight truncate">
+                          {{ type() === 'REVENU' ? t.nav.revenus : type() === 'CHARGE' ? t.nav.charges : t.nav.reserves }}
+                      </h1>
+                  </div>
+
+                  <div class="flex justify-end">
+                      @if (contexte.estEditor()) {
+                          <p-button icon="pi pi-plus" [label]="t.commun.creer" (click)="ouvrirCreation()"
+                                    styleClass="shrink-0"/>
+                      }
+                  </div>
               </div>
 
-              <!-- Tri -->
-              <p-select appendTo="body"
-                        [ngModel]="triActuel()"
-                        (onChange)="triActuel.set($event.value)"
-                        [options]="triOptions"
-                        optionLabel="label" optionValue="value"
-                        styleClass="min-w-52 text-sm shrink-0"/>
+              <!-- Ligne 2 : tri à gauche, menu à droite -->
+              <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                  <div class="flex justify-start">
+                      <p-select appendTo="body"
+                                [ngModel]="triActuel()"
+                                (onChange)="triActuel.set($event.value)"
+                                [options]="triOptions"
+                                optionLabel="label" optionValue="value"
+                                styleClass="min-w-52 text-sm"/>
+                  </div>
 
-              <!-- Masquer inactifs -->
-              <div class="flex items-center gap-2 text-sm shrink-0">
-                  <p-checkbox inputId="cacher-inactifs" [binary]="true"
-                              [ngModel]="cacherInactifs()"
-                              (onChange)="cacherInactifs.set($event.checked)"/>
-                  <label for="cacher-inactifs"
-                         class="cursor-pointer text-surface-600 dark:text-surface-400 select-none">
-                      {{ t.poste.cacherInactifs }}
-                  </label>
+                  <div class="flex justify-end">
+                      <p-button icon="pi pi-sliders-h"
+                                [ariaLabel]="t.commun.actions"
+                                severity="secondary"
+                                [text]="true"
+                                (click)="menuVisibilite.toggle($event)"/>
+                      <p-menu #menuVisibilite [popup]="true" [model]="visibiliteMenuItems" appendTo="body"
+                              styleClass="w-72">
+                          <ng-template pTemplate="item" let-item>
+                              <div class="flex items-center gap-3 px-2 py-1.5" (click)="$event.stopPropagation()">
+                                  <p-checkbox [binary]="true"
+                                              [inputId]="item.data"
+                                              [ngModel]="item.data === 'cacher-inactifs' ? cacherInactifs() : cacherFuturs()"
+                                              (onChange)="item.data === 'cacher-inactifs' ? cacherInactifs.set($event.checked) : cacherFuturs.set($event.checked)"
+                                              (click)="$event.stopPropagation()"/>
+                                  <label class="cursor-pointer text-sm text-surface-600 dark:text-surface-300 select-none"
+                                         [for]="item.data">
+                                      {{ item.label }}
+                                  </label>
+                              </div>
+                          </ng-template>
+                      </p-menu>
+                  </div>
               </div>
 
-              <!-- Masquer futurs -->
-              <div class="flex items-center gap-2 text-sm shrink-0">
-                  <p-checkbox inputId="cacher-futurs" [binary]="true"
-                              [ngModel]="cacherFuturs()"
-                              (onChange)="cacherFuturs.set($event.checked)"/>
-                  <label for="cacher-futurs"
-                         class="cursor-pointer text-surface-600 dark:text-surface-400 select-none">
-                      {{ t.poste.cacherFuturs }}
-                  </label>
+              <!-- Ligne 3 : les 3 filtres -->
+              <div class="grid gap-3 lg:grid-cols-3">
+                  <!-- Filtre catégories -->
+                  <p-multiselect appendTo="body"
+                                 [ngModel]="filtreCategorieIds()"
+                                 (ngModelChange)="filtreCategorieIds.set($event)"
+                                 [options]="categories()"
+                                 optionLabel="libelle" optionValue="id"
+                                 [placeholder]="t.poste.filtreCategories"
+                                 [showClear]="true"
+                                 styleClass="w-full text-sm"/>
+
+                  <!-- Filtre comptes -->
+                  <p-multiselect appendTo="body"
+                                 [ngModel]="filtreCompteIds()"
+                                 (ngModelChange)="filtreCompteIds.set($event)"
+                                 [options]="comptes()"
+                                 optionLabel="libelle" optionValue="id"
+                                 [placeholder]="t.poste.filtreComptes"
+                                 [showClear]="true"
+                                 styleClass="w-full text-sm">
+                      <ng-template pTemplate="item" let-compte>
+                          <div class="flex items-center gap-2 flex-wrap">
+                              <span>{{ compte.libelle }}</span>
+                              @for (m of membresForCompte(compte); track m.id) {
+                                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium leading-none"
+                                        [style.background-color]="normaliserCouleur(m.couleur)"
+                                        [style.color]="couleurTexteContraste(normaliserCouleur(m.couleur))">
+                    {{ m.nom }}
+                  </span>
+                              }
+                          </div>
+                      </ng-template>
+                  </p-multiselect>
+
+                  <!-- Filtre membres -->
+                  <p-multiselect appendTo="body"
+                                 [ngModel]="filtreMembreIds()"
+                                 (ngModelChange)="filtreMembreIds.set($event)"
+                                 [options]="membres()"
+                                 optionLabel="nom" optionValue="id"
+                                 [placeholder]="t.poste.filtreMembres"
+                                 [showClear]="true"
+                                 styleClass="w-full text-sm"/>
               </div>
-
-              <!-- Filtre catégories -->
-              <p-multiselect appendTo="body"
-                             [ngModel]="filtreCategorieIds()"
-                             (ngModelChange)="filtreCategorieIds.set($event)"
-                             [options]="categories()"
-                             optionLabel="libelle" optionValue="id"
-                             [placeholder]="t.poste.filtreCategories"
-                             [showClear]="true"
-                             styleClass="min-w-44 text-sm shrink-0"/>
-
-              <!-- Filtre comptes -->
-              <p-multiselect appendTo="body"
-                             [ngModel]="filtreCompteIds()"
-                             (ngModelChange)="filtreCompteIds.set($event)"
-                             [options]="comptes()"
-                             optionLabel="libelle" optionValue="id"
-                             [placeholder]="t.poste.filtreComptes"
-                             [showClear]="true"
-                             styleClass="min-w-44 text-sm shrink-0">
-                  <ng-template pTemplate="item" let-compte>
-                      <div class="flex items-center gap-2 flex-wrap">
-                          <span>{{ compte.libelle }}</span>
-                          @for (m of membresForCompte(compte); track m.id) {
-                              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium leading-none"
-                                    [style.background-color]="normaliserCouleur(m.couleur)"
-                                    [style.color]="couleurTexteContraste(normaliserCouleur(m.couleur))">
-                  {{ m.nom }}
-                </span>
-                          }
-                      </div>
-                  </ng-template>
-              </p-multiselect>
-
-              <!-- Filtre membres -->
-              <p-multiselect appendTo="body"
-                             [ngModel]="filtreMembreIds()"
-                             (ngModelChange)="filtreMembreIds.set($event)"
-                             [options]="membres()"
-                             optionLabel="nom" optionValue="id"
-                             [placeholder]="t.poste.filtreMembres"
-                             [showClear]="true"
-                             styleClass="min-w-44 text-sm shrink-0"/>
-
-              <!-- Créer -->
-              @if (contexte.estEditor()) {
-                  <p-button icon="pi pi-plus" [label]="t.commun.creer" (click)="ouvrirCreation()"
-                            styleClass="shrink-0"/>
-              }
           </div>
 
           <!-- ── État chargement (skeletons) ──────────────────────── -->
@@ -608,6 +614,11 @@ export class PostesListeComponent implements OnInit {
     { label: FR.poste.triOptions.DATE,        value: 'DATE' as const },
     { label: FR.poste.triOptions.CATEGORIE,   value: 'CATEGORIE' as const },
     { label: FR.poste.triOptions.DESCRIPTION, value: 'DESCRIPTION' as const },
+  ];
+
+  visibiliteMenuItems: MenuItem[] = [
+    { label: this.t.poste.cacherInactifs, data: 'cacher-inactifs' },
+    { label: this.t.poste.cacherFuturs, data: 'cacher-futurs' },
   ];
 
   form = this.fb.group({

@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, effect, untracked } from '@angular/core';
+import { Component, inject, signal, OnInit, effect, untracked, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -23,18 +23,20 @@ import { FR } from '../../core/i18n/fr';
       <!-- Logo -->
       <span class="text-primary font-bold text-lg md:text-xl mr-1 md:mr-2">🏠 Homely</span>
 
-      <!-- Sélecteur foyer -->
-      <p-select appendTo="body"
-        [options]="foyers()"
-        [(ngModel)]="foyerSelectionne"
-        optionLabel="nom"
-        [placeholder]="t.foyer.choisir"
-        styleClass="min-w-40 md:min-w-44"
-        (onChange)="onFoyerChange($event.value)"
-      />
+      <!-- Sélecteur foyer (masqué si aucun foyer) -->
+      @if (afficherSelecteurs()) {
+        <p-select appendTo="body"
+          [options]="foyers()"
+          [(ngModel)]="foyerSelectionne"
+          optionLabel="nom"
+          [placeholder]="t.foyer.choisir"
+          styleClass="min-w-40 md:min-w-44"
+          (onChange)="onFoyerChange($event.value)"
+        />
+      }
 
       <!-- Sélecteur scénario -->
-      @if (contexte.foyerCourant()) {
+      @if (afficherSelecteurs() && contexte.foyerCourant() && scenarios().length > 0) {
         <p-select appendTo="body"
           [options]="scenarios()"
           [(ngModel)]="scenarioSelectionne"
@@ -88,6 +90,7 @@ export class TopbarComponent implements OnInit {
 
   foyers = signal<FoyerDto[]>([]);
   scenarios = signal<ScenarioDto[]>([]);
+  readonly afficherSelecteurs = computed(() => this.foyers().length > 0);
   foyerSelectionne: FoyerDto | null = null;
   scenarioSelectionne: ScenarioDto | null = null;
 
@@ -112,10 +115,31 @@ export class TopbarComponent implements OnInit {
   private readonly _syncScenario = effect(() => {
     this.scenarioSelectionne = this.contexte.scenarioCourant();
   });
+  private readonly _refreshLists = effect(() => {
+    // Dépendance explicite au signal de refresh global du contexte.
+    this.contexte.refreshVersion();
+    this.chargerFoyers();
+    // Important: un refresh peut venir d'une mutation de scénario sans changement de foyer.
+    const foyer = untracked(() => this.contexte.foyerCourant());
+    if (foyer) {
+      this.chargerScenarios(foyer.id);
+    }
+  });
 
   ngOnInit(): void {
+    // Chargement initial piloté par _refreshLists.
+  }
+
+  private chargerFoyers(): void {
     this.foyerSvc.lister().subscribe(f => {
       this.foyers.set(f);
+      if (f.length === 0) {
+        this.contexte.setFoyer(null);
+        this.scenarios.set([]);
+        this.foyerSelectionne = null;
+        this.scenarioSelectionne = null;
+        return;
+      }
       // Resynchroniser la sélection affichée une fois la liste chargée
       const foyer = this.contexte.foyerCourant();
       if (foyer) {
@@ -128,13 +152,21 @@ export class TopbarComponent implements OnInit {
     this.scenarioSvc.lister(foyerId).subscribe(scenarios => {
       this.scenarios.set(scenarios);
       const currentSc = this.contexte.scenarioCourant();
-      this.scenarioSelectionne = currentSc
-        ? (scenarios.find(s => s.id === currentSc.id) ?? scenarios[0] ?? null)
-        : (scenarios[0] ?? null);
+      const reference = scenarios.find(s => s.estReference) ?? scenarios[0] ?? null;
+      const scenarioActif = currentSc
+        ? (scenarios.find(s => s.id === currentSc.id) ?? reference)
+        : reference;
+      this.scenarioSelectionne = scenarioActif;
+      this.contexte.setScenario(scenarioActif);
     });
   }
 
-  onFoyerChange(foyer: FoyerDto): void {
+  onFoyerChange(foyer: FoyerDto | null): void {
+    if (!foyer) {
+      this.contexte.setFoyer(null);
+      this.router.navigate(['/foyers']);
+      return;
+    }
     this.contexte.setFoyer(foyer);
     // chargerScenarios est déclenché automatiquement par l'effect _syncFoyer
     this.router.navigate(['/f', foyer.id, 'dashboard-annuel']);

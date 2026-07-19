@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap, catchError, throwError, finalize, shareReplay } from 'rxjs';
 import { LoginRequest, RegisterRequest, TokensResponse, MoiResponse } from '../models/api.models';
+import { ContexteService } from './contexte.service';
 
 /**
  * T9.1 — Service d'authentification.
@@ -20,9 +21,11 @@ export class AuthService {
   /** Verrou anti-double-refresh : toutes les requêtes concurrentes partagent le même appel. */
   private _refreshObservable: Observable<TokensResponse> | null = null;
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(private http: HttpClient, private router: Router, private contexte: ContexteService) {}
 
   login(req: LoginRequest) {
+    // Evite d'afficher l'ancien contexte pendant le switch de compte.
+    this.contexte.reset();
     return this.http.post<TokensResponse>('/api/auth/login', req).pipe(
       tap(res => {
         this._token.set(res.accessToken);
@@ -78,6 +81,7 @@ export class AuthService {
     }
     this._token.set(null);
     localStorage.removeItem('__rt');
+    this.contexte.reset();
     this.router.navigate(['/login']);
   }
 }

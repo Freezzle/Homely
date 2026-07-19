@@ -15,7 +15,7 @@ import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 
 // App
-import { FoyerService } from '../../../core/services/referentiel.service';
+import { FoyerService, MembreService } from '../../../core/services/referentiel.service';
 import { ContexteService } from '../../../core/services/contexte.service';
 import { FR } from '../../../core/i18n/fr';
 import { format } from '../../../core/i18n/format';
@@ -422,6 +422,7 @@ interface ScenarioLocal {
 export class FoyerCreationComponent implements OnInit {
   readonly t = FR;
   private foyerSvc = inject(FoyerService);
+  private membreSvc = inject(MembreService);
   private contexte = inject(ContexteService);
   private router = inject(Router);
   private toast = inject(MessageService);
@@ -662,7 +663,17 @@ export class FoyerCreationComponent implements OnInit {
       next: res => {
         this.enCours.set(false);
         this.contexte.setFoyer(res.foyer);
-        this.router.navigate(['/f', res.foyer.id, 'dashboard-mensuel']);
+        this.membreSvc.lister(res.foyer.id).subscribe({
+          next: membres => {
+            this.contexte.setMembres(membres);
+            this.contexte.notifierRefresh();
+            this.router.navigate(['/f', res.foyer.id, 'dashboard-mensuel']);
+          },
+          error: () => {
+            this.contexte.notifierRefresh();
+            this.router.navigate(['/f', res.foyer.id, 'dashboard-mensuel']);
+          },
+        });
       },
       error: () => {
         this.enCours.set(false);

@@ -173,13 +173,13 @@ export const FR = {
       'Tous les 12 mois',     // 12
     ],
     triOptions: {
-      DATE:        'Tri par date (début / fin)',
-      CATEGORIE:   'Tri par catégorie › description › montant',
-      DESCRIPTION: 'Tri par description › montant',
+      DATE:        'Tri par date',
+      CATEGORIE:   'Tri par catégorie',
+      DESCRIPTION: 'Tri par description',
     },
-    filtreComptes: 'Filtrer par compte',
-    filtreMembres: 'Filtrer par membre',
-    filtreCategories: 'Filtrer par catégorie',
+    filtreComptes: 'Filtre par compte',
+    filtreMembres: 'Filtre par membre',
+    filtreCategories: 'Filtre par catégorie',
     oneShot: 'Ponctuel',
   },
   // ── Projection ───────────────────────────────────────────
@@ -209,6 +209,7 @@ export const FR = {
     actions: 'Actions',
     de: 'de',
     creer: 'Créer',
+    filtres: 'Filtres',
     modifier: 'Modifier',
     supprimer: 'Supprimer',
     annuler: 'Annuler',
