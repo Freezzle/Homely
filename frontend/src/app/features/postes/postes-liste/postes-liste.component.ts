@@ -78,7 +78,7 @@ import { FR } from '../../../core/i18n/fr';
                                 (click)="menuVisibilite.toggle($event)"/>
                       <p-menu #menuVisibilite [popup]="true" [model]="visibiliteMenuItems" appendTo="body"
                               styleClass="w-72">
-                          <ng-template pTemplate="item" let-item>
+                          <ng-template #item let-item>
                               <div class="flex items-center gap-3 px-2 py-1.5" (click)="$event.stopPropagation()">
                                   <p-checkbox [binary]="true"
                                               [inputId]="item.data"
@@ -116,7 +116,7 @@ import { FR } from '../../../core/i18n/fr';
                                  [placeholder]="t.poste.filtreComptes"
                                  [showClear]="true"
                                  styleClass="w-full text-sm">
-                      <ng-template pTemplate="item" let-compte>
+                      <ng-template #item let-compte>
                           <div class="flex items-center gap-2 flex-wrap">
                               <span>{{ compte.libelle }}</span>
                               @for (m of membresForCompte(compte); track m.id) {
@@ -423,7 +423,7 @@ import { FR } from '../../../core/i18n/fr';
                 </span></label>
                       </div>
                       @if (sommeRepartition !== 100 && repartitionsArray.length > 0) {
-                          <p-message severity="warn" [text]="t.commun.repartitionInvalide"/>
+                          <p-message severity="warn">{{ t.commun.repartitionInvalide }}</p-message>
                       }
                       @if (repartitionsArray.length > 0) {
                           <div class="w-full grid grid-cols-12 items-center gap-3 text-xs text-surface-400 font-medium px-0">
@@ -449,7 +449,7 @@ import { FR } from '../../../core/i18n/fr';
                                                 [placeholder]="t.poste.ventilation" styleClass="w-full"
                                                 [showClear]="true"
                                                 [disabled]="(ctrl.get('quotePart')?.value ?? 0) === 0">
-                                      <ng-template pTemplate="selectedItem" let-compte>
+                                      <ng-template #selectedItem let-compte>
                                           @if (compte) {
                                               <div class="flex items-center gap-1.5 flex-wrap">
                                                   <span>{{ compte.libelle }}</span>
@@ -463,7 +463,7 @@ import { FR } from '../../../core/i18n/fr';
                                               </div>
                                           }
                                       </ng-template>
-                                      <ng-template pTemplate="item" let-compte>
+                                      <ng-template #item let-compte>
                                           <div class="flex items-center gap-1.5 flex-wrap">
                                               <span>{{ compte.libelle }}</span>
                                               @for (m of membresForCompte(compte); track m.id) {
@@ -495,7 +495,7 @@ import { FR } from '../../../core/i18n/fr';
                                                 optionValue="id"
                                                 [placeholder]="t.poste.ventilation" styleClass="w-full"
                                                 [showClear]="true">
-                                      <ng-template pTemplate="selectedItem" let-compte>
+                                      <ng-template #selectedItem let-compte>
                                           @if (compte) {
                                               <div class="flex items-center gap-1.5 flex-wrap">
                                                   <span>{{ compte.libelle }}</span>
@@ -509,7 +509,7 @@ import { FR } from '../../../core/i18n/fr';
                                               </div>
                                           }
                                       </ng-template>
-                                      <ng-template pTemplate="item" let-compte>
+                                      <ng-template #item let-compte>
                                           <div class="flex items-center gap-1.5 flex-wrap">
                                               <span>{{ compte.libelle }}</span>
                                               @for (m of membresForCompte(compte); track m.id) {
@@ -529,7 +529,7 @@ import { FR } from '../../../core/i18n/fr';
                   </div>
               }
           </form>
-          <ng-template pTemplate="footer">
+          <ng-template #footer>
               <p-button [label]="t.commun.annuler" severity="secondary" (click)="fermerDialogPoste()"/>
               <p-button [label]="t.commun.enregistrer" (click)="enregistrer()"
                         [disabled]="!isFormValid()"/>
@@ -540,13 +540,13 @@ import { FR } from '../../../core/i18n/fr';
       <p-dialog [(visible)]="apercuVisible" [header]="t.poste.apercu" [modal]="true" styleClass="w-96">
           @if (apercuData()) {
               <p-table [value]="apercuData()!.contributions" styleClass="p-datatable-sm">
-                  <ng-template pTemplate="header">
+                  <ng-template #header>
                       <tr>
                           <th>{{ t.projection.mois }}</th>
                           <th class="text-right">Contribution</th>
                       </tr>
                   </ng-template>
-                  <ng-template pTemplate="body" let-c>
+                  <ng-template #body let-c>
                       <tr>
                           <td>{{ t.mois[c.mois - 1] }}</td>
                           <td class="text-right">{{ c.contribution | montant }}</td>

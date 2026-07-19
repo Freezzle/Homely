@@ -17,7 +17,7 @@ import { FR } from '../../../core/i18n/fr';
   template: `
     <div class="min-h-screen flex items-center justify-center bg-surface-50 dark:bg-surface-950">
       <p-card styleClass="w-full max-w-sm shadow-xl">
-        <ng-template pTemplate="header">
+        <ng-template #header>
           <div class="text-center pt-6 pb-2">
             <span class="text-4xl">🏠</span>
             <h1 class="text-2xl font-bold text-primary mt-2">Homely</h1>
@@ -37,7 +37,7 @@ import { FR } from '../../../core/i18n/fr';
             <input pInputText formControlName="password" type="password" class="w-full" />
           </div>
           @if (erreur()) {
-            <p-message severity="error" [text]="erreur()!" />
+            <p-message severity="error">{{ erreur() }}</p-message>
           }
           <p-button type="submit" [label]="t.auth.registerBtn" styleClass="w-full"
                     [loading]="chargement()" [disabled]="form.invalid" />

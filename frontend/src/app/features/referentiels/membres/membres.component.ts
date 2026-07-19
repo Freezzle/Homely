@@ -36,16 +36,16 @@ import { FR } from '../../../core/i18n/fr';
       </div>
 
       <p-table [value]="membres()" styleClass="p-datatable-sm p-datatable-striped" [loading]="chargement()">
-        <ng-template pTemplate="header">
+        <ng-template #header>
           <tr>
             <th>{{ t.referentiels.membre.couleur }}</th>
-            <th pSortableColumn="nom">{{ t.referentiels.membre.nom }} <p-sortIcon field="nom" /></th>
+            <th pSortableColumn="nom">{{ t.referentiels.membre.nom }} <p-sort-icon field="nom" /></th>
             <th class="text-right">{{ t.referentiels.membre.ordre }}</th>
             <th class="text-center">{{ t.referentiels.membre.actif }}</th>
             <th></th>
           </tr>
         </ng-template>
-        <ng-template pTemplate="body" let-m>
+        <ng-template #body let-m>
           <tr>
             <td>
               <span class="inline-block w-5 h-5 rounded-full border border-surface-300"
@@ -66,7 +66,7 @@ import { FR } from '../../../core/i18n/fr';
             </td>
           </tr>
         </ng-template>
-        <ng-template pTemplate="emptymessage">
+        <ng-template #emptymessage>
           <tr><td colspan="5" class="text-center py-8 text-surface-400">{{ t.commun.aucunResultat }}</td></tr>
         </ng-template>
       </p-table>
@@ -88,7 +88,7 @@ import { FR } from '../../../core/i18n/fr';
           <p-inputnumber formControlName="ordre" [min]="1" [max]="99" class="w-full" />
         </div>
       </form>
-      <ng-template pTemplate="footer">
+      <ng-template #footer>
         <p-button [label]="t.commun.annuler" severity="secondary" (click)="dialogVisible = false" />
         <p-button [label]="t.commun.enregistrer" (click)="enregistrer()" [disabled]="form.invalid" />
       </ng-template>

@@ -49,8 +49,8 @@ import { FR } from '../../../core/i18n/fr';
 
         <!-- Tableau des périodes existantes -->
         @if (periodes().length > 0) {
-          <p-table [value]="periodes()" styleClass="p-datatable-sm p-datatable-striped">
-            <ng-template pTemplate="header">
+          <p-table [value]="periodes()" class="p-datatable-sm p-datatable-striped">
+            <ng-template #header>
               <tr>
                 <th>{{ t.scenario.debutPeriode }}</th>
                 <th>{{ t.scenario.finPeriode }}</th>
@@ -58,7 +58,7 @@ import { FR } from '../../../core/i18n/fr';
                 <th></th>
               </tr>
             </ng-template>
-            <ng-template pTemplate="body" let-p>
+            <ng-template #body let-p>
               <tr>
                 <td>{{ p.debut | date:'dd.MM.yyyy' }}</td>
                 <td>
@@ -132,7 +132,7 @@ import { FR } from '../../../core/i18n/fr';
             </label>
           </div>
           @if (sommeParts !== 100) {
-            <p-message severity="warn" [text]="t.commun.repartitionInvalide" />
+            <p-message severity="warn">{{ t.commun.repartitionInvalide }}</p-message>
           }
           <div formArrayName="parts" class="flex flex-col gap-2">
             @for (ctrl of partsArray.controls; track ctrl; let i = $index) {
@@ -146,7 +146,7 @@ import { FR } from '../../../core/i18n/fr';
           </div>
         </div>
       </form>
-      <ng-template pTemplate="footer">
+      <ng-template #footer>
         <p-button [label]="t.commun.annuler" severity="secondary" (click)="formVisible = false" />
         <p-button [label]="t.commun.enregistrer" (click)="enregistrer()"
                   [disabled]="form.invalid || sommeParts !== 100" />

@@ -55,27 +55,27 @@ import { FR } from '../../../core/i18n/fr';
       } @else if (comparaison()) {
         <!-- Graphique trésorerie comparée -->
         <p-card>
-          <ng-template pTemplate="header">
+          <ng-template #header>
             <div class="px-4 pt-4 font-semibold">{{ t.comparaison.tresorerie }}</div>
           </ng-template>
-          <p-chart type="line" [data]="tresoChartData()" [options]="lineOptions" styleClass="w-full" style="height:320px" />
+          <p-chart type="line" [data]="$any(tresoChartData())" [options]="lineOptions" styleClass="w-full" style="height:320px" />
         </p-card>
 
         <!-- Graphique solde disponible comparé -->
         <p-card>
-          <ng-template pTemplate="header">
+          <ng-template #header>
             <div class="px-4 pt-4 font-semibold">{{ t.comparaison.solde }}</div>
           </ng-template>
-          <p-chart type="bar" [data]="soldeChartData()" [options]="barOptions" styleClass="w-full" style="height:320px" />
+          <p-chart type="bar" [data]="$any(soldeChartData())" [options]="barOptions" styleClass="w-full" style="height:320px" />
         </p-card>
 
         <!-- Tableau des écarts -->
         <p-card>
-          <ng-template pTemplate="header">
+          <ng-template #header>
             <div class="px-4 pt-4 font-semibold">{{ t.comparaison.ecart }}</div>
           </ng-template>
           <p-table [value]="comparaison()!.series" styleClass="p-datatable-sm p-datatable-striped" scrollable>
-            <ng-template pTemplate="header">
+            <ng-template #header>
               <tr>
                 <th>{{ t.projection.annee }}</th>
                 @for (nom of comparaison()!.nomScenarios; track nom) {
@@ -84,7 +84,7 @@ import { FR } from '../../../core/i18n/fr';
                 <th class="text-right text-xs">Écart (max-min)</th>
               </tr>
             </ng-template>
-            <ng-template pTemplate="body" let-row>
+            <ng-template #body let-row>
               <tr>
                 <td class="font-medium">{{ row.annee }}</td>
                 @for (id of comparaison()!.scenarioIds; track id) {

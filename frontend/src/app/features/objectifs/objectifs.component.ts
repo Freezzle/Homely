@@ -133,7 +133,7 @@ import { FR } from '../../core/i18n/fr';
                     [showClear]="true" styleClass="w-full" (onChange)="onActifChange($event)" />
         </div>
       </form>
-      <ng-template pTemplate="footer">
+      <ng-template #footer>
         <p-button [label]="t.commun.annuler" severity="secondary" (click)="dialogVisible = false" />
         <p-button [label]="t.commun.enregistrer" (click)="enregistrer()" [disabled]="form.invalid" />
       </ng-template>

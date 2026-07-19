@@ -34,15 +34,15 @@ import { FR } from '../../../core/i18n/fr';
       </div>
 
       <p-table [value]="categories()" styleClass="p-datatable-sm p-datatable-striped" [loading]="chargement()">
-        <ng-template pTemplate="header">
+        <ng-template #header>
           <tr>
-            <th pSortableColumn="libelle">{{ t.referentiels.categorie.libelle }} <p-sortIcon field="libelle" /></th>
+            <th pSortableColumn="libelle">{{ t.referentiels.categorie.libelle }} <p-sort-icon field="libelle" /></th>
             <th>{{ t.referentiels.categorie.typePoste }}</th>
             <th class="text-right">{{ t.referentiels.categorie.ordre }}</th>
             <th></th>
           </tr>
         </ng-template>
-        <ng-template pTemplate="body" let-c>
+        <ng-template #body let-c>
           <tr>
             <td class="font-medium">{{ c.libelle }}</td>
             <td>
@@ -59,7 +59,7 @@ import { FR } from '../../../core/i18n/fr';
             </td>
           </tr>
         </ng-template>
-        <ng-template pTemplate="emptymessage">
+        <ng-template #emptymessage>
           <tr><td colspan="4" class="text-center py-8 text-surface-400">{{ t.commun.aucunResultat }}</td></tr>
         </ng-template>
       </p-table>
@@ -84,7 +84,7 @@ import { FR } from '../../../core/i18n/fr';
           </div>
         </div>
       </form>
-      <ng-template pTemplate="footer">
+      <ng-template #footer>
         <p-button [label]="t.commun.annuler" severity="secondary" (click)="dialogVisible = false" />
         <p-button [label]="t.commun.enregistrer" (click)="enregistrer()" [disabled]="form.invalid" />
       </ng-template>
@@ -114,7 +114,7 @@ import { FR } from '../../../core/i18n/fr';
           </div>
         </div>
       }
-      <ng-template pTemplate="footer">
+      <ng-template #footer>
         <p-button [label]="t.commun.annuler" severity="secondary" (click)="suppressionDialogVisible = false" />
         <p-button [label]="t.commun.supprimer" severity="danger" [loading]="suppressionEnCours()" (click)="confirmerSuppression()" />
       </ng-template>

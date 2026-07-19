@@ -37,14 +37,14 @@ import { FR } from '../../../core/i18n/fr';
       </div>
 
       <p-table [value]="taux()" styleClass="p-datatable-sm p-datatable-striped" [loading]="chargement()">
-        <ng-template pTemplate="header">
+        <ng-template #header>
           <tr>
             <th>{{ t.referentiels.taux.devise }}</th>
             <th class="text-right">{{ t.referentiels.taux.tauxVersBase }}</th>
             <th></th>
           </tr>
         </ng-template>
-        <ng-template pTemplate="body" let-tx>
+        <ng-template #body let-tx>
           <tr>
             <td class="font-medium">{{ tx.devise }}</td>
             <td class="text-right">{{ tx.tauxVersBase }}</td>
@@ -58,7 +58,7 @@ import { FR } from '../../../core/i18n/fr';
             </td>
           </tr>
         </ng-template>
-        <ng-template pTemplate="emptymessage">
+        <ng-template #emptymessage>
           <tr><td colspan="3" class="text-center py-8 text-surface-400">{{ t.commun.aucunResultat }}</td></tr>
         </ng-template>
       </p-table>
@@ -79,7 +79,7 @@ import { FR } from '../../../core/i18n/fr';
           <small class="text-surface-400">1 {{ (form.value.devise || '?') | uppercase }} = valeur {{ contexte.deviseBase() }}</small>
         </div>
       </form>
-      <ng-template pTemplate="footer">
+      <ng-template #footer>
         <p-button [label]="t.commun.annuler" severity="secondary" (click)="dialogVisible = false" />
         <p-button [label]="t.commun.enregistrer" (click)="enregistrer()" [disabled]="form.invalid" />
       </ng-template>

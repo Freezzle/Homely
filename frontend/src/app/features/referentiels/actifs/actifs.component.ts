@@ -38,9 +38,9 @@ import { FR } from '../../../core/i18n/fr';
       </div>
 
       <p-table [value]="actifs()" styleClass="p-datatable-sm p-datatable-striped" [loading]="chargement()">
-        <ng-template pTemplate="header">
+        <ng-template #header>
           <tr>
-            <th pSortableColumn="libelle">{{ t.referentiels.actif.libelle }} <p-sortIcon field="libelle" /></th>
+            <th pSortableColumn="libelle">{{ t.referentiels.actif.libelle }} <p-sort-icon field="libelle" /></th>
             <th>{{ t.referentiels.actif.typeActif }}</th>
             <th class="text-right">{{ t.referentiels.actif.soldeInitial }}</th>
             <th class="text-right">{{ t.referentiels.actif.tauxCroissance }}</th>
@@ -48,7 +48,7 @@ import { FR } from '../../../core/i18n/fr';
             <th></th>
           </tr>
         </ng-template>
-        <ng-template pTemplate="body" let-a>
+        <ng-template #body let-a>
           <tr>
             <td class="font-medium">{{ a.libelle }}</td>
             <td><p-tag [value]="typeActifLabel(a.typeActif)" severity="secondary" /></td>
@@ -65,7 +65,7 @@ import { FR } from '../../../core/i18n/fr';
             </td>
           </tr>
         </ng-template>
-        <ng-template pTemplate="emptymessage">
+        <ng-template #emptymessage>
           <tr><td colspan="6" class="text-center py-8 text-surface-400">{{ t.commun.aucunResultat }}</td></tr>
         </ng-template>
       </p-table>
@@ -104,7 +104,7 @@ import { FR } from '../../../core/i18n/fr';
           <p-inputnumber formControlName="ordre" [min]="1" class="w-full" />
         </div>
       </form>
-      <ng-template pTemplate="footer">
+      <ng-template #footer>
         <p-button [label]="t.commun.annuler" severity="secondary" (click)="dialogVisible = false" />
         <p-button [label]="t.commun.enregistrer" (click)="enregistrer()" [disabled]="form.invalid" />
       </ng-template>

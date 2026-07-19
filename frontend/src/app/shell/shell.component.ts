@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { filter, Subscription } from 'rxjs';
+import { SidebarModule } from 'primeng/sidebar';
 import { TopbarComponent } from './topbar/topbar.component';
 import { SidebarMenuComponent } from './sidebar-menu/sidebar-menu.component';
 import { ContexteService } from '../core/services/contexte.service';
@@ -11,19 +12,19 @@ import { ScenarioService } from '../core/services/scenario-poste.service';
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [RouterOutlet, CommonModule, TopbarComponent, SidebarMenuComponent],
+  imports: [RouterOutlet, CommonModule, SidebarModule, TopbarComponent, SidebarMenuComponent],
   template: `
-    <div class="flex flex-col h-screen bg-surface-50 dark:bg-surface-950 mx-auto w-full md:max-w-2/3">
-      <app-topbar class="sticky top-0 z-50" />
-      <div class="flex flex-1 overflow-hidden">
-        @if (contexte.foyerId()) {
-          <app-sidebar-menu class="hidden md:flex" />
-        }
+    <p-sidebar-layout class="flex h-screen bg-surface-50 dark:bg-surface-950 mx-auto w-full md:max-w-2/3">
+      @if (contexte.foyerId()) {
+        <app-sidebar-menu />
+      }
+      <p-sidebar-main class="flex flex-col flex-1 overflow-hidden">
+        <app-topbar class="sticky top-0 z-50" />
         <main class="flex-1 overflow-y-auto p-4 md:p-6">
           <router-outlet />
         </main>
-      </div>
-    </div>
+      </p-sidebar-main>
+    </p-sidebar-layout>
   `,
 })
 export class ShellComponent implements OnInit, OnDestroy {

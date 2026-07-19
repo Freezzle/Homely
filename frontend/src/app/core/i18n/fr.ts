@@ -32,6 +32,13 @@ export const FR = {
     membres: 'Membres',
     parametres: 'Paramètres',
     acces: 'Accès',
+    ouvrirMenu: 'Ouvrir le menu',
+    fermerMenu: 'Fermer le menu',
+    sections: {
+      pilotage: 'Pilotage',
+      budget: 'Budget',
+      reglages: 'Réglages',
+    },
   },
   // ── Foyer ────────────────────────────────────────────────
   foyer: {

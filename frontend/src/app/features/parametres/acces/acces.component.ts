@@ -37,38 +37,38 @@ import { FR } from '../../../core/i18n/fr';
       </div>
 
       <p-table [value]="acces()" styleClass="p-datatable-sm p-datatable-striped" [loading]="chargement()">
-        <ng-template pTemplate="header">
-          <tr>
-            <th>Nom</th>
-            <th>{{ t.acces.email }}</th>
-            <th>{{ t.acces.role }}</th>
-            <th></th>
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="body" let-a>
-          <tr>
-            <td class="font-medium">{{ a.nomComplet }}</td>
-            <td class="text-surface-500">{{ a.email }}</td>
-            <td>
-              <p-tag [value]="roleLabel(a.role)"
-                     [severity]="a.role === 'OWNER' ? 'warn' : a.role === 'EDITOR' ? 'info' : 'secondary'" />
-            </td>
-            <td>
-              <div class="flex gap-1">
-                @if (contexte.estOwner() && a.role !== 'OWNER') {
-                  <p-button icon="pi pi-cog" [text]="true" size="small"
-                            pTooltip="Changer le rôle" (click)="ouvrirChangerRole(a)" />
-                  <p-button icon="pi pi-user-minus" [text]="true" severity="danger" size="small"
-                            [pTooltip]="t.acces.retirer" (click)="retirer(a)" />
-                }
-              </div>
-            </td>
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="emptymessage">
-          <tr><td colspan="4" class="text-center py-8 text-surface-400">{{ t.commun.aucunResultat }}</td></tr>
-        </ng-template>
-      </p-table>
+         <ng-template #header>
+           <tr>
+             <th>Nom</th>
+             <th>{{ t.acces.email }}</th>
+             <th>{{ t.acces.role }}</th>
+             <th></th>
+           </tr>
+         </ng-template>
+         <ng-template #body let-a>
+           <tr>
+             <td class="font-medium">{{ a.nomComplet }}</td>
+             <td class="text-surface-500">{{ a.email }}</td>
+             <td>
+               <p-tag [value]="roleLabel(a.role)"
+                      [severity]="a.role === 'OWNER' ? 'warn' : a.role === 'EDITOR' ? 'info' : 'secondary'" />
+             </td>
+             <td>
+               <div class="flex gap-1">
+                 @if (contexte.estOwner() && a.role !== 'OWNER') {
+                   <p-button icon="pi pi-cog" [text]="true" size="small"
+                             pTooltip="Changer le rôle" (click)="ouvrirChangerRole(a)" />
+                   <p-button icon="pi pi-user-minus" [text]="true" severity="danger" size="small"
+                             [pTooltip]="t.acces.retirer" (click)="retirer(a)" />
+                 }
+               </div>
+             </td>
+           </tr>
+         </ng-template>
+         <ng-template #emptymessage>
+           <tr><td colspan="4" class="text-center py-8 text-surface-400">{{ t.commun.aucunResultat }}</td></tr>
+         </ng-template>
+       </p-table>
     </div>
 
     <!-- Dialog invitation -->
@@ -83,7 +83,7 @@ import { FR } from '../../../core/i18n/fr';
           <p-select appendTo="body" formControlName="role" [options]="roleOptions" optionLabel="label" optionValue="value" styleClass="w-full" />
         </div>
       </form>
-      <ng-template pTemplate="footer">
+      <ng-template #footer>
         <p-button [label]="t.commun.annuler" severity="secondary" (click)="inviteVisible = false" />
         <p-button [label]="t.acces.inviter" (click)="inviter()" [disabled]="inviteForm.invalid" />
       </ng-template>
@@ -94,7 +94,7 @@ import { FR } from '../../../core/i18n/fr';
       <div class="flex flex-col gap-4 pt-2">
         <p-select appendTo="body" [(ngModel)]="nouveauRole" [options]="roleOptions" optionLabel="label" optionValue="value" styleClass="w-full" />
       </div>
-      <ng-template pTemplate="footer">
+      <ng-template #footer>
         <p-button [label]="t.commun.annuler" severity="secondary" (click)="roleVisible = false" />
         <p-button [label]="t.commun.enregistrer" (click)="changerRole()" />
       </ng-template>

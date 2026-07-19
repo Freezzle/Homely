@@ -41,6 +41,18 @@ export class ContexteService {
   private readonly _dark = signal<boolean>(false);
   readonly isDark = this._dark.asReadonly();
 
+  /**
+   * État d'ouverture de la sidebar (utilisé par le nouveau composant
+   * `p-sidebar` v22 en mode `offcanvas`). Ouverte par défaut : visible
+   * en desktop, et bascule en overlay sur mobile via `ViewportService`.
+   */
+  readonly sidebarOuverte = signal<boolean>(true);
+
+  /** Bascule l'ouverture de la sidebar (utilisé par la topbar en mobile). */
+  toggleSidebar(): void {
+    this.sidebarOuverte.update(v => !v);
+  }
+
   setFoyer(foyer: FoyerDto | null): void {
     const foyerAvant = this._foyer();
     this._foyer.set(foyer);

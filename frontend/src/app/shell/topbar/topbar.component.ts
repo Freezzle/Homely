@@ -6,6 +6,7 @@ import { SelectModule } from 'primeng/select';
 import { ButtonModule } from 'primeng/button';
 import { AvatarModule } from 'primeng/avatar';
 import { MenuModule } from 'primeng/menu';
+import { SidebarModule } from 'primeng/sidebar';
 import { MenuItem } from 'primeng/api';
 import { ContexteService } from '../../core/services/contexte.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -17,9 +18,18 @@ import { FR } from '../../core/i18n/fr';
 @Component({
   selector: 'app-topbar',
   standalone: true,
-  imports: [CommonModule, FormsModule, SelectModule, ButtonModule, AvatarModule, MenuModule],
+  imports: [CommonModule, FormsModule, SelectModule, ButtonModule, AvatarModule, MenuModule, SidebarModule],
   template: `
     <div class="flex flex-wrap items-center gap-2 md:gap-3 px-3 md:px-4 py-2 bg-surface-0 dark:bg-surface-900 border-b border-surface-200 dark:border-surface-700 shadow-sm">
+      <!-- Bouton toggle sidebar (mobile uniquement) -->
+      @if (contexte.foyerId()) {
+        <button type="button" pSidebarTrigger target="main-nav"
+                class="md:hidden inline-flex items-center justify-center w-9 h-9 rounded hover:bg-surface-100 dark:hover:bg-surface-800 text-surface-700 dark:text-surface-200"
+                [attr.aria-label]="t.nav.ouvrirMenu">
+          <i class="pi pi-bars"></i>
+        </button>
+      }
+
       <!-- Logo -->
       <span class="text-primary font-bold text-lg md:text-xl mr-1 md:mr-2">🏠 Homely</span>
 
@@ -35,24 +45,24 @@ import { FR } from '../../core/i18n/fr';
         />
       }
 
-      <!-- Sélecteur scénario -->
-      @if (afficherSelecteurs() && contexte.foyerCourant() && scenarios().length > 0) {
-        <p-select appendTo="body"
-          [options]="scenarios()"
-          [(ngModel)]="scenarioSelectionne"
-          optionLabel="nom"
-          [placeholder]="t.scenario.choisir"
-          styleClass="min-w-44 md:min-w-52"
-          (onChange)="onScenarioChange($event.value)"
-        >
-          <ng-template pTemplate="item" let-s>
-            <span>{{ s.nom }}</span>
-            @if (s.estReference) {
-              <span class="ml-2 text-xs bg-primary text-white rounded px-1">{{ t.scenario.reference }}</span>
-            }
-          </ng-template>
-        </p-select>
-      }
+       <!-- Sélecteur scénario -->
+       @if (afficherSelecteurs() && contexte.foyerCourant() && scenarios().length > 0) {
+         <p-select appendTo="body"
+           [options]="scenarios()"
+           [(ngModel)]="scenarioSelectionne"
+           optionLabel="nom"
+           [placeholder]="t.scenario.choisir"
+           styleClass="min-w-44 md:min-w-52"
+           (onChange)="onScenarioChange($event.value)"
+         >
+           <ng-template #item let-s>
+             <span>{{ s.nom }}</span>
+             @if (s.estReference) {
+               <span class="ml-2 text-xs bg-primary text-white rounded px-1">{{ t.scenario.reference }}</span>
+             }
+           </ng-template>
+         </p-select>
+       }
 
       <div class="flex-1"></div>
 

@@ -90,7 +90,7 @@ interface ScenarioLocal {
             <ng-template #content let-activateCallback="activateCallback">
               <div class="flex flex-col gap-4">
                 <p-message severity="info" icon="pi pi-sparkles" [closable]="false"
-                  [text]="t.foyer.onboarding.info.foyer" styleClass="w-full" />
+                  styleClass="w-full">{{ t.foyer.onboarding.info.foyer }}</p-message>
 
                 <div class="flex flex-col gap-1">
                    <label class="text-sm font-medium">{{ t.foyer.onboarding.champs.nomFoyer }}</label>
@@ -168,7 +168,7 @@ interface ScenarioLocal {
             <ng-template #content let-activateCallback="activateCallback">
               <div class="flex flex-col gap-4">
                 <p-message severity="info" icon="pi pi-sparkles" [closable]="false"
-                  [text]="t.foyer.onboarding.info.comptes" styleClass="w-full" />
+                  styleClass="w-full">{{ t.foyer.onboarding.info.comptes }}</p-message>
 
                 <div class="flex flex-col gap-3">
                   @for (_ of comptes(); track $index; let i = $index) {
@@ -249,7 +249,7 @@ interface ScenarioLocal {
             <ng-template #content let-activateCallback="activateCallback">
               <div class="flex flex-col gap-4">
                 <p-message severity="info" icon="pi pi-sparkles" [closable]="false"
-                  [text]="t.foyer.onboarding.info.categories" styleClass="w-full" />
+                  styleClass="w-full">{{ t.foyer.onboarding.info.categories }}</p-message>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <!-- REVENU -->
@@ -334,7 +334,7 @@ interface ScenarioLocal {
             <ng-template #content let-activateCallback="activateCallback">
               <div class="flex flex-col gap-4">
                 <p-message severity="info" icon="pi pi-sparkles" [closable]="false"
-                  [text]="t.foyer.onboarding.info.scenario" styleClass="w-full" />
+                  styleClass="w-full">{{ t.foyer.onboarding.info.scenario }}</p-message>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                    <div class="flex flex-col gap-1">
@@ -682,12 +682,5 @@ export class FoyerCreationComponent implements OnInit {
     });
   }
 }
-
-
-
-
-
-
-
 
 

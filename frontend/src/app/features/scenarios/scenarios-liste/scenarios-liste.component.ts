@@ -35,47 +35,47 @@ import { RepartitionPeriodesComponent } from '../repartition-periodes/repartitio
       </div>
 
       <p-table [value]="scenarios()" styleClass="p-datatable-sm p-datatable-striped" [loading]="chargement()">
-        <ng-template pTemplate="header">
-          <tr>
-            <th>{{ t.commun.enregistrer }}</th>
-            <th>Statut</th>
-            <th class="text-right">{{ t.scenario.anneeDepart }}</th>
-            <th class="text-right">{{ t.scenario.tresorerieInitiale }}</th>
-            <th class="text-right">{{ t.scenario.horizonAnnees }}</th>
-            <th></th>
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="body" let-s>
-          <tr [class.font-bold]="s.estReference">
-            <td>{{ s.nom }}</td>
-            <td>
-              @if (s.estReference) {
-                <p-tag [value]="t.scenario.reference" severity="success" />
-              }
-            </td>
-            <td class="text-right">{{ s.anneeDepart }}</td>
-            <td class="text-right">{{ s.tresorerieInitiale | montant }}</td>
-            <td class="text-right">{{ s.horizonAnnees }} ans</td>
-            <td>
-              <div class="flex gap-1 items-center">
-                @if (contexte.estEditor()) {
-                  <p-button icon="pi pi-pencil" [text]="true" size="small" (click)="ouvrirEdition(s)" />
-                  <p-button icon="pi pi-copy" [text]="true" size="small" [pTooltip]="t.scenario.dupliquer" (click)="dupliquer(s)" />
-                }
-                <!-- Bouton périodes de prorata (masqué si mono-membre) -->
-                @if (membres().length > 1) {
-                  <app-repartition-periodes [scenarioId]="s.id" />
-                }
-                @if (contexte.estOwner() && !s.estReference) {
-                  <p-button icon="pi pi-star" [text]="true" severity="warn" size="small"
-                            [pTooltip]="t.scenario.definirReference" (click)="definirReference(s)" />
-                  <p-button icon="pi pi-trash" [text]="true" severity="danger" size="small" (click)="supprimer(s)" />
-                }
-              </div>
-            </td>
-          </tr>
-        </ng-template>
-      </p-table>
+         <ng-template #header>
+           <tr>
+             <th>{{ t.commun.enregistrer }}</th>
+             <th>Statut</th>
+             <th class="text-right">{{ t.scenario.anneeDepart }}</th>
+             <th class="text-right">{{ t.scenario.tresorerieInitiale }}</th>
+             <th class="text-right">{{ t.scenario.horizonAnnees }}</th>
+             <th></th>
+           </tr>
+         </ng-template>
+         <ng-template #body let-s>
+           <tr [class.font-bold]="s.estReference">
+             <td>{{ s.nom }}</td>
+             <td>
+               @if (s.estReference) {
+                 <p-tag [value]="t.scenario.reference" severity="success" />
+               }
+             </td>
+             <td class="text-right">{{ s.anneeDepart }}</td>
+             <td class="text-right">{{ s.tresorerieInitiale | montant }}</td>
+             <td class="text-right">{{ s.horizonAnnees }} ans</td>
+             <td>
+               <div class="flex gap-1 items-center">
+                 @if (contexte.estEditor()) {
+                   <p-button icon="pi pi-pencil" [text]="true" size="small" (click)="ouvrirEdition(s)" />
+                   <p-button icon="pi pi-copy" [text]="true" size="small" [pTooltip]="t.scenario.dupliquer" (click)="dupliquer(s)" />
+                 }
+                 <!-- Bouton périodes de prorata (masqué si mono-membre) -->
+                 @if (membres().length > 1) {
+                   <app-repartition-periodes [scenarioId]="s.id" />
+                 }
+                 @if (contexte.estOwner() && !s.estReference) {
+                   <p-button icon="pi pi-star" [text]="true" severity="warn" size="small"
+                             [pTooltip]="t.scenario.definirReference" (click)="definirReference(s)" />
+                   <p-button icon="pi pi-trash" [text]="true" severity="danger" size="small" (click)="supprimer(s)" />
+                 }
+               </div>
+             </td>
+           </tr>
+         </ng-template>
+       </p-table>
     </div>
 
     <!-- Dialog formulaire -->
@@ -86,18 +86,21 @@ import { RepartitionPeriodesComponent } from '../repartition-periodes/repartitio
           <label class="text-sm font-medium">Nom *</label>
           <input pInputText formControlName="nom" class="w-full" />
         </div>
-        <div class="grid grid-cols-3 gap-4">
-          <div class="flex flex-col gap-1">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="flex flex-col gap-1 min-w-0">
             <label class="text-sm font-medium">{{ t.scenario.anneeDepart }}</label>
-            <p-inputnumber formControlName="anneeDepart" [min]="2020" [max]="2099" [useGrouping]="false" class="w-full" />
+            <p-inputnumber formControlName="anneeDepart" [min]="2020" [max]="2099" [useGrouping]="false"
+                           styleClass="w-full" inputStyleClass="w-full" />
           </div>
-          <div class="flex flex-col gap-1">
+          <div class="flex flex-col gap-1 min-w-0">
             <label class="text-sm font-medium">{{ t.scenario.tresorerieInitiale }}</label>
-            <p-inputnumber formControlName="tresorerieInitiale" mode="decimal" [minFractionDigits]="2" class="w-full" />
+            <p-inputnumber formControlName="tresorerieInitiale" mode="decimal" [minFractionDigits]="2"
+                           styleClass="w-full" inputStyleClass="w-full" />
           </div>
-          <div class="flex flex-col gap-1">
+          <div class="flex flex-col gap-1 min-w-0">
             <label class="text-sm font-medium">{{ t.scenario.horizonAnnees }}</label>
-            <p-inputnumber formControlName="horizonAnnees" [min]="1" [max]="30" class="w-full" />
+            <p-inputnumber formControlName="horizonAnnees" [min]="1" [max]="100"
+                           styleClass="w-full" inputStyleClass="w-full" />
           </div>
         </div>
         <!-- Répartition par défaut -->
@@ -108,7 +111,7 @@ import { RepartitionPeriodesComponent } from '../repartition-periodes/repartitio
               {{ sommeRep }}%
             </span>
           </div>
-          @for (m of membres(); track m.id; let i = $index) {
+          @for (m of membres(); track m.id) {
             <div class="flex items-center gap-3">
               <span class="flex-1 text-sm">{{ m.nom }}</span>
               <input pInputText [value]="repsMap[m.id] ?? 0" type="number" min="0" max="100"
@@ -118,7 +121,7 @@ import { RepartitionPeriodesComponent } from '../repartition-periodes/repartitio
           }
         </div>
       </form>
-      <ng-template pTemplate="footer">
+      <ng-template #footer>
         <p-button [label]="t.commun.annuler" severity="secondary" (click)="dialogVisible = false" />
         <p-button [label]="t.commun.enregistrer" (click)="enregistrer()"
                   [disabled]="form.invalid || sommeRep !== 100" />

@@ -40,16 +40,16 @@ import { FR } from '../../../core/i18n/fr';
       </div>
 
       <p-table [value]="comptes()" styleClass="p-datatable-sm p-datatable-striped" [loading]="chargement()">
-        <ng-template pTemplate="header">
+        <ng-template #header>
           <tr>
-            <th pSortableColumn="libelle">{{ t.referentiels.compte.libelle }} <p-sortIcon field="libelle" /></th>
+            <th pSortableColumn="libelle">{{ t.referentiels.compte.libelle }} <p-sort-icon field="libelle" /></th>
             <th class="text-right">{{ t.referentiels.compte.soldeInitial }}</th>
             <th>{{ t.referentiels.compte.devise }}</th>
             <th class="text-right">{{ t.referentiels.compte.ordre }}</th>
             <th></th>
           </tr>
         </ng-template>
-        <ng-template pTemplate="body" let-c>
+        <ng-template #body let-c>
           <tr>
             <td>
               <div class="flex items-center gap-2 flex-wrap">
@@ -79,7 +79,7 @@ import { FR } from '../../../core/i18n/fr';
             </td>
           </tr>
         </ng-template>
-        <ng-template pTemplate="emptymessage">
+        <ng-template #emptymessage>
           <tr><td colspan="5" class="text-center py-8 text-surface-400">{{ t.commun.aucunResultat }}</td></tr>
         </ng-template>
       </p-table>
@@ -106,7 +106,7 @@ import { FR } from '../../../core/i18n/fr';
             styleClass="w-full"
             display="chip" />
           @if (form.get('membreIds')?.invalid && form.get('membreIds')?.touched) {
-            <p-message severity="warn" [text]="t.referentiels.compte.membresRequis" />
+            <p-message severity="warn">{{ t.referentiels.compte.membresRequis }}</p-message>
           }
         </div>
 
@@ -125,7 +125,7 @@ import { FR } from '../../../core/i18n/fr';
           <p-inputnumber formControlName="soldeInitial" mode="decimal" [minFractionDigits]="2" class="w-full" />
         </div>
       </form>
-      <ng-template pTemplate="footer">
+      <ng-template #footer>
         <p-button [label]="t.commun.annuler" severity="secondary" (click)="dialogVisible = false" />
         <p-button [label]="t.commun.enregistrer" (click)="enregistrer()"
                   [disabled]="form.invalid || !membreIdsNonVides()" />
