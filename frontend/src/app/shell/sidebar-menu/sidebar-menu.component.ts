@@ -41,7 +41,10 @@ interface NavSection {
 
           <p-sidebar-header>
               <div class="flex items-center justify-between gap-2 w-full px-1">
-                  @if (viewport.estCompact()) {
+                <!-- Logo -->
+                <span class="text-primary font-bold text-lg md:text-xl mr-1 md:mr-2">🏠 Homely</span>
+
+                @if (viewport.estCompact()) {
                       <button type="button"
                               pButton
                               pSidebarTrigger

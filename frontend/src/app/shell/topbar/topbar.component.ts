@@ -32,8 +32,6 @@ import { FR } from '../../core/i18n/fr';
         </button>
       }
 
-      <!-- Logo -->
-      <span class="text-primary font-bold text-lg md:text-xl mr-1 md:mr-2">🏠 Homely</span>
 
       <!-- Sélecteur foyer (masqué si aucun foyer) -->
       @if (afficherSelecteurs()) {
