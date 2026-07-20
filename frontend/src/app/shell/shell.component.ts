@@ -15,7 +15,7 @@ import {ViewportService} from '../core/services/viewport.service';
   standalone: true,
   imports: [RouterOutlet, CommonModule, SidebarModule, TopbarComponent, SidebarMenuComponent],
   template: `
-      <p-sidebar-layout class="flex h-screen bg-surface-50 dark:bg-surface-950 mx-auto w-full xl:max-w-2/3">
+      <p-sidebar-layout class="flex h-screen mx-auto w-full xl:max-w-2/3">
           @if (contexte.foyerId()) {
               @if (viewport.estCompact() && contexte.sidebarOuverte()) {
                   <p-sidebar-backdrop />

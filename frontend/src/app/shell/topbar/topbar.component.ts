@@ -20,7 +20,7 @@ import { FR } from '../../core/i18n/fr';
   standalone: true,
   imports: [CommonModule, FormsModule, SelectModule, ButtonModule, AvatarModule, MenuModule, SidebarModule],
   template: `
-    <div class="flex flex-wrap items-center gap-2 md:gap-3 px-3 md:px-4 py-2 bg-surface-0 dark:bg-surface-900 border-b border-surface-200 dark:border-surface-700 shadow-sm">
+    <div class="flex flex-wrap items-center gap-2 md:gap-3 px-3 md:px-4 py-2 border-b border-surface-200 dark:border-surface-700 shadow-sm">
       <!-- Bouton toggle sidebar (mobile uniquement) -->
       @if (contexte.foyerId()) {
         <button type="button"
