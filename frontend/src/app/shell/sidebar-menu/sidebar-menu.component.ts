@@ -71,6 +71,9 @@ interface NavSection {
                                                   <button type="button" pSidebarMenuButton>
                                                       <i [class]="item.icon"></i>
                                                       <span>{{ item.label }}</span>
+                                                    @if (item.children && item.children.length > 0) {
+                                                      <i class="pi pi-chevron-down ml-auto"></i>
+                                                    }
                                                   </button>
                                                   <p-sidebar-menu-sub>
                                                       @for (child of item.children; track child.label) {
@@ -145,7 +148,7 @@ export class SidebarMenuComponent {
         label: this.t.nav.sections.reglages,
         items: [
           {
-            label: this.t.nav.referentiels, icon: 'pi pi-cog', defaultOpen: false,
+            label: this.t.nav.referentiels, icon: 'pi pi-cog', defaultOpen: !this.viewport.estMobile(),
             children: [
               { label: this.t.nav.membres,    icon: 'pi pi-users',       route: `${base}/referentiels/membres` },
               { label: this.t.nav.comptes,    icon: 'pi pi-credit-card', route: `${base}/referentiels/comptes` },
