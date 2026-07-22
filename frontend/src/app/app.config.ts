@@ -1,4 +1,4 @@
-import { ApplicationConfig, provideZoneChangeDetection, LOCALE_ID } from '@angular/core';
+import { ApplicationConfig, provideZoneChangeDetection, provideAppInitializer, inject, LOCALE_ID } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
@@ -9,8 +9,16 @@ import { jwtInterceptor } from './core/interceptors/jwt.interceptor';
 import { registerLocaleData } from '@angular/common';
 import localeFrCH from '@angular/common/locales/fr-CH';
 import localeFrCHExtra from '@angular/common/locales/extra/fr-CH';
+import { provideTranslateService, TranslateService } from '@ngx-translate/core';
+import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
+import { firstValueFrom } from 'rxjs';
+import { langueInitiale } from './core/i18n/i18n.service';
 
 registerLocaleData(localeFrCH, 'fr-CH', localeFrCHExtra);
+
+// Langue choisie par l'utilisateur lors d'une session précédente (préférence UI
+// persistée en localStorage), ou 'fr' par défaut — voir I18nService.setLanguage().
+const langueDemarrage = langueInitiale();
 
 const semantic = Theme.semantic ?? {};
 const colorScheme = semantic.colorScheme ?? {};
@@ -69,6 +77,15 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withInterceptors([jwtInterceptor])),
     provideAnimationsAsync(),
     { provide: LOCALE_ID, useValue: 'fr-CH' },
+    // i18n : traductions chargées depuis assets/i18n/<lang>.json (ngx-translate).
+    // FR par défaut/fallback ; démarre sur la langue persistée si l'utilisateur en a choisi une.
+    provideTranslateService({
+      lang: langueDemarrage,
+      fallbackLang: 'fr',
+      loader: provideTranslateHttpLoader({ prefix: '/assets/i18n/', suffix: '.json' }),
+    }),
+    // Attend le chargement des traductions avant le premier rendu (évite un flash de clés brutes).
+    provideAppInitializer(() => firstValueFrom(inject(TranslateService).use(langueDemarrage))),
     providePrimeNG({
       license: 'eyJpZCI6IjY0ODZiNDE2LWIwYmEtNGQwNC05MzJiLTExNGRlMjk5N2I4OCIsInByb2R1Y3QiOiJwcmltZXVpIiwidGllciI6ImNvbW11bml0eSIsInR5cGUiOiJkZXYiLCJpYXQiOjE3ODQ0NzU4MTIsImV4cCI6MTgxNjAxMTgxMn0.wIoIS_g63WBgx6HVxpqchtgndwzbltV-IAwPQ0tp_Zb3qnf0p0MKwJXs0CeSX7HXzKRzYIUbzucYcLIt2VDjBA',
       theme: {

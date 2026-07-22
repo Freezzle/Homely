@@ -12,7 +12,7 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { ContexteService } from '../../../core/services/contexte.service';
 import { MembreService } from '../../../core/services/referentiel.service';
 import { MembreDto } from '../../../core/models/api.models';
-import { FR } from '../../../core/i18n/fr';
+import { I18nService } from '../../../core/i18n/i18n.service';
 
 /** T10.2 — CRUD Membres */
 @Component({
@@ -96,7 +96,8 @@ import { FR } from '../../../core/i18n/fr';
   `,
 })
 export class MembresComponent implements OnInit {
-  readonly t = FR;
+  private readonly i18n = inject(I18nService);
+  readonly t = this.i18n.translations();
   contexte = inject(ContexteService);
   private membreSvc = inject(MembreService);
   private toast = inject(MessageService);
@@ -156,20 +157,20 @@ export class MembresComponent implements OnInit {
       : this.membreSvc.creer(foyerId, req);
     obs.subscribe({
       next: () => {
-        this.toast.add({ severity: 'success', summary: FR.commun.succes });
+        this.toast.add({ severity: 'success', summary: this.t.commun.succes });
         this.dialogVisible = false;
         this.charger();
       },
-      error: (e) => this.toast.add({ severity: 'error', summary: FR.commun.erreur, detail: e?.error?.message }),
+      error: (e) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: e?.error?.message }),
     });
   }
 
   supprimer(m: MembreDto): void {
     this.confirm.confirm({
-      message: FR.commun.confirmerSuppression,
+      message: this.t.commun.confirmerSuppression,
       accept: () => this.membreSvc.supprimer(this.contexte.foyerId()!, m.id).subscribe({
-        next: () => { this.toast.add({ severity: 'success', summary: FR.commun.succes }); this.charger(); },
-        error: () => this.toast.add({ severity: 'error', summary: FR.commun.suppressionImpossible }),
+        next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.charger(); },
+        error: () => this.toast.add({ severity: 'error', summary: this.t.commun.suppressionImpossible }),
       }),
     });
   }

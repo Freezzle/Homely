@@ -15,7 +15,7 @@ import { ContexteService } from '../../../core/services/contexte.service';
 import { RepartitionPeriodeService } from '../../../core/services/scenario-poste.service';
 import { RepartitionPeriodeDto } from '../../../core/models/api.models';
 import { PctPipe } from '../../../core/pipes/format.pipes';
-import { FR } from '../../../core/i18n/fr';
+import { I18nService } from '../../../core/i18n/i18n.service';
 
 /**
  * Composant d'édition des périodes de répartition (prorata) d'un scénario.
@@ -155,7 +155,8 @@ import { FR } from '../../../core/i18n/fr';
   `,
 })
 export class RepartitionPeriodesComponent implements OnInit {
-  readonly t = FR;
+  private readonly i18n = inject(I18nService);
+  readonly t = this.i18n.translations();
   protected readonly Math = Math;
 
   readonly scenarioId = input.required<string>();
@@ -193,7 +194,7 @@ export class RepartitionPeriodesComponent implements OnInit {
     if (!foyerId) return;
     this.periodeSvc.lister(foyerId, this.scenarioId()).subscribe({
       next: p => this.periodes.set(p),
-      error: () => this.toast.add({ severity: 'error', summary: FR.commun.erreur }),
+      error: () => this.toast.add({ severity: 'error', summary: this.t.commun.erreur }),
     });
   }
 
@@ -251,26 +252,26 @@ export class RepartitionPeriodesComponent implements OnInit {
 
     obs.subscribe({
       next: () => {
-        this.toast.add({ severity: 'success', summary: FR.commun.succes });
+        this.toast.add({ severity: 'success', summary: this.t.commun.succes });
         this.formVisible = false;
         // Recharger les données sans fermer le dialog liste qui est déjà visible derrière
         this.chargerPeriodes();
       },
-      error: (err) => this.toast.add({ severity: 'error', summary: FR.commun.erreur, detail: err?.error?.message }),
+      error: (err) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message }),
     });
   }
 
   confirmerSuppression(p: RepartitionPeriodeDto): void {
     this.confirm.confirm({
-      message: FR.commun.confirmerSuppression,
+      message: this.t.commun.confirmerSuppression,
       accept: () => {
         const foyerId = this.contexte.foyerId()!;
         this.periodeSvc.supprimer(foyerId, this.scenarioId(), p.id).subscribe({
           next: () => {
-            this.toast.add({ severity: 'success', summary: FR.commun.succes });
+            this.toast.add({ severity: 'success', summary: this.t.commun.succes });
             this.chargerPeriodes();
           },
-          error: (err) => this.toast.add({ severity: 'error', summary: FR.commun.erreur, detail: err?.error?.message }),
+          error: (err) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message }),
         });
       },
     });

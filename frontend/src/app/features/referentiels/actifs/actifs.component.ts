@@ -14,7 +14,7 @@ import { ContexteService } from '../../../core/services/contexte.service';
 import { ActifService } from '../../../core/services/referentiel.service';
 import { ActifDto, TypeActif } from '../../../core/models/api.models';
 import { MontantPipe, PctPipe } from '../../../core/pipes/format.pipes';
-import { FR } from '../../../core/i18n/fr';
+import { I18nService } from '../../../core/i18n/i18n.service';
 
 /** T10.2 — CRUD Actifs patrimoniaux */
 @Component({
@@ -112,7 +112,8 @@ import { FR } from '../../../core/i18n/fr';
   `,
 })
 export class ActifsComponent implements OnInit {
-  readonly t = FR;
+  private readonly i18n = inject(I18nService);
+  readonly t = this.i18n.translations();
   contexte = inject(ContexteService);
   private actifSvc = inject(ActifService);
   private toast = inject(MessageService);
@@ -129,13 +130,13 @@ export class ActifsComponent implements OnInit {
   });
 
   typeOptions: { label: string; value: TypeActif }[] = [
-    { label: FR.referentiels.actif.types.COMPTE_EPARGNE,   value: 'COMPTE_EPARGNE' },
-    { label: FR.referentiels.actif.types.TROISIEME_PILIER, value: 'TROISIEME_PILIER' },
-    { label: FR.referentiels.actif.types.INVESTISSEMENT,   value: 'INVESTISSEMENT' },
-    { label: FR.referentiels.actif.types.CRYPTO,           value: 'CRYPTO' },
-    { label: FR.referentiels.actif.types.IMMOBILIER,       value: 'IMMOBILIER' },
-    { label: FR.referentiels.actif.types.VEHICULE,         value: 'VEHICULE' },
-    { label: FR.referentiels.actif.types.AUTRE,            value: 'AUTRE' },
+    { label: this.t.referentiels.actif.types.COMPTE_EPARGNE,   value: 'COMPTE_EPARGNE' },
+    { label: this.t.referentiels.actif.types.TROISIEME_PILIER, value: 'TROISIEME_PILIER' },
+    { label: this.t.referentiels.actif.types.INVESTISSEMENT,   value: 'INVESTISSEMENT' },
+    { label: this.t.referentiels.actif.types.CRYPTO,           value: 'CRYPTO' },
+    { label: this.t.referentiels.actif.types.IMMOBILIER,       value: 'IMMOBILIER' },
+    { label: this.t.referentiels.actif.types.VEHICULE,         value: 'VEHICULE' },
+    { label: this.t.referentiels.actif.types.AUTRE,            value: 'AUTRE' },
   ];
   devises = ['CHF', 'EUR', 'USD', 'GBP', 'CAD'];
 
@@ -149,7 +150,7 @@ export class ActifsComponent implements OnInit {
   });
 
   typeActifLabel(type: TypeActif): string {
-    return FR.referentiels.actif.types[type] ?? type;
+    return this.t.referentiels.actif.types[type] ?? type;
   }
 
   ngOnInit(): void {}
@@ -191,17 +192,17 @@ export class ActifsComponent implements OnInit {
       ? this.actifSvc.modifier(foyerId, this.actifEnEdition.id, req)
       : this.actifSvc.creer(foyerId, req);
     obs.subscribe({
-      next: () => { this.toast.add({ severity: 'success', summary: FR.commun.succes }); this.dialogVisible = false; this.charger(); },
-      error: (e) => this.toast.add({ severity: 'error', summary: FR.commun.erreur, detail: e?.error?.message }),
+      next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.dialogVisible = false; this.charger(); },
+      error: (e) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: e?.error?.message }),
     });
   }
 
   supprimer(a: ActifDto): void {
     this.confirm.confirm({
-      message: FR.commun.confirmerSuppression,
+      message: this.t.commun.confirmerSuppression,
       accept: () => this.actifSvc.supprimer(this.contexte.foyerId()!, a.id).subscribe({
-        next: () => { this.toast.add({ severity: 'success', summary: FR.commun.succes }); this.charger(); },
-        error: () => this.toast.add({ severity: 'error', summary: FR.commun.suppressionImpossible }),
+        next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.charger(); },
+        error: () => this.toast.add({ severity: 'error', summary: this.t.commun.suppressionImpossible }),
       }),
     });
   }

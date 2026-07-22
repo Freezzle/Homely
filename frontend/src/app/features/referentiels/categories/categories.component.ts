@@ -13,7 +13,7 @@ import { MessageService } from 'primeng/api';
 import { ContexteService } from '../../../core/services/contexte.service';
 import { CategorieService } from '../../../core/services/referentiel.service';
 import { CategorieDto, TypeCategorie } from '../../../core/models/api.models';
-import { FR } from '../../../core/i18n/fr';
+import { I18nService } from '../../../core/i18n/i18n.service';
 
 /** T10.2 — CRUD Catégories */
 @Component({
@@ -122,7 +122,8 @@ import { FR } from '../../../core/i18n/fr';
   `,
 })
 export class CategoriesComponent implements OnInit {
-  readonly t = FR;
+  private readonly i18n = inject(I18nService);
+  readonly t = this.i18n.translations();
   contexte = inject(ContexteService);
   private categorieSvc = inject(CategorieService);
   private toast = inject(MessageService);
@@ -149,9 +150,9 @@ export class CategoriesComponent implements OnInit {
   });
 
   typeOptions: { label: string; value: TypeCategorie }[] = [
-    { label: 'Revenu', value: 'REVENU' },
-    { label: 'Charge', value: 'CHARGE' },
-    { label: 'Réserve', value: 'RESERVE' },
+    { label: this.t.referentiels.categorie.typeOptions.REVENU, value: 'REVENU' },
+    { label: this.t.referentiels.categorie.typeOptions.CHARGE, value: 'CHARGE' },
+    { label: this.t.referentiels.categorie.typeOptions.RESERVE, value: 'RESERVE' },
   ];
 
   form = this.fb.group({
@@ -193,8 +194,8 @@ export class CategoriesComponent implements OnInit {
       ? this.categorieSvc.modifier(foyerId, this.categorieEnEdition.id, req)
       : this.categorieSvc.creer(foyerId, req);
     obs.subscribe({
-      next: () => { this.toast.add({ severity: 'success', summary: FR.commun.succes }); this.dialogVisible = false; this.charger(); },
-      error: (e) => this.toast.add({ severity: 'error', summary: FR.commun.erreur, detail: e?.error?.message }),
+      next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.dialogVisible = false; this.charger(); },
+      error: (e) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: e?.error?.message }),
     });
   }
 
@@ -216,13 +217,13 @@ export class CategoriesComponent implements OnInit {
       .supprimer(foyerId, c.id, this.migrerVersCategorieId ?? undefined)
       .subscribe({
         next: () => {
-          this.toast.add({ severity: 'success', summary: FR.commun.succes });
+          this.toast.add({ severity: 'success', summary: this.t.commun.succes });
           this.suppressionDialogVisible = false;
           this.suppressionEnCours.set(false);
           this.charger();
         },
         error: () => {
-          this.toast.add({ severity: 'error', summary: FR.commun.suppressionImpossible });
+          this.toast.add({ severity: 'error', summary: this.t.commun.suppressionImpossible });
           this.suppressionEnCours.set(false);
         },
       });

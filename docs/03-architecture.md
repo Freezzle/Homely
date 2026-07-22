@@ -97,8 +97,31 @@ Chaque feature : `controller` (REST) → `service` (métier/validation) → `rep
 
 ## 5. Internationalisation
 
-- Frontend **FR par défaut**, architecture i18n prête pour d'autres langues (clés de
-  traduction, pas de texte en dur dans les composants).
+- Frontend **FR par défaut, FR/EN disponibles**, architecture i18n prête pour d'autres
+  langues : les traductions vivent dans `frontend/src/assets/i18n/<lang>.json`
+  (`fr.json`, `en.json` — mêmes clés, structure identique) chargées à l'exécution via
+  **ngx-translate** (`@ngx-translate/core` + `@ngx-translate/http-loader`), jamais dans
+  le code des composants.
+  - `I18nService` (`core/i18n/i18n.service.ts`) encapsule `TranslateService` : point
+    d'entrée unique pour la langue courante (`currentLang`, signal), les langues
+    disponibles (`availableLangs`) et le changement de langue.
+  - Chaque composant expose `readonly t = this.i18n.translations()` (instantané typé —
+    via `AppTranslations`, dérivé du JSON par `typeof` — de l'arbre de traduction complet)
+    pour un accès direct `t.nav.xxx` dans les templates, sans multiplier les pipes
+    `| translate` pour du texte statique.
+  - L'interpolation de paramètres (ex. « Membre {{index}} ») utilise la syntaxe native
+    ngx-translate via `I18nService.instant(cle, params)`.
+  - Le premier rendu attend le chargement du JSON (`provideAppInitializer` dans
+    `app.config.ts`) pour éviter tout flash de clé brute.
+  - **Sélecteur de langue** (topbar) : `I18nService.setLanguage(lang)` persiste le choix
+    de l'utilisateur (clé `homely-lang` en `localStorage` — préférence UI pure, pas de
+    donnée métier, au même titre que le thème clair/sombre) puis recharge la page.
+    `app.config.ts` relit cette préférence au bootstrap (`langueInitiale()`) pour
+    démarrer directement dans la bonne langue. Le rechargement complet est un choix
+    pragmatique : plusieurs composants figent des libellés dérivés de `t` dans des
+    champs calculés une seule fois à la construction (options de menu, labels
+    d'options de sélection…) ; les rendre tous réactifs à un changement de langue en
+    cours de session aurait nécessité un refactor bien plus large pour un gain UX mineur.
 - Dates/nombres/devises formatés via `Intl` (locale). Le backend renvoie dates ISO-8601
   et nombres bruts (pas de formatage serveur).
 - Les libellés métier (catégories système, types) : renvoyer une **clé** stable +

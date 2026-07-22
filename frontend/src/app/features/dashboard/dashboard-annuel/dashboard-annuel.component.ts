@@ -19,7 +19,7 @@ import {
   CategorieDto, CompteDto, PosteDto, ObjectifDto, TypeCategorie,
 } from '../../../core/models/api.models';
 import { MontantPipe } from '../../../core/pipes/format.pipes';
-import { FR } from '../../../core/i18n/fr';
+import { I18nService } from '../../../core/i18n/i18n.service';
 import { CarteBilanMembreComponent, LigneDecomposition } from '../../../shared/components/carte-bilan-membre/carte-bilan-membre.component';
 
 @Component({
@@ -34,7 +34,7 @@ import { CarteBilanMembreComponent, LigneDecomposition } from '../../../shared/c
       <div class="flex flex-col sm:flex-row sm:items-center gap-3">
         <div class="flex-1 min-w-0">
           <h1 class="text-2xl font-bold">{{ t.nav.dashboardAnnuel }}</h1>
-          <p class="text-sm text-surface-500 mt-0.5">Vue consolidée des flux annuels du foyer</p>
+          <p class="text-sm text-surface-500 mt-0.5">{{ t.projection.dashboardAnnuelSousTitre }}</p>
         </div>
         @if (afficherParMembre()) {
           <p-selectbutton [options]="vueOptions" [ngModel]="vue()" (ngModelChange)="vue.set($event)"
@@ -98,8 +98,8 @@ import { CarteBilanMembreComponent, LigneDecomposition } from '../../../shared/c
            <ng-template #header>
              <div class="px-5 pt-5 pb-0 flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4">
                <div class="flex-1">
-                 <div class="font-semibold text-base">Flux mensuels {{ anneeSelectionnee }}</div>
-                 <div class="text-xs text-surface-400 mt-0.5">Barres empilées = charges + réserves · Ligne verte = revenus</div>
+                 <div class="font-semibold text-base">{{ t.projection.fluxMensuels }} {{ anneeSelectionnee }}</div>
+                 <div class="text-xs text-surface-400 mt-0.5">{{ t.projection.legendeGraphiqueMixte }}</div>
                </div>
                <div class="flex flex-wrap gap-3 text-xs text-surface-500 shrink-0">
                  <span class="flex items-center gap-1.5">
@@ -301,7 +301,7 @@ import { CarteBilanMembreComponent, LigneDecomposition } from '../../../shared/c
            <ng-template #header>
              <div class="px-5 pt-5 pb-3 flex items-center gap-2">
                <i class="pi pi-table text-surface-400"></i>
-               <span class="font-semibold text-base">Détail mensuel {{ anneeSelectionnee }}</span>
+               <span class="font-semibold text-base">{{ t.projection.detailMensuel }} {{ anneeSelectionnee }}</span>
              </div>
            </ng-template>
 
@@ -360,15 +360,15 @@ import { CarteBilanMembreComponent, LigneDecomposition } from '../../../shared/c
                 </div>
                 <div class="grid grid-cols-3 gap-1 text-center">
                   <div>
-                    <div class="text-xs text-surface-400">Revenus</div>
+                    <div class="text-xs text-surface-400">{{ t.projection.revenus }}</div>
                     <div class="text-xs font-semibold text-green-600 tabular-nums">{{ m.agregat.revenus | montant }}</div>
                   </div>
                   <div>
-                    <div class="text-xs text-surface-400">Charges</div>
+                    <div class="text-xs text-surface-400">{{ t.projection.charges }}</div>
                     <div class="text-xs font-semibold text-red-500 tabular-nums">{{ m.agregat.charges | montant }}</div>
                   </div>
                   <div>
-                    <div class="text-xs text-surface-400">Réserves</div>
+                    <div class="text-xs text-surface-400">{{ t.projection.reserves }}</div>
                     <div class="text-xs font-semibold text-blue-500 tabular-nums">{{ m.agregat.reserves | montant }}</div>
                   </div>
                 </div>
@@ -385,15 +385,15 @@ import { CarteBilanMembreComponent, LigneDecomposition } from '../../../shared/c
               </div>
               <div class="grid grid-cols-3 gap-1 text-center">
                 <div>
-                  <div class="text-xs text-surface-400">Revenus</div>
+                  <div class="text-xs text-surface-400">{{ t.projection.revenus }}</div>
                   <div class="text-xs font-semibold text-green-600 tabular-nums">{{ projection()!.totalAnnuel.revenus | montant }}</div>
                 </div>
                 <div>
-                  <div class="text-xs text-surface-400">Charges</div>
+                  <div class="text-xs text-surface-400">{{ t.projection.charges }}</div>
                   <div class="text-xs font-semibold text-red-500 tabular-nums">{{ projection()!.totalAnnuel.charges | montant }}</div>
                 </div>
                 <div>
-                  <div class="text-xs text-surface-400">Réserves</div>
+                  <div class="text-xs text-surface-400">{{ t.projection.reserves }}</div>
                   <div class="text-xs font-semibold text-blue-500 tabular-nums">{{ projection()!.totalAnnuel.reserves | montant }}</div>
                 </div>
               </div>
@@ -406,7 +406,8 @@ import { CarteBilanMembreComponent, LigneDecomposition } from '../../../shared/c
   `,
 })
 export class DashboardAnnuelComponent implements OnInit {
-  readonly t = FR;
+  private readonly i18n = inject(I18nService);
+  readonly t = this.i18n.translations();
   private contexte     = inject(ContexteService);
   private projSvc      = inject(ProjectionService);
   private categorieSvc = inject(CategorieService);

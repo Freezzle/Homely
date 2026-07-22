@@ -7,7 +7,7 @@ import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
 import { CardModule } from 'primeng/card';
 import { AuthService } from '../../../core/services/auth.service';
-import { FR } from '../../../core/i18n/fr';
+import { I18nService } from '../../../core/i18n/i18n.service';
 
 @Component({
   selector: 'app-login',
@@ -47,7 +47,8 @@ import { FR } from '../../../core/i18n/fr';
   `,
 })
 export class LoginComponent {
-  readonly t = FR;
+  private readonly i18n = inject(I18nService);
+  readonly t = this.i18n.translations();
   private auth = inject(AuthService);
   private router = inject(Router);
   private fb = inject(FormBuilder);
@@ -68,7 +69,7 @@ export class LoginComponent {
     this.auth.login({ email: email!, motDePasse: password! }).subscribe({
       next: () => this.router.navigate(['/']),
       error: () => {
-        this.erreur.set(FR.auth.loginError);
+        this.erreur.set(this.t.auth.loginError);
         this.chargement.set(false);
       },
     });

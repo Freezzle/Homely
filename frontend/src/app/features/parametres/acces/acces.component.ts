@@ -13,7 +13,7 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { ContexteService } from '../../../core/services/contexte.service';
 import { FoyerService } from '../../../core/services/referentiel.service';
 import { AccesFoyerDto, RoleFoyer } from '../../../core/models/api.models';
-import { FR } from '../../../core/i18n/fr';
+import { I18nService } from '../../../core/i18n/i18n.service';
 
 /** T10.2 — Gestion des accès (OWNER uniquement) */
 @Component({
@@ -39,7 +39,7 @@ import { FR } from '../../../core/i18n/fr';
       <p-table [value]="acces()" class="p-datatable-sm p-datatable-striped" [loading]="chargement()">
          <ng-template #header>
            <tr>
-             <th>Nom</th>
+             <th>{{ t.commun.nom }}</th>
              <th>{{ t.acces.email }}</th>
              <th>{{ t.acces.role }}</th>
              <th></th>
@@ -57,7 +57,7 @@ import { FR } from '../../../core/i18n/fr';
                <div class="flex gap-1">
                  @if (contexte.estOwner() && a.role !== 'OWNER') {
                    <p-button icon="pi pi-cog" [text]="true" size="small"
-                             pTooltip="Changer le rôle" (click)="ouvrirChangerRole(a)" />
+                             [pTooltip]="t.acces.changerRole" (click)="ouvrirChangerRole(a)" />
                    <p-button icon="pi pi-user-minus" [text]="true" severity="danger" size="small"
                              [pTooltip]="t.acces.retirer" (click)="retirer(a)" />
                  }
@@ -90,7 +90,7 @@ import { FR } from '../../../core/i18n/fr';
     </p-dialog>
 
     <!-- Dialog changer rôle -->
-    <p-dialog [(visible)]="roleVisible" [header]="'Changer le rôle'" [modal]="true" class="w-full max-w-sm">
+    <p-dialog [(visible)]="roleVisible" [header]="t.acces.changerRole" [modal]="true" class="w-full max-w-sm">
       <div class="flex flex-col gap-4 pt-2">
         <p-select appendTo="body" [(ngModel)]="nouveauRole" [options]="roleOptions" optionLabel="label" optionValue="value" class="w-full" />
       </div>
@@ -102,7 +102,8 @@ import { FR } from '../../../core/i18n/fr';
   `,
 })
 export class AccesComponent implements OnInit {
-  readonly t = FR;
+  private readonly i18n = inject(I18nService);
+  readonly t = this.i18n.translations();
   contexte = inject(ContexteService);
   private foyerSvc = inject(FoyerService);
   private toast = inject(MessageService);
@@ -117,8 +118,8 @@ export class AccesComponent implements OnInit {
   nouveauRole: RoleFoyer = 'VIEWER';
 
   roleOptions: { label: string; value: RoleFoyer }[] = [
-    { label: FR.acces.roles.EDITOR, value: 'EDITOR' },
-    { label: FR.acces.roles.VIEWER, value: 'VIEWER' },
+    { label: this.t.acces.roles.EDITOR, value: 'EDITOR' },
+    { label: this.t.acces.roles.VIEWER, value: 'VIEWER' },
   ];
 
   inviteForm = this.fb.group({
@@ -127,7 +128,7 @@ export class AccesComponent implements OnInit {
   });
 
   roleLabel(role: RoleFoyer): string {
-    return FR.acces.roles[role] ?? role;
+    return this.t.acces.roles[role] ?? role;
   }
 
   // effect() en initialiseur de champ = contexte d'injection valide ✓
@@ -156,8 +157,8 @@ export class AccesComponent implements OnInit {
     const foyerId = this.contexte.foyerId()!;
     const v = this.inviteForm.value;
     this.foyerSvc.inviter(foyerId, { email: v.email!, role: v.role as RoleFoyer }).subscribe({
-      next: () => { this.toast.add({ severity: 'success', summary: FR.commun.succes }); this.inviteVisible = false; this.charger(); },
-      error: (e) => this.toast.add({ severity: 'error', summary: FR.commun.erreur, detail: e?.error?.message }),
+      next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.inviteVisible = false; this.charger(); },
+      error: (e) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: e?.error?.message }),
     });
   }
 
@@ -170,17 +171,17 @@ export class AccesComponent implements OnInit {
   changerRole(): void {
     const foyerId = this.contexte.foyerId()!;
     this.foyerSvc.changerRole(foyerId, this.accesEnEdition!.id, { role: this.nouveauRole }).subscribe({
-      next: () => { this.toast.add({ severity: 'success', summary: FR.commun.succes }); this.roleVisible = false; this.charger(); },
-      error: (e) => this.toast.add({ severity: 'error', summary: FR.commun.erreur, detail: e?.error?.message }),
+      next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.roleVisible = false; this.charger(); },
+      error: (e) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: e?.error?.message }),
     });
   }
 
   retirer(a: AccesFoyerDto): void {
     this.confirm.confirm({
-      message: FR.commun.confirmerSuppression,
+      message: this.t.commun.confirmerSuppression,
       accept: () => this.foyerSvc.retirerAcces(this.contexte.foyerId()!, a.id).subscribe({
-        next: () => { this.toast.add({ severity: 'success', summary: FR.commun.succes }); this.charger(); },
-        error: (e) => this.toast.add({ severity: 'error', summary: FR.commun.erreur, detail: e?.error?.message }),
+        next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.charger(); },
+        error: (e) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: e?.error?.message }),
       }),
     });
   }

@@ -11,7 +11,7 @@ import { CategorieService, CompteService } from '../../../core/services/referent
 import { PosteService, ObjectifService } from '../../../core/services/scenario-poste.service';
 import { DecompositionService } from '../../../core/services/decomposition.service';
 import { VentilationsDto, VentilationAggregatDto, CategorieDto, CompteDto, TypeCategorie, PosteDto, ObjectifDto } from '../../../core/models/api.models';
-import { FR } from '../../../core/i18n/fr';
+import { I18nService } from '../../../core/i18n/i18n.service';
 import { CarteBilanMembreComponent, LigneDecomposition, MembreTagInfo } from '../../../shared/components/carte-bilan-membre/carte-bilan-membre.component';
 
 @Component({
@@ -29,7 +29,7 @@ import { CarteBilanMembreComponent, LigneDecomposition, MembreTagInfo } from '..
               <div class="flex-1 min-w-0">
                   <h1 class="text-2xl font-bold">{{ t.nav.dashboardMensuel }}</h1>
                   <p class="text-sm text-surface-500 mt-0.5">
-                      Ventilation détaillée de {{ t.mois[mois - 1] }} {{ annee }}
+                      {{ t.projection.ventilationDetailleeDe }} {{ t.mois[mois - 1] }} {{ annee }}
                   </p>
               </div>
               <div class="flex gap-2 shrink-0">
@@ -100,7 +100,8 @@ import { CarteBilanMembreComponent, LigneDecomposition, MembreTagInfo } from '..
   `,
 })
 export class DashboardMensuelComponent implements OnInit {
-  readonly t = FR;
+  private readonly i18n = inject(I18nService);
+  readonly t = this.i18n.translations();
   private contexte     = inject(ContexteService);
   private projSvc      = inject(ProjectionService);
   private categorieSvc = inject(CategorieService);
@@ -147,7 +148,7 @@ export class DashboardMensuelComponent implements OnInit {
   mois  = new Date().getMonth() + 1;
 
   annees: number[]  = Array.from({ length: 9 }, (_, i) => new Date().getFullYear() + i);
-  moisOptions       = FR.mois.map((label, i) => ({ label, value: i + 1 }));
+  moisOptions       = this.t.mois.map((label, i) => ({ label, value: i + 1 }));
 
   formatPct(v: number): string {
     return this.decomp.formatPct(v);

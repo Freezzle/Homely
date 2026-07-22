@@ -1,10 +1,10 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { I18nService } from '../i18n/i18n.service';
 import {
   CategorieDto, CompteDto, MembreDto, ObjectifDto, ScenarioDto, TypeCategorie,
   VentilationAggregatDto, VentilationSplitDto,
 } from '../models/api.models';
 import { LigneDecomposition, MembreTagInfo } from '../../shared/components/carte-bilan-membre/carte-bilan-membre.component';
-import { FR } from '../i18n/fr';
 
 /** Forme minimale commune à une ventilation mensuelle ou à un agrégat annuel sommé. */
 export interface VentilationLike {
@@ -24,7 +24,12 @@ export interface VentilationLike {
  */
 @Injectable({ providedIn: 'root' })
 export class DecompositionService {
-  private readonly t = FR;
+  private readonly i18n = inject(I18nService);
+
+  /** Traductions courantes (recalculées à chaque accès, cohérent si la langue change). */
+  private get t() {
+    return this.i18n.translations();
+  }
 
   /** Initiales (1 à 2 lettres) à partir d'un nom/prénom — utilisées dans les avatars. */
   initiales(nom: string): string {

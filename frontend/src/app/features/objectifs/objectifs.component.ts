@@ -21,7 +21,7 @@ import { ObjectifService } from '../../core/services/scenario-poste.service';
 import { CompteService, ActifService, CategorieService } from '../../core/services/referentiel.service';
 import { ObjectifDto, CompteDto, ActifDto, CategorieDto } from '../../core/models/api.models';
 import { MontantPipe, DateFrPipe } from '../../core/pipes/format.pipes';
-import { FR } from '../../core/i18n/fr';
+import { I18nService } from '../../core/i18n/i18n.service';
 
 type StatutObjectif = 'DANS_LES_TEMPS' | 'EN_RETARD' | 'ATTEINT';
 
@@ -196,7 +196,8 @@ type StatutObjectif = 'DANS_LES_TEMPS' | 'EN_RETARD' | 'ATTEINT';
   `,
 })
 export class ObjectifsComponent implements OnInit {
-  readonly t = FR;
+  private readonly i18n = inject(I18nService);
+  readonly t = this.i18n.translations();
   contexte = inject(ContexteService);
   private objectifSvc = inject(ObjectifService);
   private compteSvc = inject(CompteService);
@@ -321,17 +322,17 @@ export class ObjectifsComponent implements OnInit {
       ? this.objectifSvc.modifier(foyerId, scenarioId, this.objectifEnEdition.id, req)
       : this.objectifSvc.creer(foyerId, scenarioId, req);
     obs.subscribe({
-      next: () => { this.toast.add({ severity: 'success', summary: FR.commun.succes }); this.dialogVisible = false; this.charger(); },
-      error: (e) => this.toast.add({ severity: 'error', summary: FR.commun.erreur, detail: e?.error?.message }),
+      next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.dialogVisible = false; this.charger(); },
+      error: (e) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: e?.error?.message }),
     });
   }
 
   supprimer(o: ObjectifDto): void {
     this.confirm.confirm({
-      message: FR.commun.confirmerSuppression,
+      message: this.t.commun.confirmerSuppression,
       accept: () => this.objectifSvc.supprimer(this.contexte.foyerId()!, this.contexte.scenarioId()!, o.id).subscribe({
-        next: () => { this.toast.add({ severity: 'success', summary: FR.commun.succes }); this.charger(); },
-        error: () => this.toast.add({ severity: 'error', summary: FR.commun.erreur }),
+        next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.charger(); },
+        error: () => this.toast.add({ severity: 'error', summary: this.t.commun.erreur }),
       }),
     });
   }

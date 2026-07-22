@@ -5,7 +5,7 @@ import { SidebarModule } from 'primeng/sidebar';
 import { ButtonModule } from 'primeng/button';
 import { ContexteService } from '../../core/services/contexte.service';
 import { ViewportService } from '../../core/services/viewport.service';
-import { FR } from '../../core/i18n/fr';
+import { I18nService } from '../../core/i18n/i18n.service';
 
 /** Un item de navigation simple (feuille ou nœud parent). */
 interface NavItem {
@@ -116,7 +116,8 @@ interface NavSection {
   `,
 })
 export class SidebarMenuComponent {
-  readonly t = FR;
+  private readonly i18n = inject(I18nService);
+  readonly t = this.i18n.translations();
   readonly contexte = inject(ContexteService);
   readonly viewport = inject(ViewportService);
   private precedentCompact: boolean | null = null;

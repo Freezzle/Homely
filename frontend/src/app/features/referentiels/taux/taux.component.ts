@@ -12,7 +12,7 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { ContexteService } from '../../../core/services/contexte.service';
 import { TauxChangeService } from '../../../core/services/referentiel.service';
 import { TauxChangeDto } from '../../../core/models/api.models';
-import { FR } from '../../../core/i18n/fr';
+import { I18nService } from '../../../core/i18n/i18n.service';
 
 /** T10.2 — Taux de change (CRUD upsert) */
 @Component({
@@ -87,7 +87,8 @@ import { FR } from '../../../core/i18n/fr';
   `,
 })
 export class TauxComponent implements OnInit {
-  readonly t = FR;
+  private readonly i18n = inject(I18nService);
+  readonly t = this.i18n.translations();
   contexte = inject(ContexteService);
   private tauxSvc = inject(TauxChangeService);
   private toast = inject(MessageService);
@@ -138,17 +139,17 @@ export class TauxComponent implements OnInit {
     const v = this.form.value;
     const req = { devise: v.devise!.toUpperCase(), tauxVersBase: v.tauxVersBase! };
     this.tauxSvc.creerOuModifier(foyerId, req).subscribe({
-      next: () => { this.toast.add({ severity: 'success', summary: FR.commun.succes }); this.dialogVisible = false; this.charger(); },
-      error: (e) => this.toast.add({ severity: 'error', summary: FR.commun.erreur, detail: e?.error?.message }),
+      next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.dialogVisible = false; this.charger(); },
+      error: (e) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: e?.error?.message }),
     });
   }
 
   supprimer(tx: TauxChangeDto): void {
     this.confirm.confirm({
-      message: FR.commun.confirmerSuppression,
+      message: this.t.commun.confirmerSuppression,
       accept: () => this.tauxSvc.supprimer(this.contexte.foyerId()!, tx.id).subscribe({
-        next: () => { this.toast.add({ severity: 'success', summary: FR.commun.succes }); this.charger(); },
-        error: () => this.toast.add({ severity: 'error', summary: FR.commun.erreur }),
+        next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.charger(); },
+        error: () => this.toast.add({ severity: 'error', summary: this.t.commun.erreur }),
       }),
     });
   }

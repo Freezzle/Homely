@@ -1,11 +1,11 @@
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CardModule } from 'primeng/card';
 import { AvatarModule } from 'primeng/avatar';
 import { DividerModule } from 'primeng/divider';
 import { MeterGroupModule } from 'primeng/metergroup';
 import { TagModule } from 'primeng/tag';
-import { FR } from '../../../core/i18n/fr';
+import { I18nService } from '../../../core/i18n/i18n.service';
 
 /** Tag membre (nom + couleur) affiché sur une ligne de décomposition « Compte » (co-titulaires). */
 export interface MembreTagInfo { membreId: string; label: string; couleur: string; couleurTexte: string; }
@@ -89,7 +89,8 @@ export interface LigneDecomposition {
   `,
 })
 export class CarteBilanMembreComponent {
-  readonly t = FR;
+  private readonly i18n = inject(I18nService);
+  readonly t = this.i18n.translations();
 
   /** 'membre' : avatar coloré par membre. 'foyer' : avatar aux couleurs du thème primaire. */
   readonly variante = input<'membre' | 'foyer'>('membre');

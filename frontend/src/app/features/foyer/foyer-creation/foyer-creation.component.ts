@@ -17,8 +17,7 @@ import { MessageService } from 'primeng/api';
 // App
 import { FoyerService, MembreService } from '../../../core/services/referentiel.service';
 import { ContexteService } from '../../../core/services/contexte.service';
-import { FR } from '../../../core/i18n/fr';
-import { format } from '../../../core/i18n/format';
+import { I18nService } from '../../../core/i18n/i18n.service';
 import { FoyerOnboardingRequest } from '../../../core/models/api.models';
 
 // ── Modèles internes du wizard ──────────────────────────────────────────────
@@ -420,7 +419,8 @@ interface ScenarioLocal {
   `,
 })
 export class FoyerCreationComponent implements OnInit {
-  readonly t = FR;
+  private readonly i18n = inject(I18nService);
+  readonly t = this.i18n.translations();
   private foyerSvc = inject(FoyerService);
   private membreSvc = inject(MembreService);
   private contexte = inject(ContexteService);
@@ -432,18 +432,18 @@ export class FoyerCreationComponent implements OnInit {
   enCours = signal(false);
 
   // ── Étape 0 : Foyer ──────────────────────────────────────────────────────
-  foyerNom = signal<string>(FR.foyer.onboarding.defaults.foyerNom);
+  foyerNom = signal<string>(this.t.foyer.onboarding.defaults.foyerNom);
   foyerDevise = signal<string>('CHF');
 
   readonly devises = ['CHF', 'EUR', 'USD', 'GBP', 'CAD'];
 
   // ── Étape 1 : Membres ────────────────────────────────────────────────────
   membres = signal<MembreLocal[]>([
-    { nom: format(FR.foyer.onboarding.defaults.membreNomTemplate, { index: 1 }), couleur: '#6366f1', ordre: 1 },
+    { nom: this.i18n.instant('foyer.onboarding.defaults.membreNomTemplate', { index: 1 }), couleur: '#6366f1', ordre: 1 },
   ]);
 
   readonly membreOptions = computed(() =>
-    this.membres().map(m => ({ label: m.nom || format(FR.foyer.onboarding.defaults.membreNomTemplate, { index: m.ordre }), value: m.ordre }))
+    this.membres().map(m => ({ label: m.nom || this.i18n.instant('foyer.onboarding.defaults.membreNomTemplate', { index: m.ordre }), value: m.ordre }))
   );
 
   // ── Étape 2 : Comptes ────────────────────────────────────────────────────
@@ -451,23 +451,23 @@ export class FoyerCreationComponent implements OnInit {
 
   // ── Étape 3 : Catégories ─────────────────────────────────────────────────
   categoriesRevenu = signal<CategorieLocal[]>(
-    FR.foyer.onboarding.defaults.categories.revenu.map(l => ({ libelle: l, typePoste: 'REVENU' as const }))
+    this.t.foyer.onboarding.defaults.categories.revenu.map(l => ({ libelle: l, typePoste: 'REVENU' as const }))
   );
   categoriesCharge = signal<CategorieLocal[]>(
-    FR.foyer.onboarding.defaults.categories.charge.map(l => ({ libelle: l, typePoste: 'CHARGE' as const }))
+    this.t.foyer.onboarding.defaults.categories.charge.map(l => ({ libelle: l, typePoste: 'CHARGE' as const }))
   );
   categoriesReserve = signal<CategorieLocal[]>(
-    FR.foyer.onboarding.defaults.categories.reserve.map(l => ({ libelle: l, typePoste: 'RESERVE' as const }))
+    this.t.foyer.onboarding.defaults.categories.reserve.map(l => ({ libelle: l, typePoste: 'RESERVE' as const }))
   );
 
   // Labels traduits des colonnes de catégories
-  readonly revenuLabel = FR.projection.revenus;
-  readonly chargeLabel = FR.projection.charges;
-  readonly reserveLabel = FR.projection.reserves;
+  readonly revenuLabel = this.t.projection.revenus;
+  readonly chargeLabel = this.t.projection.charges;
+  readonly reserveLabel = this.t.projection.reserves;
 
   // ── Étape 4 : Scénario ───────────────────────────────────────────────────
   scenario = signal<ScenarioLocal>({
-    nom: FR.foyer.onboarding.defaults.scenarioNom,
+    nom: this.t.foyer.onboarding.defaults.scenarioNom,
     anneeDepart: new Date().getFullYear(),
     tresorerieInitiale: 0,
     repartitions: [],
@@ -558,7 +558,7 @@ export class FoyerCreationComponent implements OnInit {
     this.membres.update(list => [
       ...list,
       {
-        nom: format(FR.foyer.onboarding.defaults.membreNomTemplate, { index: ordre }),
+        nom: this.i18n.instant('foyer.onboarding.defaults.membreNomTemplate', { index: ordre }),
         couleur: '#6366f1',
         ordre,
       },
@@ -578,7 +578,7 @@ export class FoyerCreationComponent implements OnInit {
   entrerEtape2(): void {
     if (this.comptes().length > 0) return; // ne pas réinitialiser si déjà rempli
     const comptes: CompteLocal[] = this.membres().map(m => ({
-      libelle: `${FR.foyer.onboarding.defaults.compteLibelle}`,
+      libelle: `${this.t.foyer.onboarding.defaults.compteLibelle}`,
       soldeInitial: 0,
       membreOrdres: [m.ordre],
     }));
@@ -591,7 +591,7 @@ export class FoyerCreationComponent implements OnInit {
     this.comptes.update(list => [
       ...list,
       {
-        libelle: FR.foyer.onboarding.defaults.compteLibelle,
+        libelle: this.t.foyer.onboarding.defaults.compteLibelle,
         soldeInitial: 0,
         membreOrdres: this.membres().length > 0 ? [this.membres()[0].ordre] : [],
       },
@@ -622,7 +622,7 @@ export class FoyerCreationComponent implements OnInit {
     const nb = this.membres().length;
     const repartitions: RepartitionLocal[] = this.membres().map((m) => ({
       membreOrdre: m.ordre,
-      nomMembre: m.nom || format(FR.foyer.onboarding.defaults.membreNomTemplate, { index: m.ordre }),
+      nomMembre: m.nom || this.i18n.instant('foyer.onboarding.defaults.membreNomTemplate', { index: m.ordre }),
       quotePart: nb === 1 ? 100 : nb === 2 ? 50 : 0,
     }));
     this.scenario.update(s => ({ ...s, repartitions }));
@@ -677,7 +677,7 @@ export class FoyerCreationComponent implements OnInit {
       },
       error: () => {
         this.enCours.set(false);
-        this.toast.add({ severity: 'error', summary: FR.commun.erreur, life: 5000 });
+        this.toast.add({ severity: 'error', summary: this.t.commun.erreur, life: 5000 });
       },
     });
   }

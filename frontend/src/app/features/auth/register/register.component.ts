@@ -7,7 +7,7 @@ import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
 import { CardModule } from 'primeng/card';
 import { AuthService } from '../../../core/services/auth.service';
-import { FR } from '../../../core/i18n/fr';
+import { I18nService } from '../../../core/i18n/i18n.service';
 
 @Component({
   selector: 'app-register',
@@ -51,7 +51,8 @@ import { FR } from '../../../core/i18n/fr';
   `,
 })
 export class RegisterComponent {
-  readonly t = FR;
+  private readonly i18n = inject(I18nService);
+  readonly t = this.i18n.translations();
   private auth = inject(AuthService);
   private router = inject(Router);
   private fb = inject(FormBuilder);

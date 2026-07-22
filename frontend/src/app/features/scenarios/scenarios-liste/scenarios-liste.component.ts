@@ -14,7 +14,7 @@ import { ContexteService } from '../../../core/services/contexte.service';
 import { ScenarioService } from '../../../core/services/scenario-poste.service';
 import { ScenarioDto } from '../../../core/models/api.models';
 import { MontantPipe } from '../../../core/pipes/format.pipes';
-import { FR } from '../../../core/i18n/fr';
+import { I18nService } from '../../../core/i18n/i18n.service';
 import { RepartitionPeriodesComponent } from '../repartition-periodes/repartition-periodes.component';
 
 @Component({
@@ -37,8 +37,8 @@ import { RepartitionPeriodesComponent } from '../repartition-periodes/repartitio
       <p-table [value]="scenarios()" class="p-datatable-sm p-datatable-striped" [loading]="chargement()">
          <ng-template #header>
            <tr>
-             <th>{{ t.commun.enregistrer }}</th>
-             <th>Statut</th>
+             <th>{{ t.commun.nom }}</th>
+             <th>{{ t.commun.statut }}</th>
              <th class="text-right">{{ t.scenario.anneeDepart }}</th>
              <th class="text-right">{{ t.scenario.tresorerieInitiale }}</th>
              <th class="text-right">{{ t.scenario.horizonAnnees }}</th>
@@ -55,7 +55,7 @@ import { RepartitionPeriodesComponent } from '../repartition-periodes/repartitio
              </td>
              <td class="text-right">{{ s.anneeDepart }}</td>
              <td class="text-right">{{ s.tresorerieInitiale | montant }}</td>
-             <td class="text-right">{{ s.horizonAnnees }} ans</td>
+             <td class="text-right">{{ s.horizonAnnees }} {{ t.scenario.horizonAnneesUnite }}</td>
              <td>
                <div class="flex gap-1 items-center">
                  @if (contexte.estEditor()) {
@@ -130,7 +130,8 @@ import { RepartitionPeriodesComponent } from '../repartition-periodes/repartitio
   `,
 })
 export class ScenariosListeComponent implements OnInit {
-  readonly t = FR;
+  private readonly i18n = inject(I18nService);
+  readonly t = this.i18n.translations();
   contexte = inject(ContexteService);
   private scenarioSvc = inject(ScenarioService);
   private toast = inject(MessageService);
@@ -223,32 +224,32 @@ export class ScenariosListeComponent implements OnInit {
       : this.scenarioSvc.creer(foyerId, req);
     obs.subscribe({
       next: () => {
-        this.toast.add({ severity: 'success', summary: FR.commun.succes });
+        this.toast.add({ severity: 'success', summary: this.t.commun.succes });
         this.dialogVisible = false;
         this.charger();
         this.contexte.notifierRefresh();
       },
-      error: (e) => this.toast.add({ severity: 'error', summary: FR.commun.erreur, detail: e?.error?.message }),
+      error: (e) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: e?.error?.message }),
     });
   }
 
   dupliquer(s: ScenarioDto): void {
     this.scenarioSvc.dupliquer(this.contexte.foyerId()!, s.id).subscribe({
-      next: () => { this.toast.add({ severity: 'success', summary: FR.commun.succes }); this.charger(); this.contexte.notifierRefresh(); },
+      next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.charger(); this.contexte.notifierRefresh(); },
     });
   }
 
   definirReference(s: ScenarioDto): void {
     this.scenarioSvc.definirReference(this.contexte.foyerId()!, s.id).subscribe({
-      next: () => { this.toast.add({ severity: 'success', summary: FR.commun.succes }); this.charger(); this.contexte.notifierRefresh(); },
+      next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.charger(); this.contexte.notifierRefresh(); },
     });
   }
 
   supprimer(s: ScenarioDto): void {
     this.confirm.confirm({
-      message: FR.commun.confirmerSuppression,
+      message: this.t.commun.confirmerSuppression,
       accept: () => this.scenarioSvc.supprimer(this.contexte.foyerId()!, s.id).subscribe({
-        next: () => { this.toast.add({ severity: 'success', summary: FR.commun.succes }); this.charger(); this.contexte.notifierRefresh(); },
+        next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.charger(); this.contexte.notifierRefresh(); },
       }),
     });
   }

@@ -10,7 +10,7 @@ import { ConfirmationService } from 'primeng/api';
 import { Router } from '@angular/router';
 import { ContexteService } from '../../core/services/contexte.service';
 import { FoyerService } from '../../core/services/referentiel.service';
-import { FR } from '../../core/i18n/fr';
+import { I18nService } from '../../core/i18n/i18n.service';
 
 /** T10.2 — Paramètres du foyer (OWNER) */
 @Component({
@@ -49,7 +49,7 @@ import { FR } from '../../core/i18n/fr';
         <p-card class="border border-red-200">
           <div class="flex items-center justify-between">
             <div>
-              <div class="font-semibold text-red-600">Zone dangereuse</div>
+              <div class="font-semibold text-red-600">{{ t.parametres.zoneDangereuse }}</div>
               <div class="text-sm text-surface-500 mt-1">{{ t.parametres.confirmerSuppression }}</div>
             </div>
             <p-button [label]="t.parametres.supprimer" icon="pi pi-trash" severity="danger"
@@ -61,7 +61,8 @@ import { FR } from '../../core/i18n/fr';
   `,
 })
 export class ParametresComponent implements OnInit {
-  readonly t = FR;
+  private readonly i18n = inject(I18nService);
+  readonly t = this.i18n.translations();
   contexte = inject(ContexteService);
   private foyerSvc = inject(FoyerService);
   private confirm = inject(ConfirmationService);
@@ -100,7 +101,7 @@ export class ParametresComponent implements OnInit {
 
   supprimerFoyer(): void {
     this.confirm.confirm({
-      message: FR.parametres.confirmerSuppression,
+      message: this.t.parametres.confirmerSuppression,
       accept: () => {
         const foyerId = this.contexte.foyerId()!;
         this.foyerSvc.supprimer(foyerId).subscribe({

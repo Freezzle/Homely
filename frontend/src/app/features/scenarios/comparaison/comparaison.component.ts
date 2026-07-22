@@ -13,7 +13,7 @@ import { ProjectionService } from '../../../core/services/projection.service';
 import { ScenarioService } from '../../../core/services/scenario-poste.service';
 import { ComparaisonDto, ScenarioDto } from '../../../core/models/api.models';
 import { MontantPipe } from '../../../core/pipes/format.pipes';
-import { FR } from '../../../core/i18n/fr';
+import { I18nService } from '../../../core/i18n/i18n.service';
 
 /** T10.8 — Comparaison multi-scénarios */
 @Component({
@@ -81,7 +81,7 @@ import { FR } from '../../../core/i18n/fr';
                 @for (nom of comparaison()!.nomScenarios; track nom) {
                   <th class="text-right text-xs">{{ nom }}</th>
                 }
-                <th class="text-right text-xs">Écart (max-min)</th>
+                <th class="text-right text-xs">{{ t.comparaison.ecartMaxMin }}</th>
               </tr>
             </ng-template>
             <ng-template #body let-row>
@@ -102,7 +102,8 @@ import { FR } from '../../../core/i18n/fr';
   `,
 })
 export class ComparaisonComponent implements OnInit {
-  readonly t = FR;
+  private readonly i18n = inject(I18nService);
+  readonly t = this.i18n.translations();
   private contexte = inject(ContexteService);
   private projSvc = inject(ProjectionService);
   private scenarioSvc = inject(ScenarioService);

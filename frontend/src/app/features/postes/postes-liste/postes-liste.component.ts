@@ -25,7 +25,7 @@ import { PosteService } from '../../../core/services/scenario-poste.service';
 import { CategorieService, CompteService } from '../../../core/services/referentiel.service';
 import { PosteDto, CategorieDto, CompteDto, MembreDto, VentilationCompteDto, TypePoste, TypeRepartition } from '../../../core/models/api.models';
 import { MontantPipe, PeriodicitePipe } from '../../../core/pipes/format.pipes';
-import { FR } from '../../../core/i18n/fr';
+import { I18nService } from '../../../core/i18n/i18n.service';
 
 @Component({
   selector: 'app-postes-liste',
@@ -392,7 +392,7 @@ import { FR } from '../../../core/i18n/fr';
                                          [min]="0" [max]="100"
                                          [minFractionDigits]="1" [maxFractionDigits]="1"
                                          suffix="%" class="w-full"
-                                         placeholder="Ex: 10.0"/>
+                                         [placeholder]="t.poste.estimationPlaceholder"/>
                       </div>
                   }
               </div>
@@ -543,7 +543,7 @@ import { FR } from '../../../core/i18n/fr';
                   <ng-template #header>
                       <tr>
                           <th>{{ t.projection.mois }}</th>
-                          <th class="text-right">Contribution</th>
+                          <th class="text-right">{{ t.poste.contribution }}</th>
                       </tr>
                   </ng-template>
                   <ng-template #body let-c>
@@ -558,7 +558,8 @@ import { FR } from '../../../core/i18n/fr';
   `,
 })
 export class PostesListeComponent implements OnInit {
-  readonly t = FR;
+  private readonly i18n = inject(I18nService);
+  readonly t = this.i18n.translations();
   readonly type = input<TypePoste>('REVENU');
   readonly Math = Math; // Exposition pour le template
   contexte = inject(ContexteService);
@@ -581,29 +582,29 @@ export class PostesListeComponent implements OnInit {
   sommeRepartition = 0;
 
   modeOptions = [
-    { label: FR.poste.modeOptions.MENSUALISE, value: 'MENSUALISE' },
-    { label: FR.poste.modeOptions.PERIODIQUE, value: 'PERIODIQUE' },
+    { label: this.t.poste.modeOptions.MENSUALISE, value: 'MENSUALISE' },
+    { label: this.t.poste.modeOptions.PERIODIQUE, value: 'PERIODIQUE' },
   ];
 
   momentOptions = [
-    { label: FR.poste.momentOptions.DEBUT_PERIODE, value: 'DEBUT_PERIODE' },
-    { label: FR.poste.momentOptions.FIN_PERIODE,   value: 'FIN_PERIODE' },
+    { label: this.t.poste.momentOptions.DEBUT_PERIODE, value: 'DEBUT_PERIODE' },
+    { label: this.t.poste.momentOptions.FIN_PERIODE,   value: 'FIN_PERIODE' },
   ];
 
   natureOptions = [
-    { label: FR.poste.natureOptions.EFFECTIF,  value: 'EFFECTIF' },
-    { label: FR.poste.natureOptions.ESTIMATION, value: 'ESTIMATION' },
+    { label: this.t.poste.natureOptions.EFFECTIF,  value: 'EFFECTIF' },
+    { label: this.t.poste.natureOptions.ESTIMATION, value: 'ESTIMATION' },
   ];
 
   typeRepartitionOptions = [
-    { label: FR.poste.typeRepartitionOptions.AUTO,         value: 'AUTO' as TypeRepartition },
-    { label: FR.poste.typeRepartitionOptions.REVERSE_AUTO, value: 'REVERSE_AUTO' as TypeRepartition },
-    { label: FR.poste.typeRepartitionOptions.CUSTOM,       value: 'CUSTOM' as TypeRepartition },
+    { label: this.t.poste.typeRepartitionOptions.AUTO,         value: 'AUTO' as TypeRepartition },
+    { label: this.t.poste.typeRepartitionOptions.REVERSE_AUTO, value: 'REVERSE_AUTO' as TypeRepartition },
+    { label: this.t.poste.typeRepartitionOptions.CUSTOM,       value: 'CUSTOM' as TypeRepartition },
   ];
 
   periodiciteOptions = [
-    { label: FR.poste.periodiciteLabels[0], value: 0 },
-    ...FR.poste.periodiciteLabels.slice(1).map((label, i) => ({ label, value: i + 1 }))
+    { label: this.t.poste.periodiciteLabels[0], value: 0 },
+    ...this.t.poste.periodiciteLabels.slice(1).map((label, i) => ({ label, value: i + 1 }))
   ];
 
   triActuel = signal<'DATE' | 'CATEGORIE' | 'DESCRIPTION'>('CATEGORIE');
@@ -614,9 +615,9 @@ export class PostesListeComponent implements OnInit {
   filtreCategorieIds = signal<string[]>([]);
 
   triOptions = [
-    { label: FR.poste.triOptions.DATE,        value: 'DATE' as const },
-    { label: FR.poste.triOptions.CATEGORIE,   value: 'CATEGORIE' as const },
-    { label: FR.poste.triOptions.DESCRIPTION, value: 'DESCRIPTION' as const },
+    { label: this.t.poste.triOptions.DATE,        value: 'DATE' as const },
+    { label: this.t.poste.triOptions.CATEGORIE,   value: 'CATEGORIE' as const },
+    { label: this.t.poste.triOptions.DESCRIPTION, value: 'DESCRIPTION' as const },
   ];
 
   visibiliteMenuItems: MenuItem[] = [
@@ -1097,8 +1098,8 @@ export class PostesListeComponent implements OnInit {
     if (estOneShot && !v.debut) {
       this.toast.add({
         severity: 'warn',
-        summary: FR.commun.erreur,
-        detail: `${FR.poste.debut} requis pour ${FR.poste.oneShot}`,
+        summary: this.t.commun.erreur,
+        detail: this.i18n.instant('poste.debutRequisPourOneShot', { champ: this.t.poste.debut, type: this.t.poste.oneShot }),
       });
       return;
     }
@@ -1116,7 +1117,7 @@ export class PostesListeComponent implements OnInit {
 
     // Validation somme seulement pour CUSTOM multi-membres
     if (isCustom && this.membres().length > 1 && this.sommeRepartition !== 100) {
-      this.toast.add({ severity: 'warn', summary: FR.commun.erreur, detail: FR.commun.repartitionInvalide });
+      this.toast.add({ severity: 'warn', summary: this.t.commun.erreur, detail: this.t.commun.repartitionInvalide });
       return;
     }
 
@@ -1150,23 +1151,23 @@ export class PostesListeComponent implements OnInit {
 
     obs.subscribe({
       next: () => {
-        this.toast.add({ severity: 'success', summary: FR.commun.succes });
+        this.toast.add({ severity: 'success', summary: this.t.commun.succes });
         this.dialogVisible = false;
         this.charger();
       },
-      error: (err) => this.toast.add({ severity: 'error', summary: FR.commun.erreur, detail: err?.error?.message }),
+      error: (err) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message }),
     });
   }
 
   supprimer(p: PosteDto): void {
     this.confirm.confirm({
-      message: FR.commun.confirmerSuppression,
+      message: this.t.commun.confirmerSuppression,
       accept: () => {
         const foyerId = this.contexte.foyerId()!;
         const scenarioId = this.contexte.scenarioId()!;
         this.posteSvc.supprimer(foyerId, scenarioId, p.id).subscribe({
-          next: () => { this.toast.add({ severity: 'success', summary: FR.commun.succes }); this.charger(); },
-          error: () => this.toast.add({ severity: 'error', summary: FR.commun.erreur }),
+          next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.charger(); },
+          error: () => this.toast.add({ severity: 'error', summary: this.t.commun.erreur }),
         });
       },
     });

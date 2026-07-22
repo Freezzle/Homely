@@ -61,7 +61,7 @@ test dérivés des vraies données** y figurent : le moteur DOIT les reproduire 
 | UI Kit | **PrimeNG 21.1.x**, PrimeIcons                    | thème par tokens (preset Aura) |
 | CSS / layout | **Tailwind CSS (v4)** couplé à PrimeNG            | plugin officiel `tailwindcss-primeui` + CSS layers (remplace PrimeFlex) |
 | Graphiques | **Chart.js** via `p-chart` (PrimeNG)              | |
-| i18n | Angular i18n + `Intl`                             | formats devise/date localisés |
+| i18n | **ngx-translate** (`@ngx-translate/core` + `http-loader`) + `Intl` | traductions JSON (`assets/i18n/fr.json`, `en.json`), sélecteur FR/EN dans la topbar, formats devise/date localisés |
 | Build/CI | Maven (back), Angular CLI (front), GitHub Actions | |
 
 > ⚠️ Socles du projet : Spring Boot **4**, Angular **22**, Tailwind CSS **v4**.

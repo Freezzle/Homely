@@ -1,6 +1,6 @@
 import { Pipe, PipeTransform, inject } from '@angular/core';
 import { ContexteService } from '../services/contexte.service';
-import { FR } from '../i18n/fr';
+import { TranslateService } from '@ngx-translate/core';
 
 /**
  * T9.2 — Pipe formatage montant : utilise Intl.NumberFormat + deviseBase du foyer.
@@ -61,9 +61,11 @@ export class PctPipe implements PipeTransform {
  */
 @Pipe({ name: 'periodicite', standalone: true, pure: true })
 export class PeriodicitePipe implements PipeTransform {
+  private translate = inject(TranslateService);
+
   transform(mois: number | null | undefined): string {
     if (mois == null) return '–';
-    const labels = FR.poste.periodiciteLabels;
+    const labels: string[] = this.translate.instant('poste.periodiciteLabels');
     if (mois === 0 && labels[0]) return labels[0];  // "Aucune" pour one-shot
     if (mois >= 1 && mois <= 12) return labels[mois];  // Index décalé car [0]="Aucune"
     return `Tous les ${mois} mois`;
