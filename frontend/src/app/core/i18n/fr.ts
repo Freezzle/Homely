@@ -36,7 +36,7 @@ export const FR = {
     fermerMenu: 'Fermer le menu',
     sections: {
       pilotage: 'Pilotage',
-      budget: 'Budget',
+      budget: 'Données du scénario',
       reglages: 'Réglages',
     },
   },
