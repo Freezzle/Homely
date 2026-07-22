@@ -82,6 +82,11 @@ public class ScenarioService {
         Scenario s = trouver(foyerId, scenarioId);
         validerRepartition(req.repartitions());
         s.getRepartitionsDefaut().clear();
+        // Flush immédiat pour exécuter les DELETE (orphanRemoval) avant les futurs INSERT,
+        // sinon Hibernate insère les nouvelles lignes avant de supprimer les anciennes
+        // (ordre de flush par défaut : insertions puis suppressions) → violation de la
+        // contrainte unique (scenario_id, membre_id).
+        scenarioRepo.saveAndFlush(s);
         appliquer(s, req, foyerId);
 
         // Mettre à jour la période ouverte

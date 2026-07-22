@@ -34,7 +34,7 @@ import { CarteBilanMembreComponent, LigneDecomposition } from '../../../shared/c
       <div class="flex flex-col sm:flex-row sm:items-center gap-3">
         <div class="flex-1 min-w-0">
           <h1 class="text-2xl font-bold">{{ t.nav.dashboardAnnuel }}</h1>
-          <p class="text-sm text-surface-500 mt-0.5">{{ t.projection.dashboardAnnuelSousTitre }}</p>
+          <p class="text-sm text-surface-500 mt-0.5">{{ anneeSelectionnee }}</p>
         </div>
         @if (afficherParMembre()) {
           <p-selectbutton [options]="vueOptions" [ngModel]="vue()" (ngModelChange)="vue.set($event)"

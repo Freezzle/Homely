@@ -131,8 +131,8 @@ export class SidebarMenuComponent {
       {
         label: this.t.nav.sections.pilotage,
         items: [
-          { label: this.t.nav.dashboardAnnuel,  icon: 'pi pi-chart-bar', route: `${base}/dashboard-annuel` },
           { label: this.t.nav.dashboardMensuel, icon: 'pi pi-calendar',  route: `${base}/dashboard-mensuel` },
+          { label: this.t.nav.dashboardAnnuel,  icon: 'pi pi-chart-bar', route: `${base}/dashboard-annuel` },
           { label: this.t.nav.scenarios,        icon: 'pi pi-sitemap',   route: `${base}/scenarios` },
         ],
       },

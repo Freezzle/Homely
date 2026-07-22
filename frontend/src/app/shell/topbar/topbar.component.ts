@@ -71,6 +71,7 @@ import { I18nService } from '../../core/i18n/i18n.service';
       <input pButton
         [ariaLabel]="t.commun.changerLangue"
         [pTooltip]="t.commun.changerLangue"
+             class="w-10"
         tooltipPosition="bottom"
         [rounded]="true"
         severity="secondary"
@@ -192,7 +193,7 @@ export class TopbarComponent implements OnInit {
     }
     this.contexte.setFoyer(foyer);
     // chargerScenarios est déclenché automatiquement par l'effect _syncFoyer
-    this.router.navigate(['/f', foyer.id, 'dashboard-annuel']);
+    this.router.navigate(['/f', foyer.id, 'dashboard-mensuel']);
   }
 
   onScenarioChange(scenario: ScenarioDto): void {

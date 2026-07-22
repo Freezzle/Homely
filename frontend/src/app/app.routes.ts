@@ -32,7 +32,7 @@ export const routes: Routes = [
       {
         path: 'f/:foyerId',
         children: [
-          { path: '', redirectTo: 'dashboard-annuel', pathMatch: 'full' },
+          { path: '', redirectTo: 'dashboard-mensuel', pathMatch: 'full' },
           {
             path: 'dashboard-annuel',
             loadComponent: () => import('./features/dashboard/dashboard-annuel/dashboard-annuel.component').then(m => m.DashboardAnnuelComponent),

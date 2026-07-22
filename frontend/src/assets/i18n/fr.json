@@ -14,8 +14,8 @@
     "loginError": "Identifiants invalides."
   },
   "nav": {
-    "dashboardAnnuel": "Tableau de bord annuel",
-    "dashboardMensuel": "Tableau de bord du mois",
+    "dashboardAnnuel": "Stat. de l'année",
+    "dashboardMensuel": "Stat. du mois",
     "revenus": "Revenus",
     "charges": "Charges",
     "reserves": "Réserves",
@@ -260,11 +260,9 @@
     "prorataSurpaiement": "sur-paiement",
     "prorataSouspaiement": "sous-paiement",
     "prorataApproximatifPour": "approximatif pour",
-    "dashboardAnnuelSousTitre": "Vue consolidée des flux annuels du foyer",
     "fluxMensuels": "Flux mensuels",
     "detailMensuel": "Détail mensuel",
-    "legendeGraphiqueMixte": "Barres empilées = charges + réserves · Ligne verte = revenus",
-    "ventilationDetailleeDe": "Ventilation détaillée de"
+    "legendeGraphiqueMixte": "Barres empilées = charges + réserves · Ligne verte = revenus"
   },
   "commun": {
     "actions": "Actions",
@@ -412,18 +410,18 @@
     "ecartMaxMin": "Écart (max-min)"
   },
   "mois": [
-    "Jan",
-    "Fév",
-    "Mar",
-    "Avr",
+    "Janvier",
+    "Février",
+    "Mars",
+    "Avril",
     "Mai",
     "Juin",
-    "Juil",
+    "Juillet",
     "Août",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Déc"
+    "Septembre",
+    "Octobre",
+    "Novembre",
+    "Décembre"
   ],
   "moisLettre": [
     "J",

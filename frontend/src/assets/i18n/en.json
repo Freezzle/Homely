@@ -260,11 +260,9 @@
     "prorataSurpaiement": "overpayment",
     "prorataSouspaiement": "underpayment",
     "prorataApproximatifPour": "approximate for",
-    "dashboardAnnuelSousTitre": "Consolidated view of the household's annual flows",
     "fluxMensuels": "Monthly flows",
     "detailMensuel": "Monthly detail",
-    "legendeGraphiqueMixte": "Stacked bars = expenses + savings · Green line = income",
-    "ventilationDetailleeDe": "Detailed breakdown for"
+    "legendeGraphiqueMixte": "Stacked bars = expenses + savings · Green line = income"
   },
   "commun": {
     "actions": "Actions",
@@ -412,18 +410,18 @@
     "ecartMaxMin": "Difference (max-min)"
   },
   "mois": [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
+    "January",
+    "February",
+    "March",
+    "April",
     "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec"
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December"
   ],
   "moisLettre": [
     "J",

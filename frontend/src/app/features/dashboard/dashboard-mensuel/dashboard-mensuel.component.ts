@@ -29,7 +29,7 @@ import { CarteBilanMembreComponent, LigneDecomposition, MembreTagInfo } from '..
               <div class="flex-1 min-w-0">
                   <h1 class="text-2xl font-bold">{{ t.nav.dashboardMensuel }}</h1>
                   <p class="text-sm text-surface-500 mt-0.5">
-                      {{ t.projection.ventilationDetailleeDe }} {{ t.mois[mois - 1] }} {{ annee }}
+                      {{ t.mois[mois - 1] }} {{ annee }}
                   </p>
               </div>
               <div class="flex gap-2 shrink-0">

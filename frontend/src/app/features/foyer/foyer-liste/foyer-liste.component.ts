@@ -65,7 +65,7 @@ export class FoyerListeComponent implements OnInit {
 
   selectionner(foyer: FoyerDto): void {
     this.contexte.setFoyer(foyer);
-    this.router.navigate(['/f', foyer.id, 'dashboard-annuel']);
+    this.router.navigate(['/f', foyer.id, 'dashboard-mensuel']);
   }
 
   ouvrirCreation(): void {
