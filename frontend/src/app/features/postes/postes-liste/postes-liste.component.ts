@@ -26,535 +26,519 @@ import { CategorieService, CompteService } from '../../../core/services/referent
 import { PosteDto, CategorieDto, CompteDto, MembreDto, VentilationCompteDto, TypePoste, TypeRepartition } from '../../../core/models/api.models';
 import { MontantPipe, PeriodicitePipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
+import { TagComponent } from '../../../shared/components/tag/tag.component';
 
 @Component({
   selector: 'app-postes-liste',
   standalone: true,
   providers: [ConfirmationService],
   imports: [CommonModule, FormsModule, ReactiveFormsModule, TableModule, ButtonModule, DialogModule,
-    InputTextModule, InputNumberModule, SelectModule, MultiSelectModule, DatePickerModule,
-    TagModule, TooltipModule, CardModule, MessageModule, ConfirmDialogModule, SkeletonModule, CheckboxModule,
-    MenuModule,
-    MontantPipe, PeriodicitePipe],
+            InputTextModule, InputNumberModule, SelectModule, MultiSelectModule, DatePickerModule,
+            TagModule, TooltipModule, CardModule, MessageModule, ConfirmDialogModule, SkeletonModule, CheckboxModule,
+            MenuModule,
+            MontantPipe, PeriodicitePipe, TagComponent],
   template: `
-      <p-confirmdialog/>
-      <div class="flex flex-col gap-4">
+    <p-confirmdialog/>
+    <div class="flex flex-col gap-4">
 
-          <!-- ── En-tête ─────────────────────────────────────────── -->
-          <div class="flex flex-col gap-3">
+      <!-- ── En-tête ─────────────────────────────────────────── -->
+      <div class="flex flex-col gap-3">
 
-              <!-- Ligne 1 : titre à gauche, créer à droite -->
-              <div class="grid gap-3 grid-cols-[minmax(0,1fr)_auto] md:items-center">
-                  <div class="flex items-baseline gap-2 min-w-0">
-                      <h1 class="text-2xl font-bold leading-tight truncate">
-                          {{ type() === 'REVENU' ? t.nav.revenus : type() === 'CHARGE' ? t.nav.charges : t.nav.reserves }}
-                      </h1>
-                  </div>
-
-                  <div class="flex justify-end">
-                      @if (contexte.estEditor()) {
-                          <p-button icon="pi pi-plus" [label]="t.commun.creer" (click)="ouvrirCreation()"
-                                    class="shrink-0"/>
-                      }
-                  </div>
-              </div>
-
-              <!-- Ligne 2 : tri à gauche, menu à droite -->
-              <div class="grid gap-3 grid-cols-[minmax(0,1fr)_auto] md:items-center">
-                  <div class="flex justify-start">
-                      <p-select appendTo="body"
-                                [ngModel]="triActuel()"
-                                (onChange)="triActuel.set($event.value)"
-                                [options]="triOptions"
-                                optionLabel="label" optionValue="value"
-                                class="min-w-52 text-sm"/>
-                  </div>
-
-                  <div class="flex justify-end">
-                      <p-button icon="pi pi-sliders-h"
-                                [ariaLabel]="t.commun.actions"
-                                severity="secondary"
-                                [text]="true"
-                                (click)="menuVisibilite.toggle($event)"/>
-                      <p-menu #menuVisibilite [popup]="true" [model]="visibiliteMenuItems" appendTo="body"
-                              class="w-72">
-                          <ng-template #item let-item>
-                              <div class="flex items-center gap-3 px-2 py-1.5" (click)="$event.stopPropagation()">
-                                  <p-checkbox [binary]="true"
-                                              [inputId]="item.data"
-                                              [ngModel]="item.data === 'cacher-inactifs' ? cacherInactifs() : cacherFuturs()"
-                                              (onChange)="item.data === 'cacher-inactifs' ? cacherInactifs.set($event.checked) : cacherFuturs.set($event.checked)"
-                                              (click)="$event.stopPropagation()"/>
-                                  <label class="cursor-pointer text-sm text-surface-600 dark:text-surface-300 select-none"
-                                         [for]="item.data">
-                                      {{ item.label }}
-                                  </label>
-                              </div>
-                          </ng-template>
-                      </p-menu>
-                  </div>
-              </div>
-
-              <!-- Ligne 3 : les 3 filtres -->
-              <div class="grid gap-3 lg:grid-cols-3">
-                  <!-- Filtre catégories -->
-                  <p-multiselect appendTo="body"
-                                 [ngModel]="filtreCategorieIds()"
-                                 (ngModelChange)="filtreCategorieIds.set($event)"
-                                 [options]="categories()"
-                                 optionLabel="libelle" optionValue="id"
-                                 [placeholder]="t.poste.filtreCategories"
-                                 [showClear]="true"
-                                 class="w-full text-sm"/>
-
-                  <!-- Filtre comptes -->
-                  <p-multiselect appendTo="body"
-                                 [ngModel]="filtreCompteIds()"
-                                 (ngModelChange)="filtreCompteIds.set($event)"
-                                 [options]="comptes()"
-                                 optionLabel="libelle" optionValue="id"
-                                 [placeholder]="t.poste.filtreComptes"
-                                 [showClear]="true"
-                                 class="w-full text-sm">
-                      <ng-template #item let-compte>
-                          <div class="flex items-center gap-2 flex-wrap">
-                              <span>{{ compte.libelle }}</span>
-                              @for (m of membresForCompte(compte); track m.id) {
-                                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium leading-none"
-                                        [style.background-color]="normaliserCouleur(m.couleur)"
-                                        [style.color]="couleurTexteContraste(normaliserCouleur(m.couleur))">
-                    {{ m.nom }}
-                  </span>
-                              }
-                          </div>
-                      </ng-template>
-                  </p-multiselect>
-
-                  <!-- Filtre membres -->
-                  <p-multiselect appendTo="body"
-                                 [ngModel]="filtreMembreIds()"
-                                 (ngModelChange)="filtreMembreIds.set($event)"
-                                 [options]="membres()"
-                                 optionLabel="nom" optionValue="id"
-                                 [placeholder]="t.poste.filtreMembres"
-                                 [showClear]="true"
-                                 class="w-full text-sm"/>
-              </div>
+        <!-- Ligne 1 : titre à gauche, créer à droite -->
+        <div class="grid gap-3 grid-cols-[minmax(0,1fr)_auto] md:items-center">
+          <div class="flex items-baseline gap-2 min-w-0">
+            <h1 class="text-2xl font-bold leading-tight truncate">
+              {{ type() === 'REVENU' ? t.nav.revenus : type() === 'CHARGE' ? t.nav.charges : t.nav.reserves }}
+            </h1>
           </div>
 
-          <!-- ── État chargement (skeletons) ──────────────────────── -->
-          @if (chargement()) {
-              <div class="flex flex-col gap-2">
-                  @for (_ of [1, 2, 3]; track $index) {
-                      <div class="flex items-center gap-3 px-4 py-3 rounded-xl border border-surface-200
-                        dark:border-surface-700 bg-white dark:bg-surface-900">
-                          <p-skeleton width="3px" height="48px" class="rounded-full shrink-0"/>
-                          <div class="flex-1 flex flex-col gap-2">
-                              <p-skeleton width="35%" height="1rem"/>
-                              <p-skeleton width="55%" height="0.75rem"/>
-                          </div>
-                          <p-skeleton width="90px" height="1.25rem" class="shrink-0"/>
-                          <p-skeleton width="72px" height="2rem" class="shrink-0 rounded-lg"/>
-                      </div>
-                  }
-              </div>
+          <div class="flex justify-end">
+            @if (contexte.estEditor()) {
+              <p-button icon="pi pi-plus" [label]="t.commun.creer" (click)="ouvrirCreation()"
+                        class="shrink-0"/>
+            }
+          </div>
+        </div>
 
-              <!-- ── État vide ────────────────────────────────────────── -->
-          } @else if (postesVisibles().length === 0) {
-              <div class="flex flex-col items-center justify-center gap-3 py-16
+        <!-- Ligne 2 : tri à gauche, menu à droite -->
+        <div class="grid gap-3 grid-cols-[minmax(0,1fr)_auto] md:items-center">
+          <div class="flex justify-start">
+            <p-select appendTo="body"
+                      [ngModel]="triActuel()"
+                      (onChange)="triActuel.set($event.value)"
+                      [options]="triOptions"
+                      optionLabel="label" optionValue="value"
+                      class="min-w-52 text-sm"/>
+          </div>
+
+          <div class="flex justify-end">
+            <p-button icon="pi pi-sliders-h"
+                      [ariaLabel]="t.commun.actions"
+                      severity="secondary"
+                      [text]="true"
+                      (click)="menuVisibilite.toggle($event)"/>
+            <p-menu #menuVisibilite [popup]="true" [model]="visibiliteMenuItems" appendTo="body"
+                    class="w-72">
+              <ng-template #item let-item>
+                <div class="flex items-center gap-3 px-2 py-1.5" (click)="$event.stopPropagation()">
+                  <p-checkbox [binary]="true"
+                              [inputId]="item.data"
+                              [ngModel]="item.data === 'cacher-inactifs' ? cacherInactifs() : cacherFuturs()"
+                              (onChange)="item.data === 'cacher-inactifs' ? cacherInactifs.set($event.checked) : cacherFuturs.set($event.checked)"
+                              (click)="$event.stopPropagation()"/>
+                  <label class="cursor-pointer text-sm text-surface-600 dark:text-surface-300 select-none"
+                         [for]="item.data">
+                    {{ item.label }}
+                  </label>
+                </div>
+              </ng-template>
+            </p-menu>
+          </div>
+        </div>
+
+        <!-- Ligne 3 : les 3 filtres -->
+        <div class="grid gap-3 lg:grid-cols-3">
+          <!-- Filtre catégories -->
+          <p-multiselect appendTo="body"
+                         [ngModel]="filtreCategorieIds()"
+                         (ngModelChange)="filtreCategorieIds.set($event)"
+                         [options]="categories()"
+                         optionLabel="libelle" optionValue="id"
+                         [placeholder]="t.poste.filtreCategories"
+                         [showClear]="true"
+                         class="w-full text-sm"/>
+
+          <!-- Filtre comptes -->
+          <p-multiselect appendTo="body"
+                         [ngModel]="filtreCompteIds()"
+                         (ngModelChange)="filtreCompteIds.set($event)"
+                         [options]="comptes()"
+                         optionLabel="libelle" optionValue="id"
+                         [placeholder]="t.poste.filtreComptes"
+                         [showClear]="true"
+                         class="w-full text-sm">
+            <ng-template #item let-compte>
+              <div class="flex items-center gap-2 flex-wrap">
+                <span>{{ compte.libelle }}</span>
+                @for (m of membresForCompte(compte); track m.id) {
+                  <app-tag [couleur]="m.couleur" [texte]="m.nom"/>
+                }
+              </div>
+            </ng-template>
+          </p-multiselect>
+
+          <!-- Filtre membres -->
+          <p-multiselect appendTo="body"
+                         [ngModel]="filtreMembreIds()"
+                         (ngModelChange)="filtreMembreIds.set($event)"
+                         [options]="membres()"
+                         optionLabel="nom" optionValue="id"
+                         [placeholder]="t.poste.filtreMembres"
+                         [showClear]="true"
+                         class="w-full text-sm"/>
+        </div>
+      </div>
+
+      <!-- ── État chargement (skeletons) ──────────────────────── -->
+      @if (chargement()) {
+        <div class="flex flex-col gap-2">
+          @for (_ of [1, 2, 3]; track $index) {
+            <div class="flex items-center gap-3 px-4 py-3 rounded-xl border border-surface-200
+                        dark:border-surface-700 bg-white dark:bg-surface-900">
+              <p-skeleton width="3px" height="48px" class="rounded-full shrink-0"/>
+              <div class="flex-1 flex flex-col gap-2">
+                <p-skeleton width="35%" height="1rem"/>
+                <p-skeleton width="55%" height="0.75rem"/>
+              </div>
+              <p-skeleton width="90px" height="1.25rem" class="shrink-0"/>
+              <p-skeleton width="72px" height="2rem" class="shrink-0 rounded-lg"/>
+            </div>
+          }
+        </div>
+
+        <!-- ── État vide ────────────────────────────────────────── -->
+      } @else if (postesVisibles().length === 0) {
+        <div class="flex flex-col items-center justify-center gap-3 py-16
                     rounded-xl border border-dashed border-surface-300 dark:border-surface-700
                     bg-surface-50 dark:bg-surface-900 text-surface-400">
-                  <i class="pi pi-inbox text-5xl opacity-30"></i>
-                  <span class="text-sm">{{ t.commun.aucunResultat }}</span>
-                  @if (contexte.estEditor()) {
-                      <p-button icon="pi pi-plus" [label]="t.commun.creer" severity="secondary"
-                                size="small" (click)="ouvrirCreation()"/>
-                  }
+          <i class="pi pi-inbox text-5xl opacity-30"></i>
+          <span class="text-sm">{{ t.commun.aucunResultat }}</span>
+          @if (contexte.estEditor()) {
+            <p-button icon="pi pi-plus" [label]="t.commun.creer" severity="secondary"
+                      size="small" (click)="ouvrirCreation()"/>
+          }
+        </div>
+
+        <!-- ── Liste de cartes ──────────────────────────────────── -->
+      } @else {
+        <div class="flex flex-col gap-1">
+          @for (item of postesAvecSeparateurs(); track $index) {
+
+            @if (isSeparator(item)) {
+              <!-- ── Séparateur de groupe ── -->
+              <div class="text-xs font-bold uppercase tracking-wider bg-surface-700 text-surface-0
+                          px-3 pt-3 pb-3 select-none">
+                {{ item.separator }}
               </div>
 
-              <!-- ── Liste de cartes ──────────────────────────────────── -->
-          } @else {
-              <div class="flex flex-col gap-1">
-                  @for (item of postesAvecSeparateurs(); track $index) {
-
-                      @if (isSeparator(item)) {
-                          <!-- ── Séparateur de groupe ── -->
-                          <div class="text-xs font-bold uppercase tracking-wider bg-surface-700 text-surface-0
-                          px-3 pt-3 pb-3 select-none">
-                              {{ item.separator }}
-                          </div>
-
-                      } @else {
-                          @let p = asPoste(item);
-                          <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 px-4 py-3
+            } @else {
+              @let p = asPoste(item);
+              <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 px-4 py-3
                           border border-surface-200 dark:border-surface-700
                           bg-white dark:bg-surface-900
                           hover:border-primary/40 hover:shadow-sm
                           transition-all duration-150">
 
-                              <!-- Colonne 1 : contenu -->
-                              <div class="min-w-0 flex flex-col gap-2">
-                                  <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
-                                      <div class="min-w-0 flex items-start gap-2 flex-wrap">
+                <!-- Colonne 1 : contenu -->
+                <div class="min-w-0 flex flex-col gap-2">
+                  <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+                    <div class="min-w-0 flex items-start gap-2 flex-wrap">
                       <span class="font-medium text-surface-900 dark:text-surface-100 leading-snug wrap-break-word">
                         {{ p.description }}
                       </span>
-                                          @if (categorieLabel(p.categorieId) !== '–' && triActuel() !== 'CATEGORIE') {
-                                              <p-tag [value]="categorieLabel(p.categorieId)"
-                                                     severity="secondary"
-                                                     class="text-[10px] py-0.5 shrink-0"/>
-                                          }
-                                      </div>
+                      @if (categorieLabel(p.categorieId) !== '–' && triActuel() !== 'CATEGORIE') {
+                        <p-tag [value]="categorieLabel(p.categorieId)"
+                               severity="secondary"
+                               class="text-[10px] py-0.5 shrink-0"/>
+                      }
+                    </div>
 
-                                      <div class="min-w-0 flex flex-wrap items-center justify-start gap-2 text-left sm:justify-end sm:text-right">
-                                          @if (p.nature === 'ESTIMATION') {
-                                              <p-tag [value]="natureAffichee(p)"
-                                                     [severity]="'warn'"
-                                                     class="text-[10px] py-0.5 shrink-0"/>
-                                          }
-                                          <span class="font-semibold text-surface-700 dark:text-surface-200 whitespace-nowrap">
+                    <div
+                        class="min-w-0 flex flex-wrap items-center justify-start gap-2 text-left sm:justify-end sm:text-right">
+                      @if (p.nature === 'ESTIMATION') {
+                        <p-tag [value]="natureAffichee(p)"
+                               [severity]="'warn'"
+                               class="text-[10px] py-0.5 shrink-0"/>
+                      }
+                      <span class="font-semibold text-surface-700 dark:text-surface-200 whitespace-nowrap">
                         {{ p.montant | montant:p.devise }}
                       </span>
-                                      </div>
-                                  </div>
+                    </div>
+                  </div>
 
-                                  <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
-                                      <div class="min-w-0 flex items-center flex-wrap gap-x-2 gap-y-1 text-sm text-surface-500 dark:text-surface-400">
-                                          @if (p.periodiciteMois === 0) {
-                                              <span class="flex items-center gap-1 min-w-0">
+                  <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+                    <div
+                        class="min-w-0 flex items-center flex-wrap gap-x-2 gap-y-1 text-sm text-surface-500 dark:text-surface-400">
+                      @if (p.periodiciteMois === 0) {
+                        <span class="flex items-center gap-1 min-w-0">
                           <i class="pi pi-calendar text-xs text-surface-400"></i>
                           <span class="truncate">{{ formatPeriode(p.debut) }}</span>
                         </span>
-                                              <span class="text-surface-300 dark:text-surface-600 select-none">·</span>
-                                              <span class="flex items-center gap-1">
+                        <span class="text-surface-300 dark:text-surface-600 select-none">·</span>
+                        <span class="flex items-center gap-1">
                           <i class="pi pi-bolt text-xs text-purple-500" [pTooltip]="t.poste.oneShot"></i>
-                                                  {{ t.poste.oneShot }}
+                          {{ t.poste.oneShot }}
                         </span>
-                                          } @else {
-                                              <span class="flex items-center gap-1 min-w-0">
+                      } @else {
+                        <span class="flex items-center gap-1 min-w-0">
                           <i class="pi pi-calendar text-xs text-surface-400"></i>
-                          <span class="truncate">{{ formatPeriode(p.debut) }}&nbsp;–&nbsp;{{ formatPeriode(p.fin) }}</span>
+                          <span
+                              class="truncate">{{ formatPeriode(p.debut) }}&nbsp;–&nbsp;{{ formatPeriode(p.fin) }}</span>
                         </span>
-                                              <span class="text-surface-300 dark:text-surface-600 select-none">·</span>
-                                              <span class="flex items-center gap-1">
+                        <span class="text-surface-300 dark:text-surface-600 select-none">·</span>
+                        <span class="flex items-center gap-1">
                           @if (p.mode === 'MENSUALISE' || p.periodiciteMois <= 1) {
-                              <i class="pi pi-calendar-clock text-xs text-blue-400"
-                                 [pTooltip]="t.poste.modeOptions.MENSUALISE"></i>
+                            <i class="pi pi-calendar-clock text-xs text-blue-400"
+                               [pTooltip]="t.poste.modeOptions.MENSUALISE"></i>
                           } @else {
-                              <i class="pi pi-bolt text-xs text-amber-500"
-                                 [pTooltip]="t.poste.modeOptions.PERIODIQUE + ' · ' + (p.moment === 'FIN_PERIODE' ? t.poste.momentOptions.FIN_PERIODE : t.poste.momentOptions.DEBUT_PERIODE)"></i>
+                            <i class="pi pi-bolt text-xs text-amber-500"
+                               [pTooltip]="t.poste.modeOptions.PERIODIQUE + ' · ' + (p.moment === 'FIN_PERIODE' ? t.poste.momentOptions.FIN_PERIODE : t.poste.momentOptions.DEBUT_PERIODE)"></i>
                           }
-                                                  {{ p.periodiciteMois | periodicite }}
+                          {{ p.periodiciteMois | periodicite }}
                         </span>
-                                          }
-                                      </div>
-
-                                      <div class="min-h-5 text-left sm:text-right text-sm text-surface-400">
-                                          @if (afficheMontantMensualise(p)) {
-                                              <span class="whitespace-nowrap">{{ p.montantMensualise | montant:p.devise }}&thinsp;/mois</span>
-                                          }
-                                      </div>
-                                  </div>
-
-                                  <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
-                                      <div class="min-w-0">
-                                          @let membresAffiches = membresAffichesPoste(p);
-                                          @if (membresAffiches.length > 0) {
-                                              <div class="flex items-center gap-2 flex-wrap">
-                                                  @for (rep of membresAffiches; track rep.membreId) {
-                                                      <p-tag [value]="rep.label"
-                                                             [style]="{ 'background-color': rep.couleur, color: rep.couleurTexte }"
-                                                             class="text-xs py-1 px-2 border-none max-w-full"/>
-                                                  }
-                                              </div>
-                                          }
-                                      </div>
-
-                                      <div></div>
-                                  </div>
-                              </div>
-
-                              <!-- Colonne 2 : actions -->
-                              <div class="flex items-center justify-end shrink-0">
-                                  <p-button icon="pi pi-cog"
-                                            [rounded]="true"
-                                            [text]="true"
-                                            severity="secondary"
-                                            size="small"
-                                            [ariaLabel]="t.commun.actions"
-                                            [pTooltip]="t.commun.actions"
-                                            (click)="menuActions.toggle($event)"/>
-                                  <p-menu #menuActions [popup]="true" [model]="actionItemsFor(p)" appendTo="body"/>
-                              </div>
-                          </div>
                       }
-                  }
+                    </div>
+
+                    <div class="min-h-5 text-left sm:text-right text-sm text-surface-400">
+                      @if (afficheMontantMensualise(p)) {
+                        <span class="whitespace-nowrap">{{ p.montantMensualise | montant:p.devise }}&thinsp;/mois</span>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+                    <div class="min-w-0">
+                      @let membresAffiches = membresAffichesPoste(p);
+                      @if (membresAffiches.length > 0) {
+                        <div class="flex items-center gap-2 flex-wrap">
+                          @for (rep of membresAffiches; track rep.membreId) {
+                            <p-tag [value]="rep.label"
+                                   [style]="{ 'background-color': rep.couleur, color: rep.couleurTexte }"
+                                   class="text-xs py-1 px-2 border-none max-w-full"/>
+                          }
+                        </div>
+                      }
+                    </div>
+
+                    <div></div>
+                  </div>
+                </div>
+
+                <!-- Colonne 2 : actions -->
+                <div class="flex items-center justify-end shrink-0">
+                  <p-button icon="pi pi-cog"
+                            [rounded]="true"
+                            [text]="true"
+                            severity="secondary"
+                            size="small"
+                            [ariaLabel]="t.commun.actions"
+                            [pTooltip]="t.commun.actions"
+                            (click)="menuActions.toggle($event)"/>
+                  <p-menu #menuActions [popup]="true" [model]="actionItemsFor(p)" appendTo="body"/>
+                </div>
               </div>
+            }
           }
-      </div>
+        </div>
+      }
+    </div>
 
-      <!-- ── Dialog formulaire poste ──────────────────────────────── -->
-      <p-dialog [(visible)]="dialogVisible" [header]="posteEnEdition ? t.commun.modifier : t.commun.creer"
-                [modal]="true" class="w-full max-w-2xl">
-          <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
+    <!-- ── Dialog formulaire poste ──────────────────────────────── -->
+    <p-dialog [(visible)]="dialogVisible" [header]="posteEnEdition ? t.commun.modifier : t.commun.creer"
+              [modal]="true" class="w-full max-w-2xl">
+      <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
 
-              <!-- Ligne 1 : Description pleine largeur -->
-              <div class="flex flex-col gap-1">
-                  <label class="text-sm font-medium">{{ t.poste.description }} *</label>
-                  <input pInputText formControlName="description" class="w-full"/>
-              </div>
+        <!-- Ligne 1 : Description pleine largeur -->
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium">{{ t.poste.description }} *</label>
+          <input pInputText formControlName="description" class="w-full"/>
+        </div>
 
-              <!-- Ligne 2 : Catégorie + Montant -->
-              <div class="grid grid-cols-2 gap-4">
-                  <div class="flex flex-col gap-1">
-                      <label class="text-sm font-medium">{{ t.poste.categorie }}</label>
-                      <p-select appendTo="body" formControlName="categorieId" [options]="categories()"
-                                optionLabel="libelle" optionValue="id" [showClear]="true" class="w-full"/>
-                  </div>
-                  <div class="flex flex-col gap-1">
-                      <label class="text-sm font-medium">{{ t.poste.montant }} *</label>
-                      <p-inputnumber formControlName="montant" mode="decimal" [minFractionDigits]="2" class="w-full"/>
-                  </div>
-              </div>
+        <!-- Ligne 2 : Catégorie + Montant -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium">{{ t.poste.categorie }}</label>
+            <p-select appendTo="body" formControlName="categorieId" [options]="categories()"
+                      optionLabel="libelle" optionValue="id" [showClear]="true" class="w-full"/>
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium">{{ t.poste.montant }} *</label>
+            <p-inputnumber formControlName="montant" mode="decimal" [minFractionDigits]="2" class="w-full"/>
+          </div>
+        </div>
 
-              <!-- Ligne 3 : Périodicité | Mode | Moment
-                   D=0 → one-shot, pas de mode/moment (uniquement début)
-                   D=1 → 1 col (mode et moment cachés)
-                   D>1 → 3 col (Mode toujours visible ; Moment toujours visible) -->
-              <div class="grid gap-4"
-                   [class.grid-cols-1]="(form.value.periodiciteMois ?? 1) === 0 || (form.value.periodiciteMois ?? 1) === 1"
-                   [class.grid-cols-3]="(form.value.periodiciteMois ?? 1) > 1">
-                  <!-- Périodicité -->
-                  <div class="flex flex-col gap-1">
-                      <label class="text-sm font-medium">{{ t.poste.periodicite }}</label>
-                      <p-select appendTo="body" formControlName="periodiciteMois"
-                                [options]="periodiciteOptions" optionLabel="label" optionValue="value"
-                                class="w-full"/>
-                  </div>
-                  <!-- Moment : visible dès que D>1, quel que soit le mode -->
-                  @if ((form.value.periodiciteMois ?? 1) > 1) {
-                      <div class="flex flex-col gap-1">
-                          <label class="text-sm font-medium"
-                                 [pTooltip]="t.poste.momentTooltip">{{ t.poste.moment }}</label>
-                          <p-select appendTo="body" formControlName="moment" [options]="momentOptions"
-                                    optionLabel="label" optionValue="value" class="w-full"/>
-                      </div>
-                  }
-                  <!-- Mode : caché si D=0 ou D=1 (toujours mensualisé) -->
-                  @if ((form.value.periodiciteMois ?? 1) > 1) {
-                      <div class="flex flex-col gap-1">
-                          <label class="text-sm font-medium" [pTooltip]="t.poste.modeTooltip">{{ t.poste.mode }}</label>
-                          <p-select appendTo="body" formControlName="mode" [options]="modeOptions"
-                                    optionLabel="label" optionValue="value" class="w-full"/>
-                      </div>
-                  }
-              </div>
+        <!-- Ligne 3 : Périodicité | Mode | Moment
+             D=0 → one-shot, pas de mode/moment (uniquement début)
+             D=1 → 1 col (mode et moment cachés)
+             D>1 → 3 col (Mode toujours visible ; Moment toujours visible) -->
+        <div class="grid gap-4"
+             [class.grid-cols-1]="(form.value.periodiciteMois ?? 1) === 0 || (form.value.periodiciteMois ?? 1) === 1"
+             [class.grid-cols-3]="(form.value.periodiciteMois ?? 1) > 1">
+          <!-- Périodicité -->
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium">{{ t.poste.periodicite }}</label>
+            <p-select appendTo="body" formControlName="periodiciteMois"
+                      [options]="periodiciteOptions" optionLabel="label" optionValue="value"
+                      class="w-full"/>
+          </div>
+          <!-- Moment : visible dès que D>1, quel que soit le mode -->
+          @if ((form.value.periodiciteMois ?? 1) > 1) {
+            <div class="flex flex-col gap-1">
+              <label class="text-sm font-medium"
+                     [pTooltip]="t.poste.momentTooltip">{{ t.poste.moment }}</label>
+              <p-select appendTo="body" formControlName="moment" [options]="momentOptions"
+                        optionLabel="label" optionValue="value" class="w-full"/>
+            </div>
+          }
+          <!-- Mode : caché si D=0 ou D=1 (toujours mensualisé) -->
+          @if ((form.value.periodiciteMois ?? 1) > 1) {
+            <div class="flex flex-col gap-1">
+              <label class="text-sm font-medium" [pTooltip]="t.poste.modeTooltip">{{ t.poste.mode }}</label>
+              <p-select appendTo="body" formControlName="mode" [options]="modeOptions"
+                        optionLabel="label" optionValue="value" class="w-full"/>
+            </div>
+          }
+        </div>
 
-              <!-- Ligne 4 : Début + Fin (ou seulement Début si one-shot) -->
-              @if ((form.value.periodiciteMois ?? 1) === 0) {
-                  <!-- One-shot : uniquement Début (obligatoire) -->
-                  <div class="flex flex-col gap-1">
-                      <label class="text-sm font-medium">{{ t.poste.debut }} *</label>
-                      <p-datepicker appendTo="body" formControlName="debut" dateFormat="dd/mm/yy"
-                                    [showButtonBar]="true" class="w-full"></p-datepicker>
-                  </div>
-              } @else {
-                  <!-- Normal : Début + Fin (optionnels) -->
-                  <div class="grid grid-cols-2 gap-4">
-                      <div class="flex flex-col gap-1">
-                          <label class="text-sm font-medium">{{ t.poste.debut }}</label>
-                          <p-datepicker appendTo="body" formControlName="debut" dateFormat="dd/mm/yy"
-                                        [showButtonBar]="true" class="w-full"></p-datepicker>
-                      </div>
-                      <div class="flex flex-col gap-1">
-                          <label class="text-sm font-medium">{{ t.poste.fin }}</label>
-                          <p-datepicker appendTo="body" formControlName="fin" dateFormat="dd/mm/yy"
-                                        [showButtonBar]="true" class="w-full"></p-datepicker>
-                      </div>
-                  </div>
-              }
-
-
-              <!-- Ligne 5 : Nature (pleine largeur) -->
-              <div class="grid grid-cols-{{ form.value.nature === 'ESTIMATION' ? '2' : '1' }} gap-4">
-                  <div class="flex flex-col gap-1">
-                      <label class="text-sm font-medium" [pTooltip]="t.poste.natureTooltip">{{ t.poste.nature }}</label>
-                      <p-select appendTo="body" formControlName="nature" [options]="natureOptions"
-                                optionLabel="label" optionValue="value" class="w-full"/>
-                  </div>
-                  <!-- Ligne 5b : Pourcentage d'estimation (visible si nature=ESTIMATION) -->
-                  @if (form.value.nature === 'ESTIMATION') {
-                      <div class="flex flex-col gap-1">
-                          <label class="text-sm font-medium" [pTooltip]="t.poste.estimationTooltip">
-                              {{ t.poste.estimationPourcentage }} *
-                          </label>
-                          <p-inputnumber formControlName="estimPourcentage"
-                                         [min]="0" [max]="100"
-                                         [minFractionDigits]="1" [maxFractionDigits]="1"
-                                         suffix="%" class="w-full"
-                                         [placeholder]="t.poste.estimationPlaceholder"/>
-                      </div>
-                  }
-              </div>
+        <!-- Ligne 4 : Début + Fin (ou seulement Début si one-shot) -->
+        @if ((form.value.periodiciteMois ?? 1) === 0) {
+          <!-- One-shot : uniquement Début (obligatoire) -->
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium">{{ t.poste.debut }} *</label>
+            <p-datepicker appendTo="body" formControlName="debut" dateFormat="dd/mm/yy"
+                          [showButtonBar]="true" class="w-full"></p-datepicker>
+          </div>
+        } @else {
+          <!-- Normal : Début + Fin (optionnels) -->
+          <div class="grid grid-cols-2 gap-4">
+            <div class="flex flex-col gap-1">
+              <label class="text-sm font-medium">{{ t.poste.debut }}</label>
+              <p-datepicker appendTo="body" formControlName="debut" dateFormat="dd/mm/yy"
+                            [showButtonBar]="true" class="w-full"></p-datepicker>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-sm font-medium">{{ t.poste.fin }}</label>
+              <p-datepicker appendTo="body" formControlName="fin" dateFormat="dd/mm/yy"
+                            [showButtonBar]="true" class="w-full"></p-datepicker>
+            </div>
+          </div>
+        }
 
 
-              <!-- Ligne 6 : Mode répartition (masqué si mono-membre) -->
-              @if (membres().length > 1) {
-                  <div class="flex flex-col gap-1">
-                      <label class="text-sm font-medium" [pTooltip]="t.poste.typeRepartitionTooltip">
-                          {{ t.poste.typeRepartition }}
-                      </label>
-                      <p-select appendTo="body" formControlName="typeRepartition"
-                                [options]="typeRepartitionOptions"
-                                optionLabel="label" optionValue="value" class="w-full"/>
-                  </div>
-              }
+        <!-- Ligne 5 : Nature (pleine largeur) -->
+        <div class="grid grid-cols-{{ form.value.nature === 'ESTIMATION' ? '2' : '1' }} gap-4">
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium" [pTooltip]="t.poste.natureTooltip">{{ t.poste.nature }}</label>
+            <p-select appendTo="body" formControlName="nature" [options]="natureOptions"
+                      optionLabel="label" optionValue="value" class="w-full"/>
+          </div>
+          <!-- Ligne 5b : Pourcentage d'estimation (visible si nature=ESTIMATION) -->
+          @if (form.value.nature === 'ESTIMATION') {
+            <div class="flex flex-col gap-1">
+              <label class="text-sm font-medium" [pTooltip]="t.poste.estimationTooltip">
+                {{ t.poste.estimationPourcentage }} *
+              </label>
+              <p-inputnumber formControlName="estimPourcentage"
+                             [min]="0" [max]="100"
+                             [minFractionDigits]="1" [maxFractionDigits]="1"
+                             suffix="%" class="w-full"
+                             [placeholder]="t.poste.estimationPlaceholder"/>
+            </div>
+          }
+        </div>
 
-              <!-- Répartition + Comptes (uniquement pour CUSTOM multi-membres) -->
-              @if (estCustomMultiMembre()) {
-                  <div class="flex flex-col gap-2">
-                      <div class="flex items-center justify-between">
-                          <label class="text-sm font-medium">
-                              {{ t.poste.repartition }}
-                              <span class="text-sm"
-                                    [class.text-green-600]="sommeRepartition === 100"
-                                    [class.text-red-500]="sommeRepartition !== 100 && repartitionsArray.length > 0">
+
+        <!-- Ligne 6 : Mode répartition (masqué si mono-membre) -->
+        @if (membres().length > 1) {
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium" [pTooltip]="t.poste.typeRepartitionTooltip">
+              {{ t.poste.typeRepartition }}
+            </label>
+            <p-select appendTo="body" formControlName="typeRepartition"
+                      [options]="typeRepartitionOptions"
+                      optionLabel="label" optionValue="value" class="w-full"/>
+          </div>
+        }
+
+        <!-- Répartition + Comptes (uniquement pour CUSTOM multi-membres) -->
+        @if (estCustomMultiMembre()) {
+          <div class="flex flex-col gap-2">
+            <div class="flex items-center justify-between">
+              <label class="text-sm font-medium">
+                {{ t.poste.repartition }}
+                <span class="text-sm"
+                      [class.text-green-600]="sommeRepartition === 100"
+                      [class.text-red-500]="sommeRepartition !== 100 && repartitionsArray.length > 0">
                   {{ sommeRepartition }}%
                 </span></label>
-                      </div>
-                      @if (sommeRepartition !== 100 && repartitionsArray.length > 0) {
-                          <p-message severity="warn">{{ t.commun.repartitionInvalide }}</p-message>
-                      }
-                      @if (repartitionsArray.length > 0) {
-                          <div class="w-full grid grid-cols-12 items-center gap-3 text-xs text-surface-400 font-medium px-0">
-                              <span class="col-span-4 truncate">{{ t.referentiels.membre.nom }}</span>
-                              <span class="col-span-3 text-center">{{ t.poste.repartition }}</span>
-                              <span class="col-span-5">{{ t.poste.ventilation }}</span>
+            </div>
+            @if (sommeRepartition !== 100 && repartitionsArray.length > 0) {
+              <p-message severity="warn">{{ t.commun.repartitionInvalide }}</p-message>
+            }
+            @if (repartitionsArray.length > 0) {
+              <div class="w-full grid grid-cols-12 items-center gap-3 text-xs text-surface-400 font-medium px-0">
+                <span class="col-span-4 truncate">{{ t.referentiels.membre.nom }}</span>
+                <span class="col-span-3 text-center">{{ t.poste.repartition }}</span>
+                <span class="col-span-5">{{ t.poste.ventilation }}</span>
+              </div>
+            }
+            <div formArrayName="repartitions" class="flex flex-col gap-2">
+              @for (ctrl of repartitionsArray.controls; track ctrl; let i = $index) {
+                <div [formGroupName]="i" class="w-full grid grid-cols-12 items-center gap-3">
+                  <span class="col-span-4 text-sm truncate">{{ membres()[i]?.nom }}</span>
+                  <div class="col-span-3 min-w-[7.5rem]">
+                    <p-inputnumber formControlName="quotePart" [min]="0" [max]="100"
+                                   suffix="%" [minFractionDigits]="0" class="w-full"
+                                   inputStyleClass="w-full"
+                                   (onInput)="onQuotePartChange(i)"></p-inputnumber>
+                  </div>
+                  <div class="col-span-5 min-w-0">
+                    <p-select appendTo="body" formControlName="compteId"
+                              [options]="comptes()" optionLabel="libelle"
+                              optionValue="id"
+                              [placeholder]="t.poste.ventilation" class="w-full"
+                              [showClear]="true"
+                              [disabled]="(ctrl.get('quotePart')?.value ?? 0) === 0">
+                      <ng-template #selectedItem let-compte>
+                        @if (compte) {
+                          <div class="flex items-center gap-1.5 flex-wrap">
+                            <span>{{ compte.libelle }}</span>
+                            @for (m of membresForCompte(compte); track m.id) {
+                              <app-tag [couleur]="m.couleur" [texte]="m.nom"/>
+                            }
                           </div>
-                      }
-                      <div formArrayName="repartitions" class="flex flex-col gap-2">
-                          @for (ctrl of repartitionsArray.controls; track ctrl; let i = $index) {
-                              <div [formGroupName]="i" class="w-full grid grid-cols-12 items-center gap-3">
-                                  <span class="col-span-4 text-sm truncate">{{ membres()[i]?.nom }}</span>
-                                  <div class="col-span-3 min-w-[7.5rem]">
-                                      <p-inputnumber formControlName="quotePart" [min]="0" [max]="100"
-                                                     suffix="%" [minFractionDigits]="0" class="w-full"
-                                                     inputStyleClass="w-full"
-                                                     (onInput)="onQuotePartChange(i)"></p-inputnumber>
-                                  </div>
-                                  <div class="col-span-5 min-w-0">
-                                      <p-select appendTo="body" formControlName="compteId"
-                                                [options]="comptes()" optionLabel="libelle"
-                                                optionValue="id"
-                                                [placeholder]="t.poste.ventilation" class="w-full"
-                                                [showClear]="true"
-                                                [disabled]="(ctrl.get('quotePart')?.value ?? 0) === 0">
-                                      <ng-template #selectedItem let-compte>
-                                          @if (compte) {
-                                              <div class="flex items-center gap-1.5 flex-wrap">
-                                                  <span>{{ compte.libelle }}</span>
-                                                  @for (m of membresForCompte(compte); track m.id) {
-                                                      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium leading-none"
-                                                            [style.background-color]="normaliserCouleur(m.couleur)"
-                                                            [style.color]="couleurTexteContraste(normaliserCouleur(m.couleur))">
-                                                        {{ m.nom }}
-                                                      </span>
-                                                  }
-                                              </div>
-                                          }
-                                      </ng-template>
-                                      <ng-template #item let-compte>
-                                          <div class="flex items-center gap-1.5 flex-wrap">
-                                              <span>{{ compte.libelle }}</span>
-                                              @for (m of membresForCompte(compte); track m.id) {
-                                                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium leading-none"
-                                                        [style.background-color]="normaliserCouleur(m.couleur)"
-                                                        [style.color]="couleurTexteContraste(normaliserCouleur(m.couleur))">
-                                                    {{ m.nom }}
-                                                  </span>
-                                              }
-                                          </div>
-                                      </ng-template>
-                                      </p-select>
-                                  </div>
-                              </div>
+                        }
+                      </ng-template>
+                      <ng-template #item let-compte>
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                          <span>{{ compte.libelle }}</span>
+                          @for (m of membresForCompte(compte); track m.id) {
+                            <app-tag [couleur]="m.couleur" [texte]="m.nom"/>
                           }
-                      </div>
+                        </div>
+                      </ng-template>
+                    </p-select>
                   </div>
-              } @else if (membres().length > 0) {
-                  <!-- Ventilation comptes uniquement (sans parts pour AUTO/REVERSE_AUTO) -->
-                  <div class="flex flex-col gap-2">
-                      <label class="text-sm font-medium">{{ t.poste.ventilation }}</label>
-                      <div formArrayName="repartitions" class="flex flex-col gap-2">
-                          @for (ctrl of repartitionsArray.controls; track ctrl; let i = $index) {
-                              <div [formGroupName]="i" class="w-full grid grid-cols-12 items-center gap-3">
-                                  <span class="col-span-5 text-sm truncate">{{ membres()[i]?.nom }}</span>
-                                  <div class="col-span-7 min-w-0">
-                                      <p-select appendTo="body" formControlName="compteId"
-                                                [options]="comptes()" optionLabel="libelle"
-                                                optionValue="id"
-                                                [placeholder]="t.poste.ventilation" class="w-full"
-                                                [showClear]="true">
-                                      <ng-template #selectedItem let-compte>
-                                          @if (compte) {
-                                              <div class="flex items-center gap-1.5 flex-wrap">
-                                                  <span>{{ compte.libelle }}</span>
-                                                  @for (m of membresForCompte(compte); track m.id) {
-                                                      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium leading-none"
-                                                            [style.background-color]="normaliserCouleur(m.couleur)"
-                                                            [style.color]="couleurTexteContraste(normaliserCouleur(m.couleur))">
-                                                        {{ m.nom }}
-                                                      </span>
-                                                  }
-                                              </div>
-                                          }
-                                      </ng-template>
-                                      <ng-template #item let-compte>
-                                          <div class="flex items-center gap-1.5 flex-wrap">
-                                              <span>{{ compte.libelle }}</span>
-                                              @for (m of membresForCompte(compte); track m.id) {
-                                                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium leading-none"
-                                                        [style.background-color]="normaliserCouleur(m.couleur)"
-                                                        [style.color]="couleurTexteContraste(normaliserCouleur(m.couleur))">
-                                                    {{ m.nom }}
-                                                  </span>
-                                              }
-                                          </div>
-                                      </ng-template>
-                                      </p-select>
-                                  </div>
-                              </div>
-                          }
-                      </div>
-                  </div>
+                </div>
               }
-          </form>
-          <ng-template #footer>
-              <p-button [label]="t.commun.annuler" severity="secondary" (click)="fermerDialogPoste()"/>
-              <p-button [label]="t.commun.enregistrer" (click)="enregistrer()"
-                        [disabled]="!isFormValid()"/>
-          </ng-template>
-      </p-dialog>
+            </div>
+          </div>
+        } @else if (membres().length > 0) {
+          <!-- Ventilation comptes uniquement (sans parts pour AUTO/REVERSE_AUTO) -->
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-medium">{{ t.poste.ventilation }}</label>
+            <div formArrayName="repartitions" class="flex flex-col gap-2">
+              @for (ctrl of repartitionsArray.controls; track ctrl; let i = $index) {
+                <div [formGroupName]="i" class="w-full grid grid-cols-12 items-center gap-3">
+                  <span class="col-span-5 text-sm truncate">{{ membres()[i]?.nom }}</span>
+                  <div class="col-span-7 min-w-0">
+                    <p-select appendTo="body" formControlName="compteId"
+                              [options]="comptes()" optionLabel="libelle"
+                              optionValue="id"
+                              [placeholder]="t.poste.ventilation" class="w-full"
+                              [showClear]="true">
+                      <ng-template #selectedItem let-compte>
+                        @if (compte) {
+                          <div class="flex items-center gap-1.5 flex-wrap">
+                            <span>{{ compte.libelle }}</span>
+                            @for (m of membresForCompte(compte); track m.id) {
+                              <app-tag [couleur]="m.couleur" [texte]="m.nom"/>
+                            }
+                          </div>
+                        }
+                      </ng-template>
+                      <ng-template #item let-compte>
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                          <span>{{ compte.libelle }}</span>
+                          @for (m of membresForCompte(compte); track m.id) {
+                            <app-tag [couleur]="m.couleur" [texte]="m.nom"/>
+                          }
+                        </div>
+                      </ng-template>
+                    </p-select>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </form>
+      <ng-template #footer>
+        <p-button [label]="t.commun.annuler" severity="secondary" (click)="fermerDialogPoste()"/>
+        <p-button [label]="t.commun.enregistrer" (click)="enregistrer()"
+                  [disabled]="!isFormValid()"/>
+      </ng-template>
+    </p-dialog>
 
-      <!-- Dialog aperçu mensuel -->
-      <p-dialog [(visible)]="apercuVisible" [header]="t.poste.apercu" [modal]="true" class="w-96">
-          @if (apercuData()) {
-              <p-table [value]="apercuData()!.contributions" class="p-datatable-sm">
-                  <ng-template #header>
-                      <tr>
-                          <th>{{ t.projection.mois }}</th>
-                          <th class="text-right">{{ t.poste.contribution }}</th>
-                      </tr>
-                  </ng-template>
-                  <ng-template #body let-c>
-                      <tr>
-                          <td>{{ t.mois[c.mois - 1] }}</td>
-                          <td class="text-right">{{ c.contribution | montant }}</td>
-                      </tr>
-                  </ng-template>
-              </p-table>
-          }
-      </p-dialog>
+    <!-- Dialog aperçu mensuel -->
+    <p-dialog [(visible)]="apercuVisible" [header]="t.poste.apercu" [modal]="true" class="w-96">
+      @if (apercuData()) {
+        <p-table [value]="apercuData()!.contributions" class="p-datatable-sm">
+          <ng-template #header>
+            <tr>
+              <th>{{ t.projection.mois }}</th>
+              <th class="text-right">{{ t.poste.contribution }}</th>
+            </tr>
+          </ng-template>
+          <ng-template #body let-c>
+            <tr>
+              <td>{{ t.mois[c.mois - 1] }}</td>
+              <td class="text-right">{{ c.contribution | montant }}</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      }
+    </p-dialog>
   `,
 })
 export class PostesListeComponent implements OnInit {
@@ -856,7 +840,7 @@ export class PostesListeComponent implements OnInit {
 
   natureAffichee(p: PosteDto): string {
     if (p.nature === 'ESTIMATION' && p.estimPourcentage !== null && p.estimPourcentage !== undefined) {
-      return `${this.t.poste.natureOptions.ESTIMATION} ± ${this.formatEstimationPourcentage(p.estimPourcentage)}%`;
+      return `± ${this.formatEstimationPourcentage(p.estimPourcentage)}%`;
     }
     return p.nature === 'ESTIMATION'
       ? this.t.poste.natureOptions.ESTIMATION

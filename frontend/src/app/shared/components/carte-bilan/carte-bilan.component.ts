@@ -22,7 +22,7 @@ export interface LigneDecomposition {
  * Utilisée par `dashboard-mensuel` et `dashboard-annuel`.
  */
 @Component({
-  selector: 'app-carte-bilan-membre',
+  selector: 'app-carte-bilan',
   standalone: true,
   imports: [CommonModule, CardModule, AvatarModule, DividerModule, MeterGroupModule, TagModule],
   template: `
@@ -85,7 +85,7 @@ export interface LigneDecomposition {
     </p-card>
   `,
 })
-export class CarteBilanMembreComponent {
+export class CarteBilanComponent {
   private readonly i18n = inject(I18nService);
   readonly t = this.i18n.translations();
 

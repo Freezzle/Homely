@@ -17,6 +17,7 @@ import { CompteService, MembreService } from '../../../core/services/referentiel
 import { CompteDto, MembreDto } from '../../../core/models/api.models';
 import { MontantPipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
+import { TagComponent } from '../../../shared/components/tag/tag.component';
 
 /** T10.2 — CRUD Comptes avec rattachement membres */
 @Component({
@@ -24,10 +25,10 @@ import { I18nService } from '../../../core/i18n/i18n.service';
   standalone: true,
   providers: [ConfirmationService],
   imports: [
-    CommonModule, ReactiveFormsModule,
-    TableModule, ButtonModule, DialogModule, TagModule, MessageModule,
-    InputTextModule, InputNumberModule, SelectModule, MultiSelectModule,
-    ConfirmDialogModule, MontantPipe,
+      CommonModule, ReactiveFormsModule,
+      TableModule, ButtonModule, DialogModule, TagModule, MessageModule,
+      InputTextModule, InputNumberModule, SelectModule, MultiSelectModule,
+      ConfirmDialogModule, MontantPipe, TagComponent,
   ],
   template: `
     <p-confirmdialog />
@@ -57,11 +58,7 @@ import { I18nService } from '../../../core/i18n/i18n.service';
                 @for (mid of c.membreIds; track mid) {
                   @let m = membreParId(mid);
                   @if (m) {
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium leading-none"
-                          [style.background-color]="normaliserCouleur(m.couleur)"
-                          [style.color]="couleurTexteContraste(normaliserCouleur(m.couleur))">
-                      {{ m.nom }}
-                    </span>
+                    <app-tag [couleur]="m.couleur" [texte]="m.nom" />
                   }
                 }
               </div>
@@ -166,21 +163,6 @@ export class ComptesComponent implements OnInit {
 
   membreParId(id: string): MembreDto | undefined {
     return this.membresActifs().find(m => m.id === id);
-  }
-
-  normaliserCouleur(couleur?: string): string {
-    if (!couleur) return '#64748b';
-    return couleur.startsWith('#') ? couleur : `#${couleur}`;
-  }
-
-  couleurTexteContraste(hexColor: string): string {
-    const hex = hexColor.replace('#', '');
-    if (hex.length !== 6 || /[^0-9a-f]/i.test(hex)) return '#ffffff';
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    const luminance = (0.299 * r) + (0.587 * g) + (0.114 * b);
-    return luminance > 170 ? '#111827' : '#ffffff';
   }
 
   private readonly _chargerEffect = effect(() => {

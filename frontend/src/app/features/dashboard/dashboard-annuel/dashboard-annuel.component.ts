@@ -8,6 +8,7 @@ import { ChartModule } from 'primeng/chart';
 import { SkeletonModule } from 'primeng/skeleton';
 import { CardModule } from 'primeng/card';
 import { TagModule } from 'primeng/tag';
+import { ButtonModule } from 'primeng/button';
 import { forkJoin } from 'rxjs';
 import { ContexteService } from '../../../core/services/contexte.service';
 import { ProjectionService } from '../../../core/services/projection.service';
@@ -20,13 +21,13 @@ import {
 } from '../../../core/models/api.models';
 import { MontantPipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
-import { CarteBilanMembreComponent, LigneDecomposition } from '../../../shared/components/carte-bilan-membre/carte-bilan-membre.component';
+import { CarteBilanComponent, LigneDecomposition } from '../../../shared/components/carte-bilan/carte-bilan.component';
 
 @Component({
   selector: 'app-dashboard-annuel',
   standalone: true,
   imports: [CommonModule, FormsModule, SelectModule, SelectButtonModule, TableModule, ChartModule,
-            SkeletonModule, CardModule, TagModule, MontantPipe, CarteBilanMembreComponent],
+            SkeletonModule, CardModule, TagModule, ButtonModule, MontantPipe, CarteBilanComponent],
   template: `
     <div class="flex flex-col gap-6">
 
@@ -36,13 +37,14 @@ import { CarteBilanMembreComponent, LigneDecomposition } from '../../../shared/c
           <h1 class="text-2xl font-bold">{{ t.nav.dashboardAnnuel }}</h1>
           <p class="text-sm text-surface-500 mt-0.5">{{ anneeSelectionnee }}</p>
         </div>
-        @if (afficherParMembre()) {
-          <p-selectbutton [options]="vueOptions" [ngModel]="vue()" (ngModelChange)="vue.set($event)"
-                          optionLabel="label" optionValue="value" [allowEmpty]="false"
-                          class="shrink-0" />
-        }
+        <p-button icon="pi pi-chevron-left" [text]="true" [rounded]="true"
+                  [disabled]="!peutReculer()" (onClick)="anneePrecedente()"
+                  [ariaLabel]="t.projection.anneePrecedente"/>
         <p-select appendTo="body" [options]="annees" [(ngModel)]="anneeSelectionnee"
                   (onChange)="charger()" class="w-32 shrink-0" />
+        <p-button icon="pi pi-chevron-right" [text]="true" [rounded]="true"
+                  [disabled]="!peutAvancer()" (onClick)="anneeSuivante()"
+                  [ariaLabel]="t.projection.anneeSuivante"/>
       </div>
 
       <!-- ── Skeletons ─────────────────────────────────────────────────────── -->
@@ -62,14 +64,19 @@ import { CarteBilanMembreComponent, LigneDecomposition } from '../../../shared/c
       } @else if (projection()) {
         <!-- ①bis Cartes membre + foyer (revenus/charges/réserves/solde annuels, décomposition) -->
         @if (ventilationAnnuelle()) {
-          <div class="flex items-center justify-start gap-2 mb-1">
+          <div class="flex items-center justify-between gap-2 mb-1">
             <p-selectbutton [options]="vueDecompositionOptions" [ngModel]="vueDecomposition()"
                             (ngModelChange)="vueDecomposition.set($event)"
                             optionLabel="label" optionValue="value" [allowEmpty]="false"/>
+            @if (afficherParMembre()) {
+              <p-selectbutton [options]="vueOptions" [ngModel]="vue()" (ngModelChange)="vue.set($event)"
+                              optionLabel="label" optionValue="value" [allowEmpty]="false"
+                              class="shrink-0" />
+            }
           </div>
           @if (vueEffective() !== 'MEMBRE') {
             <div class="grid grid-cols-1 gap-4 mb-4">
-              <app-carte-bilan-membre variante="foyer" [nom]="t.projection.foyer" [sousTitre]="foyerSousTitreAnnuel()"
+              <app-carte-bilan variante="foyer" [nom]="t.projection.foyer" [sousTitre]="foyerSousTitreAnnuel()"
                                        [initiales]="foyerInitiales()"
                                        [montantPrincipalLabel]="t.projection.resteAVivreAnnee"
                                        [montantPrincipal]="ventilationAnnuelle()!.agregat.soldeDisponible"
@@ -81,7 +88,7 @@ import { CarteBilanMembreComponent, LigneDecomposition } from '../../../shared/c
           @if (afficherParMembre() && vueEffective() !== 'FOYER') {
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               @for (mc of membresDataAnnuel(); track mc.id) {
-                <app-carte-bilan-membre variante="membre" [nom]="mc.nom" [sousTitre]="mc.sousTitre"
+                <app-carte-bilan variante="membre" [nom]="mc.nom" [sousTitre]="mc.sousTitre"
                                          [couleur]="mc.couleur" [initiales]="mc.initiales"
                                          [montantPrincipalLabel]="t.projection.resteAVivreAnnee"
                                          [montantPrincipal]="mc.agregat.soldeDisponible"
@@ -269,10 +276,10 @@ import { CarteBilanMembreComponent, LigneDecomposition } from '../../../shared/c
               <ng-template #subtitle>{{ t.projection.prorataSousTitre }}</ng-template>
 
               <!-- Bande des périodes de répartition -->
-              <div class="flex w-full rounded-md overflow-hidden mb-2">
-                @for (tag of periodeTags(); track tag.id) {
+              <div class="flex w-full rounded-md overflow-hidden mb-2" style="padding-left: 50px">
+                @for (tag of periodeTags(); track tag.id; let index = $index) {
                   <div [style.flex-basis.%]="tag.largeurPct" class="shrink-0 min-w-0">
-                    <p-tag [value]="tag.libelle" severity="secondary" class="w-full justify-center rounded-none"/>
+                    <p-tag [value]="tag.libelle" [severity]="index % 2 == 0  ? 'contrast' : 'secondary'" class="w-full justify-center rounded-none"/>
                   </div>
                 }
               </div>
@@ -456,6 +463,30 @@ export class DashboardAnnuelComponent implements OnInit {
   anneeSelectionnee = new Date().getFullYear();
   annees: number[]  = Array.from({ length: 9 }, (_, i) => new Date().getFullYear() + i);
 
+  /** Peut-on reculer d'une année sans sortir de l'horizon du scénario (années disponibles) ? */
+  peutReculer(): boolean {
+    return this.anneeSelectionnee > this.annees[0];
+  }
+
+  /** Peut-on avancer d'une année sans sortir de l'horizon du scénario (années disponibles) ? */
+  peutAvancer(): boolean {
+    return this.anneeSelectionnee < this.annees[this.annees.length - 1];
+  }
+
+  /** Navigue vers l'année précédente. */
+  anneePrecedente(): void {
+    if (!this.peutReculer()) return;
+    this.anneeSelectionnee -= 1;
+    this.charger();
+  }
+
+  /** Navigue vers l'année suivante. */
+  anneeSuivante(): void {
+    if (!this.peutAvancer()) return;
+    this.anneeSelectionnee += 1;
+    this.charger();
+  }
+
   // ── Helpers formatage ──────────────────────────────────────��────────────────
   private readonly fmtCompact = (v: number) =>
     Intl.NumberFormat('fr-CH', { notation: 'compact', maximumFractionDigits: 1 }).format(v);
@@ -616,7 +647,7 @@ export class DashboardAnnuelComponent implements OnInit {
         return {
           id: p.id,
           libelle: p.parts.map(part => this.formatPctEntier(part.quotePart * 100)).join(' / '),
-          largeurPct: ((moisFin - moisDebut + 1) / 12) * 100,
+          largeurPct: ((moisFin - moisDebut + 1) / 11) * 100,
         };
       })
       .filter((t): t is { id: string; libelle: string; largeurPct: number } => !!t);

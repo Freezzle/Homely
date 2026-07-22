@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { SelectModule } from 'primeng/select';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { SkeletonModule } from 'primeng/skeleton';
+import { ButtonModule } from 'primeng/button';
 import { forkJoin } from 'rxjs';
 import { ContexteService } from '../../../core/services/contexte.service';
 import { ProjectionService } from '../../../core/services/projection.service';
@@ -12,14 +13,14 @@ import { PosteService, ObjectifService } from '../../../core/services/scenario-p
 import { DecompositionService } from '../../../core/services/decomposition.service';
 import { VentilationsDto, VentilationAggregatDto, CategorieDto, CompteDto, TypeCategorie, PosteDto, ObjectifDto } from '../../../core/models/api.models';
 import { I18nService } from '../../../core/i18n/i18n.service';
-import { CarteBilanMembreComponent, LigneDecomposition, MembreTagInfo } from '../../../shared/components/carte-bilan-membre/carte-bilan-membre.component';
+import { CarteBilanComponent, LigneDecomposition, MembreTagInfo } from '../../../shared/components/carte-bilan/carte-bilan.component';
 
 @Component({
   selector: 'app-dashboard-mensuel',
   standalone: true,
   imports: [
-    CommonModule, FormsModule, SelectModule, SelectButtonModule, SkeletonModule,
-    CarteBilanMembreComponent,
+    CommonModule, FormsModule, SelectModule, SelectButtonModule, SkeletonModule, ButtonModule,
+    CarteBilanComponent,
   ],
   template: `
       <div class="flex flex-col gap-6">
@@ -33,15 +34,17 @@ import { CarteBilanMembreComponent, LigneDecomposition, MembreTagInfo } from '..
                   </p>
               </div>
               <div class="flex gap-2 shrink-0">
-                  @if (afficherParMembre()) {
-                      <p-selectbutton [options]="vueOptions" [ngModel]="vue()" (ngModelChange)="vue.set($event)"
-                                      optionLabel="label" optionValue="value" [allowEmpty]="false"/>
-                  }
+                  <p-button icon="pi pi-chevron-left" [text]="true" [rounded]="true"
+                            [disabled]="!peutReculer()" (onClick)="moisPrecedent()"
+                            [ariaLabel]="t.projection.moisPrecedent"/>
                   <p-select appendTo="body" [options]="annees" [(ngModel)]="annee"
                             (onChange)="charger()" class="w-28"/>
                   <p-select appendTo="body" [options]="moisOptions" [(ngModel)]="mois"
                             optionLabel="label" optionValue="value"
                             (onChange)="charger()" class="w-36"/>
+                  <p-button icon="pi pi-chevron-right" [text]="true" [rounded]="true"
+                            [disabled]="!peutAvancer()" (onClick)="moisSuivant()"
+                            [ariaLabel]="t.projection.moisSuivant"/>
               </div>
           </div>
 
@@ -67,14 +70,18 @@ import { CarteBilanMembreComponent, LigneDecomposition, MembreTagInfo } from '..
           } @else if (ventilations()) {
 
               <!-- ① Cartes membre + foyer (reste à vivre, décomposition, taux d'effort) -->
-              <div class="flex items-center justify-start gap-2 mb-1">
+              <div class="flex items-center justify-between gap-2 mb-1">
                   <p-selectbutton [options]="vueDecompositionOptions" [ngModel]="vueDecomposition()"
                                   (ngModelChange)="vueDecomposition.set($event)"
                                   optionLabel="label" optionValue="value" [allowEmpty]="false"/>
+                  @if (afficherParMembre()) {
+                    <p-selectbutton [options]="vueOptions" [ngModel]="vue()" (ngModelChange)="vue.set($event)"
+                                    optionLabel="label" optionValue="value" [allowEmpty]="false"/>
+                  }
               </div>
               @if (vueEffective() !== 'MEMBRE') {
                   <div class="grid grid-cols-1 gap-4 mb-4">
-                      <app-carte-bilan-membre variante="foyer" [nom]="t.projection.foyer" [sousTitre]="foyerSousTitre()"
+                      <app-carte-bilan variante="foyer" [nom]="t.projection.foyer" [sousTitre]="foyerSousTitre()"
                                                [initiales]="foyerInitiales()"
                                                [montantPrincipalLabel]="t.projection.resteAVivreMois"
                                                [montantPrincipal]="ventilations()!.agregat.soldeDisponible"
@@ -86,7 +93,7 @@ import { CarteBilanMembreComponent, LigneDecomposition, MembreTagInfo } from '..
               @if (afficherParMembre() && vueEffective() !== 'FOYER') {
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                       @for (mc of membresData(); track mc.id) {
-                          <app-carte-bilan-membre variante="membre" [nom]="mc.nom" [sousTitre]="mc.sousTitre"
+                          <app-carte-bilan variante="membre" [nom]="mc.nom" [sousTitre]="mc.sousTitre"
                                                    [couleur]="mc.couleur" [initiales]="mc.initiales"
                                                    [montantPrincipalLabel]="t.projection.resteAVivreMois"
                                                    [montantPrincipal]="mc.agregat.soldeDisponible"
@@ -149,6 +156,41 @@ export class DashboardMensuelComponent implements OnInit {
 
   annees: number[]  = Array.from({ length: 9 }, (_, i) => new Date().getFullYear() + i);
   moisOptions       = this.t.mois.map((label, i) => ({ label, value: i + 1 }));
+
+  /** Peut-on reculer d'un mois sans sortir de l'horizon du scénario (années disponibles) ? */
+  peutReculer(): boolean {
+    return this.annee > this.annees[0] || this.mois > 1;
+  }
+
+  /** Peut-on avancer d'un mois sans sortir de l'horizon du scénario (années disponibles) ? */
+  peutAvancer(): boolean {
+    const derniereAnnee = this.annees[this.annees.length - 1];
+    return this.annee < derniereAnnee || this.mois < 12;
+  }
+
+  /** Navigue vers le mois précédent, en repassant à décembre de l'année précédente si on est en janvier. */
+  moisPrecedent(): void {
+    if (!this.peutReculer()) return;
+    if (this.mois === 1) {
+      this.mois = 12;
+      this.annee -= 1;
+    } else {
+      this.mois -= 1;
+    }
+    this.charger();
+  }
+
+  /** Navigue vers le mois suivant, en repassant à janvier de l'année suivante si on est en décembre. */
+  moisSuivant(): void {
+    if (!this.peutAvancer()) return;
+    if (this.mois === 12) {
+      this.mois = 1;
+      this.annee += 1;
+    } else {
+      this.mois += 1;
+    }
+    this.charger();
+  }
 
   formatPct(v: number): string {
     return this.decomp.formatPct(v);

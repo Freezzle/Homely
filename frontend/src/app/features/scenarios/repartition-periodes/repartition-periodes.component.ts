@@ -16,6 +16,7 @@ import { RepartitionPeriodeService } from '../../../core/services/scenario-poste
 import { RepartitionPeriodeDto } from '../../../core/models/api.models';
 import { PctPipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
+import { TagComponent } from '../../../shared/components/tag/tag.component';
 
 /**
  * Composant d'édition des périodes de répartition (prorata) d'un scénario.
@@ -31,7 +32,7 @@ import { I18nService } from '../../../core/i18n/i18n.service';
   styles: [`:host { display: contents; }`],
   imports: [CommonModule, FormsModule, ReactiveFormsModule, ButtonModule, DialogModule,
     TableModule, TagModule, InputNumberModule, DatePickerModule, MessageModule,
-    ConfirmDialogModule, TooltipModule, PctPipe],
+    ConfirmDialogModule, TooltipModule, PctPipe, TagComponent],
   template: `
     <p-confirmdialog/>
 
@@ -71,11 +72,7 @@ import { I18nService } from '../../../core/i18n/i18n.service';
                 <td>
                   <div class="flex flex-wrap gap-1">
                     @for (part of p.parts; track part.membreId) {
-                      <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
-                            [style.background-color]="normaliserCouleur(part.couleurMembre)"
-                            [style.color]="contrasteCouleur(part.couleurMembre)">
-                        {{ part.nomMembre }} · {{ part.quotePart | pct }}
-                      </span>
+                      <app-tag [couleur]="part.couleurMembre" [texte]="part.nomMembre + ' · ' + (part.quotePart | pct)" />
                     }
                   </div>
                 </td>
@@ -277,19 +274,6 @@ export class RepartitionPeriodesComponent implements OnInit {
     });
   }
 
-  normaliserCouleur(c?: string | null): string {
-    if (!c) return '#64748b';
-    return c.startsWith('#') ? c : `#${c}`;
-  }
-
-  contrasteCouleur(hex?: string | null): string {
-    const h = (hex ?? '#64748b').replace('#', '');
-    if (h.length !== 6) return '#ffffff';
-    const r = parseInt(h.slice(0, 2), 16);
-    const g = parseInt(h.slice(2, 4), 16);
-    const b = parseInt(h.slice(4, 6), 16);
-    return (0.299 * r + 0.587 * g + 0.114 * b) > 170 ? '#111827' : '#ffffff';
-  }
 
   private toIso(d: Date): string { return d.toISOString().substring(0, 10); }
 }

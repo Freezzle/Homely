@@ -4,7 +4,8 @@ import {
   CategorieDto, CompteDto, MembreDto, ObjectifDto, ScenarioDto, TypeCategorie,
   VentilationAggregatDto, VentilationSplitDto,
 } from '../models/api.models';
-import { LigneDecomposition, MembreTagInfo } from '../../shared/components/carte-bilan-membre/carte-bilan-membre.component';
+import { LigneDecomposition, MembreTagInfo } from '../../shared/components/carte-bilan/carte-bilan.component';
+import { normaliserCouleur, couleurTexteContraste } from '../../shared/utils/couleur.util';
 
 /** Forme minimale commune à une ventilation mensuelle ou à un agrégat annuel sommé. */
 export interface VentilationLike {
@@ -49,19 +50,12 @@ export class DecompositionService {
   }
 
   normaliserCouleur(couleur?: string): string {
-    if (!couleur) return '#64748b';
-    return couleur.startsWith('#') ? couleur : `#${couleur}`;
+    return normaliserCouleur(couleur);
   }
 
   /** Lisibilité minimale des tags, quelle que soit la couleur du membre. */
   couleurTexteContraste(hexColor: string): string {
-    const hex = hexColor.replace('#', '');
-    if (hex.length !== 6 || /[^0-9a-f]/i.test(hex)) return '#ffffff';
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    const luminance = (0.299 * r) + (0.587 * g) + (0.114 * b);
-    return luminance > 170 ? '#111827' : '#ffffff';
+    return couleurTexteContraste(hexColor);
   }
 
   /** Libellé de décomposition pour une catégorie RESERVE — préfixe « Objectif · nom » si liée. */
