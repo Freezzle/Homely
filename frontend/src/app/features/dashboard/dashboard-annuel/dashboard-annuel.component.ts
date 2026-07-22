@@ -7,17 +7,26 @@ import { TableModule } from 'primeng/table';
 import { ChartModule } from 'primeng/chart';
 import { SkeletonModule } from 'primeng/skeleton';
 import { CardModule } from 'primeng/card';
+import { TagModule } from 'primeng/tag';
+import { forkJoin } from 'rxjs';
 import { ContexteService } from '../../../core/services/contexte.service';
 import { ProjectionService } from '../../../core/services/projection.service';
-import { ProjectionAnnuelleDto, AggregatDto } from '../../../core/models/api.models';
+import { CategorieService, CompteService } from '../../../core/services/referentiel.service';
+import { PosteService, ObjectifService } from '../../../core/services/scenario-poste.service';
+import { DecompositionService, VentilationLike } from '../../../core/services/decomposition.service';
+import {
+  ProjectionAnnuelleDto, AggregatDto, VentilationsDto, VentilationAggregatDto, VentilationSplitDto,
+  CategorieDto, CompteDto, PosteDto, ObjectifDto, TypeCategorie,
+} from '../../../core/models/api.models';
 import { MontantPipe } from '../../../core/pipes/format.pipes';
 import { FR } from '../../../core/i18n/fr';
+import { CarteBilanMembreComponent, LigneDecomposition } from '../../../shared/components/carte-bilan-membre/carte-bilan-membre.component';
 
 @Component({
   selector: 'app-dashboard-annuel',
   standalone: true,
   imports: [CommonModule, FormsModule, SelectModule, SelectButtonModule, TableModule, ChartModule,
-            SkeletonModule, CardModule, MontantPipe],
+            SkeletonModule, CardModule, TagModule, MontantPipe, CarteBilanMembreComponent],
   template: `
     <div class="flex flex-col gap-6">
 
@@ -41,6 +50,9 @@ import { FR } from '../../../core/i18n/fr';
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
           @for (i of [1,2,3,4]; track i) { <p-skeleton height="104px" borderRadius="12px" /> }
         </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          @for (i of [1,2,3]; track i) { <p-skeleton height="260px" borderRadius="12px" /> }
+        </div>
         <p-skeleton height="340px" borderRadius="12px" />
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           @for (i of [1,2]; track i) { <p-skeleton height="260px" borderRadius="12px" /> }
@@ -48,72 +60,35 @@ import { FR } from '../../../core/i18n/fr';
         <p-skeleton height="400px" borderRadius="12px" />
 
       } @else if (projection()) {
+        <!-- ①bis Cartes membre + foyer (revenus/charges/réserves/solde annuels, décomposition) -->
+        @if (ventilationAnnuelle()) {
+          <div class="flex items-center justify-start gap-2 mb-1">
+            <p-selectbutton [options]="vueDecompositionOptions" [ngModel]="vueDecomposition()"
+                            (ngModelChange)="vueDecomposition.set($event)"
+                            optionLabel="label" optionValue="value" [allowEmpty]="false"/>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            @if (afficherParMembre() && vueEffective() !== 'FOYER') {
+              @for (mc of membresDataAnnuel(); track mc.id) {
+                <app-carte-bilan-membre variante="membre" [nom]="mc.nom" [sousTitre]="mc.sousTitre"
+                                         [couleur]="mc.couleur" [initiales]="mc.initiales"
+                                         [montantPrincipalLabel]="t.projection.resteAVivreAnnee"
+                                         [montantPrincipal]="mc.agregat.soldeDisponible"
+                                         [devise]="deviseBase()" [lignes]="lignesMembreAnnuel(mc)"
+                                         [tauxEffort]="mc.tauxEffort"/>
+              }
+            }
 
-        <!-- ① KPI annuels — 2 cols mobile · 4 cols desktop ─────────────────── -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-
-          <p-card styleClass="border-l-4 border-green-500">
-            <div class="flex items-start justify-between gap-2">
-              <div class="min-w-0">
-                <div class="text-xs font-semibold text-surface-400 uppercase tracking-wide mb-2">{{ t.projection.revenus }}</div>
-                <div class="text-xl font-bold text-green-600 truncate">{{ projection()!.totalAnnuel.revenus | montant }}</div>
-                <div class="text-xs text-surface-400 mt-1.5">≈ {{ fmtMensuel(projection()!.totalAnnuel.revenus) }}&thinsp;/&thinsp;mois</div>
-              </div>
-              <span class="w-9 h-9 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center shrink-0 mt-0.5">
-                <i class="pi pi-arrow-up text-green-600 text-xs"></i>
-              </span>
-            </div>
-          </p-card>
-
-          <p-card styleClass="border-l-4 border-red-500">
-            <div class="flex items-start justify-between gap-2">
-              <div class="min-w-0">
-                <div class="text-xs font-semibold text-surface-400 uppercase tracking-wide mb-2">{{ t.projection.charges }}</div>
-                <div class="text-xl font-bold text-red-500 truncate">{{ projection()!.totalAnnuel.charges | montant }}</div>
-                <div class="text-xs text-surface-400 mt-1.5">≈ {{ fmtMensuel(projection()!.totalAnnuel.charges) }}&thinsp;/&thinsp;mois</div>
-              </div>
-              <span class="w-9 h-9 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center shrink-0 mt-0.5">
-                <i class="pi pi-arrow-down text-red-500 text-xs"></i>
-              </span>
-            </div>
-          </p-card>
-
-          <p-card styleClass="border-l-4 border-blue-500">
-            <div class="flex items-start justify-between gap-2">
-              <div class="min-w-0">
-                <div class="text-xs font-semibold text-surface-400 uppercase tracking-wide mb-2">{{ t.projection.reserves }}</div>
-                <div class="text-xl font-bold text-blue-500 truncate">{{ projection()!.totalAnnuel.reserves | montant }}</div>
-                <div class="text-xs text-surface-400 mt-1.5">≈ {{ fmtMensuel(projection()!.totalAnnuel.reserves) }}&thinsp;/&thinsp;mois</div>
-              </div>
-              <span class="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center shrink-0 mt-0.5">
-                <i class="pi pi-wallet text-blue-500 text-xs"></i>
-              </span>
-            </div>
-          </p-card>
-
-          <p-card [class]="'border-l-4 ' + soldeCardBorder()">
-            <div class="flex items-start justify-between gap-2">
-              <div class="min-w-0">
-                <div class="text-xs font-semibold text-surface-400 uppercase tracking-wide mb-2">{{ t.projection.solde }}</div>
-                <div class="text-xl font-bold truncate"
-                     [class.text-emerald-600]="projection()!.totalAnnuel.soldeDisponible >= 0"
-                     [class.text-red-500]="projection()!.totalAnnuel.soldeDisponible < 0">
-                  {{ projection()!.totalAnnuel.soldeDisponible | montant }}
-                </div>
-                <div class="text-xs text-surface-400 mt-1.5">≈ {{ fmtMensuel(projection()!.totalAnnuel.soldeDisponible) }}&thinsp;/&thinsp;mois</div>
-              </div>
-              <span class="w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5"
-                    [ngClass]="projection()!.totalAnnuel.soldeDisponible >= 0
-                      ? 'bg-emerald-100 dark:bg-emerald-900/20'
-                      : 'bg-red-100 dark:bg-red-900/20'">
-                <i class="pi text-xs"
-                   [ngClass]="projection()!.totalAnnuel.soldeDisponible >= 0
-                     ? 'pi-check-circle text-emerald-600'
-                     : 'pi-exclamation-triangle text-red-500'"></i>
-              </span>
-            </div>
-          </p-card>
-        </div>
+            @if (vueEffective() !== 'MEMBRE') {
+              <app-carte-bilan-membre variante="foyer" [nom]="t.projection.foyer" [sousTitre]="foyerSousTitreAnnuel()"
+                                       [initiales]="foyerInitiales()"
+                                       [montantPrincipalLabel]="t.projection.resteAVivreAnnee"
+                                       [montantPrincipal]="ventilationAnnuelle()!.agregat.soldeDisponible"
+                                       [devise]="deviseBase()" [lignes]="foyerLignesActuellesAnnuel()"
+                                       [tauxEffort]="tauxEffortAnnuel()"/>
+            }
+          </div>
+        }
 
         <!-- ② Graphique mixte foyer — pleine largeur ────────────────────────── -->
         @if (vueEffective() !== 'MEMBRE') {
@@ -275,6 +250,49 @@ import { FR } from '../../../core/i18n/fr';
         </div>
         }
 
+        <!-- ③ bis · Le vrai prorata, mois par mois ─────────────────────────── -->
+        @if (afficherParMembre() && vueEffective() !== 'FOYER') {
+        <div>
+          <div class="flex items-center gap-3 mb-4">
+            <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
+            <span class="text-xs font-bold text-surface-400 uppercase tracking-widest flex items-center gap-2">
+              <i class="pi pi-percentage text-sm"></i>&nbsp;{{ t.projection.prorataTitre }}
+            </span>
+            <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
+          </div>
+
+          @for (pd of prorataData(); track pd.membreId) {
+            <p-card styleClass="mb-4">
+              <ng-template #title>{{ t.projection.prorataTitre }}</ng-template>
+              <ng-template #subtitle>{{ t.projection.prorataSousTitre }}</ng-template>
+
+              <!-- Bande des périodes de répartition -->
+              <div class="flex w-full rounded-md overflow-hidden mb-2">
+                @for (tag of periodeTags(); track tag.id) {
+                  <div [style.flex-basis.%]="tag.largeurPct" class="shrink-0 min-w-0">
+                    <p-tag [value]="tag.libelle" severity="secondary" styleClass="w-full justify-center rounded-none"/>
+                  </div>
+                }
+              </div>
+
+              <p-chart type="line" [data]="$any(pd.chartData)" [options]="prorataChartOptions"
+                       class="w-full block" style="height:260px"/>
+
+              <ng-template #footer>
+                <p class="text-sm text-surface-400">
+                  {{ t.projection.prorataMoyenneReelle }} : <span class="font-bold text-surface-700 dark:text-surface-200">{{ formatPct1(pd.moyenneReelle) }} %</span>
+                  ·
+                  {{ t.projection.prorataConvenuPondere }} : <span class="font-bold text-surface-700 dark:text-surface-200">{{ formatPct1(pd.convenuPondere) }} %</span>
+                  · <span class="font-bold text-red-500">{{ formatMontantSansDevise(pd.ecartMontant) }} {{ deviseBase() }}</span>
+                  {{ pd.sens === 'sur' ? t.projection.prorataSurpaiement : t.projection.prorataSouspaiement }}
+                  {{ t.projection.prorataApproximatifPour }} {{ pd.nom }}.
+                </p>
+              </ng-template>
+            </p-card>
+          }
+        </div>
+        }
+
         <!-- ④ Tableau mensuel détaillé ─────────────────────────────────────── -->
         @if (vueEffective() !== 'MEMBRE') {
          <p-card>
@@ -387,12 +405,28 @@ import { FR } from '../../../core/i18n/fr';
 })
 export class DashboardAnnuelComponent implements OnInit {
   readonly t = FR;
-  private contexte = inject(ContexteService);
-  private projSvc  = inject(ProjectionService);
+  private contexte     = inject(ContexteService);
+  private projSvc      = inject(ProjectionService);
+  private categorieSvc = inject(CategorieService);
+  private compteSvc    = inject(CompteService);
+  private posteSvc     = inject(PosteService);
+  private objectifSvc  = inject(ObjectifService);
+  private decomp       = inject(DecompositionService);
 
   projection  = signal<ProjectionAnnuelleDto | null>(null);
   chargement  = signal(false);
   membres     = this.contexte.membres;
+
+  // ── Décomposition annuelle (catégorie/type-poste/compte, cascade perso/partagé) ──
+  // Sommée côté client à partir des 12 ventilations mensuelles de l'année sélectionnée
+  // (aucun endpoint annuel dédié à la décomposition côté backend).
+  categories        = signal<CategorieDto[]>([]);
+  comptes           = signal<CompteDto[]>([]);
+  postes            = signal<PosteDto[]>([]);
+  objectifs         = signal<ObjectifDto[]>([]);
+  ventilationAnnuelle = signal<VentilationLike | null>(null);
+
+  readonly deviseBase = this.contexte.deviseBase;
 
   // ── Vue Foyer / Par membre / Les deux ────────────────────────────────────────
   vue = signal<'FOYER' | 'MEMBRE' | 'TOUT'>('MEMBRE');
@@ -404,6 +438,14 @@ export class DashboardAnnuelComponent implements OnInit {
     { label: this.t.projection.vueFoyer,     value: 'FOYER'  },
     { label: this.t.projection.vueParMembre, value: 'MEMBRE' },
     { label: this.t.projection.vueTout,      value: 'TOUT'   },
+  ];
+
+  // ── Vue Catégorie / Type de poste (perso vs partagé) / Compte pour la décomposition ───
+  vueDecomposition = signal<'CATEGORIE' | 'TYPE_POSTE' | 'COMPTE'>('TYPE_POSTE');
+  readonly vueDecompositionOptions = [
+    { label: this.t.projection.vueCategorie,  value: 'CATEGORIE'  },
+    { label: this.t.projection.vueTypePoste,  value: 'TYPE_POSTE' },
+    { label: this.t.projection.vueCompte,     value: 'COMPTE'     },
   ];
 
   private etaitMonoMembre = false;
@@ -527,6 +569,233 @@ export class DashboardAnnuelComponent implements OnInit {
     };
   }
 
+  // ── Le vrai prorata, mois par mois ──────────────────────────────────────────
+
+  formatPct1(v: number): string {
+    return Intl.NumberFormat('fr-CH', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(v);
+  }
+
+  formatMontantSansDevise(v: number): string {
+    return Intl.NumberFormat('fr-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(v));
+  }
+
+  /** Quote-part (en %) configurée pour un membre à un mois donné de l'année sélectionnée. */
+  private quotePartConvenue(membreId: string, mois: number): number {
+    const sc = this.contexte.scenarioCourant();
+    if (!sc) return 0;
+    const jour = new Date(Date.UTC(this.anneeSelectionnee, mois - 1, 15));
+    const periode = sc.periodes.find(p => {
+      const debutOk = !p.debut || new Date(p.debut) <= jour;
+      const finOk = !p.fin || new Date(p.fin) >= jour;
+      return debutOk && finOk;
+    });
+    if (periode) {
+      return (periode.parts.find(p => p.membreId === membreId)?.quotePart ?? 0) * 100;
+    }
+    return (sc.repartitions.find(r => r.membreId === membreId)?.quotePart ?? 0) * 100;
+  }
+
+  /** Bande de tags des périodes de répartition, dimensionnée selon les mois couverts sur l'année sélectionnée. */
+  periodeTags = computed(() => {
+    const sc = this.contexte.scenarioCourant();
+    if (!sc || !sc.periodes.length) return [];
+    const anneeDebut = new Date(Date.UTC(this.anneeSelectionnee, 0, 1));
+    const anneeFin = new Date(Date.UTC(this.anneeSelectionnee, 11, 31));
+    return sc.periodes
+      .map(p => {
+        const debut = p.debut ? new Date(p.debut) : anneeDebut;
+        const fin = p.fin ? new Date(p.fin) : anneeFin;
+        const debutEff = debut < anneeDebut ? anneeDebut : debut;
+        const finEff = fin > anneeFin ? anneeFin : fin;
+        if (debutEff > finEff) return null;
+        const moisDebut = debutEff.getUTCMonth() + 1;
+        const moisFin = finEff.getUTCMonth() + 1;
+        return {
+          id: p.id,
+          libelle: p.parts.map(part => this.formatPctEntier(part.quotePart * 100)).join(' / '),
+          largeurPct: ((moisFin - moisDebut + 1) / 12) * 100,
+        };
+      })
+      .filter((t): t is { id: string; libelle: string; largeurPct: number } => !!t);
+  });
+
+  private formatPctEntier(v: number): string {
+    return Intl.NumberFormat('fr-CH', { maximumFractionDigits: 0 }).format(v);
+  }
+
+  readonly prorataChartOptions = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: true, position: 'top' as const, align: 'end' as const },
+      tooltip: { callbacks: { label: (ctx: any) => `${ctx.dataset.label} : ${this.formatPct1(ctx.parsed.y)} %` } } },
+    scales: {
+      x: { grid: { display: false } },
+      y: { min: 0, max: 100, ticks: { stepSize: 20, callback: (v: any) => `${v} %` }, grid: { color: 'rgba(128,128,128,0.08)' } },
+    },
+  };
+
+  prorataData = computed(() => {
+    const p = this.projection();
+    if (!p) return [];
+    return this.membres().map(m => {
+      const revenusFoyer = p.mois.map(mo => mo.agregat.revenus);
+      const revenusMembre = (p.moisParMembre[m.id] ?? []).map(ag => ag.revenus);
+      const convenuSerie = Array.from({ length: 12 }, (_, i) => this.quotePartConvenue(m.id, i + 1));
+      const reelSerie = revenusFoyer.map((total, i) => total > 0 ? (revenusMembre[i] ?? 0) / total * 100 : 0);
+
+      const moyenneReelle = reelSerie.reduce((s, v) => s + v, 0) / (reelSerie.length || 1);
+      const totalRevenusFoyer = revenusFoyer.reduce((s, v) => s + v, 0);
+      const convenuPondere = totalRevenusFoyer > 0
+        ? convenuSerie.reduce((s, v, i) => s + v * revenusFoyer[i], 0) / totalRevenusFoyer
+        : convenuSerie.reduce((s, v) => s + v, 0) / (convenuSerie.length || 1);
+
+      const ecartMontant = Math.abs(convenuPondere - moyenneReelle) / 100 * totalRevenusFoyer;
+      const sens: 'sur' | 'sous' = convenuPondere >= moyenneReelle ? 'sur' : 'sous';
+
+      return {
+        membreId: m.id, nom: m.nom, couleur: m.couleur,
+        moyenneReelle, convenuPondere, ecartMontant, sens,
+        chartData: {
+          labels: this.t.moisLettre,
+          datasets: [
+            {
+              type: 'line', label: this.t.projection.prorataConvenu,
+              data: convenuSerie, stepped: true,
+              borderColor: 'var(--p-text-muted-color)', backgroundColor: 'transparent',
+              borderWidth: 2, pointRadius: 0,
+            },
+            {
+              type: 'line', label: this.t.projection.prorataReel,
+              data: reelSerie, tension: 0,
+              borderColor: m.couleur, backgroundColor: m.couleur,
+              borderWidth: 2, pointRadius: 3,
+            },
+          ],
+        },
+      };
+    });
+  });
+
+  // ── Cartes membre + foyer annuelles (décomposition catégorie/type-poste/compte) ──
+
+  foyerInitiales = computed(() => this.decomp.initiales(this.contexte.foyerCourant()?.nom ?? this.t.projection.foyer));
+
+  foyerSousTitreAnnuel = computed(() => {
+    const nbMembres = this.membres().length;
+    const scenarioNom = this.contexte.scenarioCourant()?.nom ?? '';
+    return `${nbMembres} ${this.t.projection.membres} · ${this.t.projection.scenarioMot} ${scenarioNom}`;
+  });
+
+  tauxEffortAnnuel = computed(() => this.decomp.tauxEffort(this.ventilationAnnuelle()?.agregat ?? { revenus: 0, charges: 0, reserves: 0, soldeDisponible: 0 }));
+
+  private compteLibelleAnnuel(id: string): string {
+    return this.decomp.compteLibelle(id, this.comptes());
+  }
+
+  private categorieMontantParMembreAnnuel(categorieId: string, membreId: string): number {
+    return (this.ventilationAnnuelle()?.parCategorieMembre ?? {})[categorieId]?.[membreId] ?? 0;
+  }
+
+  /** Décomposition foyer par catégorie/type de poste (agrégat annuel sommé). */
+  foyerDecompositionAnnuel = computed<LigneDecomposition[]>(() => {
+    const v = this.ventilationAnnuelle();
+    if (!v) return [];
+    const cats = this.categories();
+    const makeList = (type: TypeCategorie) => this.decomp.listeParCategorie(type, cats, catId => v.parCategorie[catId] ?? 0);
+    return this.decomp.construireDecomposition({
+      revenus:  makeList('REVENU'),
+      charges:  makeList('CHARGE'),
+      reserves: makeList('RESERVE'),
+    }, this.objectifs());
+  });
+
+  /** Décomposition foyer par compte : somme des contributions de tous les membres, par compte (agrégat annuel). */
+  foyerCompteDecompositionAnnuel = computed<LigneDecomposition[]>(() => {
+    const v = this.ventilationAnnuelle();
+    if (!v) return [];
+    return Object.entries(v.parCompteMembre ?? {})
+      .map(([compteId, memMap]) => ({
+        id: compteId,
+        libelle: this.compteLibelleAnnuel(compteId),
+        montantAbs: Object.values(memMap).reduce((s, m) => s + m, 0),
+        signe: -1 as const,
+        tags: this.decomp.membresTagsCompte(compteId, this.comptes(), this.membres()),
+      }))
+      .filter(c => c.montantAbs !== 0)
+      .sort((a, b) => b.montantAbs - a.montantAbs);
+  });
+
+  foyerCascadeDecompositionAnnuel = computed<LigneDecomposition[]>(() => {
+    const v = this.ventilationAnnuelle();
+    if (!v) return [];
+    return this.decomp.foyerCascadeDecomposition(v, this.membres());
+  });
+
+  /** Lignes affichées dans la carte foyer annuelle, selon le mode de décomposition sélectionné. */
+  foyerLignesActuellesAnnuel = computed(() => {
+    switch (this.vueDecomposition()) {
+      case 'CATEGORIE':  return this.foyerDecompositionAnnuel();
+      case 'COMPTE':     return this.foyerCompteDecompositionAnnuel();
+      default:           return this.foyerCascadeDecompositionAnnuel();
+    }
+  });
+
+  /** Lignes affichées dans la carte d'un membre annuelle, selon le mode de décomposition sélectionné. */
+  lignesMembreAnnuel(mc: {
+    decomposition: LigneDecomposition[];
+    cascadeDecomposition: LigneDecomposition[];
+    compteDecomposition: LigneDecomposition[];
+  }): LigneDecomposition[] {
+    switch (this.vueDecomposition()) {
+      case 'CATEGORIE':  return mc.decomposition;
+      case 'COMPTE':     return mc.compteDecomposition;
+      default:           return mc.cascadeDecomposition;
+    }
+  }
+
+  membresDataAnnuel = computed(() => {
+    const v = this.ventilationAnnuelle();
+    if (!v) return [];
+    const zero: VentilationAggregatDto = { revenus: 0, charges: 0, reserves: 0, soldeDisponible: 0 };
+    const cats = this.categories();
+    const nbMembres = this.membres().length;
+    const scenario = this.contexte.scenarioCourant();
+    return this.membres().map(m => {
+      const agregat: VentilationAggregatDto = (v.parMembre ?? {})[m.id] ?? zero;
+      const tauxEffort = this.decomp.tauxEffort(agregat);
+      const chargesParCompte = Object.entries(v.parCompteMembre ?? {})
+        .map(([compteId, memMap]) => ({
+          id: compteId,
+          libelle: this.compteLibelleAnnuel(compteId),
+          montant: memMap[m.id] ?? 0,
+        }))
+        .filter(c => c.montant > 0)
+        .sort((a, b) => b.montant - a.montant);
+
+      const makeList = (type: TypeCategorie) => cats
+        .filter(c => c.typePoste === type)
+        .map(c => ({ id: c.id, libelle: c.libelle, montant: this.categorieMontantParMembreAnnuel(c.id, m.id) }))
+        .filter(r => r.montant !== 0)
+        .sort((a, b) => b.montant - a.montant);
+
+      return {
+        id: m.id, nom: m.nom, couleur: m.couleur,
+        initiales: this.decomp.initiales(m.nom),
+        sousTitre: this.decomp.sousTitreQuotePartDefaut(scenario, m.id),
+        decomposition: this.decomp.construireDecomposition({
+          revenus: makeList('REVENU'),
+          charges: makeList('CHARGE'),
+          reserves: makeList('RESERVE'),
+        }, this.objectifs()),
+        cascadeDecomposition: this.decomp.construireCascadeDecomposition(m.id, agregat, v, nbMembres),
+        compteDecomposition: chargesParCompte.map(c => ({
+          id: c.id, libelle: c.libelle, montantAbs: c.montant, signe: -1 as const,
+          tags: this.decomp.membresTagsCompte(c.id, this.comptes(), this.membres(), m.id),
+        })),
+        agregat, tauxEffort,
+      };
+    });
+  });
+
   // ── Effets & chargement ─────────────────────────────────────────────────────
 
   private readonly _initEffect = effect(() => {
@@ -536,7 +805,20 @@ export class DashboardAnnuelComponent implements OnInit {
       this.annees = Array.from({ length: sc.horizonAnnees }, (_, i) => sc.anneeDepart + i);
       this.anneeSelectionnee = sc.anneeDepart;
     }
-    if (foyerId && sc) this.charger();
+    if (foyerId && sc) {
+      forkJoin([
+        this.categorieSvc.lister(foyerId),
+        this.compteSvc.lister(foyerId),
+        this.posteSvc.lister(foyerId, sc.id),
+        this.objectifSvc.lister(foyerId, sc.id),
+      ]).subscribe(([cats, cptes, postes, objectifs]) => {
+        this.categories.set(cats);
+        this.comptes.set(cptes);
+        this.postes.set(postes);
+        this.objectifs.set(objectifs);
+        this.charger();
+      });
+    }
   });
 
   private readonly _normaliserVueEffect = effect(() => {
@@ -554,6 +836,56 @@ export class DashboardAnnuelComponent implements OnInit {
 
   ngOnInit(): void {}
 
+  /**
+   * Somme 12 ventilations mensuelles (`VentilationsDto`) en un agrégat annuel de même
+   * forme — utilisé pour la décomposition catégorie/type-poste/compte des cartes membre
+   * + foyer annuelles (pas d'endpoint backend dédié à cette décomposition annuelle).
+   */
+  private sommerVentilations(mois: VentilationsDto[]): VentilationLike {
+    const agregat: VentilationAggregatDto = { revenus: 0, charges: 0, reserves: 0, soldeDisponible: 0 };
+    const parMembre: Record<string, VentilationAggregatDto> = {};
+    const parCategorie: Record<string, number> = {};
+    const parCategorieMembre: Record<string, Record<string, number>> = {};
+    const parCompteMembre: Record<string, Record<string, number>> = {};
+    const parMembreSplit: Record<string, VentilationSplitDto> = {};
+
+    for (const v of mois) {
+      agregat.revenus         += v.agregat.revenus;
+      agregat.charges         += v.agregat.charges;
+      agregat.reserves        += v.agregat.reserves;
+      agregat.soldeDisponible += v.agregat.soldeDisponible;
+
+      for (const [mId, ag] of Object.entries(v.parMembre ?? {})) {
+        const acc = parMembre[mId] ??= { revenus: 0, charges: 0, reserves: 0, soldeDisponible: 0 };
+        acc.revenus += ag.revenus; acc.charges += ag.charges; acc.reserves += ag.reserves; acc.soldeDisponible += ag.soldeDisponible;
+      }
+      for (const [catId, montant] of Object.entries(v.parCategorie ?? {})) {
+        parCategorie[catId] = (parCategorie[catId] ?? 0) + montant;
+      }
+      for (const [catId, memMap] of Object.entries(v.parCategorieMembre ?? {})) {
+        const acc = parCategorieMembre[catId] ??= {};
+        for (const [mId, montant] of Object.entries(memMap)) acc[mId] = (acc[mId] ?? 0) + montant;
+      }
+      for (const [compteId, memMap] of Object.entries(v.parCompteMembre ?? {})) {
+        const acc = parCompteMembre[compteId] ??= {};
+        for (const [mId, montant] of Object.entries(memMap)) acc[mId] = (acc[mId] ?? 0) + montant;
+      }
+      for (const [mId, split] of Object.entries(v.parMembreSplit ?? {})) {
+        const acc = parMembreSplit[mId] ??= {
+          revenusPerso: 0, revenusPartage: 0, chargesPerso: 0, chargesPartage: 0, reservesPerso: 0, reservesPartage: 0,
+        };
+        acc.revenusPerso    += split.revenusPerso;
+        acc.revenusPartage  += split.revenusPartage;
+        acc.chargesPerso    += split.chargesPerso;
+        acc.chargesPartage  += split.chargesPartage;
+        acc.reservesPerso   += split.reservesPerso;
+        acc.reservesPartage += split.reservesPartage;
+      }
+    }
+
+    return { agregat, parMembre, parCategorie, parCategorieMembre, parCompteMembre, parMembreSplit };
+  }
+
   charger(): void {
     const foyerId    = this.contexte.foyerId();
     const scenarioId = this.contexte.scenarioId();
@@ -562,6 +894,14 @@ export class DashboardAnnuelComponent implements OnInit {
     this.projSvc.annuelle(foyerId, scenarioId, this.anneeSelectionnee).subscribe({
       next: p => { this.projection.set(p); this.chargement.set(false); },
       error: () => this.chargement.set(false),
+    });
+
+    const requetesMois = Array.from({ length: 12 }, (_, i) =>
+      this.projSvc.mensuelle(foyerId, scenarioId, this.anneeSelectionnee, i + 1)
+    );
+    forkJoin(requetesMois).subscribe({
+      next: mois => this.ventilationAnnuelle.set(this.sommerVentilations(mois)),
+      error: () => this.ventilationAnnuelle.set(null),
     });
   }
 }

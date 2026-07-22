@@ -131,6 +131,12 @@ export interface EntreeTresorerieDto { annee: number; soldeAnnuel: number; treso
 export interface MoisCourbeDto { annee: number; mois: number; tresorerie: number; }
 export interface TresorerieDto { annees: EntreeTresorerieDto[]; courbe: MoisCourbeDto[]; }
 export interface VentilationAggregatDto { revenus: number; charges: number; reserves: number; soldeDisponible: number; }
+/** Décomposition perso/partagé d'un membre pour un mois donné, par type de poste (calculée par le moteur backend). */
+export interface VentilationSplitDto {
+  revenusPerso: number; revenusPartage: number;
+  chargesPerso: number; chargesPartage: number;
+  reservesPerso: number; reservesPartage: number;
+}
 export interface VentilationsDto {
   annee: number; mois: number;
   agregat: VentilationAggregatDto;
@@ -138,6 +144,7 @@ export interface VentilationsDto {
   parCategorie: Record<string, number>;
   parCategorieMembre: Record<string, Record<string, number>>;
   parCompteMembre: Record<string, Record<string, number>>;
+  parMembreSplit: Record<string, VentilationSplitDto>;
 }
 export interface SerieAnnuelleDto { annee: number; soldeParScenario: Record<string, number>; tresorerieParScenario: Record<string, number>; }
 export interface ComparaisonDto { scenarioIds: string[]; nomScenarios: string[]; series: SerieAnnuelleDto[]; }

@@ -221,6 +221,23 @@ public class MoteurCalcul {
     }
 
     /**
+     * Un poste est <b>personnel</b> s'il est réparti en {@link TypeRepartition#CUSTOM}
+     * et qu'un seul membre y a une quote-part {@code > 0}. Les postes {@code AUTO} /
+     * {@code REVERSE_AUTO} impliquent toujours l'ensemble des membres (via la période
+     * du scénario) → toujours considérés <b>partagés</b>.
+     *
+     * @param poste poste à classifier
+     * @return {@code true} si le poste est personnel à un unique membre
+     */
+    public static boolean estPersonnel(PosteCalcul poste) {
+        if (poste.typeRepartition() != TypeRepartition.CUSTOM) return false;
+        List<RepartitionCalcul> repartitions = poste.repartitions();
+        if (repartitions == null) return false;
+        long nonZero = repartitions.stream().filter(r -> r.quotePart() > 0).count();
+        return nonZero == 1;
+    }
+
+    /**
      * Valide qu'une liste de répartitions somme à 1 (±1e-6).
      * Lève {@link RepartitionInvalideException} sinon.
      */
@@ -309,6 +326,44 @@ public class MoteurCalcul {
             }
         }
         return new AggregatMensuel(revenus, charges, reserves, revenus - charges - reserves);
+    }
+
+    /**
+     * Décomposition perso / partagé d'un membre pour un mois donné (cf.
+     * {@link SplitPersoPartageMensuel}). Réutilise exactement {@link #contribution}
+     * et {@link #quotePartEffective} — aucune nouvelle règle de calcul, uniquement une
+     * classification supplémentaire par poste via {@link #estPersonnel(PosteCalcul)}.
+     * En mono-membre ({@code nbMembres ≤ 1}), tout est classé "partagé" par convention
+     * (la distinction perso/partagé n'a pas de sens sans répartition entre membres).
+     */
+    public static SplitPersoPartageMensuel aggregatMembreMoisSplit(ParametresScenario params, UUID membreId,
+                                                                    int annee, int mois) {
+        double revenusPerso = 0, revenusPartage = 0;
+        double chargesPerso = 0, chargesPartage = 0;
+        double reservesPerso = 0, reservesPartage = 0;
+        int nbMembres = params.membres().size();
+
+        for (PosteCalcul poste : params.postes()) {
+            double contrib = contribution(poste, annee, mois)
+                    * tauxConversion(poste.devise(), params.deviseBase(), params.taux())
+                    * quotePartEffective(poste, membreId, annee, mois, params.periodesDefaut(), nbMembres);
+            if (contrib == 0) continue;
+
+            boolean personnel = nbMembres > 1 && estPersonnel(poste);
+            switch (poste.type()) {
+                case REVENU -> {
+                    if (personnel) revenusPerso += contrib; else revenusPartage += contrib;
+                }
+                case CHARGE -> {
+                    if (personnel) chargesPerso += contrib; else chargesPartage += contrib;
+                }
+                case RESERVE -> {
+                    if (personnel) reservesPerso += contrib; else reservesPartage += contrib;
+                }
+            }
+        }
+        return new SplitPersoPartageMensuel(
+                revenusPerso, revenusPartage, chargesPerso, chargesPartage, reservesPerso, reservesPartage);
     }
 
     // ─────────────────────────────────────────────────────────────────────────

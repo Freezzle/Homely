@@ -110,9 +110,12 @@ public class ProjectionService {
 
         // Agrégat par membre du mois
         Map<UUID, VentilationsDto.AggregatDto> parMembre = new LinkedHashMap<>();
+        Map<UUID, VentilationsDto.SplitDto> parMembreSplit = new LinkedHashMap<>();
         for (UUID membreId : params.membres()) {
             AggregatMensuel ag = MoteurCalcul.aggregatMembreMois(params, membreId, annee, mois);
             parMembre.put(membreId, toVentAggregatDto(ag));
+            SplitPersoPartageMensuel split = MoteurCalcul.aggregatMembreMoisSplit(params, membreId, annee, mois);
+            parMembreSplit.put(membreId, toVentSplitDto(split));
         }
 
         // Ventilations par catégorie, par catégorie/membre et par compte/membre
@@ -127,12 +130,19 @@ public class ProjectionService {
                 .collect(Collectors.toMap(Map.Entry::getKey,
                         e -> e.getValue().entrySet().stream()
                                 .collect(Collectors.toMap(Map.Entry::getKey, ie -> bd(ie.getValue())))));
-        return new VentilationsDto(annee, mois, agregat, parMembre, parCat, parCatMembre, parCM);
+        return new VentilationsDto(annee, mois, agregat, parMembre, parCat, parCatMembre, parCM, parMembreSplit);
     }
 
     private VentilationsDto.AggregatDto toVentAggregatDto(AggregatMensuel ag) {
         return new VentilationsDto.AggregatDto(
                 bd(ag.revenus()), bd(ag.charges()), bd(ag.reserves()), bd(ag.soldeDisponible()));
+    }
+
+    private VentilationsDto.SplitDto toVentSplitDto(SplitPersoPartageMensuel split) {
+        return new VentilationsDto.SplitDto(
+                bd(split.revenusPerso()), bd(split.revenusPartage()),
+                bd(split.chargesPerso()), bd(split.chargesPartage()),
+                bd(split.reservesPerso()), bd(split.reservesPartage()));
     }
 
 
