@@ -32,7 +32,7 @@ services:
       DB_USER:     ${DB_USER:-homely}
       DB_PASSWORD: ${DB_PASSWORD:-homely}
       JWT_SECRET:  ${JWT_SECRET}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:4200}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:4200,http://80.218.235.95:4200}
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
       interval: 10s

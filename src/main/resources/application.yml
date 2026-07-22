@@ -43,4 +43,4 @@ app:
     access-expiration-ms: 900000        # 15 min
     refresh-expiration-ms: 604800000    # 7 jours
   cors:
-    allowed-origins: ${CORS_ORIGINS:http://localhost:4200}
+    allowed-origins: ${CORS_ORIGINS:http://localhost:4200,http://80.218.235.95:4200}

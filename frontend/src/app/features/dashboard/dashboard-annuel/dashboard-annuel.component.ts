@@ -67,8 +67,19 @@ import { CarteBilanMembreComponent, LigneDecomposition } from '../../../shared/c
                             (ngModelChange)="vueDecomposition.set($event)"
                             optionLabel="label" optionValue="value" [allowEmpty]="false"/>
           </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            @if (afficherParMembre() && vueEffective() !== 'FOYER') {
+          @if (vueEffective() !== 'MEMBRE') {
+            <div class="grid grid-cols-1 gap-4 mb-4">
+              <app-carte-bilan-membre variante="foyer" [nom]="t.projection.foyer" [sousTitre]="foyerSousTitreAnnuel()"
+                                       [initiales]="foyerInitiales()"
+                                       [montantPrincipalLabel]="t.projection.resteAVivreAnnee"
+                                       [montantPrincipal]="ventilationAnnuelle()!.agregat.soldeDisponible"
+                                       [devise]="deviseBase()" [lignes]="foyerLignesActuellesAnnuel()"
+                                       [tauxEffort]="tauxEffortAnnuel()"/>
+            </div>
+          }
+
+          @if (afficherParMembre() && vueEffective() !== 'FOYER') {
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               @for (mc of membresDataAnnuel(); track mc.id) {
                 <app-carte-bilan-membre variante="membre" [nom]="mc.nom" [sousTitre]="mc.sousTitre"
                                          [couleur]="mc.couleur" [initiales]="mc.initiales"
@@ -77,17 +88,8 @@ import { CarteBilanMembreComponent, LigneDecomposition } from '../../../shared/c
                                          [devise]="deviseBase()" [lignes]="lignesMembreAnnuel(mc)"
                                          [tauxEffort]="mc.tauxEffort"/>
               }
-            }
-
-            @if (vueEffective() !== 'MEMBRE') {
-              <app-carte-bilan-membre variante="foyer" [nom]="t.projection.foyer" [sousTitre]="foyerSousTitreAnnuel()"
-                                       [initiales]="foyerInitiales()"
-                                       [montantPrincipalLabel]="t.projection.resteAVivreAnnee"
-                                       [montantPrincipal]="ventilationAnnuelle()!.agregat.soldeDisponible"
-                                       [devise]="deviseBase()" [lignes]="foyerLignesActuellesAnnuel()"
-                                       [tauxEffort]="tauxEffortAnnuel()"/>
-            }
-          </div>
+            </div>
+          }
         }
 
         <!-- ② Graphique mixte foyer — pleine largeur ────────────────────────── -->

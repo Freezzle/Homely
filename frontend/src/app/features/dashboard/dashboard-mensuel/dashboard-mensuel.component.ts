@@ -72,8 +72,19 @@ import { CarteBilanMembreComponent, LigneDecomposition, MembreTagInfo } from '..
                                   (ngModelChange)="vueDecomposition.set($event)"
                                   optionLabel="label" optionValue="value" [allowEmpty]="false"/>
               </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                  @if (afficherParMembre() && vueEffective() !== 'FOYER') {
+              @if (vueEffective() !== 'MEMBRE') {
+                  <div class="grid grid-cols-1 gap-4 mb-4">
+                      <app-carte-bilan-membre variante="foyer" [nom]="t.projection.foyer" [sousTitre]="foyerSousTitre()"
+                                               [initiales]="foyerInitiales()"
+                                               [montantPrincipalLabel]="t.projection.resteAVivreMois"
+                                               [montantPrincipal]="ventilations()!.agregat.soldeDisponible"
+                                               [devise]="deviseBase()" [lignes]="foyerLignesActuelles()"
+                                               [tauxEffort]="tauxEffort()"/>
+                  </div>
+              }
+
+              @if (afficherParMembre() && vueEffective() !== 'FOYER') {
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                       @for (mc of membresData(); track mc.id) {
                           <app-carte-bilan-membre variante="membre" [nom]="mc.nom" [sousTitre]="mc.sousTitre"
                                                    [couleur]="mc.couleur" [initiales]="mc.initiales"
@@ -82,17 +93,8 @@ import { CarteBilanMembreComponent, LigneDecomposition, MembreTagInfo } from '..
                                                    [devise]="deviseBase()" [lignes]="lignesMembre(mc)"
                                                    [tauxEffort]="mc.tauxEffort"/>
                       }
-                  }
-
-                  @if (vueEffective() !== 'MEMBRE') {
-                      <app-carte-bilan-membre variante="foyer" [nom]="t.projection.foyer" [sousTitre]="foyerSousTitre()"
-                                               [initiales]="foyerInitiales()"
-                                               [montantPrincipalLabel]="t.projection.resteAVivreMois"
-                                               [montantPrincipal]="ventilations()!.agregat.soldeDisponible"
-                                               [devise]="deviseBase()" [lignes]="foyerLignesActuelles()"
-                                               [tauxEffort]="tauxEffort()"/>
-                  }
-              </div>
+                  </div>
+              }
           }
       </div>
   `,
