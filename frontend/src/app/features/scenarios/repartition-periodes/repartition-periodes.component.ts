@@ -44,7 +44,7 @@ import { FR } from '../../../core/i18n/fr';
 
     <!-- Dialog liste des périodes -->
     <p-dialog [(visible)]="dialogVisible" [header]="t.scenario.periodes"
-              [modal]="true" styleClass="w-full max-w-3xl" [closable]="true">
+              [modal]="true" class="w-full max-w-3xl" [closable]="true">
       <div class="flex flex-col gap-4">
 
         <!-- Tableau des périodes existantes -->
@@ -106,7 +106,7 @@ import { FR } from '../../../core/i18n/fr';
     <!-- Dialog formulaire période -->
     <p-dialog [(visible)]="formVisible"
               [header]="periodeEnEdition ? t.commun.modifier : t.commun.creer"
-              [modal]="true" styleClass="w-full max-w-lg">
+              [modal]="true" class="w-full max-w-lg">
       <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
         <div class="grid grid-cols-2 gap-4">
           <div class="flex flex-col gap-1">

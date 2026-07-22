@@ -36,7 +36,7 @@ import { FR } from '../../../core/i18n/fr';
         }
       </div>
 
-      <p-table [value]="taux()" styleClass="p-datatable-sm p-datatable-striped" [loading]="chargement()">
+      <p-table [value]="taux()" class="p-datatable-sm p-datatable-striped" [loading]="chargement()">
         <ng-template #header>
           <tr>
             <th>{{ t.referentiels.taux.devise }}</th>
@@ -65,7 +65,7 @@ import { FR } from '../../../core/i18n/fr';
     </div>
 
     <p-dialog [(visible)]="dialogVisible" [header]="tauxEnEdition ? t.commun.modifier : t.commun.creer"
-              [modal]="true" styleClass="w-full max-w-sm">
+              [modal]="true" class="w-full max-w-sm">
       <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">{{ t.referentiels.taux.devise }} *</label>

@@ -34,7 +34,7 @@ import { RepartitionPeriodesComponent } from '../repartition-periodes/repartitio
         }
       </div>
 
-      <p-table [value]="scenarios()" styleClass="p-datatable-sm p-datatable-striped" [loading]="chargement()">
+      <p-table [value]="scenarios()" class="p-datatable-sm p-datatable-striped" [loading]="chargement()">
          <ng-template #header>
            <tr>
              <th>{{ t.commun.enregistrer }}</th>
@@ -80,7 +80,7 @@ import { RepartitionPeriodesComponent } from '../repartition-periodes/repartitio
 
     <!-- Dialog formulaire -->
     <p-dialog [(visible)]="dialogVisible" [header]="scenarioEnEdition ? t.commun.modifier : t.commun.creer"
-              [modal]="true" styleClass="w-full max-w-lg">
+              [modal]="true" class="w-full max-w-lg">
       <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">Nom *</label>
@@ -90,17 +90,17 @@ import { RepartitionPeriodesComponent } from '../repartition-periodes/repartitio
           <div class="flex flex-col gap-1 min-w-0">
             <label class="text-sm font-medium">{{ t.scenario.anneeDepart }}</label>
             <p-inputnumber formControlName="anneeDepart" [min]="2020" [max]="2099" [useGrouping]="false"
-                           styleClass="w-full" inputStyleClass="w-full" />
+                           class="w-full" inputStyleClass="w-full" />
           </div>
           <div class="flex flex-col gap-1 min-w-0">
             <label class="text-sm font-medium">{{ t.scenario.tresorerieInitiale }}</label>
             <p-inputnumber formControlName="tresorerieInitiale" mode="decimal" [minFractionDigits]="2"
-                           styleClass="w-full" inputStyleClass="w-full" />
+                           class="w-full" inputStyleClass="w-full" />
           </div>
           <div class="flex flex-col gap-1 min-w-0">
             <label class="text-sm font-medium">{{ t.scenario.horizonAnnees }}</label>
             <p-inputnumber formControlName="horizonAnnees" [min]="1" [max]="100"
-                           styleClass="w-full" inputStyleClass="w-full" />
+                           class="w-full" inputStyleClass="w-full" />
           </div>
         </div>
         <!-- Répartition par défaut -->

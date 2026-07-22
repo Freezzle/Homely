@@ -26,7 +26,7 @@ export interface LigneDecomposition {
   standalone: true,
   imports: [CommonModule, CardModule, AvatarModule, DividerModule, MeterGroupModule, TagModule],
   template: `
-    <p-card [style.border-top]="'4px solid ' + couleurEffective()" styleClass="overflow-hidden">
+    <p-card [style.border-top]="'4px solid ' + couleurEffective()" class="overflow-hidden">
       <ng-template #title>
         <div class="flex items-center gap-3">
           @if (variante() === 'foyer') {
@@ -52,7 +52,7 @@ export interface LigneDecomposition {
         </div>
       </div>
 
-      <p-divider styleClass="my-2"/>
+      <p-divider class="my-2"/>
 
       <div class="flex flex-col">
         @for (row of lignes(); track row.id) {

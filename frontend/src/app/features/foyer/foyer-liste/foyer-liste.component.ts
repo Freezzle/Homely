@@ -22,7 +22,7 @@ import { FR } from '../../../core/i18n/fr';
       <div class="grid grid-cols-1 gap-4">
         @for (foyer of foyers(); track foyer.id) {
           <p-card
-            styleClass="cursor-pointer hover:shadow-lg transition-shadow border-2"
+            class="cursor-pointer hover:shadow-lg transition-shadow border-2"
             [ngClass]="{'border-primary': foyer.id === contexte.foyerId()}"
             (click)="selectionner(foyer)"
           >

@@ -377,7 +377,8 @@ Composant unique `PostesListeComponent` paramétré par `type` via `input<TypePo
   breakpoints `sm`/`md`/`lg`).
 - **PrimeNG 22** via `tailwindcss-primeui` + CSS layers (ordre : `tailwind, primeng`).
 - Couleurs de tokens (`bg-primary`, `text-surface-*`, `dark:bg-surface-950`).
-- Sur composants PrimeNG : utilitaires passés via `styleClass`.
+- Sur composants PrimeNG : utilitaires passés via `class` (PrimeNG 22 — `styleClass` est
+  déprécié pour les composants "host enabled" et supprimé en v22).
 - Mode sombre : `darkModeSelector` aligné avec la variante `dark` de Tailwind.
 
 ## 5. Correspondance Excel → écrans (traçabilité)

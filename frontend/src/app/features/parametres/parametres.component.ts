@@ -35,7 +35,7 @@ import { FR } from '../../core/i18n/fr';
           </div>
           <div class="flex flex-col gap-1">
             <label class="text-sm font-medium">{{ t.parametres.deviseBase }}</label>
-            <p-select appendTo="body" formControlName="deviseBase" [options]="devises" styleClass="w-full" />
+            <p-select appendTo="body" formControlName="deviseBase" [options]="devises" class="w-full" />
           </div>
           <div class="flex justify-end">
             <p-button [label]="t.parametres.enregistrer" icon="pi pi-save"
@@ -46,7 +46,7 @@ import { FR } from '../../core/i18n/fr';
       </p-card>
 
       @if (contexte.estOwner()) {
-        <p-card styleClass="border border-red-200">
+        <p-card class="border border-red-200">
           <div class="flex items-center justify-between">
             <div>
               <div class="font-semibold text-red-600">Zone dangereuse</div>

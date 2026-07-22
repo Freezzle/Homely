@@ -38,10 +38,10 @@ import { CarteBilanMembreComponent, LigneDecomposition, MembreTagInfo } from '..
                                       optionLabel="label" optionValue="value" [allowEmpty]="false"/>
                   }
                   <p-select appendTo="body" [options]="annees" [(ngModel)]="annee"
-                            (onChange)="charger()" styleClass="w-28"/>
+                            (onChange)="charger()" class="w-28"/>
                   <p-select appendTo="body" [options]="moisOptions" [(ngModel)]="mois"
                             optionLabel="label" optionValue="value"
-                            (onChange)="charger()" styleClass="w-36"/>
+                            (onChange)="charger()" class="w-36"/>
               </div>
           </div>
 

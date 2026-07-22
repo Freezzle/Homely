@@ -39,7 +39,7 @@ import { FR } from '../../../core/i18n/fr';
         }
       </div>
 
-      <p-table [value]="comptes()" styleClass="p-datatable-sm p-datatable-striped" [loading]="chargement()">
+      <p-table [value]="comptes()" class="p-datatable-sm p-datatable-striped" [loading]="chargement()">
         <ng-template #header>
           <tr>
             <th pSortableColumn="libelle">{{ t.referentiels.compte.libelle }} <p-sort-icon field="libelle" /></th>
@@ -86,7 +86,7 @@ import { FR } from '../../../core/i18n/fr';
     </div>
 
     <p-dialog [(visible)]="dialogVisible" [header]="compteEnEdition ? t.commun.modifier : t.commun.creer"
-              [modal]="true" styleClass="w-full max-w-lg">
+              [modal]="true" class="w-full max-w-lg">
       <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">{{ t.referentiels.compte.libelle }} *</label>
@@ -103,7 +103,7 @@ import { FR } from '../../../core/i18n/fr';
             optionLabel="nom"
             optionValue="id"
             [placeholder]="t.referentiels.compte.membresPlaceholder"
-            styleClass="w-full"
+            class="w-full"
             display="chip" />
           @if (form.get('membreIds')?.invalid && form.get('membreIds')?.touched) {
             <p-message severity="warn">{{ t.referentiels.compte.membresRequis }}</p-message>
@@ -113,7 +113,7 @@ import { FR } from '../../../core/i18n/fr';
         <div class="grid grid-cols-2 gap-4">
           <div class="flex flex-col gap-1">
             <label class="text-sm font-medium">{{ t.referentiels.compte.devise }}</label>
-            <p-select appendTo="body" formControlName="devise" [options]="devises" styleClass="w-full" />
+            <p-select appendTo="body" formControlName="devise" [options]="devises" class="w-full" />
           </div>
           <div class="flex flex-col gap-1">
             <label class="text-sm font-medium">{{ t.referentiels.compte.ordre }}</label>

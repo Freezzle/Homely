@@ -54,7 +54,7 @@ import { FR } from '../../../core/i18n/fr';
                   <div class="flex justify-end">
                       @if (contexte.estEditor()) {
                           <p-button icon="pi pi-plus" [label]="t.commun.creer" (click)="ouvrirCreation()"
-                                    styleClass="shrink-0"/>
+                                    class="shrink-0"/>
                       }
                   </div>
               </div>
@@ -67,7 +67,7 @@ import { FR } from '../../../core/i18n/fr';
                                 (onChange)="triActuel.set($event.value)"
                                 [options]="triOptions"
                                 optionLabel="label" optionValue="value"
-                                styleClass="min-w-52 text-sm"/>
+                                class="min-w-52 text-sm"/>
                   </div>
 
                   <div class="flex justify-end">
@@ -77,7 +77,7 @@ import { FR } from '../../../core/i18n/fr';
                                 [text]="true"
                                 (click)="menuVisibilite.toggle($event)"/>
                       <p-menu #menuVisibilite [popup]="true" [model]="visibiliteMenuItems" appendTo="body"
-                              styleClass="w-72">
+                              class="w-72">
                           <ng-template #item let-item>
                               <div class="flex items-center gap-3 px-2 py-1.5" (click)="$event.stopPropagation()">
                                   <p-checkbox [binary]="true"
@@ -105,7 +105,7 @@ import { FR } from '../../../core/i18n/fr';
                                  optionLabel="libelle" optionValue="id"
                                  [placeholder]="t.poste.filtreCategories"
                                  [showClear]="true"
-                                 styleClass="w-full text-sm"/>
+                                 class="w-full text-sm"/>
 
                   <!-- Filtre comptes -->
                   <p-multiselect appendTo="body"
@@ -115,7 +115,7 @@ import { FR } from '../../../core/i18n/fr';
                                  optionLabel="libelle" optionValue="id"
                                  [placeholder]="t.poste.filtreComptes"
                                  [showClear]="true"
-                                 styleClass="w-full text-sm">
+                                 class="w-full text-sm">
                       <ng-template #item let-compte>
                           <div class="flex items-center gap-2 flex-wrap">
                               <span>{{ compte.libelle }}</span>
@@ -138,7 +138,7 @@ import { FR } from '../../../core/i18n/fr';
                                  optionLabel="nom" optionValue="id"
                                  [placeholder]="t.poste.filtreMembres"
                                  [showClear]="true"
-                                 styleClass="w-full text-sm"/>
+                                 class="w-full text-sm"/>
               </div>
           </div>
 
@@ -148,13 +148,13 @@ import { FR } from '../../../core/i18n/fr';
                   @for (_ of [1, 2, 3]; track $index) {
                       <div class="flex items-center gap-3 px-4 py-3 rounded-xl border border-surface-200
                         dark:border-surface-700 bg-white dark:bg-surface-900">
-                          <p-skeleton width="3px" height="48px" styleClass="rounded-full shrink-0"/>
+                          <p-skeleton width="3px" height="48px" class="rounded-full shrink-0"/>
                           <div class="flex-1 flex flex-col gap-2">
                               <p-skeleton width="35%" height="1rem"/>
                               <p-skeleton width="55%" height="0.75rem"/>
                           </div>
-                          <p-skeleton width="90px" height="1.25rem" styleClass="shrink-0"/>
-                          <p-skeleton width="72px" height="2rem" styleClass="shrink-0 rounded-lg"/>
+                          <p-skeleton width="90px" height="1.25rem" class="shrink-0"/>
+                          <p-skeleton width="72px" height="2rem" class="shrink-0 rounded-lg"/>
                       </div>
                   }
               </div>
@@ -202,7 +202,7 @@ import { FR } from '../../../core/i18n/fr';
                                           @if (categorieLabel(p.categorieId) !== '–' && triActuel() !== 'CATEGORIE') {
                                               <p-tag [value]="categorieLabel(p.categorieId)"
                                                      severity="secondary"
-                                                     styleClass="text-[10px] py-0.5 shrink-0"/>
+                                                     class="text-[10px] py-0.5 shrink-0"/>
                                           }
                                       </div>
 
@@ -210,7 +210,7 @@ import { FR } from '../../../core/i18n/fr';
                                           @if (p.nature === 'ESTIMATION') {
                                               <p-tag [value]="natureAffichee(p)"
                                                      [severity]="'warn'"
-                                                     styleClass="text-[10px] py-0.5 shrink-0"/>
+                                                     class="text-[10px] py-0.5 shrink-0"/>
                                           }
                                           <span class="font-semibold text-surface-700 dark:text-surface-200 whitespace-nowrap">
                         {{ p.montant | montant:p.devise }}
@@ -264,7 +264,7 @@ import { FR } from '../../../core/i18n/fr';
                                                   @for (rep of membresAffiches; track rep.membreId) {
                                                       <p-tag [value]="rep.label"
                                                              [style]="{ 'background-color': rep.couleur, color: rep.couleurTexte }"
-                                                             styleClass="text-xs py-1 px-2 border-none max-w-full"/>
+                                                             class="text-xs py-1 px-2 border-none max-w-full"/>
                                                   }
                                               </div>
                                           }
@@ -295,7 +295,7 @@ import { FR } from '../../../core/i18n/fr';
 
       <!-- ── Dialog formulaire poste ──────────────────────────────── -->
       <p-dialog [(visible)]="dialogVisible" [header]="posteEnEdition ? t.commun.modifier : t.commun.creer"
-                [modal]="true" styleClass="w-full max-w-2xl">
+                [modal]="true" class="w-full max-w-2xl">
           <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
 
               <!-- Ligne 1 : Description pleine largeur -->
@@ -309,7 +309,7 @@ import { FR } from '../../../core/i18n/fr';
                   <div class="flex flex-col gap-1">
                       <label class="text-sm font-medium">{{ t.poste.categorie }}</label>
                       <p-select appendTo="body" formControlName="categorieId" [options]="categories()"
-                                optionLabel="libelle" optionValue="id" [showClear]="true" styleClass="w-full"/>
+                                optionLabel="libelle" optionValue="id" [showClear]="true" class="w-full"/>
                   </div>
                   <div class="flex flex-col gap-1">
                       <label class="text-sm font-medium">{{ t.poste.montant }} *</label>
@@ -329,7 +329,7 @@ import { FR } from '../../../core/i18n/fr';
                       <label class="text-sm font-medium">{{ t.poste.periodicite }}</label>
                       <p-select appendTo="body" formControlName="periodiciteMois"
                                 [options]="periodiciteOptions" optionLabel="label" optionValue="value"
-                                styleClass="w-full"/>
+                                class="w-full"/>
                   </div>
                   <!-- Moment : visible dès que D>1, quel que soit le mode -->
                   @if ((form.value.periodiciteMois ?? 1) > 1) {
@@ -337,7 +337,7 @@ import { FR } from '../../../core/i18n/fr';
                           <label class="text-sm font-medium"
                                  [pTooltip]="t.poste.momentTooltip">{{ t.poste.moment }}</label>
                           <p-select appendTo="body" formControlName="moment" [options]="momentOptions"
-                                    optionLabel="label" optionValue="value" styleClass="w-full"/>
+                                    optionLabel="label" optionValue="value" class="w-full"/>
                       </div>
                   }
                   <!-- Mode : caché si D=0 ou D=1 (toujours mensualisé) -->
@@ -345,7 +345,7 @@ import { FR } from '../../../core/i18n/fr';
                       <div class="flex flex-col gap-1">
                           <label class="text-sm font-medium" [pTooltip]="t.poste.modeTooltip">{{ t.poste.mode }}</label>
                           <p-select appendTo="body" formControlName="mode" [options]="modeOptions"
-                                    optionLabel="label" optionValue="value" styleClass="w-full"/>
+                                    optionLabel="label" optionValue="value" class="w-full"/>
                       </div>
                   }
               </div>
@@ -356,7 +356,7 @@ import { FR } from '../../../core/i18n/fr';
                   <div class="flex flex-col gap-1">
                       <label class="text-sm font-medium">{{ t.poste.debut }} *</label>
                       <p-datepicker appendTo="body" formControlName="debut" dateFormat="dd/mm/yy"
-                                    [showButtonBar]="true" styleClass="w-full"></p-datepicker>
+                                    [showButtonBar]="true" class="w-full"></p-datepicker>
                   </div>
               } @else {
                   <!-- Normal : Début + Fin (optionnels) -->
@@ -364,12 +364,12 @@ import { FR } from '../../../core/i18n/fr';
                       <div class="flex flex-col gap-1">
                           <label class="text-sm font-medium">{{ t.poste.debut }}</label>
                           <p-datepicker appendTo="body" formControlName="debut" dateFormat="dd/mm/yy"
-                                        [showButtonBar]="true" styleClass="w-full"></p-datepicker>
+                                        [showButtonBar]="true" class="w-full"></p-datepicker>
                       </div>
                       <div class="flex flex-col gap-1">
                           <label class="text-sm font-medium">{{ t.poste.fin }}</label>
                           <p-datepicker appendTo="body" formControlName="fin" dateFormat="dd/mm/yy"
-                                        [showButtonBar]="true" styleClass="w-full"></p-datepicker>
+                                        [showButtonBar]="true" class="w-full"></p-datepicker>
                       </div>
                   </div>
               }
@@ -380,7 +380,7 @@ import { FR } from '../../../core/i18n/fr';
                   <div class="flex flex-col gap-1">
                       <label class="text-sm font-medium" [pTooltip]="t.poste.natureTooltip">{{ t.poste.nature }}</label>
                       <p-select appendTo="body" formControlName="nature" [options]="natureOptions"
-                                optionLabel="label" optionValue="value" styleClass="w-full"/>
+                                optionLabel="label" optionValue="value" class="w-full"/>
                   </div>
                   <!-- Ligne 5b : Pourcentage d'estimation (visible si nature=ESTIMATION) -->
                   @if (form.value.nature === 'ESTIMATION') {
@@ -391,7 +391,7 @@ import { FR } from '../../../core/i18n/fr';
                           <p-inputnumber formControlName="estimPourcentage"
                                          [min]="0" [max]="100"
                                          [minFractionDigits]="1" [maxFractionDigits]="1"
-                                         suffix="%" styleClass="w-full"
+                                         suffix="%" class="w-full"
                                          placeholder="Ex: 10.0"/>
                       </div>
                   }
@@ -406,7 +406,7 @@ import { FR } from '../../../core/i18n/fr';
                       </label>
                       <p-select appendTo="body" formControlName="typeRepartition"
                                 [options]="typeRepartitionOptions"
-                                optionLabel="label" optionValue="value" styleClass="w-full"/>
+                                optionLabel="label" optionValue="value" class="w-full"/>
                   </div>
               }
 
@@ -446,7 +446,7 @@ import { FR } from '../../../core/i18n/fr';
                                       <p-select appendTo="body" formControlName="compteId"
                                                 [options]="comptes()" optionLabel="libelle"
                                                 optionValue="id"
-                                                [placeholder]="t.poste.ventilation" styleClass="w-full"
+                                                [placeholder]="t.poste.ventilation" class="w-full"
                                                 [showClear]="true"
                                                 [disabled]="(ctrl.get('quotePart')?.value ?? 0) === 0">
                                       <ng-template #selectedItem let-compte>
@@ -493,7 +493,7 @@ import { FR } from '../../../core/i18n/fr';
                                       <p-select appendTo="body" formControlName="compteId"
                                                 [options]="comptes()" optionLabel="libelle"
                                                 optionValue="id"
-                                                [placeholder]="t.poste.ventilation" styleClass="w-full"
+                                                [placeholder]="t.poste.ventilation" class="w-full"
                                                 [showClear]="true">
                                       <ng-template #selectedItem let-compte>
                                           @if (compte) {
@@ -537,9 +537,9 @@ import { FR } from '../../../core/i18n/fr';
       </p-dialog>
 
       <!-- Dialog aperçu mensuel -->
-      <p-dialog [(visible)]="apercuVisible" [header]="t.poste.apercu" [modal]="true" styleClass="w-96">
+      <p-dialog [(visible)]="apercuVisible" [header]="t.poste.apercu" [modal]="true" class="w-96">
           @if (apercuData()) {
-              <p-table [value]="apercuData()!.contributions" styleClass="p-datatable-sm">
+              <p-table [value]="apercuData()!.contributions" class="p-datatable-sm">
                   <ng-template #header>
                       <tr>
                           <th>{{ t.projection.mois }}</th>

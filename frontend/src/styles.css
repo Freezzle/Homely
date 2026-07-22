@@ -6,7 +6,7 @@
  *
  *   - base    : CSS reset/preflight de Tailwind — effacé par primeng ✓
  *   - primeng : styles des composants PrimeNG (boutons, menus, padding…) — wins over reset ✓
- *   - utilities: classes Tailwind (flex, p-4, bg-*…) — gagnent sur PrimeNG via styleClass ✓
+ *   - utilities: classes Tailwind (flex, p-4, bg-*…) — gagnent sur PrimeNG via class ✓
  *
  * IMPORTANT : la déclaration @layer doit venir AVANT @import "tailwindcss"
  * pour pré-établir l'ordre AVANT que Tailwind tente de re-déclarer ses layers.

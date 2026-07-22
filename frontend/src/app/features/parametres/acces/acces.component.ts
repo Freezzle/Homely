@@ -36,7 +36,7 @@ import { FR } from '../../../core/i18n/fr';
         }
       </div>
 
-      <p-table [value]="acces()" styleClass="p-datatable-sm p-datatable-striped" [loading]="chargement()">
+      <p-table [value]="acces()" class="p-datatable-sm p-datatable-striped" [loading]="chargement()">
          <ng-template #header>
            <tr>
              <th>Nom</th>
@@ -72,7 +72,7 @@ import { FR } from '../../../core/i18n/fr';
     </div>
 
     <!-- Dialog invitation -->
-    <p-dialog [(visible)]="inviteVisible" [header]="t.acces.inviter" [modal]="true" styleClass="w-full max-w-md">
+    <p-dialog [(visible)]="inviteVisible" [header]="t.acces.inviter" [modal]="true" class="w-full max-w-md">
       <form [formGroup]="inviteForm" class="flex flex-col gap-4 pt-2">
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">{{ t.acces.email }} *</label>
@@ -80,7 +80,7 @@ import { FR } from '../../../core/i18n/fr';
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">{{ t.acces.role }}</label>
-          <p-select appendTo="body" formControlName="role" [options]="roleOptions" optionLabel="label" optionValue="value" styleClass="w-full" />
+          <p-select appendTo="body" formControlName="role" [options]="roleOptions" optionLabel="label" optionValue="value" class="w-full" />
         </div>
       </form>
       <ng-template #footer>
@@ -90,9 +90,9 @@ import { FR } from '../../../core/i18n/fr';
     </p-dialog>
 
     <!-- Dialog changer rôle -->
-    <p-dialog [(visible)]="roleVisible" [header]="'Changer le rôle'" [modal]="true" styleClass="w-full max-w-sm">
+    <p-dialog [(visible)]="roleVisible" [header]="'Changer le rôle'" [modal]="true" class="w-full max-w-sm">
       <div class="flex flex-col gap-4 pt-2">
-        <p-select appendTo="body" [(ngModel)]="nouveauRole" [options]="roleOptions" optionLabel="label" optionValue="value" styleClass="w-full" />
+        <p-select appendTo="body" [(ngModel)]="nouveauRole" [options]="roleOptions" optionLabel="label" optionValue="value" class="w-full" />
       </div>
       <ng-template #footer>
         <p-button [label]="t.commun.annuler" severity="secondary" (click)="roleVisible = false" />

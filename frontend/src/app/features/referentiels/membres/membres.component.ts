@@ -35,7 +35,7 @@ import { FR } from '../../../core/i18n/fr';
         }
       </div>
 
-      <p-table [value]="membres()" styleClass="p-datatable-sm p-datatable-striped" [loading]="chargement()">
+      <p-table [value]="membres()" class="p-datatable-sm p-datatable-striped" [loading]="chargement()">
         <ng-template #header>
           <tr>
             <th>{{ t.referentiels.membre.couleur }}</th>
@@ -73,7 +73,7 @@ import { FR } from '../../../core/i18n/fr';
     </div>
 
     <p-dialog [(visible)]="dialogVisible" [header]="membreEnEdition ? t.commun.modifier : t.commun.creer"
-              [modal]="true" styleClass="w-full max-w-md">
+              [modal]="true" class="w-full max-w-md">
       <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">{{ t.referentiels.membre.nom }} *</label>

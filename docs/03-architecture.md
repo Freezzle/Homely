@@ -171,7 +171,8 @@ Suivre le guide officiel `primeng.dev/tailwind`. Points clés :
   chart…). Utiliser les tokens partagés pour une palette cohérente entre les deux.
 - **Dark mode** : `darkModeSelector` PrimeNG doit correspondre à la variante `dark` de
   Tailwind pour un basculement homogène.
-- ⚠️ Sur les composants PrimeNG, préférer `styleClass` (et non `class`) pour appliquer des
+- ⚠️ Sur les composants PrimeNG, préférer `class` (et non `styleClass`, désormais
+  déprécié pour les composants "host enabled" et supprimé en v22) pour appliquer des
   classes utilitaires Tailwind quand l'API du composant l'exige.
 
 > Les incantations exactes peuvent varier avec les versions ; se référer au dépôt de

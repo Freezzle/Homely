@@ -33,7 +33,7 @@ import { FR } from '../../../core/i18n/fr';
         }
       </div>
 
-      <p-table [value]="categories()" styleClass="p-datatable-sm p-datatable-striped" [loading]="chargement()">
+      <p-table [value]="categories()" class="p-datatable-sm p-datatable-striped" [loading]="chargement()">
         <ng-template #header>
           <tr>
             <th pSortableColumn="libelle">{{ t.referentiels.categorie.libelle }} <p-sort-icon field="libelle" /></th>
@@ -67,7 +67,7 @@ import { FR } from '../../../core/i18n/fr';
 
     <!-- Dialog création / édition -->
     <p-dialog [(visible)]="dialogVisible" [header]="categorieEnEdition ? t.commun.modifier : t.commun.creer"
-              [modal]="true" styleClass="w-full max-w-md">
+              [modal]="true" class="w-full max-w-md">
       <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">{{ t.referentiels.categorie.libelle }} *</label>
@@ -76,7 +76,7 @@ import { FR } from '../../../core/i18n/fr';
         <div class="grid grid-cols-2 gap-4">
           <div class="flex flex-col gap-1">
             <label class="text-sm font-medium">{{ t.referentiels.categorie.typePoste }}</label>
-            <p-select appendTo="body" formControlName="typePoste" [options]="typeOptions" optionLabel="label" optionValue="value" styleClass="w-full" />
+            <p-select appendTo="body" formControlName="typePoste" [options]="typeOptions" optionLabel="label" optionValue="value" class="w-full" />
           </div>
           <div class="flex flex-col gap-1">
             <label class="text-sm font-medium">{{ t.referentiels.categorie.ordre }}</label>
@@ -93,10 +93,10 @@ import { FR } from '../../../core/i18n/fr';
     <!-- Dialog suppression avec migration optionnelle -->
     <p-dialog [(visible)]="suppressionDialogVisible"
               [header]="t.referentiels.categorie.dialogSuppressionTitre"
-              [modal]="true" styleClass="w-full max-w-lg">
+              [modal]="true" class="w-full max-w-lg">
       @if (categorieASupprimer) {
         <div class="flex flex-col gap-4 pt-2">
-          <p-message severity="warn" styleClass="w-full">
+          <p-message severity="warn" class="w-full">
             <span>{{ t.referentiels.categorie.dialogSuppressionInfo }}</span>
           </p-message>
 
@@ -110,7 +110,7 @@ import { FR } from '../../../core/i18n/fr';
               optionValue="id"
               [showClear]="true"
               [placeholder]="t.referentiels.categorie.migrerVersPlaceholder"
-              styleClass="w-full" />
+              class="w-full" />
           </div>
         </div>
       }

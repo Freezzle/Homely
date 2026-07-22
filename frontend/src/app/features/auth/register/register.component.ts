@@ -16,7 +16,7 @@ import { FR } from '../../../core/i18n/fr';
     CardModule, InputTextModule, ButtonModule, MessageModule],
   template: `
     <div class="min-h-screen flex items-center justify-center bg-surface-50 dark:bg-surface-950">
-      <p-card styleClass="w-full max-w-sm shadow-xl">
+      <p-card class="w-full max-w-sm shadow-xl">
         <ng-template #header>
           <div class="text-center pt-6 pb-2">
             <span class="text-4xl">🏠</span>
@@ -39,7 +39,7 @@ import { FR } from '../../../core/i18n/fr';
           @if (erreur()) {
             <p-message severity="error">{{ erreur() }}</p-message>
           }
-          <p-button type="submit" [label]="t.auth.registerBtn" styleClass="w-full"
+          <p-button type="submit" [label]="t.auth.registerBtn" class="w-full"
                     [loading]="chargement()" [disabled]="form.invalid" />
           <div class="text-center text-sm text-surface-500">
             {{ t.auth.alreadyAccount }}

@@ -39,10 +39,10 @@ import { CarteBilanMembreComponent, LigneDecomposition } from '../../../shared/c
         @if (afficherParMembre()) {
           <p-selectbutton [options]="vueOptions" [ngModel]="vue()" (ngModelChange)="vue.set($event)"
                           optionLabel="label" optionValue="value" [allowEmpty]="false"
-                          styleClass="shrink-0" />
+                          class="shrink-0" />
         }
         <p-select appendTo="body" [options]="annees" [(ngModel)]="anneeSelectionnee"
-                  (onChange)="charger()" styleClass="w-32 shrink-0" />
+                  (onChange)="charger()" class="w-32 shrink-0" />
       </div>
 
       <!-- ── Skeletons ─────────────────────────────────────────────────────── -->
@@ -153,7 +153,7 @@ import { CarteBilanMembreComponent, LigneDecomposition } from '../../../shared/c
 
                   <!-- Desktop / tablette : table scrollable -->
                   <div class="hidden sm:block overflow-x-auto">
-                    <p-table [value]="mc.mois" styleClass="p-datatable-sm p-datatable-striped" scrollable>
+                    <p-table [value]="mc.mois" class="p-datatable-sm p-datatable-striped" scrollable>
                       <ng-template #header>
                         <tr>
                           <th class="min-w-14">{{ t.projection.mois }}</th>
@@ -264,7 +264,7 @@ import { CarteBilanMembreComponent, LigneDecomposition } from '../../../shared/c
           </div>
 
           @for (pd of prorataData(); track pd.membreId) {
-            <p-card styleClass="mb-4">
+            <p-card class="mb-4">
               <ng-template #title>{{ t.projection.prorataTitre }}</ng-template>
               <ng-template #subtitle>{{ t.projection.prorataSousTitre }}</ng-template>
 
@@ -272,7 +272,7 @@ import { CarteBilanMembreComponent, LigneDecomposition } from '../../../shared/c
               <div class="flex w-full rounded-md overflow-hidden mb-2">
                 @for (tag of periodeTags(); track tag.id) {
                   <div [style.flex-basis.%]="tag.largeurPct" class="shrink-0 min-w-0">
-                    <p-tag [value]="tag.libelle" severity="secondary" styleClass="w-full justify-center rounded-none"/>
+                    <p-tag [value]="tag.libelle" severity="secondary" class="w-full justify-center rounded-none"/>
                   </div>
                 }
               </div>
@@ -307,7 +307,7 @@ import { CarteBilanMembreComponent, LigneDecomposition } from '../../../shared/c
 
           <!-- Desktop / tablette : table scrollable -->
           <div class="hidden sm:block overflow-x-auto">
-             <p-table [value]="projection()!.mois" styleClass="p-datatable-sm p-datatable-striped" scrollable>
+             <p-table [value]="projection()!.mois" class="p-datatable-sm p-datatable-striped" scrollable>
                <ng-template #header>
                  <tr>
                    <th class="min-w-16">{{ t.projection.mois }}</th>

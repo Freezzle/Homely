@@ -55,7 +55,7 @@ type StatutObjectif = 'DANS_LES_TEMPS' | 'EN_RETARD' | 'ATTEINT';
       } @else {
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           @for (o of objectifsData(); track o.id) {
-            <p-card styleClass="h-full" [class.opacity-60]="o.statut === 'ATTEINT'">
+            <p-card class="h-full" [class.opacity-60]="o.statut === 'ATTEINT'">
               <ng-template #title>
                 <div class="flex items-center justify-between gap-2">
                   <div class="flex items-center gap-2 min-w-0">
@@ -92,7 +92,7 @@ type StatutObjectif = 'DANS_LES_TEMPS' | 'EN_RETARD' | 'ATTEINT';
 
                 <!-- Progression + jalons -->
                 <div class="relative">
-                  <p-progressbar [value]="o.progression * 100" [showValue]="false" styleClass="h-2"/>
+                  <p-progressbar [value]="o.progression * 100" [showValue]="false" class="h-2"/>
                   <div class="absolute inset-0 flex items-center pointer-events-none">
                     @for (jalon of [25, 50, 75]; track jalon) {
                       <span class="absolute w-2.5 h-2.5 rounded-full border-2 -translate-x-1/2 pointer-events-auto"
@@ -122,7 +122,7 @@ type StatutObjectif = 'DANS_LES_TEMPS' | 'EN_RETARD' | 'ATTEINT';
                     <p-avatargroup>
                       @for (m of o.membresAttaches; track m.id) {
                         <p-avatar [label]="m.initiales" shape="circle" size="normal"
-                                  [style.background-color]="m.couleur" styleClass="text-white text-xs font-semibold"
+                                  [style.background-color]="m.couleur" class="text-white text-xs font-semibold"
                                   [pTooltip]="m.nom" tooltipPosition="top"/>
                       }
                     </p-avatargroup>
@@ -160,7 +160,7 @@ type StatutObjectif = 'DANS_LES_TEMPS' | 'EN_RETARD' | 'ATTEINT';
     </div>
 
     <p-dialog [(visible)]="dialogVisible" [header]="objectifEnEdition ? t.commun.modifier : t.commun.creer"
-              [modal]="true" styleClass="w-full max-w-md">
+              [modal]="true" class="w-full max-w-md">
       <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">{{ t.objectif.libelle }} *</label>
@@ -173,19 +173,19 @@ type StatutObjectif = 'DANS_LES_TEMPS' | 'EN_RETARD' | 'ATTEINT';
           </div>
           <div class="flex flex-col gap-1">
             <label class="text-sm font-medium">{{ t.objectif.echeance }}</label>
-            <p-datepicker appendTo="body" formControlName="echeance" dateFormat="dd/mm/yy" [showButtonBar]="true" styleClass="w-full" />
+            <p-datepicker appendTo="body" formControlName="echeance" dateFormat="dd/mm/yy" [showButtonBar]="true" class="w-full" />
           </div>
         </div>
         <!-- Compte ou actif (XOR) -->
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">{{ t.objectif.compte }}</label>
           <p-select appendTo="body" formControlName="compteId" [options]="comptes()" optionLabel="libelle" optionValue="id"
-                    [showClear]="true" styleClass="w-full" (onChange)="onCompteChange($event)" />
+                    [showClear]="true" class="w-full" (onChange)="onCompteChange($event)" />
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">{{ t.objectif.actif }}</label>
           <p-select appendTo="body" formControlName="actifId" [options]="actifs()" optionLabel="libelle" optionValue="id"
-                    [showClear]="true" styleClass="w-full" (onChange)="onActifChange($event)" />
+                    [showClear]="true" class="w-full" (onChange)="onActifChange($event)" />
         </div>
       </form>
       <ng-template #footer>

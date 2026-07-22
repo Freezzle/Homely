@@ -41,7 +41,7 @@ import { FR } from '../../../core/i18n/fr';
               [(ngModel)]="selectionnes"
               optionLabel="nom"
               optionValue="id"
-              styleClass="w-full"
+              class="w-full"
               [maxSelectedLabels]="4"
             />
           </div>
@@ -58,7 +58,7 @@ import { FR } from '../../../core/i18n/fr';
           <ng-template #header>
             <div class="px-4 pt-4 font-semibold">{{ t.comparaison.tresorerie }}</div>
           </ng-template>
-          <p-chart type="line" [data]="$any(tresoChartData())" [options]="lineOptions" styleClass="w-full" style="height:320px" />
+          <p-chart type="line" [data]="$any(tresoChartData())" [options]="lineOptions" class="w-full" style="height:320px" />
         </p-card>
 
         <!-- Graphique solde disponible comparé -->
@@ -66,7 +66,7 @@ import { FR } from '../../../core/i18n/fr';
           <ng-template #header>
             <div class="px-4 pt-4 font-semibold">{{ t.comparaison.solde }}</div>
           </ng-template>
-          <p-chart type="bar" [data]="$any(soldeChartData())" [options]="barOptions" styleClass="w-full" style="height:320px" />
+          <p-chart type="bar" [data]="$any(soldeChartData())" [options]="barOptions" class="w-full" style="height:320px" />
         </p-card>
 
         <!-- Tableau des écarts -->
@@ -74,7 +74,7 @@ import { FR } from '../../../core/i18n/fr';
           <ng-template #header>
             <div class="px-4 pt-4 font-semibold">{{ t.comparaison.ecart }}</div>
           </ng-template>
-          <p-table [value]="comparaison()!.series" styleClass="p-datatable-sm p-datatable-striped" scrollable>
+          <p-table [value]="comparaison()!.series" class="p-datatable-sm p-datatable-striped" scrollable>
             <ng-template #header>
               <tr>
                 <th>{{ t.projection.annee }}</th>

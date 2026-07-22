@@ -40,7 +40,7 @@ import { FR } from '../../core/i18n/fr';
           [(ngModel)]="foyerSelectionne"
           optionLabel="nom"
           [placeholder]="t.foyer.choisir"
-          styleClass="min-w-40 md:min-w-44"
+          class="min-w-40 md:min-w-44"
           (onChange)="onFoyerChange($event.value)"
         />
       }
@@ -52,7 +52,7 @@ import { FR } from '../../core/i18n/fr';
            [(ngModel)]="scenarioSelectionne"
            optionLabel="nom"
            [placeholder]="t.scenario.choisir"
-           styleClass="min-w-44 md:min-w-52"
+           class="min-w-44 md:min-w-52"
            (onChange)="onScenarioChange($event.value)"
          >
            <ng-template #item let-s>

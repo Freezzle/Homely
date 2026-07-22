@@ -37,7 +37,7 @@ import { FR } from '../../../core/i18n/fr';
         }
       </div>
 
-      <p-table [value]="actifs()" styleClass="p-datatable-sm p-datatable-striped" [loading]="chargement()">
+      <p-table [value]="actifs()" class="p-datatable-sm p-datatable-striped" [loading]="chargement()">
         <ng-template #header>
           <tr>
             <th pSortableColumn="libelle">{{ t.referentiels.actif.libelle }} <p-sort-icon field="libelle" /></th>
@@ -72,7 +72,7 @@ import { FR } from '../../../core/i18n/fr';
     </div>
 
     <p-dialog [(visible)]="dialogVisible" [header]="actifEnEdition ? t.commun.modifier : t.commun.creer"
-              [modal]="true" styleClass="w-full max-w-md">
+              [modal]="true" class="w-full max-w-md">
       <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">{{ t.referentiels.actif.libelle }} *</label>
@@ -81,11 +81,11 @@ import { FR } from '../../../core/i18n/fr';
         <div class="grid grid-cols-2 gap-4">
           <div class="flex flex-col gap-1">
             <label class="text-sm font-medium">{{ t.referentiels.actif.typeActif }}</label>
-            <p-select appendTo="body" formControlName="typeActif" [options]="typeOptions" optionLabel="label" optionValue="value" styleClass="w-full" />
+            <p-select appendTo="body" formControlName="typeActif" [options]="typeOptions" optionLabel="label" optionValue="value" class="w-full" />
           </div>
           <div class="flex flex-col gap-1">
             <label class="text-sm font-medium">{{ t.referentiels.actif.devise }}</label>
-            <p-select appendTo="body" formControlName="devise" [options]="devises" styleClass="w-full" />
+            <p-select appendTo="body" formControlName="devise" [options]="devises" class="w-full" />
           </div>
         </div>
         <div class="grid grid-cols-2 gap-4">
