@@ -79,10 +79,7 @@ export interface LigneDecomposition {
 
       @if (tauxEffort(); as taux) {
         <ng-template #footer>
-          <p-metergroup [value]="[{ label: t.projection.tauxEffort + ' ' + formatPct(taux) + ' %', value: taux, color: couleurEffective() }]"/>
-          <div class="text-xs text-surface-400 mt-1">
-            {{ tauxEffortNiveau() }} · {{ t.projection.tauxEffortSeuils }}
-          </div>
+          <p-metergroup [value]="[{ label: t.projection.tauxEffort, value: taux, color: couleurEffective() }]"/>
         </ng-template>
       }
     </p-card>
@@ -109,19 +106,6 @@ export class CarteBilanMembreComponent {
   readonly couleurEffective = computed(() =>
     this.variante() === 'foyer' ? 'var(--p-primary-color)' : this.couleur()
   );
-
-  readonly tauxEffortNiveau = computed(() => this.niveauEffort(this.tauxEffort() ?? 0));
-
-  /** Qualifie un taux d'effort selon les seuils indicatifs 70 %/85 %. */
-  private niveauEffort(taux: number): string {
-    if (taux >= 85) return this.t.projection.tauxEffortCritique;
-    if (taux >= 70) return this.t.projection.tauxEffortSoutenu;
-    return this.t.projection.tauxEffortConfortable;
-  }
-
-  formatPct(v: number): string {
-    return Intl.NumberFormat('fr-CH', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(v);
-  }
 
   /** Montant sans le symbole de devise — utilisé pour le chiffre principal des cartes. */
   formatMontantSansDevise(v: number): string {
