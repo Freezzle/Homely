@@ -20,6 +20,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { DrawerModule } from 'primeng/drawer';
 import { CheckboxModule } from 'primeng/checkbox';
 import { MenuModule } from 'primeng/menu';
+import { SelectButtonModule } from 'primeng/selectbutton';
 import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
 import { ContexteService } from '../../../core/services/contexte.service';
 import { PosteService } from '../../../core/services/scenario-poste.service';
@@ -44,6 +45,9 @@ interface PosteAffiche extends PosteDto {
   _labelSeparateur?: string;
 }
 
+/** Options de l'action rapide « Terminer » (clôture d'un poste). */
+type OptionCloture = 'MOIS_COURANT' | 'PROCHAIN_PERIODIQUE' | 'PERSONNALISEE';
+
 @Component({
   selector: 'app-postes-liste',
   standalone: true,
@@ -51,7 +55,7 @@ interface PosteAffiche extends PosteDto {
   imports: [CommonModule, FormsModule, ReactiveFormsModule, TableModule, ButtonModule, DialogModule,
             InputTextModule, InputNumberModule, SelectModule, MultiSelectModule, DatePickerModule,
             TagModule, TooltipModule, CardModule, MessageModule, ConfirmDialogModule, SkeletonModule, DrawerModule, CheckboxModule,
-            MenuModule,
+            MenuModule, SelectButtonModule,
             MontantPipe, PeriodicitePipe, TagComponent],
   template: `
       <p-confirmdialog/>
@@ -607,6 +611,36 @@ interface PosteAffiche extends PosteDto {
           </ng-template>
       </p-dialog>
 
+      <!-- Dialog mini-formulaire : clôture rapide d'un poste (action « Terminer ») -->
+      <p-dialog [(visible)]="clotureDialogVisible"
+                [header]="i18n.instant('poste.clotureTitre', { description: posteEnCloture()?.description ?? '' })"
+                [modal]="true" class="w-full max-w-md">
+          @if (posteEnCloture(); as p) {
+              <form [formGroup]="clotureForm" class="flex flex-col gap-4 pt-2">
+                  <p-selectbutton [options]="clotureOptions()" formControlName="option"
+                                   optionLabel="label" optionValue="value"
+                                   styleClass="flex flex-col items-stretch gap-1"/>
+
+                  @if (clotureForm.value.option === 'PERSONNALISEE') {
+                      <div class="flex flex-col gap-1">
+                          <label class="text-sm font-medium">{{ t.poste.clotureDateLabel }} *</label>
+                          <p-datepicker appendTo="body" formControlName="datePersonnalisee" view="month" dateFormat="mm/yy"
+                                        [showButtonBar]="true" class="w-full"></p-datepicker>
+                      </div>
+                  }
+
+                  <div class="text-sm rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-primary-700 dark:text-primary-300">
+                      {{ resumeCloture() }}
+                  </div>
+              </form>
+          }
+          <ng-template #footer>
+              <p-button [label]="t.commun.annuler" severity="secondary" (click)="fermerDialogCloture()"/>
+              <p-button [label]="t.poste.clotureValider" (click)="enregistrerCloture()"
+                        [disabled]="!clotureValide()"/>
+          </ng-template>
+      </p-dialog>
+
       <!-- Dialog aperçu mensuel -->
       <p-dialog [(visible)]="apercuVisible" [header]="t.poste.apercu" [modal]="true" class="w-96">
           @if (apercuData()) {
@@ -749,6 +783,68 @@ export class PostesListeComponent implements OnInit {
       pct: pct.toFixed(1),
       date: date ? this.formatPeriode(this.toIso(date)) : '–',
     });
+  });
+
+  // ── Clôture rapide (action « Terminer ») ──────────────────
+  clotureDialogVisible = false;
+  posteEnCloture = signal<PosteDto | null>(null);
+  clotureForm = this.fb.group({
+    option: ['MOIS_COURANT' as OptionCloture],
+    datePersonnalisee: [null as Date | null],
+  });
+
+  private readonly _clotureOptionValue = toSignal(
+    this.clotureForm.get('option')!.valueChanges.pipe(
+      startWith(this.clotureForm.get('option')!.value as OptionCloture)
+    ),
+    { initialValue: 'MOIS_COURANT' as OptionCloture }
+  );
+  private readonly _clotureDatePersonnaliseeValue = toSignal(
+    this.clotureForm.get('datePersonnalisee')!.valueChanges.pipe(
+      startWith(this.clotureForm.get('datePersonnalisee')!.value)
+    ),
+    { initialValue: null as Date | null }
+  );
+
+  /** Options proposées : « prochain mois périodique » uniquement si cycle > 2 mois. */
+  clotureOptions = computed(() => {
+    const p = this.posteEnCloture();
+    const options: { label: string; value: OptionCloture }[] = [
+      { label: this.t.poste.clotureOptionMoisCourant, value: 'MOIS_COURANT' },
+    ];
+    if (p && p.periodiciteMois > 2) {
+      options.push({ label: this.t.poste.clotureOptionProchainPeriodique, value: 'PROCHAIN_PERIODIQUE' });
+    }
+    options.push({ label: this.t.poste.clotureOptionPersonnalisee, value: 'PERSONNALISEE' });
+    return options;
+  });
+
+  /** Date de fin calculée selon l'option choisie (toujours le dernier jour du mois retenu). */
+  finCloture = computed<Date | null>(() => {
+    const p = this.posteEnCloture();
+    if (!p) return null;
+    const option = this._clotureOptionValue();
+    if (option === 'MOIS_COURANT') return this.finDeMois(new Date());
+    if (option === 'PROCHAIN_PERIODIQUE') return this.finDeMois(this.prochainMoisPeriodique(p));
+    const date = this._clotureDatePersonnaliseeValue();
+    return date ? this.finDeMois(date) : null;
+  });
+
+  /** Résumé live « Le poste sera actif jusqu'en septembre 2026 ». */
+  resumeCloture = computed(() => {
+    const fin = this.finCloture();
+    if (!fin) return '';
+    return this.i18n.instant('poste.clotureResume', { periode: this.formatPeriode(this.toIso(fin)) });
+  });
+
+  /** Bouton de validation activé seulement si une date de fin cohérente est déterminée. */
+  clotureValide = computed(() => {
+    const p = this.posteEnCloture();
+    const fin = this.finCloture();
+    if (!p || !fin) return false;
+    const iso = this.toIso(fin);
+    if (p.debut && iso < p.debut) return false;
+    return true;
   });
 
   // ── Historique de la chaîne de révisions (lecture seule) ──
@@ -1123,6 +1219,13 @@ export class PostesListeComponent implements OnInit {
       if (this.estFusionnable(p)) {
         items.push({ label: this.t.poste.annulerRevision, icon: 'pi pi-replay', command: () => this.annulerRevision(p) });
       }
+      if (this.estActionClotureApplicable(p)) {
+        if (this.estPosteTermine(p)) {
+          items.push({ label: this.t.poste.reactiver, icon: 'pi pi-play', command: () => this.reactiverPoste(p) });
+        } else {
+          items.push({ label: this.t.poste.terminer, icon: 'pi pi-stop-circle', command: () => this.ouvrirCloture(p) });
+        }
+      }
       items.push({ label: this.t.commun.supprimer, icon: 'pi pi-trash', command: () => this.supprimer(p) });
     }
 
@@ -1142,6 +1245,20 @@ export class PostesListeComponent implements OnInit {
   /** Un poste est fusionnable (annulation de révision) s'il est le dernier maillon d'une chaîne. */
   estFusionnable(p: PosteDto): boolean {
     return !!p.posteOrigineId && !p.posteSuivantId;
+  }
+
+  /**
+   * Les actions rapides « Terminer »/« Réactiver » ne s'appliquent qu'à un poste isolé ou
+   * au dernier maillon actif d'une chaîne de révisions (pas encore remplacé) : un maillon
+   * intermédiaire ou d'origine a des dates déjà figées par sa position dans la chaîne.
+   */
+  estActionClotureApplicable(p: PosteDto): boolean {
+    return !p.posteSuivantId;
+  }
+
+  /** Vrai si le poste est actuellement terminé (date de fin déjà passée). */
+  estPosteTermine(p: PosteDto): boolean {
+    return !!p.fin && p.fin < this._aujourdHuiIso;
   }
 
   repartitionsAffichees(p: PosteDto): { membreId: string; quotePart: number; nomMembre: string; couleur: string; couleurTexte: string }[] {
@@ -1474,6 +1591,74 @@ export class PostesListeComponent implements OnInit {
   private premierJourMoisProchain(): Date {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  }
+
+  /** Dernier jour du mois contenant la date donnée. */
+  private finDeMois(d: Date): Date {
+    return new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  }
+
+  /**
+   * Reproduit l'ancre de périodicité du moteur (doc 01 §3.4) : trouve, en index de mois
+   * global (année*12+mois), le premier mois strictement après le mois courant qui tombe
+   * sur le cycle du poste (ancré sur son mois de début), c-à-d le prochain mois où le
+   * poste aurait normalement généré une contribution.
+   */
+  private prochainMoisPeriodique(p: PosteDto): Date {
+    const d = p.periodiciteMois;
+    const now = new Date();
+    const debut = p.debut ? parseIsoDateLocal(p.debut) : now;
+    const ancreGlobal = debut.getFullYear() * 12 + debut.getMonth();
+    let candidat = now.getFullYear() * 12 + now.getMonth() + 1;
+    while (((candidat - ancreGlobal) % d + d) % d !== 0) {
+      candidat++;
+    }
+    return new Date(Math.floor(candidat / 12), (candidat % 12) -1, 1);
+  }
+
+  ouvrirCloture(p: PosteDto): void {
+    this.posteEnCloture.set(p);
+    this.clotureForm.reset({ option: 'MOIS_COURANT', datePersonnalisee: new Date() });
+    this.clotureDialogVisible = true;
+  }
+
+  fermerDialogCloture(): void {
+    this.clotureDialogVisible = false;
+    this.posteEnCloture.set(null);
+  }
+
+  enregistrerCloture(): void {
+    const p = this.posteEnCloture();
+    const fin = this.finCloture();
+    if (!p || !fin || !this.clotureValide()) return;
+
+    const foyerId = this.contexte.foyerId()!;
+    const scenarioId = this.contexte.scenarioId()!;
+    this.posteSvc.cloturer(foyerId, scenarioId, p.id, { fin: this.toIso(fin) }).subscribe({
+      next: () => {
+        this.toast.add({ severity: 'success', summary: this.t.commun.succes });
+        this.clotureDialogVisible = false;
+        this.posteEnCloture.set(null);
+        this.charger();
+      },
+      error: (err) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message }),
+    });
+  }
+
+  /** Réactive un poste terminé : retire sa fin directement, sans popin. */
+  reactiverPoste(p: PosteDto): void {
+    const foyerId = this.contexte.foyerId()!;
+    const scenarioId = this.contexte.scenarioId()!;
+    this.posteSvc.reactiver(foyerId, scenarioId, p.id).subscribe({
+      next: () => {
+        this.toast.add({
+          severity: 'success', summary: this.t.commun.succes,
+          detail: this.i18n.instant('poste.reactiverConfirmation', { description: p.description }),
+        });
+        this.charger();
+      },
+      error: (err) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message }),
+    });
   }
 
   ouvrirRevision(p: PosteDto): void {

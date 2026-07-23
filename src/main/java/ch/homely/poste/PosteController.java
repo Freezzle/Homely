@@ -1,5 +1,6 @@
 package ch.homely.poste;
 
+import ch.homely.poste.dto.PosteClotureRequest;
 import ch.homely.poste.dto.PosteDto;
 import ch.homely.poste.dto.PosteRequest;
 import ch.homely.poste.dto.PosteRevisionRequest;
@@ -73,5 +74,17 @@ public class PosteController {
     public PosteDto annulerRevision(@PathVariable UUID foyerId, @PathVariable UUID scenarioId,
                                      @PathVariable UUID posteId) {
         return posteService.annulerRevision(foyerId, scenarioId, posteId);
+    }
+
+    @PostMapping("/{posteId}/cloturer")
+    public PosteDto cloturer(@PathVariable UUID foyerId, @PathVariable UUID scenarioId,
+                              @PathVariable UUID posteId, @Valid @RequestBody PosteClotureRequest req) {
+        return posteService.cloturer(foyerId, scenarioId, posteId, req);
+    }
+
+    @PostMapping("/{posteId}/reactiver")
+    public PosteDto reactiver(@PathVariable UUID foyerId, @PathVariable UUID scenarioId,
+                               @PathVariable UUID posteId) {
+        return posteService.reactiver(foyerId, scenarioId, posteId);
     }
 }

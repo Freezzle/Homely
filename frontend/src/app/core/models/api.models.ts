@@ -114,6 +114,9 @@ export interface PosteRevisionResponse {
   posteCloture: PosteDto;
   posteCree: PosteDto;
 }
+export interface PosteClotureRequest {
+  fin: string;
+}
 
 // ── Objectifs ─────────────────────────────────────────────────────────────────
 export interface ObjectifDto {

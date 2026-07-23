@@ -13,6 +13,7 @@ import ch.homely.membre.MembreRepository;
 import ch.homely.moteur.MoteurCalcul;
 import ch.homely.moteur.PosteCalcul;
 import ch.homely.moteur.RepartitionCalcul;
+import ch.homely.poste.dto.PosteClotureRequest;
 import ch.homely.poste.dto.PosteDto;
 import ch.homely.poste.dto.PosteRequest;
 import ch.homely.poste.dto.PosteRevisionRequest;
@@ -231,6 +232,52 @@ public class PosteService {
         projectionService.invaliderCache(scenarioId);
 
         return toDto(precedentSauve, Map.of());
+    }
+
+    /**
+     * Clôture rapide d'un poste (action « Terminer ») : positionne sa date de fin sans
+     * passer par le formulaire complet. Réservé au poste isolé ou au dernier maillon actif
+     * d'une chaîne de révisions — un maillon intermédiaire a des dates déjà figées par sa
+     * position dans la chaîne.
+     */
+    public PosteDto cloturer(UUID foyerId, UUID scenarioId, UUID posteId, PosteClotureRequest req) {
+        multiTenant.verifierAcces(foyerId, RoleFoyer.EDITOR);
+        verifierScenario(foyerId, scenarioId);
+        Poste p = trouver(scenarioId, posteId);
+
+        if (posteRepo.findByPosteOrigineId(p.getId()).isPresent()) {
+            throw new RegleMetierException(CodesErreur.POSTE_MAILLON_INTERMEDIAIRE,
+                    "Seul le dernier maillon d'une chaîne de révisions peut être clôturé");
+        }
+        if (p.getDebut() != null && req.fin().isBefore(p.getDebut())) {
+            throw new RegleMetierException(CodesErreur.DATE_EFFET_INVALIDE,
+                    "La date de fin ne peut pas être antérieure à la date de début du poste");
+        }
+
+        p.setFin(req.fin());
+        PosteDto dto = toDto(posteRepo.save(p), Map.of());
+        projectionService.invaliderCache(scenarioId);
+        return dto;
+    }
+
+    /**
+     * Réactive un poste terminé (action « Réactiver ») : retire sa date de fin. Mêmes
+     * restrictions de chaîne que {@link #cloturer}.
+     */
+    public PosteDto reactiver(UUID foyerId, UUID scenarioId, UUID posteId) {
+        multiTenant.verifierAcces(foyerId, RoleFoyer.EDITOR);
+        verifierScenario(foyerId, scenarioId);
+        Poste p = trouver(scenarioId, posteId);
+
+        if (posteRepo.findByPosteOrigineId(p.getId()).isPresent()) {
+            throw new RegleMetierException(CodesErreur.POSTE_MAILLON_INTERMEDIAIRE,
+                    "Seul le dernier maillon d'une chaîne de révisions peut être réactivé");
+        }
+
+        p.setFin(null);
+        PosteDto dto = toDto(posteRepo.save(p), Map.of());
+        projectionService.invaliderCache(scenarioId);
+        return dto;
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
