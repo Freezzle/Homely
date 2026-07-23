@@ -29,7 +29,9 @@ public record PosteDto(
         TypeRepartition typeRepartition,
         int ordre,
         List<RepartitionPosteDto> repartitions,
-        List<VentilationCompteDto> ventilations
+        List<VentilationCompteDto> ventilations,
+        UUID posteOrigineId,  // Poste dont ce poste est issu par révision de montant (null si aucun)
+        UUID posteSuivantId   // Poste qui a remplacé celui-ci par révision de montant (null si actif, calculé)
 ) {
     public record RepartitionPosteDto(UUID membreId, String nomMembre, BigDecimal quotePart) {}
     public record VentilationCompteDto(UUID membreId, UUID compteId, String libelleCompte) {}

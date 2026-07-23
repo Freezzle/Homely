@@ -6,6 +6,7 @@ import { providePrimeNG } from 'primeng/config';
 import Theme from '@primeuix/themes/aura';
 import { routes } from './app.routes';
 import { jwtInterceptor } from './core/interceptors/jwt.interceptor';
+import { dateInterceptor } from './core/interceptors/date.interceptor';
 import { registerLocaleData } from '@angular/common';
 import localeFrCH from '@angular/common/locales/fr-CH';
 import localeFrCHExtra from '@angular/common/locales/extra/fr-CH';
@@ -74,7 +75,9 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes, withComponentInputBinding()),
-    provideHttpClient(withInterceptors([jwtInterceptor])),
+    // dateInterceptor en premier : les intercepteurs suivants (jwt, etc.) voient
+    // le body déjà normalisé (Date → ISO wall-clock local marqué UTC).
+    provideHttpClient(withInterceptors([dateInterceptor, jwtInterceptor])),
     provideAnimationsAsync(),
     { provide: LOCALE_ID, useValue: 'fr-CH' },
     // i18n : traductions chargées depuis assets/i18n/<lang>.json (ngx-translate).

@@ -22,6 +22,7 @@ import { CompteService, ActifService, CategorieService } from '../../core/servic
 import { ObjectifDto, CompteDto, ActifDto, CategorieDto } from '../../core/models/api.models';
 import { MontantPipe, DateFrPipe } from '../../core/pipes/format.pipes';
 import { I18nService } from '../../core/i18n/i18n.service';
+import { toIsoDateLocal, parseIsoDateLocal } from '../../core/utils/date.util';
 
 type StatutObjectif = 'DANS_LES_TEMPS' | 'EN_RETARD' | 'ATTEINT';
 
@@ -255,7 +256,7 @@ export class ObjectifsComponent implements OnInit {
 
   private statut(o: ObjectifDto): StatutObjectif {
     if (o.progression >= 1) return 'ATTEINT';
-    if (o.echeance && new Date(o.echeance) < new Date()) return 'EN_RETARD';
+    if (o.echeance && parseIsoDateLocal(o.echeance) < new Date()) return 'EN_RETARD';
     return 'DANS_LES_TEMPS';
   }
 
@@ -292,7 +293,7 @@ export class ObjectifsComponent implements OnInit {
     this.form.patchValue({
       libelle: o.libelle,
       montantCible: o.montantCible,
-      echeance: o.echeance ? new Date(o.echeance) : null,
+      echeance: o.echeance ? parseIsoDateLocal(o.echeance) : null,
       compteId: o.compteId ?? null,
       actifId: o.actifId ?? null,
     });
@@ -314,7 +315,7 @@ export class ObjectifsComponent implements OnInit {
     const req = {
       libelle: v.libelle!,
       montantCible: v.montantCible!,
-      echeance: v.echeance ? (v.echeance as Date).toISOString().substring(0, 10) : undefined,
+      echeance: v.echeance ? toIsoDateLocal(v.echeance as Date) : undefined,
       compteId: v.compteId ?? undefined,
       actifId: v.actifId ?? undefined,
     };

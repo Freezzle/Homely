@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { ScenarioDto, ScenarioRequest, PosteDto, PosteRequest, ObjectifDto, ObjectifRequest,
-         RepartitionPeriodeDto, RepartitionPeriodeRequest } from '../models/api.models';
+import { ScenarioDto, ScenarioRequest, PosteDto, PosteRequest, PosteRevisionRequest, PosteRevisionResponse,
+         ObjectifDto, ObjectifRequest, RepartitionPeriodeDto, RepartitionPeriodeRequest } from '../models/api.models';
 
 @Injectable({ providedIn: 'root' })
 export class ScenarioService {
@@ -29,6 +29,16 @@ export class PosteService {
   apercu(foyerId: string, scenarioId: string, posteId: string, annee: number) {
     return this.http.get<{ annee: number; contributions: { mois: number; contribution: number; }[] }>(
       `/api/foyers/${foyerId}/scenarios/${scenarioId}/postes/${posteId}/apercu`, { params: { annee } }
+    );
+  }
+  reviser(foyerId: string, scenarioId: string, posteId: string, req: PosteRevisionRequest) {
+    return this.http.post<PosteRevisionResponse>(
+      `${this.base(foyerId, scenarioId)}/${posteId}/reviser-montant`, req
+    );
+  }
+  annulerRevision(foyerId: string, scenarioId: string, posteId: string) {
+    return this.http.post<PosteDto>(
+      `${this.base(foyerId, scenarioId)}/${posteId}/annuler-revision`, {}
     );
   }
 }

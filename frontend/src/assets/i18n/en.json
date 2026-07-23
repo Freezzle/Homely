@@ -207,7 +207,20 @@
     "filtreMembres": "Filter by member",
     "filtreCategories": "Filter by category",
     "oneShot": "One-off",
-    "contribution": "Contribution"
+    "contribution": "Contribution",
+    "reviserMontant": "Revise amount",
+    "revisionTitre": "Revise amount — {{description}}",
+    "revisionMontantActuel": "Current amount",
+    "revisionNouveauMontant": "New amount",
+    "revisionDateEffet": "Effective date",
+    "revisionResume": "{{avant}} → {{apres}} ({{signe}}{{pct}}%), from {{date}}",
+    "revisionBadgeRevise": "Revised",
+    "revisionTooltipRevise": "Replaced afterwards",
+    "revisionHistoriqueTooltip": "History ({{count}} versions)",
+    "annulerRevision": "Cancel this revision",
+    "annulerRevisionTitre": "Cancel revision — {{description}}",
+    "annulerRevisionConfirmationSansFin": "The current version ({{montant}}) will be deleted. \"{{description}}\" will stay at {{montantPrecedent}}, with no end date.",
+    "annulerRevisionConfirmationAvecFin": "The current version ({{montant}}) will be deleted. \"{{description}}\" will stay at {{montantPrecedent}}, until {{finPrecedente}}."
   },
   "projection": {
     "revenus": "Income",

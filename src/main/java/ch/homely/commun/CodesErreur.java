@@ -22,4 +22,9 @@ public final class CodesErreur {
     public static final String VENTILATION_COMPTE_NON_RATTACHE = "VENTILATION_COMPTE_NON_RATTACHE";
     public static final String ONBOARDING_ORDRE_INVALIDE       = "ONBOARDING_ORDRE_INVALIDE";
     public static final String ERREUR_INTERNE                  = "ERREUR_INTERNE";
+    public static final String POSTE_NON_RECURRENT             = "POSTE_NON_RECURRENT";
+    public static final String POSTE_DEJA_TERMINE              = "POSTE_DEJA_TERMINE";
+    public static final String DATE_EFFET_INVALIDE             = "DATE_EFFET_INVALIDE";
+    public static final String POSTE_SANS_REVISION             = "POSTE_SANS_REVISION";
+    public static final String POSTE_MAILLON_INTERMEDIAIRE     = "POSTE_MAILLON_INTERMEDIAIRE";
 }

@@ -2,6 +2,8 @@ package ch.homely.poste;
 
 import ch.homely.poste.dto.PosteDto;
 import ch.homely.poste.dto.PosteRequest;
+import ch.homely.poste.dto.PosteRevisionRequest;
+import ch.homely.poste.dto.PosteRevisionResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +26,7 @@ public class PosteController {
         this.posteValidator = posteValidator;
     }
 
-    @InitBinder
+    @InitBinder("posteRequest")
     public void initBinder(WebDataBinder binder) {
         binder.addValidators(posteValidator);
     }
@@ -58,5 +60,18 @@ public class PosteController {
                                            @PathVariable UUID posteId) {
         posteService.supprimer(foyerId, scenarioId, posteId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{posteId}/reviser-montant")
+    public PosteRevisionResponse reviserMontant(@PathVariable UUID foyerId, @PathVariable UUID scenarioId,
+                                                 @PathVariable UUID posteId,
+                                                 @Valid @RequestBody PosteRevisionRequest req) {
+        return posteService.reviserMontant(foyerId, scenarioId, posteId, req);
+    }
+
+    @PostMapping("/{posteId}/annuler-revision")
+    public PosteDto annulerRevision(@PathVariable UUID foyerId, @PathVariable UUID scenarioId,
+                                     @PathVariable UUID posteId) {
+        return posteService.annulerRevision(foyerId, scenarioId, posteId);
     }
 }

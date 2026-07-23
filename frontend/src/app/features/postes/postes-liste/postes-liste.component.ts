@@ -27,6 +27,21 @@ import { PosteDto, CategorieDto, CompteDto, MembreDto, VentilationCompteDto, Typ
 import { MontantPipe, PeriodicitePipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { TagComponent } from '../../../shared/components/tag/tag.component';
+import { toIsoDateLocal, parseIsoDateLocal } from '../../../core/utils/date.util';
+
+/**
+ * Poste enrichi de métadonnées d'affichage calculées côté front pour le regroupement
+ * en chaîne de révisions (voir `postesVisibles`). Champs purement transitoires, non
+ * envoyés à l'API.
+ */
+interface PosteAffiche extends PosteDto {
+  _estChaine?: boolean;         // Appartient à une chaîne de révisions (bloc de 2+ maillons)
+  _premierDuBloc?: boolean;     // Premier maillon visible du bloc (pas de connecteur au-dessus)
+  _estActifChaine?: boolean;    // Maillon actif (pas encore révisé, compte dans les calculs)
+  _nbVersions?: number;         // Nombre de versions de la chaîne (défini uniquement sur le maillon actif)
+  _clefSeparateur?: string;
+  _labelSeparateur?: string;
+}
 
 @Component({
   selector: 'app-postes-liste',
@@ -38,511 +53,579 @@ import { TagComponent } from '../../../shared/components/tag/tag.component';
             MenuModule,
             MontantPipe, PeriodicitePipe, TagComponent],
   template: `
-    <p-confirmdialog/>
-    <div class="flex flex-col gap-4">
+      <p-confirmdialog/>
+      <div class="flex flex-col gap-4">
 
-      <!-- ── En-tête ─────────────────────────────────────────── -->
-      <div class="flex flex-col gap-3">
+          <!-- ── En-tête ─────────────────────────────────────────── -->
+          <div class="flex flex-col gap-3">
 
-        <!-- Ligne 1 : titre à gauche, créer à droite -->
-        <div class="grid gap-3 grid-cols-[minmax(0,1fr)_auto] md:items-center">
-          <div class="flex items-baseline gap-2 min-w-0">
-            <h1 class="text-2xl font-bold leading-tight truncate">
-              {{ type() === 'REVENU' ? t.nav.revenus : type() === 'CHARGE' ? t.nav.charges : t.nav.reserves }}
-            </h1>
-          </div>
+              <!-- Ligne 1 : titre à gauche, créer à droite -->
+              <div class="grid gap-3 grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                  <div class="flex items-baseline gap-2 min-w-0">
+                      <h1 class="text-2xl font-bold leading-tight truncate">
+                          {{ type() === 'REVENU' ? t.nav.revenus : type() === 'CHARGE' ? t.nav.charges : t.nav.reserves }}
+                      </h1>
+                  </div>
 
-          <div class="flex justify-end">
-            @if (contexte.estEditor()) {
-              <p-button icon="pi pi-plus" [label]="t.commun.creer" (click)="ouvrirCreation()"
-                        class="shrink-0"/>
-            }
-          </div>
-        </div>
-
-        <!-- Ligne 2 : tri à gauche, menu à droite -->
-        <div class="grid gap-3 grid-cols-[minmax(0,1fr)_auto] md:items-center">
-          <div class="flex justify-start">
-            <p-select appendTo="body"
-                      [ngModel]="triActuel()"
-                      (onChange)="triActuel.set($event.value)"
-                      [options]="triOptions"
-                      optionLabel="label" optionValue="value"
-                      class="min-w-52 text-sm"/>
-          </div>
-
-          <div class="flex justify-end">
-            <p-button icon="pi pi-sliders-h"
-                      [ariaLabel]="t.commun.actions"
-                      severity="secondary"
-                      [text]="true"
-                      (click)="menuVisibilite.toggle($event)"/>
-            <p-menu #menuVisibilite [popup]="true" [model]="visibiliteMenuItems" appendTo="body"
-                    class="w-72">
-              <ng-template #item let-item>
-                <div class="flex items-center gap-3 px-2 py-1.5" (click)="$event.stopPropagation()">
-                  <p-checkbox [binary]="true"
-                              [inputId]="item.data"
-                              [ngModel]="item.data === 'cacher-inactifs' ? cacherInactifs() : cacherFuturs()"
-                              (onChange)="item.data === 'cacher-inactifs' ? cacherInactifs.set($event.checked) : cacherFuturs.set($event.checked)"
-                              (click)="$event.stopPropagation()"/>
-                  <label class="cursor-pointer text-sm text-surface-600 dark:text-surface-300 select-none"
-                         [for]="item.data">
-                    {{ item.label }}
-                  </label>
-                </div>
-              </ng-template>
-            </p-menu>
-          </div>
-        </div>
-
-        <!-- Ligne 3 : les 3 filtres -->
-        <div class="grid gap-3 lg:grid-cols-3">
-          <!-- Filtre catégories -->
-          <p-multiselect appendTo="body"
-                         [ngModel]="filtreCategorieIds()"
-                         (ngModelChange)="filtreCategorieIds.set($event)"
-                         [options]="categories()"
-                         optionLabel="libelle" optionValue="id"
-                         [placeholder]="t.poste.filtreCategories"
-                         [showClear]="true"
-                         class="w-full text-sm"/>
-
-          <!-- Filtre comptes -->
-          <p-multiselect appendTo="body"
-                         [ngModel]="filtreCompteIds()"
-                         (ngModelChange)="filtreCompteIds.set($event)"
-                         [options]="comptes()"
-                         optionLabel="libelle" optionValue="id"
-                         [placeholder]="t.poste.filtreComptes"
-                         [showClear]="true"
-                         class="w-full text-sm">
-            <ng-template #item let-compte>
-              <div class="flex items-center gap-2 flex-wrap">
-                <span>{{ compte.libelle }}</span>
-                @for (m of membresForCompte(compte); track m.id) {
-                  <app-tag [couleur]="m.couleur" [texte]="m.nom"/>
-                }
+                  <div class="flex justify-end">
+                      @if (contexte.estEditor()) {
+                          <p-button icon="pi pi-plus" [label]="t.commun.creer" (click)="ouvrirCreation()"
+                                    class="shrink-0"/>
+                      }
+                  </div>
               </div>
-            </ng-template>
-          </p-multiselect>
 
-          <!-- Filtre membres -->
-          <p-multiselect appendTo="body"
-                         [ngModel]="filtreMembreIds()"
-                         (ngModelChange)="filtreMembreIds.set($event)"
-                         [options]="membres()"
-                         optionLabel="nom" optionValue="id"
-                         [placeholder]="t.poste.filtreMembres"
-                         [showClear]="true"
-                         class="w-full text-sm"/>
-        </div>
-      </div>
+              <!-- Ligne 2 : tri à gauche, menu à droite -->
+              <div class="grid gap-3 grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                  <div class="flex justify-start">
+                      <p-select appendTo="body"
+                                [ngModel]="triActuel()"
+                                (onChange)="triActuel.set($event.value)"
+                                [options]="triOptions"
+                                optionLabel="label" optionValue="value"
+                                class="min-w-52 text-sm"/>
+                  </div>
 
-      <!-- ── État chargement (skeletons) ──────────────────────── -->
-      @if (chargement()) {
-        <div class="flex flex-col gap-2">
-          @for (_ of [1, 2, 3]; track $index) {
-            <div class="flex items-center gap-3 px-4 py-3 rounded-xl border border-surface-200
+                  <div class="flex justify-end">
+                      <div>
+                          <p-button icon="pi pi-sliders-h"
+                                    [ariaLabel]="t.commun.actions"
+                                    severity="secondary"
+                                    [text]="true"
+                                    (click)="menuVisibilite.toggle($event)"/>
+                          <p-menu #menuVisibilite [popup]="true" [model]="visibiliteMenuItems" appendTo="body"
+                                  class="w-72">
+                              <ng-template #item let-item>
+                                  <div class="flex items-center gap-3 px-2 py-1.5" (click)="$event.stopPropagation()">
+                                      <p-checkbox [binary]="true"
+                                                  [inputId]="item.data"
+                                                  [ngModel]="item.data === 'cacher-inactifs' ? cacherInactifs() : cacherFuturs()"
+                                                  (onChange)="item.data === 'cacher-inactifs' ? cacherInactifs.set($event.checked) : cacherFuturs.set($event.checked)"
+                                                  (click)="$event.stopPropagation()"/>
+                                      <label class="cursor-pointer text-sm text-surface-600 dark:text-surface-300 select-none"
+                                             [for]="item.data">
+                                          {{ item.label }}
+                                      </label>
+                                  </div>
+                              </ng-template>
+                          </p-menu>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- Ligne 3 : les 3 filtres -->
+              <div class="grid gap-3 lg:grid-cols-3">
+                  <!-- Filtre catégories -->
+                  <p-multiselect appendTo="body"
+                                 [ngModel]="filtreCategorieIds()"
+                                 (ngModelChange)="filtreCategorieIds.set($event)"
+                                 [options]="categories()"
+                                 optionLabel="libelle" optionValue="id"
+                                 [placeholder]="t.poste.filtreCategories"
+                                 [showClear]="true"
+                                 class="w-full text-sm"/>
+
+                  <!-- Filtre comptes -->
+                  <p-multiselect appendTo="body"
+                                 [ngModel]="filtreCompteIds()"
+                                 (ngModelChange)="filtreCompteIds.set($event)"
+                                 [options]="comptes()"
+                                 optionLabel="libelle" optionValue="id"
+                                 [placeholder]="t.poste.filtreComptes"
+                                 [showClear]="true"
+                                 class="w-full text-sm">
+                      <ng-template #item let-compte>
+                          <div class="flex items-center gap-2 flex-wrap">
+                              <span>{{ compte.libelle }}</span>
+                              @for (m of membresForCompte(compte); track m.id) {
+                                  <app-tag [couleur]="m.couleur" [texte]="m.nom"/>
+                              }
+                          </div>
+                      </ng-template>
+                  </p-multiselect>
+
+                  <!-- Filtre membres -->
+                  <p-multiselect appendTo="body"
+                                 [ngModel]="filtreMembreIds()"
+                                 (ngModelChange)="filtreMembreIds.set($event)"
+                                 [options]="membres()"
+                                 optionLabel="nom" optionValue="id"
+                                 [placeholder]="t.poste.filtreMembres"
+                                 [showClear]="true"
+                                 class="w-full text-sm"/>
+              </div>
+          </div>
+
+          <!-- ── État chargement (skeletons) ──────────────────────── -->
+          @if (chargement()) {
+              <div class="flex flex-col gap-2">
+                  @for (_ of [1, 2, 3]; track $index) {
+                      <div class="flex items-center gap-3 px-4 py-3 rounded-xl border border-surface-200
                         dark:border-surface-700 bg-white dark:bg-surface-900">
-              <p-skeleton width="3px" height="48px" class="rounded-full shrink-0"/>
-              <div class="flex-1 flex flex-col gap-2">
-                <p-skeleton width="35%" height="1rem"/>
-                <p-skeleton width="55%" height="0.75rem"/>
+                          <p-skeleton width="3px" height="48px" class="rounded-full shrink-0"/>
+                          <div class="flex-1 flex flex-col gap-2">
+                              <p-skeleton width="35%" height="1rem"/>
+                              <p-skeleton width="55%" height="0.75rem"/>
+                          </div>
+                          <p-skeleton width="90px" height="1.25rem" class="shrink-0"/>
+                          <p-skeleton width="72px" height="2rem" class="shrink-0 rounded-lg"/>
+                      </div>
+                  }
               </div>
-              <p-skeleton width="90px" height="1.25rem" class="shrink-0"/>
-              <p-skeleton width="72px" height="2rem" class="shrink-0 rounded-lg"/>
-            </div>
-          }
-        </div>
 
-        <!-- ── État vide ────────────────────────────────────────── -->
-      } @else if (postesVisibles().length === 0) {
-        <div class="flex flex-col items-center justify-center gap-3 py-16
+              <!-- ── État vide ────────────────────────────────────────── -->
+          } @else if (postesVisibles().length === 0) {
+              <div class="flex flex-col items-center justify-center gap-3 py-16
                     rounded-xl border border-dashed border-surface-300 dark:border-surface-700
                     bg-surface-50 dark:bg-surface-900 text-surface-400">
-          <i class="pi pi-inbox text-5xl opacity-30"></i>
-          <span class="text-sm">{{ t.commun.aucunResultat }}</span>
-          @if (contexte.estEditor()) {
-            <p-button icon="pi pi-plus" [label]="t.commun.creer" severity="secondary"
-                      size="small" (click)="ouvrirCreation()"/>
-          }
-        </div>
-
-        <!-- ── Liste de cartes ──────────────────────────────────── -->
-      } @else {
-        <div class="flex flex-col gap-1">
-          @for (item of postesAvecSeparateurs(); track $index) {
-
-            @if (isSeparator(item)) {
-              <!-- ── Séparateur de groupe ── -->
-              <div class="text-xs font-bold uppercase tracking-wider bg-surface-700 text-surface-0
-                          px-3 pt-3 pb-3 select-none">
-                {{ item.separator }}
+                  <i class="pi pi-inbox text-5xl opacity-30"></i>
+                  <span class="text-sm">{{ t.commun.aucunResultat }}</span>
+                  @if (contexte.estEditor()) {
+                      <p-button icon="pi pi-plus" [label]="t.commun.creer" severity="secondary"
+                                size="small" (click)="ouvrirCreation()"/>
+                  }
               </div>
 
-            } @else {
-              @let p = asPoste(item);
-              <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 px-4 py-3
+              <!-- ── Liste de cartes ──────────────────────────────────── -->
+          } @else {
+              <div class="flex flex-col gap-1">
+                  @for (item of postesAvecSeparateurs(); track $index) {
+
+                      @if (isSeparator(item)) {
+                          <!-- ── Séparateur de groupe ── -->
+                          <div class="text-xs font-bold uppercase tracking-wider bg-surface-700 text-surface-0
+                          px-3 pt-3 pb-3 select-none">
+                              {{ item.separator }}
+                          </div>
+
+                      } @else {
+                          @let p = asPoste(item);
+                          @if (p._estChaine && !p._premierDuBloc) {
+                              <!-- ── Connecteur discret entre deux maillons d'une même chaîne ── -->
+                              <div class="flex justify-center -my-1">
+                                  <div class="w-px h-3 bg-primary/40"></div>
+                              </div>
+                          }
+                          <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 px-4 py-3
                           border border-surface-200 dark:border-surface-700
                           bg-white dark:bg-surface-900
                           hover:border-primary/40 hover:shadow-sm
-                          transition-all duration-150">
+                          transition-all duration-150"
+                               [class.border-t-0]="p._estChaine && !p._premierDuBloc">
 
-                <!-- Colonne 1 : contenu -->
-                <div class="min-w-0 flex flex-col gap-2">
-                  <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
-                    <div class="min-w-0 flex items-start gap-2 flex-wrap">
-                      <span class="font-medium text-surface-900 dark:text-surface-100 leading-snug wrap-break-word">
+                              <!-- Colonne 1 : contenu -->
+                              <div class="min-w-0 flex flex-col gap-2">
+                                  <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+                                      <div class="min-w-0 flex items-start gap-2 flex-wrap">
+                      <span class="font-medium leading-snug wrap-break-word"
+                            [class.text-surface-900]="!(p._estChaine && !p._estActifChaine)"
+                            [class.dark:text-surface-100]="!(p._estChaine && !p._estActifChaine)"
+                            [class.text-surface-400]="p._estChaine && !p._estActifChaine"
+                            [class.dark:text-surface-500]="p._estChaine && !p._estActifChaine">
                         {{ p.description }}
                       </span>
-                      @if (categorieLabel(p.categorieId) !== '–' && triActuel() !== 'CATEGORIE') {
-                        <p-tag [value]="categorieLabel(p.categorieId)"
-                               severity="secondary"
-                               class="text-[10px] py-0.5 shrink-0"/>
-                      }
-                    </div>
+                                          @if (categorieLabel(p.categorieId) !== '–' && triActuel() !== 'CATEGORIE') {
+                                              <p-tag [value]="categorieLabel(p.categorieId)"
+                                                     severity="secondary"
+                                                     class="text-[10px] py-0.5 shrink-0"/>
+                                          }
+                                          @if (p._estChaine && !p._estActifChaine) {
+                                              <p-tag [value]="t.poste.revisionBadgeRevise" icon="pi pi-history"
+                                                     severity="secondary" [pTooltip]="t.poste.revisionTooltipRevise"
+                                                     class="text-[10px] py-0.5 shrink-0"/>
+                                          }
+                                      </div>
 
-                    <div
-                        class="min-w-0 flex flex-wrap items-center justify-start gap-2 text-left sm:justify-end sm:text-right">
-                      @if (p.nature === 'ESTIMATION') {
-                        <p-tag [value]="natureAffichee(p)"
-                               [severity]="'warn'"
-                               class="text-[10px] py-0.5 shrink-0"/>
-                      }
-                      <span class="font-semibold text-surface-700 dark:text-surface-200 whitespace-nowrap">
+                                      <div
+                                              class="min-w-0 flex flex-wrap items-center justify-start gap-2 text-left sm:justify-end sm:text-right">
+                                          @if (p.nature === 'ESTIMATION') {
+                                              <p-tag [value]="natureAffichee(p)"
+                                                     [severity]="'warn'"
+                                                     class="text-[10px] py-0.5 shrink-0"/>
+                                          }
+                                          <span class="font-semibold whitespace-nowrap"
+                                                [class.text-surface-700]="!(p._estChaine && !p._estActifChaine)"
+                                                [class.dark:text-surface-200]="!(p._estChaine && !p._estActifChaine)"
+                                                [class.text-surface-400]="p._estChaine && !p._estActifChaine"
+                                                [class.dark:text-surface-500]="p._estChaine && !p._estActifChaine">
                         {{ p.montant | montant:p.devise }}
                       </span>
-                    </div>
-                  </div>
+                                      </div>
+                                  </div>
 
-                  <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
-                    <div
-                        class="min-w-0 flex items-center flex-wrap gap-x-2 gap-y-1 text-sm text-surface-500 dark:text-surface-400">
-                      @if (p.periodiciteMois === 0) {
-                        <span class="flex items-center gap-1 min-w-0">
+                                  <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+                                      <div
+                                              class="min-w-0 flex items-center flex-wrap gap-x-2 gap-y-1 text-sm text-surface-500 dark:text-surface-400">
+                                          @if (p.periodiciteMois === 0) {
+                                              <span class="flex items-center gap-1 min-w-0">
                           <i class="pi pi-calendar text-xs text-surface-400"></i>
                           <span class="truncate">{{ formatPeriode(p.debut) }}</span>
                         </span>
-                        <span class="text-surface-300 dark:text-surface-600 select-none">·</span>
-                        <span class="flex items-center gap-1">
+                                              <span class="text-surface-300 dark:text-surface-600 select-none">·</span>
+                                              <span class="flex items-center gap-1">
                           <i class="pi pi-bolt text-xs text-purple-500" [pTooltip]="t.poste.oneShot"></i>
-                          {{ t.poste.oneShot }}
+                                                  {{ t.poste.oneShot }}
                         </span>
-                      } @else {
-                        <span class="flex items-center gap-1 min-w-0">
+                                          } @else {
+                                              <span class="flex items-center gap-1 min-w-0">
                           <i class="pi pi-calendar text-xs text-surface-400"></i>
                           <span
-                              class="truncate">{{ formatPeriode(p.debut) }}&nbsp;–&nbsp;{{ formatPeriode(p.fin) }}</span>
+                                  class="truncate">{{ formatPeriode(p.debut) }}&nbsp;–&nbsp;{{ formatPeriode(p.fin) }}</span>
                         </span>
-                        <span class="text-surface-300 dark:text-surface-600 select-none">·</span>
-                        <span class="flex items-center gap-1">
+                                              <span class="text-surface-300 dark:text-surface-600 select-none">·</span>
+                                              <span class="flex items-center gap-1">
                           @if (p.mode === 'MENSUALISE' || p.periodiciteMois <= 1) {
-                            <i class="pi pi-calendar-clock text-xs text-blue-400"
-                               [pTooltip]="t.poste.modeOptions.MENSUALISE"></i>
+                              <i class="pi pi-calendar-clock text-xs text-blue-400"
+                                 [pTooltip]="t.poste.modeOptions.MENSUALISE"></i>
                           } @else {
-                            <i class="pi pi-bolt text-xs text-amber-500"
-                               [pTooltip]="t.poste.modeOptions.PERIODIQUE + ' · ' + (p.moment === 'FIN_PERIODE' ? t.poste.momentOptions.FIN_PERIODE : t.poste.momentOptions.DEBUT_PERIODE)"></i>
+                              <i class="pi pi-bolt text-xs text-amber-500"
+                                 [pTooltip]="t.poste.modeOptions.PERIODIQUE + ' · ' + (p.moment === 'FIN_PERIODE' ? t.poste.momentOptions.FIN_PERIODE : t.poste.momentOptions.DEBUT_PERIODE)"></i>
                           }
-                          {{ p.periodiciteMois | periodicite }}
+                                                  {{ p.periodiciteMois | periodicite }}
                         </span>
+                                          }
+                                      </div>
+
+                                      <div class="min-h-5 text-left sm:text-right text-sm text-surface-400">
+                                          @if (afficheMontantMensualise(p)) {
+                                              <span class="whitespace-nowrap">{{ p.montantMensualise | montant:p.devise }}&thinsp;/mois</span>
+                                          }
+                                      </div>
+                                  </div>
+
+                                  <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+                                      <div class="min-w-0">
+                                          @let membresAffiches = membresAffichesPoste(p);
+                                          @if (membresAffiches.length > 0) {
+                                              <div class="flex items-center gap-2 flex-wrap">
+                                                  @for (rep of membresAffiches; track rep.membreId) {
+                                                      <p-tag [value]="rep.label"
+                                                             [style]="{ 'background-color': rep.couleur, color: rep.couleurTexte }"
+                                                             class="text-xs py-1 px-2 border-none max-w-full"/>
+                                                  }
+                                              </div>
+                                          }
+                                      </div>
+
+                                      <div></div>
+                                  </div>
+                              </div>
+
+                              <!-- Colonne 2 : actions -->
+                              <div class="flex items-center justify-end shrink-0">
+                                  @if (p._estChaine && p._estActifChaine && p._nbVersions) {
+                                      <p-button icon="pi pi-history"
+                                                [rounded]="true"
+                                                [text]="true"
+                                                severity="secondary"
+                                                size="small"
+                                                [badge]="p._nbVersions.toString()"
+                                                badgeSeverity="secondary"
+                                                [pTooltip]="i18n.instant('poste.revisionHistoriqueTooltip', { count: p._nbVersions })"
+                                                (click)="ouvrirHistorique(p)"/>
+                                  }
+                                  <p-button icon="pi pi-cog"
+                                            [rounded]="true"
+                                            [text]="true"
+                                            severity="secondary"
+                                            size="small"
+                                            [ariaLabel]="t.commun.actions"
+                                            [pTooltip]="t.commun.actions"
+                                            (click)="menuActions.toggle($event)"/>
+                                  <p-menu #menuActions [popup]="true" [model]="actionItemsFor(p)" appendTo="body"/>
+                              </div>
+                          </div>
                       }
-                    </div>
-
-                    <div class="min-h-5 text-left sm:text-right text-sm text-surface-400">
-                      @if (afficheMontantMensualise(p)) {
-                        <span class="whitespace-nowrap">{{ p.montantMensualise | montant:p.devise }}&thinsp;/mois</span>
-                      }
-                    </div>
-                  </div>
-
-                  <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
-                    <div class="min-w-0">
-                      @let membresAffiches = membresAffichesPoste(p);
-                      @if (membresAffiches.length > 0) {
-                        <div class="flex items-center gap-2 flex-wrap">
-                          @for (rep of membresAffiches; track rep.membreId) {
-                            <p-tag [value]="rep.label"
-                                   [style]="{ 'background-color': rep.couleur, color: rep.couleurTexte }"
-                                   class="text-xs py-1 px-2 border-none max-w-full"/>
-                          }
-                        </div>
-                      }
-                    </div>
-
-                    <div></div>
-                  </div>
-                </div>
-
-                <!-- Colonne 2 : actions -->
-                <div class="flex items-center justify-end shrink-0">
-                  <p-button icon="pi pi-cog"
-                            [rounded]="true"
-                            [text]="true"
-                            severity="secondary"
-                            size="small"
-                            [ariaLabel]="t.commun.actions"
-                            [pTooltip]="t.commun.actions"
-                            (click)="menuActions.toggle($event)"/>
-                  <p-menu #menuActions [popup]="true" [model]="actionItemsFor(p)" appendTo="body"/>
-                </div>
+                  }
               </div>
-            }
           }
-        </div>
-      }
-    </div>
+      </div>
 
-    <!-- ── Dialog formulaire poste ──────────────────────────────── -->
-    <p-dialog [(visible)]="dialogVisible" [header]="posteEnEdition ? t.commun.modifier : t.commun.creer"
-              [modal]="true" class="w-full max-w-2xl">
-      <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
+      <!-- ── Dialog formulaire poste ──────────────────────────────── -->
+      <p-dialog [(visible)]="dialogVisible" [header]="posteEnEdition ? t.commun.modifier : t.commun.creer"
+                [modal]="true" class="w-full max-w-2xl">
+          <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
 
-        <!-- Ligne 1 : Description pleine largeur -->
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">{{ t.poste.description }} *</label>
-          <input pInputText formControlName="description" class="w-full"/>
-        </div>
+              <!-- Ligne 1 : Description pleine largeur -->
+              <div class="flex flex-col gap-1">
+                  <label class="text-sm font-medium">{{ t.poste.description }} *</label>
+                  <input pInputText formControlName="description" class="w-full"/>
+              </div>
 
-        <!-- Ligne 2 : Catégorie + Montant -->
-        <div class="grid grid-cols-2 gap-4">
-          <div class="flex flex-col gap-1">
-            <label class="text-sm font-medium">{{ t.poste.categorie }}</label>
-            <p-select appendTo="body" formControlName="categorieId" [options]="categories()"
-                      optionLabel="libelle" optionValue="id" [showClear]="true" class="w-full"/>
-          </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-sm font-medium">{{ t.poste.montant }} *</label>
-            <p-inputnumber formControlName="montant" mode="decimal" [minFractionDigits]="2" class="w-full"/>
-          </div>
-        </div>
+              <!-- Ligne 2 : Catégorie + Montant -->
+              <div class="grid grid-cols-2 gap-4">
+                  <div class="flex flex-col gap-1">
+                      <label class="text-sm font-medium">{{ t.poste.categorie }}</label>
+                      <p-select appendTo="body" formControlName="categorieId" [options]="categories()"
+                                optionLabel="libelle" optionValue="id" [showClear]="true" class="w-full"/>
+                  </div>
+                  <div class="flex flex-col gap-1">
+                      <label class="text-sm font-medium">{{ t.poste.montant }} *</label>
+                      <p-inputnumber formControlName="montant" mode="decimal" [minFractionDigits]="2" class="w-full"/>
+                  </div>
+              </div>
 
-        <!-- Ligne 3 : Périodicité | Mode | Moment
-             D=0 → one-shot, pas de mode/moment (uniquement début)
-             D=1 → 1 col (mode et moment cachés)
-             D>1 → 3 col (Mode toujours visible ; Moment toujours visible) -->
-        <div class="grid gap-4"
-             [class.grid-cols-1]="(form.value.periodiciteMois ?? 1) === 0 || (form.value.periodiciteMois ?? 1) === 1"
-             [class.grid-cols-3]="(form.value.periodiciteMois ?? 1) > 1">
-          <!-- Périodicité -->
-          <div class="flex flex-col gap-1">
-            <label class="text-sm font-medium">{{ t.poste.periodicite }}</label>
-            <p-select appendTo="body" formControlName="periodiciteMois"
-                      [options]="periodiciteOptions" optionLabel="label" optionValue="value"
-                      class="w-full"/>
-          </div>
-          <!-- Moment : visible dès que D>1, quel que soit le mode -->
-          @if ((form.value.periodiciteMois ?? 1) > 1) {
-            <div class="flex flex-col gap-1">
-              <label class="text-sm font-medium"
-                     [pTooltip]="t.poste.momentTooltip">{{ t.poste.moment }}</label>
-              <p-select appendTo="body" formControlName="moment" [options]="momentOptions"
-                        optionLabel="label" optionValue="value" class="w-full"/>
-            </div>
-          }
-          <!-- Mode : caché si D=0 ou D=1 (toujours mensualisé) -->
-          @if ((form.value.periodiciteMois ?? 1) > 1) {
-            <div class="flex flex-col gap-1">
-              <label class="text-sm font-medium" [pTooltip]="t.poste.modeTooltip">{{ t.poste.mode }}</label>
-              <p-select appendTo="body" formControlName="mode" [options]="modeOptions"
-                        optionLabel="label" optionValue="value" class="w-full"/>
-            </div>
-          }
-        </div>
+              <!-- Ligne 3 : Périodicité | Mode | Moment
+                   D=0 → one-shot, pas de mode/moment (uniquement début)
+                   D=1 → 1 col (mode et moment cachés)
+                   D>1 → 3 col (Mode toujours visible ; Moment toujours visible) -->
+              <div class="grid gap-4"
+                   [class.grid-cols-1]="(form.value.periodiciteMois ?? 1) === 0 || (form.value.periodiciteMois ?? 1) === 1"
+                   [class.grid-cols-3]="(form.value.periodiciteMois ?? 1) > 1">
+                  <!-- Périodicité -->
+                  <div class="flex flex-col gap-1">
+                      <label class="text-sm font-medium">{{ t.poste.periodicite }}</label>
+                      <p-select appendTo="body" formControlName="periodiciteMois"
+                                [options]="periodiciteOptions" optionLabel="label" optionValue="value"
+                                class="w-full"/>
+                  </div>
+                  <!-- Moment : visible dès que D>1, quel que soit le mode -->
+                  @if ((form.value.periodiciteMois ?? 1) > 1) {
+                      <div class="flex flex-col gap-1">
+                          <label class="text-sm font-medium"
+                                 [pTooltip]="t.poste.momentTooltip">{{ t.poste.moment }}</label>
+                          <p-select appendTo="body" formControlName="moment" [options]="momentOptions"
+                                    optionLabel="label" optionValue="value" class="w-full"/>
+                      </div>
+                  }
+                  <!-- Mode : caché si D=0 ou D=1 (toujours mensualisé) -->
+                  @if ((form.value.periodiciteMois ?? 1) > 1) {
+                      <div class="flex flex-col gap-1">
+                          <label class="text-sm font-medium" [pTooltip]="t.poste.modeTooltip">{{ t.poste.mode }}</label>
+                          <p-select appendTo="body" formControlName="mode" [options]="modeOptions"
+                                    optionLabel="label" optionValue="value" class="w-full"/>
+                      </div>
+                  }
+              </div>
 
-        <!-- Ligne 4 : Début + Fin (ou seulement Début si one-shot) -->
-        @if ((form.value.periodiciteMois ?? 1) === 0) {
-          <!-- One-shot : uniquement Début (obligatoire) -->
-          <div class="flex flex-col gap-1">
-            <label class="text-sm font-medium">{{ t.poste.debut }} *</label>
-            <p-datepicker appendTo="body" formControlName="debut" dateFormat="dd/mm/yy"
-                          [showButtonBar]="true" class="w-full"></p-datepicker>
-          </div>
-        } @else {
-          <!-- Normal : Début + Fin (optionnels) -->
-          <div class="grid grid-cols-2 gap-4">
-            <div class="flex flex-col gap-1">
-              <label class="text-sm font-medium">{{ t.poste.debut }}</label>
-              <p-datepicker appendTo="body" formControlName="debut" dateFormat="dd/mm/yy"
-                            [showButtonBar]="true" class="w-full"></p-datepicker>
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="text-sm font-medium">{{ t.poste.fin }}</label>
-              <p-datepicker appendTo="body" formControlName="fin" dateFormat="dd/mm/yy"
-                            [showButtonBar]="true" class="w-full"></p-datepicker>
-            </div>
-          </div>
-        }
+              <!-- Ligne 4 : Début + Fin (ou seulement Début si one-shot) -->
+              @if ((form.value.periodiciteMois ?? 1) === 0) {
+                  <!-- One-shot : uniquement Début (obligatoire) -->
+                  <div class="flex flex-col gap-1">
+                      <label class="text-sm font-medium">{{ t.poste.debut }} *</label>
+                      <p-datepicker appendTo="body" formControlName="debut" dateFormat="dd/mm/yy"
+                                    [showButtonBar]="true" class="w-full"></p-datepicker>
+                  </div>
+              } @else {
+                  <!-- Normal : Début + Fin (optionnels) -->
+                  <div class="grid grid-cols-2 gap-4">
+                      <div class="flex flex-col gap-1">
+                          <label class="text-sm font-medium">{{ t.poste.debut }}</label>
+                          <p-datepicker appendTo="body" formControlName="debut" dateFormat="dd/mm/yy"
+                                        [showButtonBar]="true" class="w-full"></p-datepicker>
+                      </div>
+                      <div class="flex flex-col gap-1">
+                          <label class="text-sm font-medium">{{ t.poste.fin }}</label>
+                          <p-datepicker appendTo="body" formControlName="fin" dateFormat="dd/mm/yy"
+                                        [showButtonBar]="true" class="w-full"></p-datepicker>
+                      </div>
+                  </div>
+              }
 
 
-        <!-- Ligne 5 : Nature (pleine largeur) -->
-        <div class="grid grid-cols-{{ form.value.nature === 'ESTIMATION' ? '2' : '1' }} gap-4">
-          <div class="flex flex-col gap-1">
-            <label class="text-sm font-medium" [pTooltip]="t.poste.natureTooltip">{{ t.poste.nature }}</label>
-            <p-select appendTo="body" formControlName="nature" [options]="natureOptions"
-                      optionLabel="label" optionValue="value" class="w-full"/>
-          </div>
-          <!-- Ligne 5b : Pourcentage d'estimation (visible si nature=ESTIMATION) -->
-          @if (form.value.nature === 'ESTIMATION') {
-            <div class="flex flex-col gap-1">
-              <label class="text-sm font-medium" [pTooltip]="t.poste.estimationTooltip">
-                {{ t.poste.estimationPourcentage }} *
-              </label>
-              <p-inputnumber formControlName="estimPourcentage"
-                             [min]="0" [max]="100"
-                             [minFractionDigits]="1" [maxFractionDigits]="1"
-                             suffix="%" class="w-full"
-                             [placeholder]="t.poste.estimationPlaceholder"/>
-            </div>
-          }
-        </div>
+              <!-- Ligne 5 : Nature (pleine largeur) -->
+              <div class="grid grid-cols-{{ form.value.nature === 'ESTIMATION' ? '2' : '1' }} gap-4">
+                  <div class="flex flex-col gap-1">
+                      <label class="text-sm font-medium" [pTooltip]="t.poste.natureTooltip">{{ t.poste.nature }}</label>
+                      <p-select appendTo="body" formControlName="nature" [options]="natureOptions"
+                                optionLabel="label" optionValue="value" class="w-full"/>
+                  </div>
+                  <!-- Ligne 5b : Pourcentage d'estimation (visible si nature=ESTIMATION) -->
+                  @if (form.value.nature === 'ESTIMATION') {
+                      <div class="flex flex-col gap-1">
+                          <label class="text-sm font-medium" [pTooltip]="t.poste.estimationTooltip">
+                              {{ t.poste.estimationPourcentage }} *
+                          </label>
+                          <p-inputnumber formControlName="estimPourcentage"
+                                         [min]="0" [max]="100"
+                                         [minFractionDigits]="1" [maxFractionDigits]="1"
+                                         suffix="%" class="w-full"
+                                         [placeholder]="t.poste.estimationPlaceholder"/>
+                      </div>
+                  }
+              </div>
 
 
-        <!-- Ligne 6 : Mode répartition (masqué si mono-membre) -->
-        @if (membres().length > 1) {
-          <div class="flex flex-col gap-1">
-            <label class="text-sm font-medium" [pTooltip]="t.poste.typeRepartitionTooltip">
-              {{ t.poste.typeRepartition }}
-            </label>
-            <p-select appendTo="body" formControlName="typeRepartition"
-                      [options]="typeRepartitionOptions"
-                      optionLabel="label" optionValue="value" class="w-full"/>
-          </div>
-        }
+              <!-- Ligne 6 : Mode répartition (masqué si mono-membre) -->
+              @if (membres().length > 1) {
+                  <div class="flex flex-col gap-1">
+                      <label class="text-sm font-medium" [pTooltip]="t.poste.typeRepartitionTooltip">
+                          {{ t.poste.typeRepartition }}
+                      </label>
+                      <p-select appendTo="body" formControlName="typeRepartition"
+                                [options]="typeRepartitionOptions"
+                                optionLabel="label" optionValue="value" class="w-full"/>
+                  </div>
+              }
 
-        <!-- Répartition + Comptes (uniquement pour CUSTOM multi-membres) -->
-        @if (estCustomMultiMembre()) {
-          <div class="flex flex-col gap-2">
-            <div class="flex items-center justify-between">
-              <label class="text-sm font-medium">
-                {{ t.poste.repartition }}
-                <span class="text-sm"
-                      [class.text-green-600]="sommeRepartition === 100"
-                      [class.text-red-500]="sommeRepartition !== 100 && repartitionsArray.length > 0">
+              <!-- Répartition + Comptes (uniquement pour CUSTOM multi-membres) -->
+              @if (estCustomMultiMembre()) {
+                  <div class="flex flex-col gap-2">
+                      <div class="flex items-center justify-between">
+                          <label class="text-sm font-medium">
+                              {{ t.poste.repartition }}
+                              <span class="text-sm"
+                                    [class.text-green-600]="sommeRepartition === 100"
+                                    [class.text-red-500]="sommeRepartition !== 100 && repartitionsArray.length > 0">
                   {{ sommeRepartition }}%
                 </span></label>
-            </div>
-            @if (sommeRepartition !== 100 && repartitionsArray.length > 0) {
-              <p-message severity="warn">{{ t.commun.repartitionInvalide }}</p-message>
-            }
-            @if (repartitionsArray.length > 0) {
-              <div class="w-full grid grid-cols-12 items-center gap-3 text-xs text-surface-400 font-medium px-0">
-                <span class="col-span-4 truncate">{{ t.referentiels.membre.nom }}</span>
-                <span class="col-span-3 text-center">{{ t.poste.repartition }}</span>
-                <span class="col-span-5">{{ t.poste.ventilation }}</span>
-              </div>
-            }
-            <div formArrayName="repartitions" class="flex flex-col gap-2">
-              @for (ctrl of repartitionsArray.controls; track ctrl; let i = $index) {
-                <div [formGroupName]="i" class="w-full grid grid-cols-12 items-center gap-3">
-                  <span class="col-span-4 text-sm truncate">{{ membres()[i]?.nom }}</span>
-                  <div class="col-span-3 min-w-[7.5rem]">
-                    <p-inputnumber formControlName="quotePart" [min]="0" [max]="100"
-                                   suffix="%" [minFractionDigits]="0" class="w-full"
-                                   inputStyleClass="w-full"
-                                   (onInput)="onQuotePartChange(i)"></p-inputnumber>
-                  </div>
-                  <div class="col-span-5 min-w-0">
-                    <p-select appendTo="body" formControlName="compteId"
-                              [options]="comptes()" optionLabel="libelle"
-                              optionValue="id"
-                              [placeholder]="t.poste.ventilation" class="w-full"
-                              [showClear]="true"
-                              [disabled]="(ctrl.get('quotePart')?.value ?? 0) === 0">
-                      <ng-template #selectedItem let-compte>
-                        @if (compte) {
-                          <div class="flex items-center gap-1.5 flex-wrap">
-                            <span>{{ compte.libelle }}</span>
-                            @for (m of membresForCompte(compte); track m.id) {
-                              <app-tag [couleur]="m.couleur" [texte]="m.nom"/>
-                            }
+                      </div>
+                      @if (sommeRepartition !== 100 && repartitionsArray.length > 0) {
+                          <p-message severity="warn">{{ t.commun.repartitionInvalide }}</p-message>
+                      }
+                      @if (repartitionsArray.length > 0) {
+                          <div class="w-full grid grid-cols-12 items-center gap-3 text-xs text-surface-400 font-medium px-0">
+                              <span class="col-span-4 truncate">{{ t.referentiels.membre.nom }}</span>
+                              <span class="col-span-3 text-center">{{ t.poste.repartition }}</span>
+                              <span class="col-span-5">{{ t.poste.ventilation }}</span>
                           </div>
-                        }
-                      </ng-template>
-                      <ng-template #item let-compte>
-                        <div class="flex items-center gap-1.5 flex-wrap">
-                          <span>{{ compte.libelle }}</span>
-                          @for (m of membresForCompte(compte); track m.id) {
-                            <app-tag [couleur]="m.couleur" [texte]="m.nom"/>
+                      }
+                      <div formArrayName="repartitions" class="flex flex-col gap-2">
+                          @for (ctrl of repartitionsArray.controls; track ctrl; let i = $index) {
+                              <div [formGroupName]="i" class="w-full grid grid-cols-12 items-center gap-3">
+                                  <span class="col-span-4 text-sm truncate">{{ membres()[i]?.nom }}</span>
+                                  <div class="col-span-3 min-w-[7.5rem]">
+                                      <p-inputnumber formControlName="quotePart" [min]="0" [max]="100"
+                                                     suffix="%" [minFractionDigits]="0" class="w-full"
+                                                     inputStyleClass="w-full"
+                                                     (onInput)="onQuotePartChange(i)"></p-inputnumber>
+                                  </div>
+                                  <div class="col-span-5 min-w-0">
+                                      <p-select appendTo="body" formControlName="compteId"
+                                                [options]="comptes()" optionLabel="libelle"
+                                                optionValue="id"
+                                                [placeholder]="t.poste.ventilation" class="w-full"
+                                                [showClear]="true"
+                                                [disabled]="(ctrl.get('quotePart')?.value ?? 0) === 0">
+                                          <ng-template #selectedItem let-compte>
+                                              @if (compte) {
+                                                  <div class="flex items-center gap-1.5 flex-wrap">
+                                                      <span>{{ compte.libelle }}</span>
+                                                      @for (m of membresForCompte(compte); track m.id) {
+                                                          <app-tag [couleur]="m.couleur" [texte]="m.nom"/>
+                                                      }
+                                                  </div>
+                                              }
+                                          </ng-template>
+                                          <ng-template #item let-compte>
+                                              <div class="flex items-center gap-1.5 flex-wrap">
+                                                  <span>{{ compte.libelle }}</span>
+                                                  @for (m of membresForCompte(compte); track m.id) {
+                                                      <app-tag [couleur]="m.couleur" [texte]="m.nom"/>
+                                                  }
+                                              </div>
+                                          </ng-template>
+                                      </p-select>
+                                  </div>
+                              </div>
                           }
-                        </div>
-                      </ng-template>
-                    </p-select>
+                      </div>
                   </div>
-                </div>
-              }
-            </div>
-          </div>
-        } @else if (membres().length > 0) {
-          <!-- Ventilation comptes uniquement (sans parts pour AUTO/REVERSE_AUTO) -->
-          <div class="flex flex-col gap-2">
-            <label class="text-sm font-medium">{{ t.poste.ventilation }}</label>
-            <div formArrayName="repartitions" class="flex flex-col gap-2">
-              @for (ctrl of repartitionsArray.controls; track ctrl; let i = $index) {
-                <div [formGroupName]="i" class="w-full grid grid-cols-12 items-center gap-3">
-                  <span class="col-span-5 text-sm truncate">{{ membres()[i]?.nom }}</span>
-                  <div class="col-span-7 min-w-0">
-                    <p-select appendTo="body" formControlName="compteId"
-                              [options]="comptes()" optionLabel="libelle"
-                              optionValue="id"
-                              [placeholder]="t.poste.ventilation" class="w-full"
-                              [showClear]="true">
-                      <ng-template #selectedItem let-compte>
-                        @if (compte) {
-                          <div class="flex items-center gap-1.5 flex-wrap">
-                            <span>{{ compte.libelle }}</span>
-                            @for (m of membresForCompte(compte); track m.id) {
-                              <app-tag [couleur]="m.couleur" [texte]="m.nom"/>
-                            }
-                          </div>
-                        }
-                      </ng-template>
-                      <ng-template #item let-compte>
-                        <div class="flex items-center gap-1.5 flex-wrap">
-                          <span>{{ compte.libelle }}</span>
-                          @for (m of membresForCompte(compte); track m.id) {
-                            <app-tag [couleur]="m.couleur" [texte]="m.nom"/>
+              } @else if (membres().length > 0) {
+                  <!-- Ventilation comptes uniquement (sans parts pour AUTO/REVERSE_AUTO) -->
+                  <div class="flex flex-col gap-2">
+                      <label class="text-sm font-medium">{{ t.poste.ventilation }}</label>
+                      <div formArrayName="repartitions" class="flex flex-col gap-2">
+                          @for (ctrl of repartitionsArray.controls; track ctrl; let i = $index) {
+                              <div [formGroupName]="i" class="w-full grid grid-cols-12 items-center gap-3">
+                                  <span class="col-span-5 text-sm truncate">{{ membres()[i]?.nom }}</span>
+                                  <div class="col-span-7 min-w-0">
+                                      <p-select appendTo="body" formControlName="compteId"
+                                                [options]="comptes()" optionLabel="libelle"
+                                                optionValue="id"
+                                                [placeholder]="t.poste.ventilation" class="w-full"
+                                                [showClear]="true">
+                                          <ng-template #selectedItem let-compte>
+                                              @if (compte) {
+                                                  <div class="flex items-center gap-1.5 flex-wrap">
+                                                      <span>{{ compte.libelle }}</span>
+                                                      @for (m of membresForCompte(compte); track m.id) {
+                                                          <app-tag [couleur]="m.couleur" [texte]="m.nom"/>
+                                                      }
+                                                  </div>
+                                              }
+                                          </ng-template>
+                                          <ng-template #item let-compte>
+                                              <div class="flex items-center gap-1.5 flex-wrap">
+                                                  <span>{{ compte.libelle }}</span>
+                                                  @for (m of membresForCompte(compte); track m.id) {
+                                                      <app-tag [couleur]="m.couleur" [texte]="m.nom"/>
+                                                  }
+                                              </div>
+                                          </ng-template>
+                                      </p-select>
+                                  </div>
+                              </div>
                           }
-                        </div>
-                      </ng-template>
-                    </p-select>
+                      </div>
                   </div>
-                </div>
               }
-            </div>
-          </div>
-        }
-      </form>
-      <ng-template #footer>
-        <p-button [label]="t.commun.annuler" severity="secondary" (click)="fermerDialogPoste()"/>
-        <p-button [label]="t.commun.enregistrer" (click)="enregistrer()"
-                  [disabled]="!isFormValid()"/>
-      </ng-template>
-    </p-dialog>
+          </form>
+          <ng-template #footer>
+              <p-button [label]="t.commun.annuler" severity="secondary" (click)="fermerDialogPoste()"/>
+              <p-button [label]="t.commun.enregistrer" (click)="enregistrer()"
+                        [disabled]="!isFormValid()"/>
+          </ng-template>
+      </p-dialog>
 
-    <!-- Dialog aperçu mensuel -->
-    <p-dialog [(visible)]="apercuVisible" [header]="t.poste.apercu" [modal]="true" class="w-96">
-      @if (apercuData()) {
-        <p-table [value]="apercuData()!.contributions" class="p-datatable-sm">
-          <ng-template #header>
-            <tr>
-              <th>{{ t.projection.mois }}</th>
-              <th class="text-right">{{ t.poste.contribution }}</th>
-            </tr>
+      <!-- Dialog mini-formulaire : révision de montant planifiée -->
+      <p-dialog [(visible)]="revisionDialogVisible"
+                [header]="i18n.instant('poste.revisionTitre', { description: posteEnRevision?.description ?? '' })"
+                [modal]="true" class="w-full max-w-md">
+          @if (posteEnRevision) {
+              <form [formGroup]="revisionForm" class="flex flex-col gap-4 pt-2">
+                  <div class="flex flex-col gap-1">
+                      <label class="text-sm font-medium text-surface-500">{{ t.poste.revisionMontantActuel }}</label>
+                      <span class="text-sm">{{ posteEnRevision.montant | montant:posteEnRevision.devise }}</span>
+                  </div>
+
+                  <div class="flex flex-col gap-1">
+                      <label class="text-sm font-medium">{{ t.poste.revisionNouveauMontant }} *</label>
+                      <p-inputnumber formControlName="nouveauMontant" mode="decimal" [minFractionDigits]="2"
+                                     class="w-full"/>
+                  </div>
+
+                  <div class="flex flex-col gap-1">
+                      <label class="text-sm font-medium">{{ t.poste.revisionDateEffet }} *</label>
+                      <p-datepicker appendTo="body" formControlName="dateEffet" view="month" dateFormat="mm/yy"
+                                    [showButtonBar]="true" class="w-full"></p-datepicker>
+                  </div>
+
+                  <div class="text-sm rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-primary-700 dark:text-primary-300">
+                      {{ resumeRevision() }}
+                  </div>
+              </form>
+          }
+          <ng-template #footer>
+              <p-button [label]="t.commun.annuler" severity="secondary" (click)="fermerDialogRevision()"/>
+              <p-button [label]="t.commun.enregistrer" (click)="enregistrerRevision()"
+                        [disabled]="!revisionValide()"/>
           </ng-template>
-          <ng-template #body let-c>
-            <tr>
-              <td>{{ t.mois[c.mois - 1] }}</td>
-              <td class="text-right">{{ c.contribution | montant }}</td>
-            </tr>
-          </ng-template>
-        </p-table>
-      }
-    </p-dialog>
+      </p-dialog>
+
+      <!-- Dialog aperçu mensuel -->
+      <p-dialog [(visible)]="apercuVisible" [header]="t.poste.apercu" [modal]="true" class="w-96">
+          @if (apercuData()) {
+              <p-table [value]="apercuData()!.contributions" class="p-datatable-sm">
+                  <ng-template #header>
+                      <tr>
+                          <th>{{ t.projection.mois }}</th>
+                          <th class="text-right">{{ t.poste.contribution }}</th>
+                      </tr>
+                  </ng-template>
+                  <ng-template #body let-c>
+                      <tr>
+                          <td>{{ t.mois[c.mois - 1] }}</td>
+                          <td class="text-right">{{ c.contribution | montant }}</td>
+                      </tr>
+                  </ng-template>
+              </p-table>
+          }
+      </p-dialog>
   `,
 })
 export class PostesListeComponent implements OnInit {
-  private readonly i18n = inject(I18nService);
+  readonly i18n = inject(I18nService);
   readonly t = this.i18n.translations();
   readonly type = input<TypePoste>('REVENU');
   readonly Math = Math; // Exposition pour le template
@@ -564,6 +647,57 @@ export class PostesListeComponent implements OnInit {
   apercuData = signal<{ annee: number; contributions: { mois: number; contribution: number; }[] } | null>(null);
   membres = this.contexte.membres;
   sommeRepartition = 0;
+
+  // ── Révision de montant planifiée ─────────────────────────
+  revisionDialogVisible = false;
+  posteEnRevision: PosteDto | null = null;
+  revisionForm = this.fb.group({
+    nouveauMontant: [0, [Validators.required, Validators.min(0.01)]],
+    dateEffet:      [null as Date | null, Validators.required],
+  });
+
+  private readonly _revisionMontantValue = toSignal(
+    this.revisionForm.get('nouveauMontant')!.valueChanges.pipe(
+      startWith(this.revisionForm.get('nouveauMontant')!.value)
+    ),
+    { initialValue: 0 }
+  );
+  private readonly _revisionDateValue = toSignal(
+    this.revisionForm.get('dateEffet')!.valueChanges.pipe(
+      startWith(this.revisionForm.get('dateEffet')!.value)
+    ),
+    { initialValue: null as Date | null }
+  );
+
+  /** Résumé live « 1'800 → 1'950 CHF (+8.3 %), dès janvier 2027 ». */
+  resumeRevision = computed(() => {
+    const p = this.posteEnRevision;
+    if (!p) return '';
+    const avant = p.montant;
+    const apres = this._revisionMontantValue() ?? 0;
+    const date = this._revisionDateValue();
+    const pct = avant > 0 ? ((apres - avant) / avant) * 100 : 0;
+    const signe = pct >= 0 ? '+' : '';
+    return this.i18n.instant('poste.revisionResume', {
+      avant: this.formaterMontant(avant, p.devise),
+      apres: this.formaterMontant(apres, p.devise),
+      signe,
+      pct: pct.toFixed(1),
+      date: date ? this.formatPeriode(this.toIso(date)) : '–',
+    });
+  });
+
+  /** Bouton de validation activé seulement si montant > 0 et date d'effet cohérente. */
+  revisionValide = computed(() => {
+    const p = this.posteEnRevision;
+    const montant = this._revisionMontantValue();
+    const date = this._revisionDateValue();
+    if (!p || !date || !(montant! > 0)) return false;
+    const iso = this.toIso(date);
+    if (p.debut && iso <= p.debut) return false;
+    if (p.fin && iso > p.fin) return false;
+    return true;
+  });
 
   modeOptions = [
     { label: this.t.poste.modeOptions.MENSUALISE, value: 'MENSUALISE' },
@@ -687,93 +821,70 @@ export class PostesListeComponent implements OnInit {
     const d = this._now;
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   })();
+  private readonly _aujourdHuiIso = this.toIso(this._now);
 
-  postesTries = computed(() => {
-    const list = [...this.postes()];
+  /** Comparateur de tri appliqué au « représentant » d'un poste isolé ou d'une chaîne. */
+  private comparerPostes = (a: PosteDto, b: PosteDto): number => {
+    switch (this.triActuel()) {
+      case 'DATE': {
+        const da = a.debut ?? '9999-12'; const db = b.debut ?? '9999-12';
+        if (da !== db) return da.localeCompare(db);
+        return (a.fin ?? '9999-12').localeCompare(b.fin ?? '9999-12');
+      }
+      case 'CATEGORIE': {
+        const ca = this.categorieLabel(a.categorieId); const cb = this.categorieLabel(b.categorieId);
+        if (ca !== cb) return ca.localeCompare(cb, 'fr');
+        if (a.description !== b.description) return a.description.localeCompare(b.description, 'fr');
+        return b.montant - a.montant;
+      }
+      case 'DESCRIPTION': {
+        if (a.description !== b.description) return a.description.localeCompare(b.description, 'fr');
+        return b.montant - a.montant;
+      }
+      default: return 0;
+    }
+  };
+
+  /** Clé + libellé de séparateur pour un poste « représentant » selon le tri actuel. */
+  private clefSeparateur(p: PosteDto): { clef: string; label: string } {
     switch (this.triActuel()) {
       case 'DATE':
-        return list.sort((a, b) => {
-          const da = a.debut ?? '9999-12'; const db = b.debut ?? '9999-12';
-          if (da !== db) return da.localeCompare(db);
-          return (a.fin ?? '9999-12').localeCompare(b.fin ?? '9999-12');
-        });
-      case 'CATEGORIE':
-        return list.sort((a, b) => {
-          const ca = this.categorieLabel(a.categorieId); const cb = this.categorieLabel(b.categorieId);
-          if (ca !== cb) return ca.localeCompare(cb, 'fr');
-          if (a.description !== b.description) return a.description.localeCompare(b.description, 'fr');
-          return b.montant - a.montant;
-        });
-      case 'DESCRIPTION':
-        return list.sort((a, b) => {
-          if (a.description !== b.description) return a.description.localeCompare(b.description, 'fr');
-          return b.montant - a.montant;
-        });
-      default: return list;
+        return { clef: p.debut?.substring(0, 7) ?? '–', label: this.formatPeriode(p.debut ?? null) };
+      case 'CATEGORIE': {
+        const label = this.categorieLabel(p.categorieId);
+        return { clef: label, label };
+      }
+      case 'DESCRIPTION': {
+        const label = p.description.charAt(0).toUpperCase();
+        return { clef: label, label };
+      }
+      default:
+        return { clef: '', label: '' };
     }
-  });
-
-  // ── Séparateurs de groupe ─────────────────────────────────
-  /** Type discriminant : un élément de la liste est soit un poste, soit un séparateur. */
-  isSeparator(item: PosteDto | { separator: string }): item is { separator: string } {
-    return 'separator' in item;
-  }
-
-  /** Cast sûr côté template après discrimination par isSeparator(). */
-  asPoste(item: PosteDto | { separator: string }): PosteDto {
-    return item as PosteDto;
   }
 
   /**
-   * Liste affichée avec séparateurs de groupe insérés selon le tri actuel :
-   *  - DATE        → [mois.année] selon p.debut
-   *  - CATÉGORIE   → [nom catégorie]
-   *  - DESCRIPTION → [première lettre majuscule]
+   * Racine (id du tout premier maillon) de la chaîne de révisions à laquelle appartient p.
+   * Remonte via posteOrigineId sur la liste complète (non filtrée) du scénario.
    */
-  postesAvecSeparateurs = computed<(PosteDto | { separator: string })[]>(() => {
-    const result: (PosteDto | { separator: string })[] = [];
-    let lastKey: string | null = null;
-    const tri = this.triActuel();
-
-    for (const p of this.postesVisibles()) {
-      let key: string;
-      let label: string;
-
-      switch (tri) {
-        case 'DATE':
-          key   = p.debut?.substring(0, 7) ?? '–';
-          label = this.formatPeriode(p.debut ?? null);
-          break;
-        case 'CATEGORIE':
-          key   = this.categorieLabel(p.categorieId);
-          label = key;
-          break;
-        case 'DESCRIPTION':
-          key   = p.description.charAt(0).toUpperCase();
-          label = key;
-          break;
-        default:
-          key   = '';
-          label = '';
-      }
-
-      if (key !== lastKey) {
-        result.push({ separator: label });
-        lastKey = key;
-      }
-      result.push(p);
+  private racineChaine(p: PosteDto, index: Map<string, PosteDto>): string {
+    let courant = p;
+    const visites = new Set<string>();
+    while (courant.posteOrigineId && index.has(courant.posteOrigineId) && !visites.has(courant.id)) {
+      visites.add(courant.id);
+      courant = index.get(courant.posteOrigineId)!;
     }
-    return result;
-  });
+    return courant.id;
+  }
 
-  /** Liste finale affichée : triée + filtrée selon les options de masquage et les filtres comptes/membres/catégories. */
-  postesVisibles = computed(() => {
+  /** Liste filtrée (avant tri/regroupement) selon les options de masquage et les filtres actifs. */
+  private postesFiltres = computed(() => {
     const compteIds     = this.filtreCompteIds();
     const membreIds     = this.filtreMembreIds();
     const categorieIds  = this.filtreCategorieIds();
     const tousMembreIds = this.membres().map(m => m.id);
 
-    return this.postesTries().filter(p => {
+    return this.postes().filter(p => {
       const estInactif = !!p.fin && p.fin.substring(0, 7) < this._moisCourant;
       const estFutur   = !!p.debut && p.debut.substring(0, 7) > this._moisCourant;
 
@@ -807,6 +918,78 @@ export class PostesListeComponent implements OnInit {
       return true;
     });
   });
+
+  // ── Séparateurs de groupe ─────────────────────────────────
+  /** Type discriminant : un élément de la liste est soit un poste, soit un séparateur. */
+  isSeparator(item: PosteAffiche | { separator: string }): item is { separator: string } {
+    return 'separator' in item;
+  }
+
+  /** Cast sûr côté template après discrimination par isSeparator(). */
+  asPoste(item: PosteAffiche | { separator: string }): PosteAffiche {
+    return item as PosteAffiche;
+  }
+
+  /**
+   * Liste finale affichée : filtrée, regroupée par chaîne de révisions (bloc contigu
+   * trié chronologiquement en interne, positionné selon le tri actuel appliqué au
+   * maillon actif) puis enrichie de métadonnées d'affichage (_estChaine, _estActifChaine…).
+   */
+  postesVisibles = computed<PosteAffiche[]>(() => {
+    const filtres = this.postesFiltres();
+    const indexComplet = new Map(this.postes().map(p => [p.id, p]));
+
+    const groupes = new Map<string, PosteDto[]>();
+    for (const p of filtres) {
+      const racine = this.racineChaine(p, indexComplet);
+      const liste = groupes.get(racine) ?? [];
+      liste.push(p);
+      groupes.set(racine, liste);
+    }
+
+    const blocs = Array.from(groupes.values()).map(membres => {
+      const tries = [...membres].sort((a, b) => (a.debut ?? '').localeCompare(b.debut ?? ''));
+      const actif = tries.find(p => !p.posteSuivantId) ?? tries[tries.length - 1];
+      return { membres: tries, representant: actif };
+    });
+
+    blocs.sort((a, b) => this.comparerPostes(a.representant, b.representant));
+
+    const resultat: PosteAffiche[] = [];
+    for (const bloc of blocs) {
+      const estChaine = bloc.membres.length > 1;
+      const { clef, label } = this.clefSeparateur(bloc.representant);
+      bloc.membres.forEach((p, i) => {
+        resultat.push({
+          ...p,
+          _estChaine: estChaine,
+          _premierDuBloc: i === 0,
+          _estActifChaine: !p.posteSuivantId,
+          _nbVersions: (!p.posteSuivantId && estChaine) ? bloc.membres.length : undefined,
+          _clefSeparateur: clef,
+          _labelSeparateur: label,
+        });
+      });
+    }
+    return resultat;
+  });
+
+  /** Liste affichée avec séparateurs de groupe insérés (clé/libellé du représentant de chaque bloc). */
+  postesAvecSeparateurs = computed<(PosteAffiche | { separator: string })[]>(() => {
+    const result: (PosteAffiche | { separator: string })[] = [];
+    let lastKey: string | null = null;
+
+    for (const p of this.postesVisibles()) {
+      const key = p._clefSeparateur ?? '';
+      if (key !== lastKey) {
+        result.push({ separator: p._labelSeparateur ?? '' });
+        lastKey = key;
+      }
+      result.push(p);
+    }
+    return result;
+  });
+
 
   private readonly _chargerEffect = effect(() => {
     const foyerId = this.contexte.foyerId();
@@ -857,13 +1040,27 @@ export class PostesListeComponent implements OnInit {
     ];
 
     if (this.contexte.estEditor()) {
-      items.push(
-        { label: this.t.commun.modifier, icon: 'pi pi-pencil', command: () => this.ouvrirEdition(p) },
-        { label: this.t.commun.supprimer, icon: 'pi pi-trash', command: () => this.supprimer(p) },
-      );
+      items.push({ label: this.t.commun.modifier, icon: 'pi pi-pencil', command: () => this.ouvrirEdition(p) });
+      if (this.estRevisable(p)) {
+        items.push({ label: this.t.poste.reviserMontant, icon: 'pi pi-sync', command: () => this.ouvrirRevision(p) });
+      }
+      if (this.estFusionnable(p)) {
+        items.push({ label: this.t.poste.annulerRevision, icon: 'pi pi-replay', command: () => this.annulerRevision(p) });
+      }
+      items.push({ label: this.t.commun.supprimer, icon: 'pi pi-trash', command: () => this.supprimer(p) });
     }
 
     return items;
+  }
+
+  /** Un poste est révisable s'il est récurrent (périodicité != 0) et pas déjà terminé dans le passé. */
+  estRevisable(p: PosteDto): boolean {
+    return p.periodiciteMois !== 0 && !(p.fin != null && p.fin < this._aujourdHuiIso);
+  }
+
+  /** Un poste est fusionnable (annulation de révision) s'il est le dernier maillon d'une chaîne. */
+  estFusionnable(p: PosteDto): boolean {
+    return !!p.posteOrigineId && !p.posteSuivantId;
   }
 
   repartitionsAffichees(p: PosteDto): { membreId: string; quotePart: number; nomMembre: string; couleur: string; couleurTexte: string }[] {
@@ -978,8 +1175,8 @@ export class PostesListeComponent implements OnInit {
       mode: p.mode, moment: p.moment, nature: p.nature ?? 'EFFECTIF',
       estimPourcentage: p.estimPourcentage ?? null,
       typeRepartition: p.typeRepartition ?? 'AUTO',
-      debut: p.debut ? new Date(p.debut) : null,
-      fin: p.fin ? new Date(p.fin) : null,
+      debut: p.debut ? parseIsoDateLocal(p.debut) : null,
+      fin: p.fin ? parseIsoDateLocal(p.fin) : null,
     });
     // Initialiser les parts seulement pour CUSTOM
     if (p.typeRepartition === 'CUSTOM') {
@@ -1157,7 +1354,7 @@ export class PostesListeComponent implements OnInit {
     });
   }
 
-  private toIso(d: Date): string { return d.toISOString().substring(0, 10); }
+  private toIso(d: Date): string { return toIsoDateLocal(d); }
 
   /** Formater un pourcentage avec 1 décimale */
   formatEstimationPourcentage(pct: number): string {
@@ -1179,6 +1376,103 @@ export class PostesListeComponent implements OnInit {
       const d = new Date(+year, +month - 1, 1);
       return new Intl.DateTimeFormat('fr-CH', { month: 'short', year: 'numeric' }).format(d);
     } catch { return v; }
+  }
+
+  private formaterMontant(montant: number, devise?: string): string {
+    return new Intl.NumberFormat('fr-CH', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(montant)
+      + (devise ? ` ${devise}` : '');
+  }
+
+  private formaterDateComplete(iso: string): string {
+    const [year, month, day] = iso.split('-');
+    const d = new Date(+year, +month - 1, +day);
+    return new Intl.DateTimeFormat('fr-CH', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d);
+  }
+
+  /** 1er jour du mois qui suit le mois courant. */
+  private premierJourMoisProchain(): Date {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  }
+
+  ouvrirRevision(p: PosteDto): void {
+    this.posteEnRevision = p;
+    this.revisionForm.reset({
+      nouveauMontant: p.montant,
+      dateEffet: this.premierJourMoisProchain(),
+    });
+    this.revisionDialogVisible = true;
+  }
+
+  fermerDialogRevision(): void {
+    this.revisionDialogVisible = false;
+    this.posteEnRevision = null;
+  }
+
+  enregistrerRevision(): void {
+    const p = this.posteEnRevision;
+    if (!p || !this.revisionValide()) return;
+
+    const foyerId = this.contexte.foyerId()!;
+    const scenarioId = this.contexte.scenarioId()!;
+    const v = this.revisionForm.value;
+    const req = {
+      nouveauMontant: v.nouveauMontant!,
+      dateEffet: this.toIso(v.dateEffet!),
+    };
+
+    this.posteSvc.reviser(foyerId, scenarioId, p.id, req).subscribe({
+      next: () => {
+        this.toast.add({ severity: 'success', summary: this.t.commun.succes });
+        this.revisionDialogVisible = false;
+        this.posteEnRevision = null;
+        this.charger();
+      },
+      error: (err) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message }),
+    });
+  }
+
+  /** Point d'entrée de la vue détaillée de l'historique de la chaîne (hors périmètre). */
+  ouvrirHistorique(p: PosteDto): void {
+    console.log('Historique de la chaîne pour', p.id);
+  }
+
+  /**
+   * Annule la révision d'un poste : fusionne le maillon actif avec son prédécesseur.
+   * Affiche une confirmation concrète (montant et fin restaurés) avant d'exécuter
+   * l'opération atomique côté serveur.
+   */
+  annulerRevision(p: PosteDto): void {
+    const precedent = this.postes().find(x => x.id === p.posteOrigineId);
+    if (!precedent) return;
+
+    const montantActuel = this.formaterMontant(p.montant, p.devise);
+    const montantPrecedent = this.formaterMontant(precedent.montant, precedent.devise);
+    const message = precedent.fin
+      ? this.i18n.instant('poste.annulerRevisionConfirmationAvecFin', {
+          montant: montantActuel,
+          description: precedent.description,
+          montantPrecedent,
+          finPrecedente: this.formaterDateComplete(precedent.fin),
+        })
+      : this.i18n.instant('poste.annulerRevisionConfirmationSansFin', {
+          montant: montantActuel,
+          description: precedent.description,
+          montantPrecedent,
+        });
+
+    this.confirm.confirm({
+      message,
+      header: this.i18n.instant('poste.annulerRevisionTitre', { description: precedent.description }),
+      accept: () => {
+        const foyerId = this.contexte.foyerId()!;
+        const scenarioId = this.contexte.scenarioId()!;
+        this.posteSvc.annulerRevision(foyerId, scenarioId, p.id).subscribe({
+          next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.charger(); },
+          error: (err) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message }),
+        });
+      },
+    });
   }
 }
 

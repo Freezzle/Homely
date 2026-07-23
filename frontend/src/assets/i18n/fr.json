@@ -14,8 +14,8 @@
     "loginError": "Identifiants invalides."
   },
   "nav": {
-    "dashboardAnnuel": "Stat. de l'année",
-    "dashboardMensuel": "Stat. du mois",
+    "dashboardAnnuel": "Statistiques annuelles",
+    "dashboardMensuel": "Statistiques mensuelles",
     "revenus": "Revenus",
     "charges": "Charges",
     "reserves": "Réserves",
@@ -207,7 +207,20 @@
     "filtreMembres": "Filtre par membre",
     "filtreCategories": "Filtre par catégorie",
     "oneShot": "Ponctuel",
-    "contribution": "Contribution"
+    "contribution": "Contribution",
+    "reviserMontant": "Réviser le montant",
+    "revisionTitre": "Réviser le montant — {{description}}",
+    "revisionMontantActuel": "Montant actuel",
+    "revisionNouveauMontant": "Nouveau montant",
+    "revisionDateEffet": "Date d'effet",
+    "revisionResume": "{{avant}} → {{apres}} ({{signe}}{{pct}}%), dès {{date}}",
+    "revisionBadgeRevise": "Révisé",
+    "revisionTooltipRevise": "Remplacé par la suite",
+    "revisionHistoriqueTooltip": "Historique ({{count}} versions)",
+    "annulerRevision": "Annuler cette révision",
+    "annulerRevisionTitre": "Annuler la révision — {{description}}",
+    "annulerRevisionConfirmationSansFin": "La version actuelle ({{montant}}) sera supprimée. « {{description}} » restera à {{montantPrecedent}}, sans date de fin.",
+    "annulerRevisionConfirmationAvecFin": "La version actuelle ({{montant}}) sera supprimée. « {{description}} » restera à {{montantPrecedent}}, jusqu'au {{finPrecedente}}."
   },
   "projection": {
     "revenus": "Revenus",

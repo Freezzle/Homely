@@ -92,6 +92,8 @@ export interface PosteDto {
   ordre: number;
   repartitions: RepartitionPosteDto[];
   ventilations: VentilationCompteDto[];
+  posteOrigineId?: string;   // Poste dont ce poste est issu par révision de montant
+  posteSuivantId?: string;   // Poste qui a remplacé celui-ci par révision de montant (calculé)
 }
 export interface PosteRequest {
   type: TypePoste; description: string; categorieId?: string;
@@ -103,6 +105,14 @@ export interface PosteRequest {
   ordre: number;
   repartitions?: { membreId: string; quotePart: number; }[];
   ventilations?: { membreId: string; compteId: string; }[];
+}
+export interface PosteRevisionRequest {
+  nouveauMontant: number;
+  dateEffet: string;
+}
+export interface PosteRevisionResponse {
+  posteCloture: PosteDto;
+  posteCree: PosteDto;
 }
 
 // ── Objectifs ─────────────────────────────────────────────────────────────────

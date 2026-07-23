@@ -15,6 +15,13 @@ public interface PosteRepository extends JpaRepository<Poste, UUID> {
     Optional<Poste> findByIdAndScenarioId(UUID id, UUID scenarioId);
 
     /**
+     * Recherche le poste (s'il existe) issu d'une révision du poste donné.
+     * Sert à vérifier qu'un poste est bien le dernier maillon de sa chaîne
+     * (aucun successeur) avant d'autoriser l'annulation d'une révision.
+     */
+    Optional<Poste> findByPosteOrigineId(UUID posteOrigineId);
+
+    /**
      * Charge tous les postes d'un scénario avec leurs répartitions (requête 1/2).
      * Résultat dédupliqué via DISTINCT pour éviter le produit cartésien.
      */

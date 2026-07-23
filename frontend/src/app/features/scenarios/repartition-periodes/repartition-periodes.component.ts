@@ -17,6 +17,7 @@ import { RepartitionPeriodeDto } from '../../../core/models/api.models';
 import { PctPipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { TagComponent } from '../../../shared/components/tag/tag.component';
+import { toIsoDateLocal, parseIsoDateLocal } from '../../../core/utils/date.util';
 
 /**
  * Composant d'édition des périodes de répartition (prorata) d'un scénario.
@@ -205,8 +206,8 @@ export class RepartitionPeriodesComponent implements OnInit {
   ouvrirEdition(p: RepartitionPeriodeDto): void {
     this.periodeEnEdition = p;
     this.form.patchValue({
-      debut: p.debut ? new Date(p.debut) : null,
-      fin:   p.fin   ? new Date(p.fin)   : null,
+      debut: p.debut ? parseIsoDateLocal(p.debut) : null,
+      fin:   p.fin   ? parseIsoDateLocal(p.fin)   : null,
     });
     this.initialiserParts(p.parts.map(pp => ({ membreId: pp.membreId, quotePart: Math.round(pp.quotePart * 100) })));
     this.formVisible = true;
@@ -275,7 +276,7 @@ export class RepartitionPeriodesComponent implements OnInit {
   }
 
 
-  private toIso(d: Date): string { return d.toISOString().substring(0, 10); }
+  private toIso(d: Date): string { return toIsoDateLocal(d); }
 }
 
 

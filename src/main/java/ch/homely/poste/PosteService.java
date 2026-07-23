@@ -2,6 +2,8 @@ package ch.homely.poste;
 
 import ch.homely.categorie.Categorie;
 import ch.homely.categorie.CategorieRepository;
+import ch.homely.commun.CodesErreur;
+import ch.homely.commun.RegleMetierException;
 import ch.homely.commun.RessourceIntrouvableException;
 import ch.homely.compte.Compte;
 import ch.homely.compte.CompteRepository;
@@ -13,6 +15,8 @@ import ch.homely.moteur.PosteCalcul;
 import ch.homely.moteur.RepartitionCalcul;
 import ch.homely.poste.dto.PosteDto;
 import ch.homely.poste.dto.PosteRequest;
+import ch.homely.poste.dto.PosteRevisionRequest;
+import ch.homely.poste.dto.PosteRevisionResponse;
 import ch.homely.projection.ProjectionService;
 import ch.homely.scenario.Scenario;
 import ch.homely.scenario.ScenarioRepository;
@@ -21,7 +25,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -55,14 +62,20 @@ public class PosteService {
     public List<PosteDto> lister(UUID foyerId, UUID scenarioId) {
         multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
         verifierScenario(foyerId, scenarioId);
-        return posteRepo.findAllByScenarioIdOrderByOrdre(scenarioId).stream()
-                .map(this::toDto).toList();
+        List<Poste> postes = posteRepo.findAllByScenarioIdOrderByOrdre(scenarioId);
+        Map<UUID, UUID> successeurParOrigine = new HashMap<>();
+        for (Poste p : postes) {
+            if (p.getPosteOrigineId() != null) {
+                successeurParOrigine.put(p.getPosteOrigineId(), p.getId());
+            }
+        }
+        return postes.stream().map(p -> toDto(p, successeurParOrigine)).toList();
     }
 
     @Transactional(readOnly = true)
     public PosteDto obtenir(UUID foyerId, UUID scenarioId, UUID posteId) {
         multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
-        return toDto(trouver(scenarioId, posteId));
+        return toDto(trouver(scenarioId, posteId), Map.of());
     }
 
     public PosteDto creer(UUID foyerId, UUID scenarioId, PosteRequest req) {
@@ -81,7 +94,7 @@ public class PosteService {
         Poste p = new Poste();
         p.setScenario(scenario);
         appliquer(p, req, foyerId, typeRep);
-        PosteDto dto = toDto(posteRepo.save(p));
+        PosteDto dto = toDto(posteRepo.save(p), Map.of());
         projectionService.invaliderCache(scenarioId);
         return dto;
     }
@@ -103,7 +116,7 @@ public class PosteService {
         posteRepo.saveAndFlush(p);
 
         appliquer(p, req, foyerId, typeRep);
-        PosteDto dto = toDto(posteRepo.save(p));
+        PosteDto dto = toDto(posteRepo.save(p), Map.of());
         projectionService.invaliderCache(scenarioId);
         return dto;
     }
@@ -114,6 +127,110 @@ public class PosteService {
         Poste p = trouver(scenarioId, posteId);
         posteRepo.delete(p);
         projectionService.invaliderCache(scenarioId);
+    }
+
+    /**
+     * Révision de montant planifiée : clôture le poste actuel juste avant la date
+     * d'effet et crée son successeur (mêmes attributs sauf montant/dates), lié via
+     * {@code posteOrigineId}. Opération atomique unique côté métier.
+     */
+    public PosteRevisionResponse reviserMontant(UUID foyerId, UUID scenarioId, UUID posteId,
+                                                 PosteRevisionRequest req) {
+        multiTenant.verifierAcces(foyerId, RoleFoyer.EDITOR);
+        verifierScenario(foyerId, scenarioId);
+        Poste actuel = trouver(scenarioId, posteId);
+
+        if (actuel.getPeriodiciteMois() == 0) {
+            throw new RegleMetierException(CodesErreur.POSTE_NON_RECURRENT,
+                    "Seul un poste récurrent peut être révisé");
+        }
+        LocalDate aujourdHui = LocalDate.now();
+        if (actuel.getFin() != null && actuel.getFin().isBefore(aujourdHui)) {
+            throw new RegleMetierException(CodesErreur.POSTE_DEJA_TERMINE,
+                    "Le poste est déjà terminé, il ne peut pas être révisé");
+        }
+        LocalDate dateEffet = req.dateEffet();
+        if (actuel.getDebut() != null && !dateEffet.isAfter(actuel.getDebut())) {
+            throw new RegleMetierException(CodesErreur.DATE_EFFET_INVALIDE,
+                    "La date d'effet doit être postérieure à la date de début du poste actuel");
+        }
+        if (actuel.getFin() != null && dateEffet.isAfter(actuel.getFin())) {
+            throw new RegleMetierException(CodesErreur.DATE_EFFET_INVALIDE,
+                    "La date d'effet doit être avant ou égale à la fin déjà définie du poste actuel");
+        }
+
+        Poste nouveau = new Poste();
+        nouveau.setScenario(actuel.getScenario());
+        nouveau.setType(actuel.getType());
+        nouveau.setDescription(actuel.getDescription());
+        nouveau.setCategorie(actuel.getCategorie());
+        nouveau.setMontant(req.nouveauMontant());
+        nouveau.setDevise(actuel.getDevise());
+        nouveau.setPeriodiciteMois(actuel.getPeriodiciteMois());
+        nouveau.setDebut(dateEffet);
+        nouveau.setFin(actuel.getFin());
+        nouveau.setMode(actuel.getMode());
+        nouveau.setMoment(actuel.getMoment());
+        nouveau.setNature(actuel.getNature());
+        nouveau.setEstimPourcentage(actuel.getEstimPourcentage());
+        nouveau.setTypeRepartition(actuel.getTypeRepartition());
+        nouveau.setOrdre(actuel.getOrdre());
+        nouveau.setPosteOrigineId(actuel.getId());
+
+        for (RepartitionPoste rp : actuel.getRepartitions()) {
+            RepartitionPoste copie = new RepartitionPoste();
+            copie.setPoste(nouveau);
+            copie.setMembre(rp.getMembre());
+            copie.setQuotePart(rp.getQuotePart());
+            nouveau.getRepartitions().add(copie);
+        }
+        for (VentilationCompte vc : actuel.getVentilations()) {
+            VentilationCompte copie = new VentilationCompte();
+            copie.setPoste(nouveau);
+            copie.setMembre(vc.getMembre());
+            copie.setCompte(vc.getCompte());
+            nouveau.getVentilations().add(copie);
+        }
+
+        actuel.setFin(dateEffet.minusDays(1));
+
+        Poste actuelSauve = posteRepo.save(actuel);
+        Poste nouveauSauve = posteRepo.save(nouveau);
+        projectionService.invaliderCache(scenarioId);
+
+        Map<UUID, UUID> successeur = Map.of(actuelSauve.getId(), nouveauSauve.getId());
+        return new PosteRevisionResponse(toDto(actuelSauve, successeur), toDto(nouveauSauve, Map.of()));
+    }
+
+    /**
+     * Annule une révision de montant : fusionne le maillon actif (issu d'une révision)
+     * avec son prédécesseur dans la chaîne. Le prédécesseur redevient le poste actif —
+     * sa fin est restaurée à celle que portait déjà le maillon actif (elle-même copiée
+     * depuis le prédécesseur au moment de la révision, avant d'être écrasée par la date
+     * de clôture) — et le maillon actif est supprimé. Opération atomique unique.
+     */
+    public PosteDto annulerRevision(UUID foyerId, UUID scenarioId, UUID posteId) {
+        multiTenant.verifierAcces(foyerId, RoleFoyer.EDITOR);
+        verifierScenario(foyerId, scenarioId);
+        Poste actif = trouver(scenarioId, posteId);
+
+        if (actif.getPosteOrigineId() == null) {
+            throw new RegleMetierException(CodesErreur.POSTE_SANS_REVISION,
+                    "Ce poste n'est pas issu d'une révision, il ne peut pas être fusionné avec un prédécesseur");
+        }
+        if (posteRepo.findByPosteOrigineId(actif.getId()).isPresent()) {
+            throw new RegleMetierException(CodesErreur.POSTE_MAILLON_INTERMEDIAIRE,
+                    "Seul le dernier maillon d'une chaîne de révisions peut être annulé");
+        }
+
+        Poste precedent = trouver(scenarioId, actif.getPosteOrigineId());
+        precedent.setFin(actif.getFin());
+
+        posteRepo.delete(actif);
+        Poste precedentSauve = posteRepo.save(precedent);
+        projectionService.invaliderCache(scenarioId);
+
+        return toDto(precedentSauve, Map.of());
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
@@ -218,7 +335,7 @@ public class PosteService {
                         "Poste introuvable : " + posteId));
     }
 
-    private PosteDto toDto(Poste p) {
+    private PosteDto toDto(Poste p, Map<UUID, UUID> successeurParOrigine) {
         // Calcul du montantMensualise via le moteur
         PosteCalcul pc = new PosteCalcul(p.getId(), p.getType(),
                 p.getMontant().doubleValue(), p.getDevise(), p.getPeriodiciteMois(),
@@ -243,6 +360,7 @@ public class PosteService {
                 p.getDebut(), p.getFin(), p.getMode(), p.getMoment(), p.getNature(),
                 p.getEstimPourcentage(),
                 p.getTypeRepartition(),
-                p.getOrdre(), reps, vents);
+                p.getOrdre(), reps, vents,
+                p.getPosteOrigineId(), successeurParOrigine.get(p.getId()));
     }
 }

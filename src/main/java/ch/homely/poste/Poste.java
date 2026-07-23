@@ -92,6 +92,13 @@ public class Poste {
     @Column(nullable = false)
     private int ordre = 0;
 
+    /**
+     * Poste dont ce poste est issu par une révision de montant planifiée.
+     * Null si ce poste n'appartient pas à une chaîne de révisions.
+     */
+    @Column(name = "poste_origine_id")
+    private UUID posteOrigineId;
+
     @CreatedDate
     @Column(name = "date_creation", nullable = false, updatable = false)
     private Instant dateCreation;
