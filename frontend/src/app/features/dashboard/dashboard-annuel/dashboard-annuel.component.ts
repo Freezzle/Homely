@@ -29,387 +29,401 @@ import { CarteBilanComponent, LigneDecomposition } from '../../../shared/compone
   imports: [CommonModule, FormsModule, SelectModule, SelectButtonModule, TableModule, ChartModule,
             SkeletonModule, CardModule, TagModule, ButtonModule, MontantPipe, CarteBilanComponent],
   template: `
-    <div class="flex flex-col gap-6">
+      <div class="flex flex-col gap-6">
 
-      <!-- ── En-tête ───────────────────────────────────────────────────────── -->
-      <div class="flex flex-col sm:flex-row sm:items-center gap-3">
-        <div class="flex-1 min-w-0">
-          <h1 class="text-2xl font-bold">{{ t.nav.dashboardAnnuel }}</h1>
-          <p class="text-sm text-surface-500 mt-0.5">{{ anneeSelectionnee }}</p>
-        </div>
-        <p-button icon="pi pi-chevron-left" [text]="true" [rounded]="true"
-                  [disabled]="!peutReculer()" (onClick)="anneePrecedente()"
-                  [ariaLabel]="t.projection.anneePrecedente"/>
-        <p-select appendTo="body" [options]="annees" [(ngModel)]="anneeSelectionnee"
-                  (onChange)="charger()" class="w-32 shrink-0" />
-        <p-button icon="pi pi-chevron-right" [text]="true" [rounded]="true"
-                  [disabled]="!peutAvancer()" (onClick)="anneeSuivante()"
-                  [ariaLabel]="t.projection.anneeSuivante"/>
-      </div>
-
-      <!-- ── Skeletons ─────────────────────────────────────────────────────── -->
-      @if (chargement()) {
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          @for (i of [1,2,3,4]; track i) { <p-skeleton height="104px" borderRadius="12px" /> }
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          @for (i of [1,2,3]; track i) { <p-skeleton height="260px" borderRadius="12px" /> }
-        </div>
-        <p-skeleton height="340px" borderRadius="12px" />
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          @for (i of [1,2]; track i) { <p-skeleton height="260px" borderRadius="12px" /> }
-        </div>
-        <p-skeleton height="400px" borderRadius="12px" />
-
-      } @else if (projection()) {
-        <!-- ①bis Cartes membre + foyer (revenus/charges/réserves/solde annuels, décomposition) -->
-        @if (ventilationAnnuelle()) {
-          <div class="flex items-center justify-between gap-2 mb-1">
-            <p-selectbutton [options]="vueDecompositionOptions" [ngModel]="vueDecomposition()"
-                            (ngModelChange)="vueDecomposition.set($event)"
-                            optionLabel="label" optionValue="value" [allowEmpty]="false"/>
-            @if (afficherParMembre()) {
-              <p-selectbutton [options]="vueOptions" [ngModel]="vue()" (ngModelChange)="vue.set($event)"
-                              optionLabel="label" optionValue="value" [allowEmpty]="false"
-                              class="shrink-0" />
-            }
+          <!-- ── En-tête ───────────────────────────────────────────────────────── -->
+          <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+              <div class="flex-1 min-w-0">
+                  <h1 class="text-2xl font-bold">{{ t.nav.dashboardAnnuel }}</h1>
+                  <p class="text-sm text-surface-500 mt-0.5">{{ anneeSelectionnee }}</p>
+              </div>
+              <p-button icon="pi pi-chevron-left" [text]="true" [rounded]="true"
+                        [disabled]="!peutReculer()" (onClick)="anneePrecedente()"
+                        [ariaLabel]="t.projection.anneePrecedente"/>
+              <p-select appendTo="body" [options]="annees" [(ngModel)]="anneeSelectionnee"
+                        (onChange)="charger()" class="w-32 shrink-0"/>
+              <p-button icon="pi pi-chevron-right" [text]="true" [rounded]="true"
+                        [disabled]="!peutAvancer()" (onClick)="anneeSuivante()"
+                        [ariaLabel]="t.projection.anneeSuivante"/>
           </div>
-          @if (vueEffective() !== 'MEMBRE') {
-            <div class="grid grid-cols-1 gap-4 mb-4">
-              <app-carte-bilan variante="foyer" [nom]="t.projection.foyer" [sousTitre]="foyerSousTitreAnnuel()"
-                                       [initiales]="foyerInitiales()"
-                                       [montantPrincipalLabel]="t.projection.resteAVivreAnnee"
-                                       [montantPrincipal]="ventilationAnnuelle()!.agregat.soldeDisponible"
-                                       [devise]="deviseBase()" [lignes]="foyerLignesActuellesAnnuel()"
-                                       [tauxEffort]="tauxEffortAnnuel()"/>
-            </div>
-          }
 
-          @if (afficherParMembre() && vueEffective() !== 'FOYER') {
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              @for (mc of membresDataAnnuel(); track mc.id) {
-                <app-carte-bilan variante="membre" [nom]="mc.nom" [sousTitre]="mc.sousTitre"
-                                         [couleur]="mc.couleur" [initiales]="mc.initiales"
-                                         [montantPrincipalLabel]="t.projection.resteAVivreAnnee"
-                                         [montantPrincipal]="mc.agregat.soldeDisponible"
-                                         [devise]="deviseBase()" [lignes]="lignesMembreAnnuel(mc)"
-                                         [tauxEffort]="mc.tauxEffort"/>
+          <!-- ── Skeletons ─────────────────────────────────────────────────────── -->
+          @if (chargement()) {
+              <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  @for (i of [1, 2, 3, 4]; track i) {
+                      <p-skeleton height="104px" borderRadius="12px"/>
+                  }
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  @for (i of [1, 2, 3]; track i) {
+                      <p-skeleton height="260px" borderRadius="12px"/>
+                  }
+              </div>
+              <p-skeleton height="340px" borderRadius="12px"/>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  @for (i of [1, 2]; track i) {
+                      <p-skeleton height="260px" borderRadius="12px"/>
+                  }
+              </div>
+              <p-skeleton height="400px" borderRadius="12px"/>
+
+          } @else if (projection()) {
+              <!-- ①bis Cartes membre + foyer (revenus/charges/réserves/solde annuels, décomposition) -->
+              @if (ventilationAnnuelle()) {
+                  <div class="flex items-center justify-between gap-2 mb-1">
+                      <p-selectbutton [options]="vueDecompositionOptions" [ngModel]="vueDecomposition()"
+                                      (ngModelChange)="vueDecomposition.set($event)"
+                                      optionLabel="label" optionValue="value" [allowEmpty]="false"/>
+                      @if (afficherParMembre()) {
+                          <p-selectbutton [options]="vueOptions" [ngModel]="vue()" (ngModelChange)="vue.set($event)"
+                                          optionLabel="label" optionValue="value" [allowEmpty]="false"
+                                          class="shrink-0"/>
+                      }
+                  </div>
+                  @if (vueEffective() !== 'MEMBRE') {
+                      <div class="grid grid-cols-1 gap-4 mb-4">
+                          <app-carte-bilan variante="foyer" [nom]="t.projection.foyer"
+                                           [sousTitre]="foyerSousTitreAnnuel()"
+                                           [initiales]="foyerInitiales()"
+                                           [montantPrincipalLabel]="t.projection.resteAVivreAnnee"
+                                           [montantPrincipal]="ventilationAnnuelle()!.agregat.soldeDisponible"
+                                           [devise]="deviseBase()" [lignes]="foyerLignesActuellesAnnuel()"
+                                           [tauxEffort]="tauxEffortAnnuel()"/>
+                      </div>
+                  }
+
+                  @if (afficherParMembre() && vueEffective() !== 'FOYER') {
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          @for (mc of membresDataAnnuel(); track mc.id) {
+                              <app-carte-bilan variante="membre" [nom]="mc.nom" [sousTitre]="mc.sousTitre"
+                                               [couleur]="mc.couleur" [initiales]="mc.initiales"
+                                               [montantPrincipalLabel]="t.projection.resteAVivreAnnee"
+                                               [montantPrincipal]="mc.agregat.soldeDisponible"
+                                               [devise]="deviseBase()" [lignes]="lignesMembreAnnuel(mc)"
+                                               [tauxEffort]="mc.tauxEffort"/>
+                          }
+                      </div>
+                  }
               }
-            </div>
-          }
-        }
 
-        <!-- ② Graphique mixte foyer — pleine largeur ────────────────────────── -->
-        @if (vueEffective() !== 'MEMBRE') {
-         <p-card>
-           <ng-template #header>
-             <div class="px-5 pt-5 pb-0 flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4">
-               <div class="flex-1">
-                 <div class="font-semibold text-base">{{ t.projection.fluxMensuels }} {{ anneeSelectionnee }}</div>
-                 <div class="text-xs text-surface-400 mt-0.5">{{ t.projection.legendeGraphiqueMixte }}</div>
-               </div>
-               <div class="flex flex-wrap gap-3 text-xs text-surface-500 shrink-0">
+              @if (vueEffective() !== 'MEMBRE') {
+                  <!-- Flux mensuel ────────────────────────── -->
+                  <p-card>
+                      <ng-template #header>
+                          <div class="px-5 pt-5 pb-0 flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4">
+                              <div class="flex-1">
+                                  <div class="font-semibold text-base">{{ t.projection.fluxMensuels }} {{ anneeSelectionnee }}</div>
+                                  <div class="text-xs text-surface-400 mt-0.5">{{ t.projection.legendeGraphiqueMixte }}</div>
+                              </div>
+                              <div class="flex flex-wrap gap-3 text-xs text-surface-500 shrink-0">
                  <span class="flex items-center gap-1.5">
                    <span class="inline-block w-3 h-3 rounded bg-red-400 opacity-80"></span>{{ t.projection.charges }}
                  </span>
-                 <span class="flex items-center gap-1.5">
+                                  <span class="flex items-center gap-1.5">
                    <span class="inline-block w-3 h-3 rounded bg-blue-400 opacity-80"></span>{{ t.projection.reserves }}
                  </span>
-                 <span class="flex items-center gap-1.5">
+                                  <span class="flex items-center gap-1.5">
                    <span class="inline-block w-5 h-0.5 bg-green-500 rounded mt-px"></span>{{ t.projection.revenus }}
                  </span>
-               </div>
-             </div>
-           </ng-template>
-          <div class="pt-4">
-            <p-chart type="bar" [data]="$any(mixedChartData())" [options]="mixedChartOptions"
-                     class="w-full block" style="height:320px" />
-          </div>
-        </p-card>
-        }
+                              </div>
+                          </div>
+                      </ng-template>
+                      <div class="pt-4">
+                          <p-chart type="bar" [data]="$any(mixedChartData())" [options]="mixedChartOptions"
+                                   class="w-full block" style="height:320px"/>
+                      </div>
+                  </p-card>
+                  <!-- Tableau mensuel ─────────────────────────────────────── -->
+                  <p-card>
+                      <ng-template #header>
+                          <div class="px-5 pt-5 pb-3 flex items-center gap-2">
+                              <i class="pi pi-table text-surface-400"></i>
+                              <span class="font-semibold text-base">{{ t.projection.detailMensuel }} {{ anneeSelectionnee }}</span>
+                          </div>
+                      </ng-template>
 
-        <!-- ③ Graphiques par membre — 2 colonnes, toujours visibles ──────────── -->
-        @if (afficherParMembre() && vueEffective() !== 'FOYER') {
-        <div>
-          <div class="flex items-center gap-3 mb-4">
-            <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
-            <span class="text-xs font-bold text-surface-400 uppercase tracking-widest flex items-center gap-2">
-              <i class="pi pi-users text-sm"></i>&nbsp;Contribution par membre
-            </span>
-            <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            @for (mc of membreChartsData(); track mc.membreId) {
-               <p-card>
-                 <ng-template #header>
-                   <div class="px-5 pt-4 pb-2 flex items-center gap-3">
+                      <!-- Desktop / tablette : table scrollable -->
+                      <div class="hidden sm:block overflow-x-auto">
+                          <p-table [value]="projection()!.mois" class="p-datatable-sm p-datatable-striped" scrollable>
+                              <ng-template #header>
+                                  <tr>
+                                      <th class="min-w-16">{{ t.projection.mois }}</th>
+                                      <th class="text-right">{{ t.projection.revenus }}</th>
+                                      <th class="text-right">{{ t.projection.charges }}</th>
+                                      <th class="text-right">{{ t.projection.reserves }}</th>
+                                      <th class="text-right">{{ t.projection.solde }}</th>
+                                  </tr>
+                              </ng-template>
+                              <ng-template #body let-m>
+                                  <tr>
+                                      <td class="font-medium">{{ t.mois[m.numero - 1] }}</td>
+                                      <td class="text-right text-green-600 tabular-nums">{{ m.agregat.revenus | montant }}</td>
+                                      <td class="text-right text-red-500 tabular-nums">{{ m.agregat.charges | montant }}</td>
+                                      <td class="text-right text-blue-500 tabular-nums">{{ m.agregat.reserves | montant }}</td>
+                                      <td class="text-right font-semibold tabular-nums"
+                                          [class.text-emerald-600]="m.agregat.soldeDisponible >= 0"
+                                          [class.text-red-500]="m.agregat.soldeDisponible < 0">
+                                          {{ m.agregat.soldeDisponible | montant }}
+                                      </td>
+                                  </tr>
+                              </ng-template>
+                              <ng-template #footer>
+                                  <tr class="font-bold bg-surface-100 dark:bg-surface-800">
+                                      <td>{{ t.projection.totalAnnee }}</td>
+                                      <td class="text-right text-green-600 tabular-nums">{{ projection()!.totalAnnuel.revenus | montant }}</td>
+                                      <td class="text-right text-red-500 tabular-nums">{{ projection()!.totalAnnuel.charges | montant }}</td>
+                                      <td class="text-right text-blue-500 tabular-nums">{{ projection()!.totalAnnuel.reserves | montant }}</td>
+                                      <td class="text-right tabular-nums"
+                                          [class.text-emerald-600]="projection()!.totalAnnuel.soldeDisponible >= 0"
+                                          [class.text-red-500]="projection()!.totalAnnuel.soldeDisponible < 0">
+                                          {{ projection()!.totalAnnuel.soldeDisponible | montant }}
+                                      </td>
+                                  </tr>
+                              </ng-template>
+                          </p-table>
+                      </div>
+                  </p-card>
+              }
+
+              <!-- Flux mensuel par membre ──────────── -->
+              @if (afficherParMembre() && vueEffective() !== 'FOYER') {
+                  <p-card>
+                      <div>
+                          <div class="flex items-center gap-3 mb-4">
+                              <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
+                              <span class="text-xs font-bold text-surface-400 uppercase tracking-widest flex items-center gap-2">
+                                    <i class="pi pi-users text-sm"></i>&nbsp;Contribution par membre
+                                  </span>
+                              <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
+                          </div>
+                          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              @for (mc of membreChartsData(); track mc.membreId) {
+                                  <p-card>
+                                      <ng-template #header>
+                                          <div class="px-5 pt-4 pb-2 flex items-center gap-3">
                      <span class="inline-block w-4 h-4 rounded-full border-2 border-surface-0 shadow"
                            [style.background-color]="mc.couleur"></span>
-                     <span class="font-semibold">{{ mc.nom }}</span>
-                     <span class="ml-auto text-xs text-surface-400">{{ anneeSelectionnee }}</span>
-                   </div>
-                 </ng-template>
-                <p-chart type="bar" [data]="$any(mc.data)" [options]="mixedChartOptions"
-                         class="w-full block" style="height:220px" />
+                                              <span class="font-semibold">{{ mc.nom }}</span>
+                                              <span class="ml-auto text-xs text-surface-400">{{ anneeSelectionnee }}</span>
+                                          </div>
+                                      </ng-template>
+                                      <p-chart type="bar" [data]="$any(mc.data)" [options]="mixedChartOptions"
+                                               class="w-full block" style="height:220px"/>
 
-                <!-- Détail mensuel par membre -->
-                <div class="mt-4">
-                  <div class="text-xs font-semibold text-surface-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
-                    <i class="pi pi-table text-xs"></i>{{ t.projection.detailMensuelParMembre }}
-                  </div>
+                                      <!-- Détail mensuel par membre -->
+                                      <div class="mt-4">
+                                          <div class="text-xs font-semibold text-surface-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                                              <i class="pi pi-table text-xs"></i>{{ t.projection.detailMensuelParMembre }}
+                                          </div>
 
-                  <!-- Desktop / tablette : table scrollable -->
-                  <div class="hidden sm:block overflow-x-auto">
-                    <p-table [value]="mc.mois" class="p-datatable-sm p-datatable-striped" scrollable>
-                      <ng-template #header>
-                        <tr>
-                          <th class="min-w-14">{{ t.projection.mois }}</th>
-                          <th class="text-right">{{ t.projection.revenus }}</th>
-                          <th class="text-right">{{ t.projection.charges }}</th>
-                          <th class="text-right">{{ t.projection.reserves }}</th>
-                          <th class="text-right">{{ t.projection.solde }}</th>
-                        </tr>
-                      </ng-template>
-                      <ng-template #body let-m>
-                        <tr>
-                          <td class="font-medium">{{ t.mois[m.numero - 1] }}</td>
-                          <td class="text-right text-green-600 tabular-nums">{{ m.agregat.revenus | montant }}</td>
-                          <td class="text-right text-red-500 tabular-nums">{{ m.agregat.charges | montant }}</td>
-                          <td class="text-right text-blue-500 tabular-nums">{{ m.agregat.reserves | montant }}</td>
-                          <td class="text-right font-semibold tabular-nums"
-                              [class.text-emerald-600]="m.agregat.soldeDisponible >= 0"
-                              [class.text-red-500]="m.agregat.soldeDisponible < 0">
-                            {{ m.agregat.soldeDisponible | montant }}
-                          </td>
-                        </tr>
-                      </ng-template>
-                      <ng-template #footer>
-                        <tr class="font-bold bg-surface-100 dark:bg-surface-800">
-                          <td>{{ t.projection.totalAnnee }}</td>
-                          <td class="text-right text-green-600 tabular-nums">{{ mc.total.revenus | montant }}</td>
-                          <td class="text-right text-red-500 tabular-nums">{{ mc.total.charges | montant }}</td>
-                          <td class="text-right text-blue-500 tabular-nums">{{ mc.total.reserves | montant }}</td>
-                          <td class="text-right tabular-nums"
-                              [class.text-emerald-600]="mc.total.soldeDisponible >= 0"
-                              [class.text-red-500]="mc.total.soldeDisponible < 0">
-                            {{ mc.total.soldeDisponible | montant }}
-                          </td>
-                        </tr>
-                      </ng-template>
-                    </p-table>
-                  </div>
+                                          <!-- Desktop / tablette : table scrollable -->
+                                          <div class="hidden sm:block overflow-x-auto">
+                                              <p-table [value]="mc.mois" class="p-datatable-sm p-datatable-striped"
+                                                       scrollable>
+                                                  <ng-template #header>
+                                                      <tr>
+                                                          <th class="min-w-14">{{ t.projection.mois }}</th>
+                                                          <th class="text-right">{{ t.projection.revenus }}</th>
+                                                          <th class="text-right">{{ t.projection.charges }}</th>
+                                                          <th class="text-right">{{ t.projection.reserves }}</th>
+                                                          <th class="text-right">{{ t.projection.solde }}</th>
+                                                      </tr>
+                                                  </ng-template>
+                                                  <ng-template #body let-m>
+                                                      <tr>
+                                                          <td class="font-medium">{{ t.mois[m.numero - 1] }}</td>
+                                                          <td class="text-right text-green-600 tabular-nums">{{ m.agregat.revenus | montant }}</td>
+                                                          <td class="text-right text-red-500 tabular-nums">{{ m.agregat.charges | montant }}</td>
+                                                          <td class="text-right text-blue-500 tabular-nums">{{ m.agregat.reserves | montant }}</td>
+                                                          <td class="text-right font-semibold tabular-nums"
+                                                              [class.text-emerald-600]="m.agregat.soldeDisponible >= 0"
+                                                              [class.text-red-500]="m.agregat.soldeDisponible < 0">
+                                                              {{ m.agregat.soldeDisponible | montant }}
+                                                          </td>
+                                                      </tr>
+                                                  </ng-template>
+                                                  <ng-template #footer>
+                                                      <tr class="font-bold bg-surface-100 dark:bg-surface-800">
+                                                          <td>{{ t.projection.totalAnnee }}</td>
+                                                          <td class="text-right text-green-600 tabular-nums">{{ mc.total.revenus | montant }}</td>
+                                                          <td class="text-right text-red-500 tabular-nums">{{ mc.total.charges | montant }}</td>
+                                                          <td class="text-right text-blue-500 tabular-nums">{{ mc.total.reserves | montant }}</td>
+                                                          <td class="text-right tabular-nums"
+                                                              [class.text-emerald-600]="mc.total.soldeDisponible >= 0"
+                                                              [class.text-red-500]="mc.total.soldeDisponible < 0">
+                                                              {{ mc.total.soldeDisponible | montant }}
+                                                          </td>
+                                                      </tr>
+                                                  </ng-template>
+                                              </p-table>
+                                          </div>
 
-                  <!-- Mobile : cartes compactes par mois -->
-                  <div class="sm:hidden space-y-2">
-                    @for (m of mc.mois; track m.numero) {
-                      <div class="rounded-xl bg-surface-50 dark:bg-surface-800 p-3">
-                        <div class="flex items-center justify-between mb-2">
-                          <span class="font-semibold text-sm w-10">{{ t.mois[m.numero - 1] }}</span>
-                          <span class="text-sm font-bold tabular-nums"
-                                [class.text-emerald-600]="m.agregat.soldeDisponible >= 0"
-                                [class.text-red-500]="m.agregat.soldeDisponible < 0">
+                                          <!-- Mobile : cartes compactes par mois -->
+                                          <div class="sm:hidden space-y-2">
+                                              @for (m of mc.mois; track m.numero) {
+                                                  <div class="rounded-xl bg-surface-50 dark:bg-surface-800 p-3">
+                                                      <div class="flex items-center justify-between mb-2">
+                                                          <span class="font-semibold text-sm w-10">{{ t.mois[m.numero - 1] }}</span>
+                                                          <span class="text-sm font-bold tabular-nums"
+                                                                [class.text-emerald-600]="m.agregat.soldeDisponible >= 0"
+                                                                [class.text-red-500]="m.agregat.soldeDisponible < 0">
                             {{ m.agregat.soldeDisponible | montant }}
                           </span>
-                        </div>
-                        <div class="grid grid-cols-3 gap-1 text-center">
-                          <div>
-                            <div class="text-xs text-surface-400">{{ t.projection.revenus }}</div>
-                            <div class="text-xs font-semibold text-green-600 tabular-nums">{{ m.agregat.revenus | montant }}</div>
-                          </div>
-                          <div>
-                            <div class="text-xs text-surface-400">{{ t.projection.charges }}</div>
-                            <div class="text-xs font-semibold text-red-500 tabular-nums">{{ m.agregat.charges | montant }}</div>
-                          </div>
-                          <div>
-                            <div class="text-xs text-surface-400">{{ t.projection.reserves }}</div>
-                            <div class="text-xs font-semibold text-blue-500 tabular-nums">{{ m.agregat.reserves | montant }}</div>
-                          </div>
-                        </div>
-                      </div>
-                    }
-                    <div class="rounded-xl bg-surface-100 dark:bg-surface-700 p-3 border border-surface-200 dark:border-surface-600">
-                      <div class="flex items-center justify-between mb-2">
-                        <span class="font-bold text-sm">{{ t.projection.totalAnnee }}</span>
-                        <span class="font-bold text-sm tabular-nums"
-                              [class.text-emerald-600]="mc.total.soldeDisponible >= 0"
-                              [class.text-red-500]="mc.total.soldeDisponible < 0">
+                                                      </div>
+                                                      <div class="grid grid-cols-3 gap-1 text-center">
+                                                          <div>
+                                                              <div class="text-xs text-surface-400">{{ t.projection.revenus }}</div>
+                                                              <div class="text-xs font-semibold text-green-600 tabular-nums">{{ m.agregat.revenus | montant }}</div>
+                                                          </div>
+                                                          <div>
+                                                              <div class="text-xs text-surface-400">{{ t.projection.charges }}</div>
+                                                              <div class="text-xs font-semibold text-red-500 tabular-nums">{{ m.agregat.charges | montant }}</div>
+                                                          </div>
+                                                          <div>
+                                                              <div class="text-xs text-surface-400">{{ t.projection.reserves }}</div>
+                                                              <div class="text-xs font-semibold text-blue-500 tabular-nums">{{ m.agregat.reserves | montant }}</div>
+                                                          </div>
+                                                      </div>
+                                                  </div>
+                                              }
+                                              <div class="rounded-xl bg-surface-100 dark:bg-surface-700 p-3 border border-surface-200 dark:border-surface-600">
+                                                  <div class="flex items-center justify-between mb-2">
+                                                      <span class="font-bold text-sm">{{ t.projection.totalAnnee }}</span>
+                                                      <span class="font-bold text-sm tabular-nums"
+                                                            [class.text-emerald-600]="mc.total.soldeDisponible >= 0"
+                                                            [class.text-red-500]="mc.total.soldeDisponible < 0">
                           {{ mc.total.soldeDisponible | montant }}
                         </span>
+                                                  </div>
+                                                  <div class="grid grid-cols-3 gap-1 text-center">
+                                                      <div>
+                                                          <div class="text-xs text-surface-400">{{ t.projection.revenus }}</div>
+                                                          <div class="text-xs font-semibold text-green-600 tabular-nums">{{ mc.total.revenus | montant }}</div>
+                                                      </div>
+                                                      <div>
+                                                          <div class="text-xs text-surface-400">{{ t.projection.charges }}</div>
+                                                          <div class="text-xs font-semibold text-red-500 tabular-nums">{{ mc.total.charges | montant }}</div>
+                                                      </div>
+                                                      <div>
+                                                          <div class="text-xs text-surface-400">{{ t.projection.reserves }}</div>
+                                                          <div class="text-xs font-semibold text-blue-500 tabular-nums">{{ mc.total.reserves | montant }}</div>
+                                                      </div>
+                                                  </div>
+                                              </div>
+                                          </div>
+                                      </div>
+                                  </p-card>
+                              }
+                          </div>
                       </div>
-                      <div class="grid grid-cols-3 gap-1 text-center">
-                        <div>
-                          <div class="text-xs text-surface-400">{{ t.projection.revenus }}</div>
-                          <div class="text-xs font-semibold text-green-600 tabular-nums">{{ mc.total.revenus | montant }}</div>
-                        </div>
-                        <div>
-                          <div class="text-xs text-surface-400">{{ t.projection.charges }}</div>
-                          <div class="text-xs font-semibold text-red-500 tabular-nums">{{ mc.total.charges | montant }}</div>
-                        </div>
-                        <div>
-                          <div class="text-xs text-surface-400">{{ t.projection.reserves }}</div>
-                          <div class="text-xs font-semibold text-blue-500 tabular-nums">{{ mc.total.reserves | montant }}</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </p-card>
-            }
-          </div>
-        </div>
-        }
-
-        <!-- ③ bis · Le vrai prorata, mois par mois ─────────────────────────── -->
-        @if (afficherParMembre() && vueEffective() !== 'FOYER') {
-        <div>
-          <div class="flex items-center gap-3 mb-4">
-            <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
-            <span class="text-xs font-bold text-surface-400 uppercase tracking-widest flex items-center gap-2">
+                  </p-card>
+                  <!-- Prorata mois par mois ─────────────────────────── -->
+                  <p-card>
+                      <div>
+                          <div class="flex items-center gap-3 mb-4">
+                              <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
+                              <span class="text-xs font-bold text-surface-400 uppercase tracking-widest flex items-center gap-2">
               <i class="pi pi-percentage text-sm"></i>&nbsp;{{ t.projection.prorataTitre }}
             </span>
-            <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
-          </div>
+                              <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
+                          </div>
 
-          @for (pd of prorataData(); track pd.membreId) {
-            <p-card class="mb-4">
-              <ng-template #title>{{ t.projection.prorataTitre }}</ng-template>
-              <ng-template #subtitle>{{ t.projection.prorataSousTitre }}</ng-template>
+                          @for (pd of prorataData(); track pd.membreId) {
+                              <p-card class="mb-4">
+                                  <ng-template #title>{{ t.projection.prorataTitre }}</ng-template>
+                                  <ng-template #subtitle>{{ t.projection.prorataSousTitre }}</ng-template>
 
-              <!-- Bande des périodes de répartition -->
-              <div class="flex w-full rounded-md overflow-hidden mb-2" style="padding-left: 50px">
-                @for (tag of periodeTags(); track tag.id; let index = $index) {
-                  <div [style.flex-basis.%]="tag.largeurPct" class="shrink-0 min-w-0">
-                    <p-tag [value]="tag.libelle" [severity]="index % 2 == 0  ? 'contrast' : 'secondary'" class="w-full justify-center rounded-none"/>
-                  </div>
-                }
-              </div>
+                                  <!-- Bande des périodes de répartition -->
+                                  <div class="flex w-full rounded-md overflow-hidden mb-2"
+                                       style="padding-left: 50px">
+                                      @for (tag of periodeTags(); track tag.id; let index = $index) {
+                                          <div [style.flex-basis.%]="tag.largeurPct" class="shrink-0 min-w-0">
+                                              <p-tag [value]="tag.libelle"
+                                                     [severity]="index % 2 == 0  ? 'contrast' : 'secondary'"
+                                                     class="w-full justify-center rounded-none"/>
+                                          </div>
+                                      }
+                                  </div>
 
-              <p-chart type="line" [data]="$any(pd.chartData)" [options]="prorataChartOptions"
-                       class="w-full block" style="height:260px"/>
+                                  <p-chart type="line" [data]="$any(pd.chartData)" [options]="prorataChartOptions" 
+                                           class="w-full"/>
 
-              <ng-template #footer>
-                <p class="text-sm text-surface-400">
-                  {{ t.projection.prorataMoyenneReelle }} : <span class="font-bold text-surface-700 dark:text-surface-200">{{ formatPct1(pd.moyenneReelle) }} %</span>
-                  ·
-                  {{ t.projection.prorataConvenuPondere }} : <span class="font-bold text-surface-700 dark:text-surface-200">{{ formatPct1(pd.convenuPondere) }} %</span>
-                  · <span class="font-bold text-red-500">{{ formatMontantSansDevise(pd.ecartMontant) }} {{ deviseBase() }}</span>
-                  {{ pd.sens === 'sur' ? t.projection.prorataSurpaiement : t.projection.prorataSouspaiement }}
-                  {{ t.projection.prorataApproximatifPour }} {{ pd.nom }}.
-                </p>
-              </ng-template>
-            </p-card>
-          }
-        </div>
-        }
+                                  <ng-template #footer>
+                                      <p class="text-sm text-surface-400">
+                                          {{ t.projection.prorataMoyenneReelle }} : <span
+                                              class="font-bold text-surface-700 dark:text-surface-200">{{ formatPct1(pd.moyenneReelle) }}
+                                          %</span>
+                                          ·
+                                          {{ t.projection.prorataConvenuPondere }} : <span
+                                              class="font-bold text-surface-700 dark:text-surface-200">{{ formatPct1(pd.convenuPondere) }}
+                                          %</span>
+                                          · <span
+                                              class="font-bold text-red-500">{{ formatMontantSansDevise(pd.ecartMontant) }} {{ deviseBase() }}</span>
+                                          {{ pd.sens === 'sur' ? t.projection.prorataSurpaiement : t.projection.prorataSouspaiement }}
+                                          {{ t.projection.prorataApproximatifPour }} {{ pd.nom }}.
+                                      </p>
+                                  </ng-template>
+                              </p-card>
+                          }
+                      </div>
 
-        <!-- ④ Tableau mensuel détaillé ─────────────────────────────────────── -->
-        @if (vueEffective() !== 'MEMBRE') {
-         <p-card>
-           <ng-template #header>
-             <div class="px-5 pt-5 pb-3 flex items-center gap-2">
-               <i class="pi pi-table text-surface-400"></i>
-               <span class="font-semibold text-base">{{ t.projection.detailMensuel }} {{ anneeSelectionnee }}</span>
-             </div>
-           </ng-template>
-
-          <!-- Desktop / tablette : table scrollable -->
-          <div class="hidden sm:block overflow-x-auto">
-             <p-table [value]="projection()!.mois" class="p-datatable-sm p-datatable-striped" scrollable>
-               <ng-template #header>
-                 <tr>
-                   <th class="min-w-16">{{ t.projection.mois }}</th>
-                   <th class="text-right">{{ t.projection.revenus }}</th>
-                   <th class="text-right">{{ t.projection.charges }}</th>
-                   <th class="text-right">{{ t.projection.reserves }}</th>
-                   <th class="text-right">{{ t.projection.solde }}</th>
-                 </tr>
-               </ng-template>
-               <ng-template #body let-m>
-                 <tr>
-                   <td class="font-medium">{{ t.mois[m.numero - 1] }}</td>
-                   <td class="text-right text-green-600 tabular-nums">{{ m.agregat.revenus | montant }}</td>
-                   <td class="text-right text-red-500 tabular-nums">{{ m.agregat.charges | montant }}</td>
-                   <td class="text-right text-blue-500 tabular-nums">{{ m.agregat.reserves | montant }}</td>
-                   <td class="text-right font-semibold tabular-nums"
-                       [class.text-emerald-600]="m.agregat.soldeDisponible >= 0"
-                       [class.text-red-500]="m.agregat.soldeDisponible < 0">
-                     {{ m.agregat.soldeDisponible | montant }}
-                   </td>
-                 </tr>
-               </ng-template>
-               <ng-template #footer>
-                 <tr class="font-bold bg-surface-100 dark:bg-surface-800">
-                   <td>{{ t.projection.totalAnnee }}</td>
-                   <td class="text-right text-green-600 tabular-nums">{{ projection()!.totalAnnuel.revenus | montant }}</td>
-                   <td class="text-right text-red-500 tabular-nums">{{ projection()!.totalAnnuel.charges | montant }}</td>
-                   <td class="text-right text-blue-500 tabular-nums">{{ projection()!.totalAnnuel.reserves | montant }}</td>
-                   <td class="text-right tabular-nums"
-                       [class.text-emerald-600]="projection()!.totalAnnuel.soldeDisponible >= 0"
-                       [class.text-red-500]="projection()!.totalAnnuel.soldeDisponible < 0">
-                     {{ projection()!.totalAnnuel.soldeDisponible | montant }}
-                   </td>
-                 </tr>
-               </ng-template>
-             </p-table>
-          </div>
-
-          <!-- Mobile : cartes compactes par mois -->
-          <div class="sm:hidden space-y-2">
-            @for (m of projection()!.mois; track m.numero) {
-              <div class="rounded-xl bg-surface-50 dark:bg-surface-800 p-3">
-                <div class="flex items-center justify-between mb-2">
-                  <span class="font-semibold text-sm w-10">{{ t.mois[m.numero - 1] }}</span>
-                  <span class="text-sm font-bold tabular-nums"
-                        [class.text-emerald-600]="m.agregat.soldeDisponible >= 0"
-                        [class.text-red-500]="m.agregat.soldeDisponible < 0">
+                      <!-- Mobile : cartes compactes par mois -->
+                      <div class="sm:hidden space-y-2">
+                          @for (m of projection()!.mois; track m.numero) {
+                              <div class="rounded-xl bg-surface-50 dark:bg-surface-800 p-3">
+                                  <div class="flex items-center justify-between mb-2">
+                                      <span class="font-semibold text-sm w-10">{{ t.mois[m.numero - 1] }}</span>
+                                      <span class="text-sm font-bold tabular-nums"
+                                            [class.text-emerald-600]="m.agregat.soldeDisponible >= 0"
+                                            [class.text-red-500]="m.agregat.soldeDisponible < 0">
                     {{ m.agregat.soldeDisponible | montant }}
                   </span>
-                </div>
-                <div class="grid grid-cols-3 gap-1 text-center">
-                  <div>
-                    <div class="text-xs text-surface-400">{{ t.projection.revenus }}</div>
-                    <div class="text-xs font-semibold text-green-600 tabular-nums">{{ m.agregat.revenus | montant }}</div>
-                  </div>
-                  <div>
-                    <div class="text-xs text-surface-400">{{ t.projection.charges }}</div>
-                    <div class="text-xs font-semibold text-red-500 tabular-nums">{{ m.agregat.charges | montant }}</div>
-                  </div>
-                  <div>
-                    <div class="text-xs text-surface-400">{{ t.projection.reserves }}</div>
-                    <div class="text-xs font-semibold text-blue-500 tabular-nums">{{ m.agregat.reserves | montant }}</div>
-                  </div>
-                </div>
-              </div>
-            }
-            <div class="rounded-xl bg-surface-100 dark:bg-surface-700 p-3 border border-surface-200 dark:border-surface-600">
-              <div class="flex items-center justify-between mb-2">
-                <span class="font-bold text-sm">{{ t.projection.totalAnnee }}</span>
-                <span class="font-bold text-sm tabular-nums"
-                      [class.text-emerald-600]="projection()!.totalAnnuel.soldeDisponible >= 0"
-                      [class.text-red-500]="projection()!.totalAnnuel.soldeDisponible < 0">
+                                  </div>
+                                  <div class="grid grid-cols-3 gap-1 text-center">
+                                      <div>
+                                          <div class="text-xs text-surface-400">{{ t.projection.revenus }}</div>
+                                          <div class="text-xs font-semibold text-green-600 tabular-nums">{{ m.agregat.revenus | montant }}</div>
+                                      </div>
+                                      <div>
+                                          <div class="text-xs text-surface-400">{{ t.projection.charges }}</div>
+                                          <div class="text-xs font-semibold text-red-500 tabular-nums">{{ m.agregat.charges | montant }}</div>
+                                      </div>
+                                      <div>
+                                          <div class="text-xs text-surface-400">{{ t.projection.reserves }}</div>
+                                          <div class="text-xs font-semibold text-blue-500 tabular-nums">{{ m.agregat.reserves | montant }}</div>
+                                      </div>
+                                  </div>
+                              </div>
+                          }
+                          <div class="rounded-xl bg-surface-100 dark:bg-surface-700 p-3 border border-surface-200 dark:border-surface-600">
+                              <div class="flex items-center justify-between mb-2">
+                                  <span class="font-bold text-sm">{{ t.projection.totalAnnee }}</span>
+                                  <span class="font-bold text-sm tabular-nums"
+                                        [class.text-emerald-600]="projection()!.totalAnnuel.soldeDisponible >= 0"
+                                        [class.text-red-500]="projection()!.totalAnnuel.soldeDisponible < 0">
                   {{ projection()!.totalAnnuel.soldeDisponible | montant }}
                 </span>
-              </div>
-              <div class="grid grid-cols-3 gap-1 text-center">
-                <div>
-                  <div class="text-xs text-surface-400">{{ t.projection.revenus }}</div>
-                  <div class="text-xs font-semibold text-green-600 tabular-nums">{{ projection()!.totalAnnuel.revenus | montant }}</div>
-                </div>
-                <div>
-                  <div class="text-xs text-surface-400">{{ t.projection.charges }}</div>
-                  <div class="text-xs font-semibold text-red-500 tabular-nums">{{ projection()!.totalAnnuel.charges | montant }}</div>
-                </div>
-                <div>
-                  <div class="text-xs text-surface-400">{{ t.projection.reserves }}</div>
-                  <div class="text-xs font-semibold text-blue-500 tabular-nums">{{ projection()!.totalAnnuel.reserves | montant }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </p-card>
-        }
-      }
-    </div>
+                              </div>
+                              <div class="grid grid-cols-3 gap-1 text-center">
+                                  <div>
+                                      <div class="text-xs text-surface-400">{{ t.projection.revenus }}</div>
+                                      <div class="text-xs font-semibold text-green-600 tabular-nums">{{ projection()!.totalAnnuel.revenus | montant }}</div>
+                                  </div>
+                                  <div>
+                                      <div class="text-xs text-surface-400">{{ t.projection.charges }}</div>
+                                      <div class="text-xs font-semibold text-red-500 tabular-nums">{{ projection()!.totalAnnuel.charges | montant }}</div>
+                                  </div>
+                                  <div>
+                                      <div class="text-xs text-surface-400">{{ t.projection.reserves }}</div>
+                                      <div class="text-xs font-semibold text-blue-500 tabular-nums">{{ projection()!.totalAnnuel.reserves | montant }}</div>
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+                  </p-card>
+              }
+          }
+      </div>
   `,
 })
 export class DashboardAnnuelComponent implements OnInit {
