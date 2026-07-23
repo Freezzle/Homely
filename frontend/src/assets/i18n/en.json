@@ -220,7 +220,15 @@
     "annulerRevision": "Cancel this revision",
     "annulerRevisionTitre": "Cancel revision — {{description}}",
     "annulerRevisionConfirmationSansFin": "The current version ({{montant}}) will be deleted. \"{{description}}\" will stay at {{montantPrecedent}}, with no end date.",
-    "annulerRevisionConfirmationAvecFin": "The current version ({{montant}}) will be deleted. \"{{description}}\" will stay at {{montantPrecedent}}, until {{finPrecedente}}."
+    "annulerRevisionConfirmationAvecFin": "The current version ({{montant}}) will be deleted. \"{{description}}\" will stay at {{montantPrecedent}}, until {{finPrecedente}}.",
+    "voirHistorique": "View history",
+    "historiqueTitre": "History — {{description}}",
+    "historiqueMontantOrigine": "Original amount",
+    "historiqueEcart": "{{signe}}{{montant}} ({{signe}}{{pct}}%)",
+    "historiqueEvolutionGlobale": "Cumulative change: {{signe}}{{pct}}%",
+    "historiqueActif": "Current",
+    "historiquePeriodeEnCours": "ongoing",
+    "historiqueVersions": "{{count}} versions"
   },
   "projection": {
     "revenus": "Income",

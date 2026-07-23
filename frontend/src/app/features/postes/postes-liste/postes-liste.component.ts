@@ -17,6 +17,7 @@ import { CardModule } from 'primeng/card';
 import { MessageModule } from 'primeng/message';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { SkeletonModule } from 'primeng/skeleton';
+import { DrawerModule } from 'primeng/drawer';
 import { CheckboxModule } from 'primeng/checkbox';
 import { MenuModule } from 'primeng/menu';
 import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
@@ -49,7 +50,7 @@ interface PosteAffiche extends PosteDto {
   providers: [ConfirmationService],
   imports: [CommonModule, FormsModule, ReactiveFormsModule, TableModule, ButtonModule, DialogModule,
             InputTextModule, InputNumberModule, SelectModule, MultiSelectModule, DatePickerModule,
-            TagModule, TooltipModule, CardModule, MessageModule, ConfirmDialogModule, SkeletonModule, CheckboxModule,
+            TagModule, TooltipModule, CardModule, MessageModule, ConfirmDialogModule, SkeletonModule, DrawerModule, CheckboxModule,
             MenuModule,
             MontantPipe, PeriodicitePipe, TagComponent],
   template: `
@@ -206,12 +207,15 @@ interface PosteAffiche extends PosteDto {
                                   <div class="w-px h-3 bg-primary/40"></div>
                               </div>
                           }
-                          <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 px-4 py-3
+                          <div [id]="'poste-' + p.id"
+                               class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 px-4 py-3
                           border border-surface-200 dark:border-surface-700
                           bg-white dark:bg-surface-900
                           hover:border-primary/40 hover:shadow-sm
-                          transition-all duration-150"
-                               [class.border-t-0]="p._estChaine && !p._premierDuBloc">
+                          transition-all duration-300"
+                               [class.border-t-0]="p._estChaine && !p._premierDuBloc"
+                               [class.ring-2]="posteEnSurbrillanceId() === p.id"
+                               [class.ring-primary]="posteEnSurbrillanceId() === p.id">
 
                               <!-- Colonne 1 : contenu -->
                               <div class="min-w-0 flex flex-col gap-2">
@@ -622,6 +626,66 @@ interface PosteAffiche extends PosteDto {
               </p-table>
           }
       </p-dialog>
+
+      <!-- ── Drawer historique de la chaîne de révisions (lecture seule) ── -->
+      <p-drawer [(visible)]="historiqueDrawerVisible" position="right"
+                [header]="i18n.instant('poste.historiqueTitre', { description: historiquePosteDescription() })"
+                styleClass="w-full sm:w-96">
+          @if (historiqueEvolutionGlobale(); as evolution) {
+              <div class="mb-4 px-3 py-2 rounded-lg bg-surface-100 dark:bg-surface-800 text-sm font-medium text-center"
+                   [class.text-green-600]="evolution.signe === '+'"
+                   [class.text-red-500]="evolution.signe !== '+'">
+                  {{ i18n.instant('poste.historiqueEvolutionGlobale', { signe: evolution.signe, pct: evolution.pct }) }}
+              </div>
+          }
+
+          <div class="flex flex-col">
+              @for (m of historiqueMaillons(); track m.poste.id; let first = $first; let last = $last) {
+                  @if (!first) {
+                      <div class="flex justify-center -my-0.5">
+                          <div class="w-px h-3" [class.bg-primary]="last" [class.bg-surface-300]="!last" [class.dark:bg-surface-600]="!last"></div>
+                      </div>
+                  }
+                  <button type="button"
+                          class="text-left rounded-lg border px-3 py-2.5 transition-colors duration-150 cursor-pointer"
+                          [class.border-primary]="last"
+                          [class.bg-primary-50]="last"
+                          [class.dark:bg-primary-950]="last"
+                          [class.border-surface-200]="!last"
+                          [class.dark:border-surface-700]="!last"
+                          [class.hover:border-primary-400]="!last"
+                          (click)="navigerVersPoste(m.poste.id)">
+                      <div class="flex items-center justify-between gap-2">
+                          <span class="text-xs text-surface-500 dark:text-surface-400">
+                              {{ formatPeriode(m.poste.debut) }} –
+                              {{ m.poste.fin ? formatPeriode(m.poste.fin) : (last ? t.poste.historiquePeriodeEnCours : '–') }}
+                          </span>
+                          @if (last) {
+                              <p-tag [value]="t.poste.historiqueActif" severity="info" class="text-[10px] py-0.5"/>
+                          }
+                      </div>
+                      <div class="font-semibold mt-1" [class.text-surface-900]="last" [class.dark:text-surface-100]="last"
+                           [class.text-surface-600]="!last" [class.dark:text-surface-300]="!last">
+                          {{ m.poste.montant | montant:m.poste.devise }}
+                      </div>
+                      <div class="text-xs mt-0.5"
+                           [class.text-green-600]="m.ecartMontant !== null && m.ecartMontant >= 0"
+                           [class.text-red-500]="m.ecartMontant !== null && m.ecartMontant < 0"
+                           [class.text-surface-400]="m.ecartMontant === null">
+                          @if (m.ecartMontant === null) {
+                              {{ t.poste.historiqueMontantOrigine }}
+                          } @else {
+                              {{ i18n.instant('poste.historiqueEcart', {
+                                  signe: m.ecartMontant >= 0 ? '+' : '',
+                                  montant: formaterMontant(m.ecartMontant, m.poste.devise),
+                                  pct: m.ecartPourcentage !== null ? m.ecartPourcentage.toFixed(1) : '–'
+                              }) }}
+                          }
+                      </div>
+                  </button>
+              }
+          </div>
+      </p-drawer>
   `,
 })
 export class PostesListeComponent implements OnInit {
@@ -686,6 +750,14 @@ export class PostesListeComponent implements OnInit {
       date: date ? this.formatPeriode(this.toIso(date)) : '–',
     });
   });
+
+  // ── Historique de la chaîne de révisions (lecture seule) ──
+  historiqueDrawerVisible = signal(false);
+  historiquePosteDescription = signal<string>('');
+  historiqueMaillons = signal<{ poste: PosteDto; ecartMontant: number | null; ecartPourcentage: number | null }[]>([]);
+  historiqueEvolutionGlobale = signal<{ signe: string; pct: string } | null>(null);
+  /** Poste temporairement mis en surbrillance après navigation depuis le drawer d'historique. */
+  posteEnSurbrillanceId = signal<string | null>(null);
 
   /** Bouton de validation activé seulement si montant > 0 et date d'effet cohérente. */
   revisionValide = computed(() => {
@@ -1039,6 +1111,10 @@ export class PostesListeComponent implements OnInit {
       { label: this.t.poste.apercu, icon: 'pi pi-eye', command: () => this.ouvrirApercu(p) },
     ];
 
+    if (this.estDansChaine(p)) {
+      items.push({ label: this.t.poste.voirHistorique, icon: 'pi pi-history', command: () => this.ouvrirHistorique(p) });
+    }
+
     if (this.contexte.estEditor()) {
       items.push({ label: this.t.commun.modifier, icon: 'pi pi-pencil', command: () => this.ouvrirEdition(p) });
       if (this.estRevisable(p)) {
@@ -1051,6 +1127,11 @@ export class PostesListeComponent implements OnInit {
     }
 
     return items;
+  }
+
+  /** Un poste appartient à une chaîne de révisions s'il a un prédécesseur ou un successeur. */
+  estDansChaine(p: PosteDto): boolean {
+    return !!p.posteOrigineId || !!p.posteSuivantId;
   }
 
   /** Un poste est révisable s'il est récurrent (périodicité != 0) et pas déjà terminé dans le passé. */
@@ -1378,7 +1459,7 @@ export class PostesListeComponent implements OnInit {
     } catch { return v; }
   }
 
-  private formaterMontant(montant: number, devise?: string): string {
+  formaterMontant(montant: number, devise?: string): string {
     return new Intl.NumberFormat('fr-CH', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(montant)
       + (devise ? ` ${devise}` : '');
   }
@@ -1432,9 +1513,53 @@ export class PostesListeComponent implements OnInit {
     });
   }
 
-  /** Point d'entrée de la vue détaillée de l'historique de la chaîne (hors périmètre). */
+  /**
+   * Ouvre le drawer d'historique de la chaîne de révisions à laquelle appartient p.
+   * Reconstruit la chaîne complète (racine → maillon actif) depuis la liste déjà
+   * chargée en mémoire (this.postes()) : aucun appel réseau dédié n'est nécessaire.
+   */
   ouvrirHistorique(p: PosteDto): void {
-    console.log('Historique de la chaîne pour', p.id);
+    const index = new Map(this.postes().map(x => [x.id, x]));
+    const racineId = this.racineChaine(p, index);
+    const membres = this.postes()
+      .filter(x => this.racineChaine(x, index) === racineId)
+      .sort((a, b) => (a.debut ?? '').localeCompare(b.debut ?? ''));
+
+    if (membres.length === 0) return;
+
+    const maillons = membres.map((m, i) => {
+      if (i === 0) return { poste: m, ecartMontant: null, ecartPourcentage: null };
+      const precedent = membres[i - 1];
+      const ecartMontant = m.montant - precedent.montant;
+      const ecartPourcentage = precedent.montant !== 0 ? (ecartMontant / precedent.montant) * 100 : null;
+      return { poste: m, ecartMontant, ecartPourcentage };
+    });
+
+    const premier = membres[0];
+    const dernier = membres[membres.length - 1];
+    const evolutionGlobale = membres.length > 1 && premier.montant !== 0
+      ? ((dernier.montant - premier.montant) / premier.montant) * 100
+      : null;
+
+    this.historiquePosteDescription.set(p.description);
+    this.historiqueMaillons.set(maillons);
+    this.historiqueEvolutionGlobale.set(
+      evolutionGlobale !== null ? { signe: evolutionGlobale >= 0 ? '+' : '', pct: evolutionGlobale.toFixed(1) } : null
+    );
+    this.historiqueDrawerVisible.set(true);
+  }
+
+  /**
+   * Navigation depuis un maillon du drawer vers sa carte dans la liste : ferme le
+   * drawer, fait défiler jusqu'à la carte concernée et la met brièvement en surbrillance.
+   */
+  navigerVersPoste(posteId: string): void {
+    this.historiqueDrawerVisible.set(false);
+    setTimeout(() => {
+      this.posteEnSurbrillanceId.set(posteId);
+      document.getElementById('poste-' + posteId)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => this.posteEnSurbrillanceId.set(null), 2000);
+    }, 200);
   }
 
   /**

@@ -220,7 +220,15 @@
     "annulerRevision": "Annuler cette révision",
     "annulerRevisionTitre": "Annuler la révision — {{description}}",
     "annulerRevisionConfirmationSansFin": "La version actuelle ({{montant}}) sera supprimée. « {{description}} » restera à {{montantPrecedent}}, sans date de fin.",
-    "annulerRevisionConfirmationAvecFin": "La version actuelle ({{montant}}) sera supprimée. « {{description}} » restera à {{montantPrecedent}}, jusqu'au {{finPrecedente}}."
+    "annulerRevisionConfirmationAvecFin": "La version actuelle ({{montant}}) sera supprimée. « {{description}} » restera à {{montantPrecedent}}, jusqu'au {{finPrecedente}}.",
+    "voirHistorique": "Voir l'historique",
+    "historiqueTitre": "Historique — {{description}}",
+    "historiqueMontantOrigine": "Montant d'origine",
+    "historiqueEcart": "{{signe}}{{montant}} ({{signe}}{{pct}}%)",
+    "historiqueEvolutionGlobale": "Évolution cumulée : {{signe}}{{pct}}%",
+    "historiqueActif": "Actuel",
+    "historiquePeriodeEnCours": "en cours",
+    "historiqueVersions": "{{count}} versions"
   },
   "projection": {
     "revenus": "Revenus",
