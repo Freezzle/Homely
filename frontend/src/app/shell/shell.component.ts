@@ -73,19 +73,11 @@ export class ShellComponent implements OnInit, OnDestroy {
       if (!this.contexte.scenarioId()) {
         this.chargerContexteFoyer(foyerId);
       }
-    } else {
-      if (this.contexte.foyerId()) {
-        this.contexte.setFoyer(null);
-      }
-      // Pas de foyerId dans l'URL → tenter auto-sélection si un seul foyer
-      if (!this.contexte.foyerId()) {
-        this.foyerSvc.lister().subscribe(foyers => {
-          if (foyers.length === 1) {
-            this.contexte.setFoyer(foyers[0]);
-            this.chargerContexteFoyer(foyers[0].id);
-          }
-        });
-      }
+    } else if (this.contexte.foyerId()) {
+      // Pas de foyerId dans l'URL : le contexte foyer (et tout ce qui en
+      // dépend : scénario, membres) doit rester null. Pas d'auto-sélection :
+      // la navigation vers un foyer est toujours explicite.
+      this.contexte.setFoyer(null);
     }
   }
 

@@ -73,7 +73,7 @@ interface ScenarioLocal {
     <div class="max-w-6xl mx-auto py-8 px-4">
       <h1 class="text-2xl font-bold mb-6">{{ t.foyer.onboarding.titre }}</h1>
 
-      <p-stepper [value]="etapeActive()" (valueChange)="etapeActive.set($event ?? 1)" [linear]="true">
+      <p-stepper [value]="etapeActive()" (valueChange)="etapeActive.set($event ?? 1)">
 
         <!-- ── Barre de navigation horizontale ── -->
         <p-step-list>
