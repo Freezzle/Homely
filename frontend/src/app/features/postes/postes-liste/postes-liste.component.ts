@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit, input, effect } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, input, effect, ViewChild, ElementRef } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule, FormArray, FormsModule } from '@angular/forms';
@@ -336,120 +336,121 @@ type OptionCloture = 'MOIS_COURANT' | 'PROCHAIN_PERIODIQUE' | 'PERSONNALISEE';
                 [modal]="true" class="w-full max-w-2xl">
           <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
 
-              <!-- Ligne 1 : Description pleine largeur -->
-              <div class="flex flex-col gap-1">
-                  <label class="text-sm font-medium">{{ t.poste.description }} *</label>
-                  <input pInputText formControlName="description" class="w-full"/>
-              </div>
-
-              <!-- Ligne 2 : Catégorie + Montant -->
-              <div class="grid grid-cols-2 gap-4">
+              <!-- ── Quel nom de poste ? (Description + Catégorie + Montant, toujours visibles en tête) ── -->
+              <div class="flex flex-col gap-2">
+                  <label class="text-sm font-medium">{{ t.poste.questionnaire.nomTitre }}</label>
                   <div class="flex flex-col gap-1">
-                      <label class="text-sm font-medium">{{ t.poste.categorie }}</label>
-                      <p-select appendTo="body" formControlName="categorieId" [options]="categories()"
-                                optionLabel="libelle" optionValue="id" [showClear]="true" class="w-full"/>
+                      <input #descriptionInput pInputText formControlName="description" class="w-full"
+                             [placeholder]="t.poste.description"/>
                   </div>
-                  <div class="flex flex-col gap-1">
-                      <label class="text-sm font-medium">{{ t.poste.montant }} *</label>
-                      <p-inputnumber formControlName="montant" mode="decimal" [minFractionDigits]="2" class="w-full"/>
-                  </div>
-              </div>
-
-              <!-- Ligne 3 : Périodicité | Mode | Moment
-                   D=0 → one-shot, pas de mode/moment (uniquement début)
-                   D=1 → 1 col (mode et moment cachés)
-                   D>1 → 3 col (Mode toujours visible ; Moment toujours visible) -->
-              <div class="grid gap-4"
-                   [class.grid-cols-1]="(form.value.periodiciteMois ?? 1) === 0 || (form.value.periodiciteMois ?? 1) === 1"
-                   [class.grid-cols-3]="(form.value.periodiciteMois ?? 1) > 1">
-                  <!-- Périodicité -->
-                  <div class="flex flex-col gap-1">
-                      <label class="text-sm font-medium">{{ t.poste.periodicite }}</label>
-                      <p-select appendTo="body" formControlName="periodiciteMois"
-                                [options]="periodiciteOptions" optionLabel="label" optionValue="value"
-                                class="w-full"/>
-                  </div>
-                  <!-- Moment : visible dès que D>1, quel que soit le mode -->
-                  @if ((form.value.periodiciteMois ?? 1) > 1) {
-                      <div class="flex flex-col gap-1">
-                          <label class="text-sm font-medium"
-                                 [pTooltip]="t.poste.momentTooltip">{{ t.poste.moment }}</label>
-                          <p-select appendTo="body" formControlName="moment" [options]="momentOptions"
-                                    optionLabel="label" optionValue="value" class="w-full"/>
-                      </div>
-                  }
-                  <!-- Mode : caché si D=0 ou D=1 (toujours mensualisé) -->
-                  @if ((form.value.periodiciteMois ?? 1) > 1) {
-                      <div class="flex flex-col gap-1">
-                          <label class="text-sm font-medium" [pTooltip]="t.poste.modeTooltip">{{ t.poste.mode }}</label>
-                          <p-select appendTo="body" formControlName="mode" [options]="modeOptions"
-                                    optionLabel="label" optionValue="value" class="w-full"/>
-                      </div>
-                  }
-              </div>
-
-              <!-- Ligne 4 : Début + Fin (ou seulement Début si one-shot) -->
-              @if ((form.value.periodiciteMois ?? 1) === 0) {
-                  <!-- One-shot : uniquement Début (obligatoire) -->
-                  <div class="flex flex-col gap-1">
-                      <label class="text-sm font-medium">{{ t.poste.debut }} *</label>
-                      <p-datepicker appendTo="body" formControlName="debut" dateFormat="dd/mm/yy"
-                                    [showButtonBar]="true" class="w-full"></p-datepicker>
-                  </div>
-              } @else {
-                  <!-- Normal : Début + Fin (optionnels) -->
                   <div class="grid grid-cols-2 gap-4">
                       <div class="flex flex-col gap-1">
-                          <label class="text-sm font-medium">{{ t.poste.debut }}</label>
+                          <label class="text-sm font-medium">{{ t.poste.categorie }}</label>
+                          <p-select appendTo="body" formControlName="categorieId" [options]="categories()"
+                                    optionLabel="libelle" optionValue="id" [showClear]="true" class="w-full"/>
+                      </div>
+                      <div class="flex flex-col gap-1">
+                          <label class="text-sm font-medium">{{ t.poste.montant }} *</label>
+                          <p-inputnumber formControlName="montant" mode="decimal" [minFractionDigits]="2" class="w-full"/>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- ── Q1 : Ce poste est... (Ponctuel / Récurrent + fréquence) ──────
+                   Détermine periodiciteMois. Toujours modifiable, aucun champ existant ne disparaît. -->
+              <div class="flex flex-col gap-2">
+                  <label class="text-sm font-medium">{{ t.poste.questionnaire.freqTitre }}</label>
+                  <p-selectbutton [options]="frequenceOptions" optionLabel="label" optionValue="value"
+                                  [ngModel]="frequenceChoisie()" [ngModelOptions]="{standalone: true}"
+                                  (ngModelChange)="choisirFrequence($event)"/>
+
+                  @if (frequenceChoisie() === 'RECURRENT') {
+                      <div class="flex items-center gap-2">
+                          <p-selectbutton [options]="sousFrequenceOptions" optionLabel="label" optionValue="value"
+                                          [ngModel]="sousFrequence()" [ngModelOptions]="{standalone: true}"
+                                          (ngModelChange)="choisirSousFrequence($event)"/>
+                          @if (sousFrequence() === 'AUTRE') {
+                              <p-select appendTo="body" formControlName="periodiciteMois"
+                                        [options]="periodiciteOptionsAutre" optionLabel="label" optionValue="value"
+                                        class="w-full"/>
+                          }
+                      </div>
+                  }
+              </div>
+
+              <!-- ── Q2 : Date(s) du poste — libellé et champs dépendent de Ponctuel / Récurrent ──
+                   Masqué tant que Q1 n'est pas résolu (fréquence + sous-fréquence si récurrent). -->
+              @if (questionnaireFrequenceResolue()) {
+              <div class="flex flex-col gap-2">
+                  @if ((form.value.periodiciteMois ?? 1) === 0) {
+                      <!-- One-shot : uniquement la date du poste (obligatoire), pas de titre de question -->
+                      <div class="flex flex-col gap-1">
+                          <label class="text-sm font-medium">{{ t.poste.questionnaire.datePosteLabel }} *</label>
                           <p-datepicker appendTo="body" formControlName="debut" dateFormat="dd/mm/yy"
                                         [showButtonBar]="true" class="w-full"></p-datepicker>
                       </div>
-                      <div class="flex flex-col gap-1">
-                          <label class="text-sm font-medium">{{ t.poste.fin }}</label>
-                          <p-datepicker appendTo="body" formControlName="fin" dateFormat="dd/mm/yy"
-                                        [showButtonBar]="true" class="w-full"></p-datepicker>
-                      </div>
-                  </div>
-              }
+                  } @else {
+                      <label class="text-sm font-medium">{{ t.poste.questionnaire.periodeValiditeTitre }}</label>
 
-
-              <!-- Ligne 5 : Nature (pleine largeur) -->
-              <div class="grid grid-cols-{{ form.value.nature === 'ESTIMATION' ? '2' : '1' }} gap-4">
-                  <div class="flex flex-col gap-1">
-                      <label class="text-sm font-medium" [pTooltip]="t.poste.natureTooltip">{{ t.poste.nature }}</label>
-                      <p-select appendTo="body" formControlName="nature" [options]="natureOptions"
-                                optionLabel="label" optionValue="value" class="w-full"/>
-                  </div>
-                  <!-- Ligne 5b : Pourcentage d'estimation (visible si nature=ESTIMATION) -->
-                  @if (form.value.nature === 'ESTIMATION') {
-                      <div class="flex flex-col gap-1">
-                          <label class="text-sm font-medium" [pTooltip]="t.poste.estimationTooltip">
-                              {{ t.poste.estimationPourcentage }} *
-                          </label>
-                          <p-inputnumber formControlName="estimPourcentage"
-                                         [min]="0" [max]="100"
-                                         [minFractionDigits]="1" [maxFractionDigits]="1"
-                                         suffix="%" class="w-full"
-                                         [placeholder]="t.poste.estimationPlaceholder"/>
+                      <!-- Récurrent : Début + Fin (optionnels) -->
+                      <div class="grid grid-cols-2 gap-4">
+                          <div class="flex flex-col gap-1">
+                              <label class="text-sm font-medium">{{ t.poste.debut }}</label>
+                              <p-datepicker appendTo="body" formControlName="debut" dateFormat="dd/mm/yy"
+                                            [showButtonBar]="true" class="w-full"></p-datepicker>
+                          </div>
+                          <div class="flex flex-col gap-1">
+                              <label class="text-sm font-medium">{{ t.poste.fin }}</label>
+                              <p-datepicker appendTo="body" formControlName="fin" dateFormat="dd/mm/yy"
+                                            [showButtonBar]="true" class="w-full"></p-datepicker>
+                          </div>
                       </div>
+
+                      <!-- Moment + Mode : visibles seulement si la fréquence "Autre" est choisie -->
+                      @if (sousFrequence() === 'AUTRE') {
+                          <div class="grid grid-cols-2 gap-4">
+                              <div class="flex flex-col gap-1">
+                                  <label class="text-sm font-medium"
+                                         [pTooltip]="t.poste.momentTooltip">{{ t.poste.moment }}</label>
+                                  <p-select appendTo="body" formControlName="moment" [options]="momentOptions"
+                                            optionLabel="label" optionValue="value" class="w-full"/>
+                              </div>
+                              <div class="flex flex-col gap-1">
+                                  <label class="text-sm font-medium" [pTooltip]="t.poste.modeTooltip">{{ t.poste.mode }}</label>
+                                  <p-select appendTo="body" formControlName="mode" [options]="modeOptions"
+                                            optionLabel="label" optionValue="value" class="w-full"/>
+                              </div>
+                          </div>
+                      }
                   }
               </div>
+              }
 
-
-              <!-- Ligne 6 : Mode répartition (masqué si mono-membre) -->
+              <!-- ── Q3 : Qui est concerné ? (masqué si mono-membre) ── -->
               @if (membres().length > 1) {
-                  <div class="flex flex-col gap-1">
-                      <label class="text-sm font-medium" [pTooltip]="t.poste.typeRepartitionTooltip">
-                          {{ t.poste.typeRepartition }}
-                      </label>
-                      <p-select appendTo="body" formControlName="typeRepartition"
-                                [options]="typeRepartitionOptions"
-                                optionLabel="label" optionValue="value" class="w-full"/>
+                  <div class="flex flex-col gap-2">
+                      <label class="text-sm font-medium">{{ t.poste.questionnaire.quiTitre }}</label>
+                      <p-selectbutton [options]="quiConcerneOptions" optionLabel="label" optionValue="value"
+                                      [ngModel]="quiConcerneChoice()" [ngModelOptions]="{standalone: true}"
+                                      (ngModelChange)="choisirQuiConcerne($event)"/>
+
+                      @if (quiConcerneChoice() === 'MEMBRE_UNIQUE') {
+                          <p-selectbutton [options]="membres()" optionLabel="nom" optionValue="id"
+                                          [ngModel]="membreUniqueId()" [ngModelOptions]="{standalone: true}"
+                                          (ngModelChange)="choisirMembreUnique($event)"/>
+                      }
+
+                      @if (quiConcerneChoice() === 'TOUS') {
+                          <label class="text-sm font-medium">{{ t.poste.questionnaire.quellesRepartitions }}</label>
+                          <p-selectbutton [options]="quiRepartitionOptions" optionLabel="label" optionValue="value"
+                                          [ngModel]="quiRepartition()" [ngModelOptions]="{standalone: true}"
+                                          (ngModelChange)="choisirQuiRepartition($event)"/>
+                      }
                   </div>
               }
 
-              <!-- Répartition + Comptes (uniquement pour CUSTOM multi-membres) -->
-              @if (estCustomMultiMembre()) {
+              <!-- Liste des membres avec pourcentages (uniquement pour Personnalisé) -->
+              @if (afficherListeRepartition()) {
                   <div class="flex flex-col gap-2">
                       <div class="flex items-center justify-between">
                           <label class="text-sm font-medium">
@@ -457,36 +458,44 @@ type OptionCloture = 'MOIS_COURANT' | 'PROCHAIN_PERIODIQUE' | 'PERSONNALISEE';
                               <span class="text-sm"
                                     [class.text-green-600]="sommeRepartition === 100"
                                     [class.text-red-500]="sommeRepartition !== 100 && repartitionsArray.length > 0">
-                  {{ sommeRepartition }}%
-                </span></label>
+                    {{ sommeRepartition }}%
+                  </span>
+                          </label>
                       </div>
                       @if (sommeRepartition !== 100 && repartitionsArray.length > 0) {
                           <p-message severity="warn">{{ t.commun.repartitionInvalide }}</p-message>
                       }
-                      @if (repartitionsArray.length > 0) {
-                          <div class="w-full grid grid-cols-12 items-center gap-3 text-xs text-surface-400 font-medium px-0">
-                              <span class="col-span-4 truncate">{{ t.referentiels.membre.nom }}</span>
-                              <span class="col-span-3 text-center">{{ t.poste.repartition }}</span>
-                              <span class="col-span-5">{{ t.poste.ventilation }}</span>
-                          </div>
-                      }
                       <div formArrayName="repartitions" class="flex flex-col gap-2">
                           @for (ctrl of repartitionsArray.controls; track ctrl; let i = $index) {
                               <div [formGroupName]="i" class="w-full grid grid-cols-12 items-center gap-3">
-                                  <span class="col-span-4 text-sm truncate">{{ membres()[i]?.nom }}</span>
-                                  <div class="col-span-3 min-w-[7.5rem]">
+                                  <span class="col-span-7 text-sm truncate">{{ membres()[i]?.nom }}</span>
+                                  <div class="col-span-5 min-w-[7.5rem]">
                                       <p-inputnumber formControlName="quotePart" [min]="0" [max]="100"
                                                      suffix="%" [minFractionDigits]="0" class="w-full"
                                                      inputStyleClass="w-full"
                                                      (onInput)="onQuotePartChange(i)"></p-inputnumber>
                                   </div>
-                                  <div class="col-span-5 min-w-0">
+                              </div>
+                          }
+                      </div>
+                  </div>
+              }
+
+              <!-- ── Sur quels comptes à ventiler ? (choix « Tous », quel que soit le type de répartition) ── -->
+              @if (afficherComptesTous()) {
+                  <div class="flex flex-col gap-2">
+                      <label class="text-sm font-medium">{{ t.poste.questionnaire.comptesTitre }}</label>
+                      <div formArrayName="repartitions" class="flex flex-col gap-2">
+                          @for (ctrl of repartitionsArray.controls; track ctrl; let i = $index) {
+                              <div [formGroupName]="i" class="w-full grid grid-cols-12 items-center gap-3">
+                                  <span class="col-span-4 text-sm truncate">{{ membres()[i]?.nom }}</span>
+                                  <div class="col-span-8 min-w-0">
                                       <p-select appendTo="body" formControlName="compteId"
                                                 [options]="comptes()" optionLabel="libelle"
                                                 optionValue="id"
                                                 [placeholder]="t.poste.ventilation" class="w-full"
                                                 [showClear]="true"
-                                                [disabled]="(ctrl.get('quotePart')?.value ?? 0) === 0">
+                                                [disabled]="repartitionEditable() && (ctrl.get('quotePart')?.value ?? 0) === 0">
                                           <ng-template #selectedItem let-compte>
                                               @if (compte) {
                                                   <div class="flex items-center gap-1.5 flex-wrap">
@@ -511,8 +520,47 @@ type OptionCloture = 'MOIS_COURANT' | 'PROCHAIN_PERIODIQUE' | 'PERSONNALISEE';
                           }
                       </div>
                   </div>
-              } @else if (membres().length > 0) {
-                  <!-- Ventilation comptes uniquement (sans parts pour AUTO/REVERSE_AUTO) -->
+              }
+
+              @if (!afficherListeRepartition() && !afficherComptesTous() && quiConcerneChoice() === 'MEMBRE_UNIQUE' && membreUniqueId()) {
+                  <!-- Un seul membre concerné (100%) : juste le compte qui reçoit la ventilation -->
+                  <div class="flex flex-col gap-2">
+                      <label class="text-sm font-medium">{{ t.poste.ventilation }}</label>
+                      <div formArrayName="repartitions">
+                          @for (ctrl of repartitionsArray.controls; track ctrl; let i = $index) {
+                              @if (ctrl.get('membreId')?.value === membreUniqueId()) {
+                                  <div [formGroupName]="i">
+                                      <p-select appendTo="body" formControlName="compteId"
+                                                [options]="comptes()" optionLabel="libelle"
+                                                optionValue="id"
+                                                [placeholder]="t.poste.ventilation" class="w-full"
+                                                [showClear]="true">
+                                          <ng-template #selectedItem let-compte>
+                                              @if (compte) {
+                                                  <div class="flex items-center gap-1.5 flex-wrap">
+                                                      <span>{{ compte.libelle }}</span>
+                                                      @for (m of membresForCompte(compte); track m.id) {
+                                                          <app-tag [couleur]="m.couleur" [texte]="m.nom"/>
+                                                      }
+                                                  </div>
+                                              }
+                                          </ng-template>
+                                          <ng-template #item let-compte>
+                                              <div class="flex items-center gap-1.5 flex-wrap">
+                                                  <span>{{ compte.libelle }}</span>
+                                                  @for (m of membresForCompte(compte); track m.id) {
+                                                      <app-tag [couleur]="m.couleur" [texte]="m.nom"/>
+                                                  }
+                                              </div>
+                                          </ng-template>
+                                      </p-select>
+                                  </div>
+                              }
+                          }
+                      </div>
+                  </div>
+              } @else if (membres().length === 1) {
+                  <!-- Foyer mono-membre : ventilation comptes uniquement (pas de notion de répartition) -->
                   <div class="flex flex-col gap-2">
                       <label class="text-sm font-medium">{{ t.poste.ventilation }}</label>
                       <div formArrayName="repartitions" class="flex flex-col gap-2">
@@ -550,6 +598,27 @@ type OptionCloture = 'MOIS_COURANT' | 'PROCHAIN_PERIODIQUE' | 'PERSONNALISEE';
                       </div>
                   </div>
               }
+
+              <!-- ── Q5 : Le montant du poste est-il une estimation ? ── -->
+              <div class="flex flex-col gap-2">
+                  <label class="text-sm font-medium" [pTooltip]="t.poste.natureTooltip">
+                      {{ t.poste.questionnaire.estimationTitre }}
+                  </label>
+                  <p-selectbutton [options]="estimationOptions" optionLabel="label" optionValue="value"
+                                  formControlName="nature"/>
+                  @if (form.value.nature === 'ESTIMATION') {
+                      <div class="flex flex-col gap-1 max-w-xs">
+                          <label class="text-sm font-medium" [pTooltip]="t.poste.estimationTooltip">
+                              {{ t.poste.estimationPourcentage }} *
+                          </label>
+                          <p-inputnumber formControlName="estimPourcentage"
+                                         [min]="0" [max]="100"
+                                         [minFractionDigits]="1" [maxFractionDigits]="1"
+                                         suffix="%" class="w-full"
+                                         [placeholder]="t.poste.estimationPlaceholder"/>
+                      </div>
+                  }
+              </div>
           </form>
           <ng-template #footer>
               <p-button [label]="t.commun.annuler" severity="secondary" (click)="fermerDialogPoste()"/>
@@ -975,16 +1044,184 @@ export class PostesListeComponent implements OnInit {
     { label: this.t.poste.natureOptions.ESTIMATION, value: 'ESTIMATION' },
   ];
 
-  typeRepartitionOptions = [
-    { label: this.t.poste.typeRepartitionOptions.AUTO,         value: 'AUTO' as TypeRepartition },
-    { label: this.t.poste.typeRepartitionOptions.REVERSE_AUTO, value: 'REVERSE_AUTO' as TypeRepartition },
-    { label: this.t.poste.typeRepartitionOptions.CUSTOM,       value: 'CUSTOM' as TypeRepartition },
+  // ── Mini-questionnaire structurel (façade UI au-dessus du form réactif) ──
+  @ViewChild('descriptionInput') private descriptionInput?: ElementRef<HTMLInputElement>;
+
+  frequenceChoisie = signal<'PONCTUEL' | 'RECURRENT' | null>(null);
+  sousFrequence    = signal<'MENSUEL' | 'AUTRE' | null>(null);
+  /** Q « Qui est concerné » : Tous les membres, ou un seul membre en particulier. */
+  quiConcerneChoice = signal<'TOUS' | 'MEMBRE_UNIQUE' | null>(null);
+  /** Sous-question affichée quand quiConcerneChoice = TOUS : quel type de répartition. */
+  quiRepartition = signal<TypeRepartition | null>(null);
+  membreUniqueId = signal<string | null>(null);
+  private _focusDescriptionFait = false;
+
+  frequenceOptions = [
+    { label: this.t.poste.questionnaire.ponctuel,  value: 'PONCTUEL' as const },
+    { label: this.t.poste.questionnaire.recurrent, value: 'RECURRENT' as const },
   ];
+
+  sousFrequenceOptions = [
+    { label: this.t.poste.questionnaire.chaqueMois,     value: 'MENSUEL' as const },
+    { label: this.t.poste.questionnaire.autreFrequence, value: 'AUTRE' as const },
+  ];
+
+  quiConcerneOptions = [
+    { label: this.t.poste.questionnaire.quiTous,         value: 'TOUS' as const },
+    { label: this.t.poste.questionnaire.quiMembreUnique, value: 'MEMBRE_UNIQUE' as const },
+  ];
+
+  quiRepartitionOptions = [
+    { label: this.t.poste.questionnaire.repartitionScenario,        value: 'AUTO' as TypeRepartition },
+    { label: this.t.poste.questionnaire.repartitionScenarioInverse, value: 'REVERSE_AUTO' as TypeRepartition },
+    { label: this.t.poste.questionnaire.repartitionPersonnalisee,   value: 'CUSTOM' as TypeRepartition },
+  ];
+
+  estimationOptions = [
+    { label: this.t.commun.non, value: 'EFFECTIF' as const },
+    { label: this.t.commun.oui, value: 'ESTIMATION' as const },
+  ];
+
+  /** Vrai si la liste des membres + pourcentages doit être affichée (choix « Tous » + « Personnalisé »). */
+  afficherListeRepartition = computed(() =>
+    this.quiConcerneChoice() === 'TOUS' && this.quiRepartition() === 'CUSTOM' && this.membres().length > 1
+  );
+
+  /** Vrai si le bloc « Sur quels comptes à ventiler ? » doit être affiché (choix « Tous », quel que soit le type). */
+  afficherComptesTous = computed(() =>
+    this.quiConcerneChoice() === 'TOUS' && this.quiRepartition() !== null && this.membres().length > 1
+  );
+
+  /** Vrai si les quotes-parts affichées sont éditables (uniquement pour Personnalisé). */
+  repartitionEditable = computed(() => this.quiRepartition() === 'CUSTOM');
+
+  /** Question 1 résolue : one-shot, ou récurrent avec une fréquence précisée. */
+  questionnaireFrequenceResolue = computed(() =>
+    this.frequenceChoisie() === 'PONCTUEL' ||
+    (this.frequenceChoisie() === 'RECURRENT' && this.sousFrequence() !== null)
+  );
+
+  /** Question « Qui » résolue : mono-membre (question non posée), ou un choix complet fait. */
+  private questionnaireQuiResolue = computed(() =>
+    this.membres().length <= 1 ||
+    (this.quiConcerneChoice() === 'MEMBRE_UNIQUE' && this.membreUniqueId() !== null) ||
+    (this.quiConcerneChoice() === 'TOUS' && this.quiRepartition() !== null)
+  );
+
+  /** Focus automatique sur Description une fois le questionnaire résolu (une seule fois par ouverture). */
+  private readonly _focusDescriptionApresQuestionnaire = effect(() => {
+    if (this.questionnaireFrequenceResolue() && this.questionnaireQuiResolue() &&
+        this.dialogVisible && !this._focusDescriptionFait) {
+      this._focusDescriptionFait = true;
+      setTimeout(() => this.descriptionInput?.nativeElement.focus());
+    }
+  });
+
+  choisirFrequence(f: 'PONCTUEL' | 'RECURRENT'): void {
+    this.frequenceChoisie.set(f);
+    if (f === 'PONCTUEL') {
+      this.sousFrequence.set(null);
+      this.form.get('periodiciteMois')?.setValue(0);
+    }
+  }
+
+  choisirSousFrequence(sf: 'MENSUEL' | 'AUTRE'): void {
+    this.sousFrequence.set(sf);
+    if (sf === 'MENSUEL') {
+      this.form.get('periodiciteMois')?.setValue(1);
+    } else {
+      const actuel = this.form.get('periodiciteMois')?.value ?? 0;
+      if (actuel === 0 || actuel === 1) {
+        this.form.get('periodiciteMois')?.setValue(3);
+      }
+    }
+  }
+
+  choisirQuiConcerne(choix: 'TOUS' | 'MEMBRE_UNIQUE'): void {
+    this.quiConcerneChoice.set(choix);
+    if (choix === 'MEMBRE_UNIQUE') {
+      this.quiRepartition.set(null);
+      if (this.membreUniqueId()) {
+        this.choisirMembreUnique(this.membreUniqueId()!);
+      }
+    } else {
+      this.membreUniqueId.set(null);
+      if (this.quiRepartition()) {
+        this.choisirQuiRepartition(this.quiRepartition()!);
+      }
+    }
+  }
+
+  choisirQuiRepartition(qr: TypeRepartition): void {
+    this.quiRepartition.set(qr);
+    this.form.get('typeRepartition')?.setValue(qr);
+    if (qr === 'CUSTOM') {
+      this.appliquerRepartitionEgale();
+    } else {
+      this.appliquerRepartitionAffichageScenario(qr === 'REVERSE_AUTO');
+    }
+  }
+
+  choisirMembreUnique(membreId: string): void {
+    this.membreUniqueId.set(membreId);
+    this.form.get('typeRepartition')?.setValue('CUSTOM');
+    this.appliquerRepartitionMembreUnique(membreId);
+  }
+
+  /** Nom du membre retenu par le preset « Un membre en particulier ». */
+  nomMembreUnique(): string {
+    return this.membres().find(m => m.id === this.membreUniqueId())?.nom ?? '';
+  }
+
+  /** 100% pour le membre sélectionné, 0% pour les autres (et vide leur compte). */
+  private appliquerRepartitionMembreUnique(membreId: string): void {
+    this.repartitionsArray.controls.forEach(c => {
+      const selectionne = c.get('membreId')?.value === membreId;
+      c.patchValue({
+        quotePart: selectionne ? 100 : 0,
+        compteId: selectionne ? c.get('compteId')?.value : null,
+      }, { emitEvent: false });
+    });
+    this.calculerSomme();
+  }
+
+  /** Parts égales entre tous les membres, même arrondi que la répartition par défaut d'un scénario. */
+  private appliquerRepartitionEgale(): void {
+    const n = this.repartitionsArray.length;
+    if (!n) return;
+    const part = Math.round(100 / n);
+    const reste = 100 - part * (n - 1);
+    this.repartitionsArray.controls.forEach((c, i) => {
+      c.patchValue({ quotePart: i === n - 1 ? reste : part }, { emitEvent: false });
+    });
+    this.calculerSomme();
+  }
+
+  /**
+   * Affichage (lecture seule) des quotes-parts effectives AUTO/REVERSE_AUTO, dérivées de la
+   * répartition par défaut du scénario. Ces valeurs ne sont jamais envoyées à l'API pour ces
+   * deux modes (seul CUSTOM stocke une répartition sur le poste) — c'est purement informatif.
+   */
+  private appliquerRepartitionAffichageScenario(inverse: boolean): void {
+    const reps = this.contexte.scenarioCourant()?.repartitions ?? [];
+    const n = this.membres().length;
+    this.repartitionsArray.controls.forEach(c => {
+      const membreId = c.get('membreId')?.value;
+      const base = reps.find(r => r.membreId === membreId)?.quotePart ?? (n ? 1 / n : 0);
+      const effective = (inverse && n > 1) ? (1 - base) / (n - 1) : base;
+      c.patchValue({ quotePart: Math.round(effective * 100) }, { emitEvent: false });
+    });
+    this.calculerSomme();
+  }
 
   periodiciteOptions = [
     { label: this.t.poste.periodiciteLabels[0], value: 0 },
     ...this.t.poste.periodiciteLabels.slice(1).map((label, i) => ({ label, value: i + 1 }))
   ];
+
+  /** Options de périodicité pour le choix « Autre » : sans « Une seule fois » ni « Tous les mois »,
+   *  déjà couverts par les choix rapides Ponctuel / Chaque mois. */
+  periodiciteOptionsAutre = this.periodiciteOptions.filter(o => o.value !== 0 && o.value !== 1);
 
   triActuel = signal<'DATE' | 'CATEGORIE' | 'DESCRIPTION'>('CATEGORIE');
   cacherInactifs = signal(true);
@@ -1467,6 +1704,12 @@ export class PostesListeComponent implements OnInit {
     this.form.reset({ mode: 'MENSUALISE', moment: 'DEBUT_PERIODE', nature: 'EFFECTIF',
                       periodiciteMois: 0, typeRepartition: 'AUTO', estimPourcentage: null });
     this.initialiserRepartitions(undefined);
+    this.frequenceChoisie.set(null);
+    this.sousFrequence.set(null);
+    this.quiConcerneChoice.set(null);
+    this.quiRepartition.set(null);
+    this.membreUniqueId.set(null);
+    this._focusDescriptionFait = false;
     this.dialogVisible = true;
   }
 
@@ -1487,6 +1730,33 @@ export class PostesListeComponent implements OnInit {
     } else {
       this.initialiserRepartitions(undefined, p.ventilations);
     }
+
+    // Déduction des réponses du mini-questionnaire à partir du poste existant, sans
+    // rien changer aux valeurs réelles du formulaire.
+    const periodicite = p.periodiciteMois ?? 0;
+    this.frequenceChoisie.set(periodicite === 0 ? 'PONCTUEL' : 'RECURRENT');
+    this.sousFrequence.set(
+      periodicite === 0 ? null :
+      periodicite === 1 ? 'MENSUEL' : 'AUTRE'
+    );
+    this.membreUniqueId.set(null);
+    if (p.typeRepartition === 'CUSTOM') {
+      const nonZero = this.repartitionsArray.controls.filter(c => (c.get('quotePart')?.value ?? 0) > 0);
+      if (nonZero.length === 1) {
+        this.quiConcerneChoice.set('MEMBRE_UNIQUE');
+        this.quiRepartition.set(null);
+        this.membreUniqueId.set(nonZero[0].get('membreId')?.value ?? null);
+      } else {
+        this.quiConcerneChoice.set('TOUS');
+        this.quiRepartition.set('CUSTOM');
+      }
+    } else {
+      const tr = (p.typeRepartition ?? 'AUTO') as TypeRepartition;
+      this.quiConcerneChoice.set('TOUS');
+      this.quiRepartition.set(tr);
+      this.appliquerRepartitionAffichageScenario(tr === 'REVERSE_AUTO');
+    }
+    this._focusDescriptionFait = true; // pas d'autofocus surprise en édition, le formulaire est déjà rempli
     this.dialogVisible = true;
   }
 
