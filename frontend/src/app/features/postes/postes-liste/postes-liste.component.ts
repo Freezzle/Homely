@@ -80,15 +80,24 @@ type OptionCloture = 'MOIS_COURANT' | 'PROCHAIN_PERIODIQUE' | 'PERSONNALISEE';
                   </div>
               </div>
 
-              <!-- Ligne 2 : tri à gauche, menu à droite -->
-              <div class="grid gap-3 grid-cols-[minmax(0,1fr)_auto] md:items-center">
+              <!-- Ligne 2 : tri et recherche description à gauche, menu à droite -->
+              <div class="grid gap-3 grid-cols-[minmax(0,1fr)_auto] md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center">
                   <div class="flex justify-start">
                       <p-select appendTo="body"
                                 [ngModel]="triActuel()"
                                 (onChange)="triActuel.set($event.value)"
                                 [options]="triOptions"
                                 optionLabel="label" optionValue="value"
-                                class="min-w-52 text-sm"/>
+                                class="w-full text-sm"/>
+                  </div>
+
+                  <div class="flex justify-start col-span-2 md:col-span-1">
+                      <input pInputText
+                             type="text"
+                             [ngModel]="filtreDescription()"
+                             (ngModelChange)="filtreDescription.set($event)"
+                             [placeholder]="t.poste.filtreDescription"
+                             class="w-full text-sm"/>
                   </div>
 
                   <div class="flex justify-end">
@@ -215,14 +224,9 @@ type OptionCloture = 'MOIS_COURANT' | 'PROCHAIN_PERIODIQUE' | 'PERSONNALISEE';
                           hover:shadow-sm
                           transition-all duration-300"
                                [class.border-l]="!p._estChaine"
-                               [class.border-surface-200]="!p._estChaine"
-                               [class.dark:border-surface-700]="!p._estChaine"
-                               [class.hover:border-primary/40]="!p._estChaine"
                                [class.border-l-4]="p._estChaine"
                                [class.border-l-primary]="p._estChaine"
-                               [class.dark:border-l-primary/80]="p._estChaine"
-                               [class.border-t-0]="p._estChaine && !p._premierDuBloc"
-                                [class.border-b-0]="p._estChaine && !p._estActifChaine"
+                               [class.dark:border-l-primary-80]="p._estChaine"
                                [class.-mt-1]="p._estChaine && !p._premierDuBloc"
                                [class.ring-2]="posteEnSurbrillanceId() === p.id"
                                [class.ring-primary]="posteEnSurbrillanceId() === p.id">
@@ -642,11 +646,15 @@ type OptionCloture = 'MOIS_COURANT' | 'PROCHAIN_PERIODIQUE' | 'PERSONNALISEE';
                       <label class="text-sm font-medium">{{ t.poste.revisionNouveauMontant }} *</label>
                       <p-inputnumber formControlName="nouveauMontant" mode="decimal" [minFractionDigits]="2"
                                      class="w-full"/>
+                      @if (montantRevisionIdentique()) {
+                          <span class="text-xs text-red-600 dark:text-red-400">{{ t.poste.revisionMontantIdentique }}</span>
+                      }
                   </div>
 
                   <div class="flex flex-col gap-1">
                       <label class="text-sm font-medium">{{ t.poste.revisionDateEffet }} *</label>
                       <p-datepicker appendTo="body" formControlName="dateEffet" view="month" dateFormat="mm/yy"
+                                    [minDate]="revisionDateMin()" [maxDate]="revisionDateMax()"
                                     [showButtonBar]="true" class="w-full"></p-datepicker>
                   </div>
 
@@ -774,9 +782,6 @@ type OptionCloture = 'MOIS_COURANT' | 'PROCHAIN_PERIODIQUE' | 'PERSONNALISEE';
                               {{ formatPeriode(m.poste.debut) }} –
                               {{ m.poste.fin ? formatPeriode(m.poste.fin) : (last ? t.poste.historiquePeriodeEnCours : '–') }}
                           </span>
-                          @if (last) {
-                              <p-tag [value]="t.poste.historiqueActif" severity="info" class="text-[10px] py-0.5"/>
-                          }
                       </div>
                       <div class="font-semibold mt-1" [class.text-surface-900]="last" [class.dark:text-surface-100]="last"
                            [class.text-surface-600]="!last" [class.dark:text-surface-300]="!last">
@@ -847,6 +852,21 @@ export class PostesListeComponent implements OnInit {
     { initialValue: null as Date | null }
   );
 
+  /** Borne basse exclusive du datepicker : 1er jour du mois qui suit le début du poste. */
+  revisionDateMin(): Date | null {
+    const p = this.posteEnRevision;
+    if (!p?.debut) return null;
+    const [year, month] = p.debut.split('-').map(Number);
+    return new Date(year, month, 1); // month (0-based) = mois suivant le début
+  }
+
+  /** Borne haute inclusive du datepicker : dernier jour du mois de fin du poste, s'il y en a une. */
+  revisionDateMax(): Date | null {
+    const p = this.posteEnRevision;
+    if (!p?.fin) return null;
+    return parseIsoDateLocal(p.fin);
+  }
+
   /** Résumé live « 1'800 → 1'950 CHF (+8.3 %), dès janvier 2027 ». */
   resumeRevision = computed(() => {
     const p = this.posteEnRevision;
@@ -889,8 +909,11 @@ export class PostesListeComponent implements OnInit {
   /** Options proposées : « prochain mois périodique » uniquement si cycle > 2 mois. */
   clotureOptions = computed(() => {
     const p = this.posteEnCloture();
+    const labelMoisCourant = p && this.posteDebuteApresMoisCourant(p)
+      ? this.i18n.instant('poste.clotureOptionMoisDebut', { periode: this.formatPeriode(this.toIso(this.moisEffectifCloture(p))) })
+      : this.t.poste.clotureOptionMoisCourant;
     const options: { label: string; value: OptionCloture }[] = [
-      { label: this.t.poste.clotureOptionMoisCourant, value: 'MOIS_COURANT' },
+      { label: labelMoisCourant, value: 'MOIS_COURANT' },
     ];
     if (p && p.periodiciteMois > 2) {
       options.push({ label: this.t.poste.clotureOptionProchainPeriodique, value: 'PROCHAIN_PERIODIQUE' });
@@ -904,7 +927,7 @@ export class PostesListeComponent implements OnInit {
     const p = this.posteEnCloture();
     if (!p) return null;
     const option = this._clotureOptionValue();
-    if (option === 'MOIS_COURANT') return this.finDeMois(new Date());
+    if (option === 'MOIS_COURANT') return this.finDeMois(this.moisEffectifCloture(p));
     if (option === 'PROCHAIN_PERIODIQUE') return this.finDeMois(this.prochainMoisPeriodique(p));
     const date = this._clotureDatePersonnaliseeValue();
     return date ? this.finDeMois(date) : null;
@@ -935,12 +958,21 @@ export class PostesListeComponent implements OnInit {
   /** Poste temporairement mis en surbrillance après navigation depuis le drawer d'historique. */
   posteEnSurbrillanceId = signal<string | null>(null);
 
-  /** Bouton de validation activé seulement si montant > 0 et date d'effet cohérente. */
+  /** Vrai si le nouveau montant saisi est strictement identique au montant actuel du poste. */
+  montantRevisionIdentique = computed(() => {
+    const p = this.posteEnRevision;
+    const montant = this._revisionMontantValue();
+    if (!p || montant == null) return false;
+    return montant === p.montant;
+  });
+
+  /** Bouton de validation activé seulement si montant > 0, différent du montant actuel, et date d'effet cohérente. */
   revisionValide = computed(() => {
     const p = this.posteEnRevision;
     const montant = this._revisionMontantValue();
     const date = this._revisionDateValue();
     if (!p || !date || !(montant! > 0)) return false;
+    if (montant === p.montant) return false;
     const iso = this.toIso(date);
     if (p.debut && iso <= p.debut) return false;
     if (p.fin && iso > p.fin) return false;
@@ -1229,6 +1261,7 @@ export class PostesListeComponent implements OnInit {
   filtreCompteIds = signal<string[]>([]);
   filtreMembreIds = signal<string[]>([]);
   filtreCategorieIds = signal<string[]>([]);
+  filtreDescription = signal<string>('');
 
   triOptions = [
     { label: this.t.poste.triOptions.DATE,        value: 'DATE' as const },
@@ -1380,6 +1413,7 @@ export class PostesListeComponent implements OnInit {
     const compteIds     = this.filtreCompteIds();
     const membreIds     = this.filtreMembreIds();
     const categorieIds  = this.filtreCategorieIds();
+    const texteDescription = this.filtreDescription().trim().toLowerCase();
     const tousMembreIds = this.membres().map(m => m.id);
 
     return this.postes().filter(p => {
@@ -1391,6 +1425,9 @@ export class PostesListeComponent implements OnInit {
 
       // Filtre catégories
       if (categorieIds.length > 0 && !categorieIds.includes(p.categorieId ?? '')) return false;
+
+      // Filtre texte libre sur la description
+      if (texteDescription && !p.description.toLowerCase().includes(texteDescription)) return false;
 
       // Filtre comptes : au moins une ventilation rattachée à un compte sélectionné
       if (compteIds.length > 0) {
@@ -1962,15 +1999,29 @@ export class PostesListeComponent implements OnInit {
     return new Intl.DateTimeFormat('fr-CH', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d);
   }
 
-  /** 1er jour du mois qui suit le mois courant. */
-  private premierJourMoisProchain(): Date {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  }
-
   /** Dernier jour du mois contenant la date donnée. */
   private finDeMois(d: Date): Date {
     return new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  }
+
+  /** Vrai si le poste ne débute qu'à partir d'un mois strictement postérieur au mois courant. */
+  private posteDebuteApresMoisCourant(p: PosteDto): boolean {
+    if (!p.debut) return false;
+    const debut = parseIsoDateLocal(p.debut);
+    const now = new Date();
+    return debut.getFullYear() * 12 + debut.getMonth() > now.getFullYear() * 12 + now.getMonth();
+  }
+
+  /**
+   * Mois retenu par l'option « Terminer ce mois-ci » : le mois courant, sauf si le poste
+   * ne débute que plus tard, auquel cas on retient son mois de début (impossible de
+   * clôturer un poste avant même qu'il ait commencé).
+   */
+  private moisEffectifCloture(p: PosteDto): Date {
+    const now = new Date();
+    if (!p.debut) return now;
+    const debut = parseIsoDateLocal(p.debut);
+    return debut.getFullYear() * 12 + debut.getMonth() > now.getFullYear() * 12 + now.getMonth() ? debut : now;
   }
 
   /**
@@ -1993,7 +2044,7 @@ export class PostesListeComponent implements OnInit {
 
   ouvrirCloture(p: PosteDto): void {
     this.posteEnCloture.set(p);
-    this.clotureForm.reset({ option: 'MOIS_COURANT', datePersonnalisee: new Date() });
+    this.clotureForm.reset({ option: 'MOIS_COURANT', datePersonnalisee: this.moisEffectifCloture(p) });
     this.clotureDialogVisible = true;
   }
 
@@ -2038,9 +2089,10 @@ export class PostesListeComponent implements OnInit {
 
   ouvrirRevision(p: PosteDto): void {
     this.posteEnRevision = p;
+    const debut = p.debut ? parseIsoDateLocal(p.debut) : new Date();
     this.revisionForm.reset({
-      nouveauMontant: p.montant,
-      dateEffet: this.premierJourMoisProchain(),
+      nouveauMontant: null,
+      dateEffet: new Date(debut.getFullYear(), debut.getMonth() + 1, 1),
     });
     this.revisionDialogVisible = true;
   }
