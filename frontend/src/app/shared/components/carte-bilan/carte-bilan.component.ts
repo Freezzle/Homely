@@ -41,7 +41,7 @@ export interface LigneDecomposition {
       </ng-template>
       
       <div class="mb-3">
-        <div class="text-xs text-surface-700 uppercase tracking-wide">{{ montantPrincipalLabel() }}</div>
+        <div class="text-xs text-surface-700 dark:text-surface-200 uppercase tracking-wide">{{ montantPrincipalLabel() }}</div>
         <div class="flex items-baseline gap-1.5 mt-1">
           <span class="text-3xl font-extrabold tabular-nums"
                 [class.text-emerald-600]="montantPrincipal() >= 0"

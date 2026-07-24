@@ -16,6 +16,17 @@
 @import "tailwindcss";
 @import "tailwindcss-primeui";
 
+/*
+ * Le variant `dark:` de Tailwind v4 se base par défaut sur
+ * `@media (prefers-color-scheme: dark)` (thème de l'OS/navigateur).
+ * L'app pilote son propre thème via la classe `.dark` posée sur <html>
+ * par ContexteService.toggleDark(), et PrimeNG est configuré avec
+ * `darkModeSelector: '.dark'` (voir app.config.ts). Sans cette directive,
+ * un utilisateur en dark mode OS mais light dans l'app verrait les
+ * utilitaires `dark:*` s'appliquer quand même, en désaccord avec PrimeNG.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* PrimeIcons */
 @import "primeicons/primeicons.css";
 
