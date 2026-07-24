@@ -37,14 +37,16 @@ import { CarteBilanComponent, LigneDecomposition } from '../../../shared/compone
                   <h1 class="text-2xl font-bold">{{ t.nav.dashboardAnnuel }}</h1>
                   <p class="text-sm text-surface-500 mt-0.5">{{ anneeSelectionnee }}</p>
               </div>
-              <p-button icon="pi pi-chevron-left" [text]="true" [rounded]="true"
-                        [disabled]="!peutReculer()" (onClick)="anneePrecedente()"
-                        [ariaLabel]="t.projection.anneePrecedente"/>
-              <p-select appendTo="body" [options]="annees" [(ngModel)]="anneeSelectionnee"
-                        (onChange)="charger()" class="w-32 shrink-0"/>
-              <p-button icon="pi pi-chevron-right" [text]="true" [rounded]="true"
-                        [disabled]="!peutAvancer()" (onClick)="anneeSuivante()"
-                        [ariaLabel]="t.projection.anneeSuivante"/>
+              <div class="flex gap-2 shrink-0">
+                  <p-button icon="pi pi-chevron-left" [text]="true" [rounded]="true"
+                            [disabled]="!peutReculer()" (onClick)="anneePrecedente()"
+                            [ariaLabel]="t.projection.anneePrecedente"/>
+                  <p-select appendTo="body" [options]="annees" [(ngModel)]="anneeSelectionnee"
+                            (onChange)="charger()" class="w-32 shrink-0"/>
+                  <p-button icon="pi pi-chevron-right" [text]="true" [rounded]="true"
+                            [disabled]="!peutAvancer()" (onClick)="anneeSuivante()"
+                            [ariaLabel]="t.projection.anneeSuivante"/>
+              </div>
           </div>
 
           <!-- ── Skeletons ─────────────────────────────────────────────────────── -->
@@ -345,7 +347,7 @@ import { CarteBilanComponent, LigneDecomposition } from '../../../shared/compone
                                       }
                                   </div>
 
-                                  <p-chart type="line" [data]="$any(pd.chartData)" [options]="prorataChartOptions" 
+                                  <p-chart type="line" [data]="$any(pd.chartData)" [options]="prorataChartOptions"
                                            class="w-full"/>
 
                                   <ng-template #footer>
