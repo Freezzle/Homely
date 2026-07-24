@@ -117,6 +117,13 @@ export interface PosteRevisionResponse {
 export interface PosteClotureRequest {
   fin: string;
 }
+export interface PosteDecalerDateEffetRequest {
+  nouvelleDateEffet: string;
+}
+export interface PosteDecalerDateEffetResponse {
+  postePrecedent: PosteDto;
+  posteEdite: PosteDto;
+}
 
 // ── Objectifs ─────────────────────────────────────────────────────────────────
 export interface ObjectifDto {

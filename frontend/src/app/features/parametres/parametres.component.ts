@@ -24,7 +24,7 @@ import { I18nService } from '../../core/i18n/i18n.service';
   ],
   template: `
     <p-confirmdialog />
-    <div class="max-w-xl flex flex-col gap-6">
+    <div class="flex flex-col gap-6">
       <h1 class="text-2xl font-bold">{{ t.parametres.titre }}</h1>
 
       <p-card>

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ScenarioDto, ScenarioRequest, PosteDto, PosteRequest, PosteRevisionRequest, PosteRevisionResponse,
-         PosteClotureRequest,
+         PosteClotureRequest, PosteDecalerDateEffetRequest, PosteDecalerDateEffetResponse,
          ObjectifDto, ObjectifRequest, RepartitionPeriodeDto, RepartitionPeriodeRequest } from '../models/api.models';
 
 @Injectable({ providedIn: 'root' })
@@ -40,6 +40,11 @@ export class PosteService {
   annulerRevision(foyerId: string, scenarioId: string, posteId: string) {
     return this.http.post<PosteDto>(
       `${this.base(foyerId, scenarioId)}/${posteId}/annuler-revision`, {}
+    );
+  }
+  decalerDateEffet(foyerId: string, scenarioId: string, posteId: string, req: PosteDecalerDateEffetRequest) {
+    return this.http.post<PosteDecalerDateEffetResponse>(
+      `${this.base(foyerId, scenarioId)}/${posteId}/decaler-date-effet`, req
     );
   }
   cloturer(foyerId: string, scenarioId: string, posteId: string, req: PosteClotureRequest) {

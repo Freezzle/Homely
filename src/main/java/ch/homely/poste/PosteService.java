@@ -14,6 +14,8 @@ import ch.homely.moteur.MoteurCalcul;
 import ch.homely.moteur.PosteCalcul;
 import ch.homely.moteur.RepartitionCalcul;
 import ch.homely.poste.dto.PosteClotureRequest;
+import ch.homely.poste.dto.PosteDecalerDateEffetRequest;
+import ch.homely.poste.dto.PosteDecalerDateEffetResponse;
 import ch.homely.poste.dto.PosteDto;
 import ch.homely.poste.dto.PosteRequest;
 import ch.homely.poste.dto.PosteRevisionRequest;
@@ -232,6 +234,53 @@ public class PosteService {
         projectionService.invaliderCache(scenarioId);
 
         return toDto(precedentSauve, Map.of());
+    }
+
+    /**
+     * Décale la date d'effet (frontière) entre un maillon d'une chaîne de révisions et
+     * son prédécesseur immédiat : ajuste atomiquement la fin du prédécesseur et le début
+     * du maillon édité. La nouvelle date doit rester strictement à l'intérieur de
+     * l'intervalle formé par le début du prédécesseur et la fin déjà figée du maillon
+     * édité (s'il a lui-même un successeur). Aucun autre maillon de la chaîne n'est
+     * affecté. Opération atomique unique.
+     */
+    public PosteDecalerDateEffetResponse decalerDateEffet(UUID foyerId, UUID scenarioId, UUID posteId,
+                                                            PosteDecalerDateEffetRequest req) {
+        multiTenant.verifierAcces(foyerId, RoleFoyer.EDITOR);
+        verifierScenario(foyerId, scenarioId);
+        Poste actuel = trouver(scenarioId, posteId);
+
+        if (actuel.getPosteOrigineId() == null) {
+            throw new RegleMetierException(CodesErreur.POSTE_SANS_REVISION,
+                    "Ce poste n'est pas issu d'une révision, il n'a pas de frontière à décaler");
+        }
+
+        Poste precedent = trouver(scenarioId, actuel.getPosteOrigineId());
+        LocalDate nouvelleDateEffet = req.nouvelleDateEffet();
+
+        if (precedent.getDebut() != null && !nouvelleDateEffet.isAfter(precedent.getDebut())) {
+            throw new RegleMetierException(CodesErreur.DATE_EFFET_INVALIDE,
+                    "La nouvelle date d'effet doit être postérieure à la date de début du poste précédent");
+        }
+        // La borne haute ne s'applique que si le maillon édité a lui-même un successeur
+        // dans la chaîne : sa fin (posée par la révision suivante) ne doit pas être
+        // empiétée. Si le maillon édité est le dernier de la chaîne, sa fin éventuelle
+        // (ex. clôture manuelle) n'est pas une contrainte de chaîne et ne s'applique pas ici.
+        boolean aUnSuccesseur = posteRepo.findByPosteOrigineId(actuel.getId()).isPresent();
+        if (aUnSuccesseur && actuel.getFin() != null && !nouvelleDateEffet.isBefore(actuel.getFin())) {
+            throw new RegleMetierException(CodesErreur.DATE_EFFET_INVALIDE,
+                    "La nouvelle date d'effet doit être antérieure à la date de fin déjà définie par la révision suivante");
+        }
+
+        precedent.setFin(nouvelleDateEffet.minusDays(1));
+        actuel.setDebut(nouvelleDateEffet);
+
+        Poste precedentSauve = posteRepo.save(precedent);
+        Poste actuelSauve = posteRepo.save(actuel);
+        projectionService.invaliderCache(scenarioId);
+
+        Map<UUID, UUID> successeur = Map.of(precedentSauve.getId(), actuelSauve.getId());
+        return new PosteDecalerDateEffetResponse(toDto(precedentSauve, successeur), toDto(actuelSauve, Map.of()));
     }
 
     /**

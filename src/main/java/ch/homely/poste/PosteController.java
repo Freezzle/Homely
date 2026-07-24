@@ -1,6 +1,8 @@
 package ch.homely.poste;
 
 import ch.homely.poste.dto.PosteClotureRequest;
+import ch.homely.poste.dto.PosteDecalerDateEffetRequest;
+import ch.homely.poste.dto.PosteDecalerDateEffetResponse;
 import ch.homely.poste.dto.PosteDto;
 import ch.homely.poste.dto.PosteRequest;
 import ch.homely.poste.dto.PosteRevisionRequest;
@@ -74,6 +76,13 @@ public class PosteController {
     public PosteDto annulerRevision(@PathVariable UUID foyerId, @PathVariable UUID scenarioId,
                                      @PathVariable UUID posteId) {
         return posteService.annulerRevision(foyerId, scenarioId, posteId);
+    }
+
+    @PostMapping("/{posteId}/decaler-date-effet")
+    public PosteDecalerDateEffetResponse decalerDateEffet(@PathVariable UUID foyerId, @PathVariable UUID scenarioId,
+                                                            @PathVariable UUID posteId,
+                                                            @Valid @RequestBody PosteDecalerDateEffetRequest req) {
+        return posteService.decalerDateEffet(foyerId, scenarioId, posteId, req);
     }
 
     @PostMapping("/{posteId}/cloturer")

@@ -37,10 +37,10 @@ import { toIsoDateLocal, parseIsoDateLocal } from '../../../core/utils/date.util
  * envoyés à l'API.
  */
 interface PosteAffiche extends PosteDto {
-  _estChaine?: boolean;         // Appartient à une chaîne de révisions (bloc de 2+ maillons)
-  _premierDuBloc?: boolean;     // Premier maillon visible du bloc (pas de connecteur au-dessus)
-  _estActifChaine?: boolean;    // Maillon actif (pas encore révisé, compte dans les calculs)
-  _nbVersions?: number;         // Nombre de versions de la chaîne (défini uniquement sur le maillon actif)
+  _estChaine?: boolean;
+  _premierDuBloc?: boolean;
+  _estActifChaine?: boolean;
+  _nbVersions?: number;
   _clefSeparateur?: string;
   _labelSeparateur?: string;
 }
@@ -205,19 +205,25 @@ type OptionCloture = 'MOIS_COURANT' | 'PROCHAIN_PERIODIQUE' | 'PERSONNALISEE';
 
                       } @else {
                           @let p = asPoste(item);
-                          @if (p._estChaine && !p._premierDuBloc) {
-                              <!-- ── Connecteur discret entre deux maillons d'une même chaîne ── -->
-                              <div class="flex justify-center -my-1">
-                                  <div class="w-px h-3 bg-primary/40"></div>
-                              </div>
-                          }
+                          <!-- ── Maillon d'une chaîne de révisions : cartes fusionnées verticalement,
+                               reliées par une bordure gauche continue (« spine »). Le maillon actif
+                               a une spine pleine opacité, les maillons historiques une spine atténuée. ── -->
                           <div [id]="'poste-' + p.id"
                                class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 px-4 py-3
-                          border border-surface-200 dark:border-surface-700
+                          border-y border-r border-surface-200 dark:border-surface-700
                           bg-white dark:bg-surface-900
-                          hover:border-primary/40 hover:shadow-sm
+                          hover:shadow-sm
                           transition-all duration-300"
+                               [class.border-l]="!p._estChaine"
+                               [class.border-surface-200]="!p._estChaine"
+                               [class.dark:border-surface-700]="!p._estChaine"
+                               [class.hover:border-primary/40]="!p._estChaine"
+                               [class.border-l-4]="p._estChaine"
+                               [class.border-l-primary]="p._estChaine"
+                               [class.dark:border-l-primary/80]="p._estChaine"
                                [class.border-t-0]="p._estChaine && !p._premierDuBloc"
+                                [class.border-b-0]="p._estChaine && !p._estActifChaine"
+                               [class.-mt-1]="p._estChaine && !p._premierDuBloc"
                                [class.ring-2]="posteEnSurbrillanceId() === p.id"
                                [class.ring-primary]="posteEnSurbrillanceId() === p.id">
 
@@ -225,21 +231,12 @@ type OptionCloture = 'MOIS_COURANT' | 'PROCHAIN_PERIODIQUE' | 'PERSONNALISEE';
                               <div class="min-w-0 flex flex-col gap-2">
                                   <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
                                       <div class="min-w-0 flex items-start gap-2 flex-wrap">
-                      <span class="font-medium leading-snug wrap-break-word"
-                            [class.text-surface-900]="!(p._estChaine && !p._estActifChaine)"
-                            [class.dark:text-surface-100]="!(p._estChaine && !p._estActifChaine)"
-                            [class.text-surface-400]="p._estChaine && !p._estActifChaine"
-                            [class.dark:text-surface-500]="p._estChaine && !p._estActifChaine">
+                      <span class="font-medium leading-snug wrap-break-word">
                         {{ p.description }}
                       </span>
                                           @if (categorieLabel(p.categorieId) !== '–' && triActuel() !== 'CATEGORIE') {
                                               <p-tag [value]="categorieLabel(p.categorieId)"
                                                      severity="secondary"
-                                                     class="text-[10px] py-0.5 shrink-0"/>
-                                          }
-                                          @if (p._estChaine && !p._estActifChaine) {
-                                              <p-tag [value]="t.poste.revisionBadgeRevise" icon="pi pi-history"
-                                                     severity="secondary" [pTooltip]="t.poste.revisionTooltipRevise"
                                                      class="text-[10px] py-0.5 shrink-0"/>
                                           }
                                       </div>
@@ -251,11 +248,7 @@ type OptionCloture = 'MOIS_COURANT' | 'PROCHAIN_PERIODIQUE' | 'PERSONNALISEE';
                                                      [severity]="'warn'"
                                                      class="text-[10px] py-0.5 shrink-0"/>
                                           }
-                                          <span class="font-semibold whitespace-nowrap"
-                                                [class.text-surface-700]="!(p._estChaine && !p._estActifChaine)"
-                                                [class.dark:text-surface-200]="!(p._estChaine && !p._estActifChaine)"
-                                                [class.text-surface-400]="p._estChaine && !p._estActifChaine"
-                                                [class.dark:text-surface-500]="p._estChaine && !p._estActifChaine">
+                                          <span class="font-semibold whitespace-nowrap">
                         {{ p.montant | montant:p.devise }}
                       </span>
                                       </div>
@@ -321,17 +314,6 @@ type OptionCloture = 'MOIS_COURANT' | 'PROCHAIN_PERIODIQUE' | 'PERSONNALISEE';
 
                               <!-- Colonne 2 : actions -->
                               <div class="flex items-center justify-end shrink-0">
-                                  @if (p._estChaine && p._estActifChaine && p._nbVersions) {
-                                      <p-button icon="pi pi-history"
-                                                [rounded]="true"
-                                                [text]="true"
-                                                severity="secondary"
-                                                size="small"
-                                                [badge]="p._nbVersions.toString()"
-                                                badgeSeverity="secondary"
-                                                [pTooltip]="i18n.instant('poste.revisionHistoriqueTooltip', { count: p._nbVersions })"
-                                                (click)="ouvrirHistorique(p)"/>
-                                  }
                                   <p-button icon="pi pi-cog"
                                             [rounded]="true"
                                             [text]="true"
@@ -611,6 +593,35 @@ type OptionCloture = 'MOIS_COURANT' | 'PROCHAIN_PERIODIQUE' | 'PERSONNALISEE';
           </ng-template>
       </p-dialog>
 
+      <!-- Dialog mini-formulaire : décaler la date d'effet entre un maillon et son prédécesseur -->
+      <p-dialog [(visible)]="decalerDialogVisible"
+                [header]="i18n.instant('poste.decalerDateEffetTitre', { description: posteEnDecalage?.description ?? '' })"
+                [modal]="true" class="w-full max-w-md">
+          @if (posteEnDecalage && precedentEnDecalage(); as precedent) {
+              <form [formGroup]="decalerForm" class="flex flex-col gap-4 pt-2">
+                  @if (intervalleDecalageVide()) {
+                      <p class="text-sm text-red-600 dark:text-red-400">{{ t.poste.decalerDateEffetAucunMoisDisponible }}</p>
+                  } @else {
+                      <div class="flex flex-col gap-1">
+                          <label class="text-sm font-medium">{{ t.poste.decalerDateEffetLabel }} *</label>
+                          <p-datepicker appendTo="body" formControlName="nouvelleDateEffet" view="month" dateFormat="mm/yy"
+                                        [minDate]="borneDecalageMin()" [maxDate]="borneDecalageMax()"
+                                        [showButtonBar]="true" class="w-full"></p-datepicker>
+                      </div>
+
+                      <div class="text-sm rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-primary-700 dark:text-primary-300">
+                          {{ resumeDecalage() }}
+                      </div>
+                  }
+              </form>
+          }
+          <ng-template #footer>
+              <p-button [label]="t.commun.annuler" severity="secondary" (click)="fermerDialogDecalage()"/>
+              <p-button [label]="t.commun.enregistrer" (click)="enregistrerDecalage()"
+                        [disabled]="!decalageValide()"/>
+          </ng-template>
+      </p-dialog>
+
       <!-- Dialog mini-formulaire : clôture rapide d'un poste (action « Terminer ») -->
       <p-dialog [(visible)]="clotureDialogVisible"
                 [header]="i18n.instant('poste.clotureTitre', { description: posteEnCloture()?.description ?? '' })"
@@ -864,6 +875,88 @@ export class PostesListeComponent implements OnInit {
     const iso = this.toIso(date);
     if (p.debut && iso <= p.debut) return false;
     if (p.fin && iso > p.fin) return false;
+    return true;
+  });
+
+  // ── Décaler la date d'effet (frontière entre un maillon et son prédécesseur) ──
+  decalerDialogVisible = false;
+  posteEnDecalage: PosteDto | null = null;
+  decalerForm = this.fb.group({
+    nouvelleDateEffet: [null as Date | null, Validators.required],
+  });
+
+  private readonly _decalerDateValue = toSignal(
+    this.decalerForm.get('nouvelleDateEffet')!.valueChanges.pipe(
+      startWith(this.decalerForm.get('nouvelleDateEffet')!.value)
+    ),
+    { initialValue: null as Date | null }
+  );
+
+  /** Prédécesseur immédiat du maillon en cours de décalage. */
+  precedentEnDecalage = computed(() => {
+    const p = this.posteEnDecalage;
+    if (!p?.posteOrigineId) return null;
+    return this.postes().find(x => x.id === p.posteOrigineId) ?? null;
+  });
+
+  /** Successeur éventuel (maillon suivant), qui fige la borne haute s'il existe. */
+  private successeurEnDecalage = computed(() => {
+    const p = this.posteEnDecalage;
+    if (!p) return null;
+    return this.postes().find(x => x.posteOrigineId === p.id) ?? null;
+  });
+
+  /** Borne basse exclusive : 1er jour du mois qui suit le début du prédécesseur. */
+  borneDecalageMin = computed<Date | null>(() => {
+    const precedent = this.precedentEnDecalage();
+    if (!precedent?.debut) return null;
+    const [year, month] = precedent.debut.split('-').map(Number);
+    return new Date(year, month, 1); // month (0-based index de month) = mois suivant
+  });
+
+  /** Borne haute exclusive : 1er jour du mois de fin déjà figé par un successeur, s'il y en a un. */
+  borneDecalageMax = computed<Date | null>(() => {
+    const p = this.posteEnDecalage;
+    const successeur = this.successeurEnDecalage();
+    if (!p || !successeur || !p.fin) return null;
+    const [year, month] = p.fin.split('-').map(Number);
+    return new Date(year, month - 1, 1);
+  });
+
+  /** Vrai si l'intervalle de mois valides est vide (deux maillons collés sur un seul mois d'écart). */
+  intervalleDecalageVide = computed(() => {
+    const min = this.borneDecalageMin();
+    const max = this.borneDecalageMax();
+    if (!min || !max) return false;
+    return min.getTime() > max.getTime();
+  });
+
+  /** Résumé live du nouveau découpage résultant. */
+  resumeDecalage = computed(() => {
+    const p = this.posteEnDecalage;
+    const precedent = this.precedentEnDecalage();
+    const date = this._decalerDateValue();
+    if (!p || !precedent || !date) return '';
+    const iso = this.toIso(date);
+    const finPrecedente = new Date(date.getFullYear(), date.getMonth(), 0);
+    return this.i18n.instant('poste.decalerDateEffetResume', {
+      descriptionPrecedente: precedent.description,
+      montantPrecedent: this.formaterMontant(precedent.montant, precedent.devise),
+      finPrecedente: this.formatPeriode(this.toIso(finPrecedente)),
+      montantActuel: this.formaterMontant(p.montant, p.devise),
+      debutActuel: this.formatPeriode(iso),
+    });
+  });
+
+  /** Bouton de validation activé seulement si une date est choisie et respecte l'intervalle autorisé. */
+  decalageValide = computed(() => {
+    if (this.intervalleDecalageVide()) return false;
+    const date = this._decalerDateValue();
+    if (!date) return false;
+    const min = this.borneDecalageMin();
+    const max = this.borneDecalageMax();
+    if (min && date.getTime() < min.getTime()) return false;
+    if (max && date.getTime() > max.getTime()) return false;
     return true;
   });
 
@@ -1219,6 +1312,9 @@ export class PostesListeComponent implements OnInit {
       if (this.estFusionnable(p)) {
         items.push({ label: this.t.poste.annulerRevision, icon: 'pi pi-replay', command: () => this.annulerRevision(p) });
       }
+      if (this.estDecalable(p)) {
+        items.push({ label: this.t.poste.decalerDateEffet, icon: 'pi pi-arrows-h', command: () => this.ouvrirDecalage(p) });
+      }
       if (this.estActionClotureApplicable(p)) {
         if (this.estPosteTermine(p)) {
           items.push({ label: this.t.poste.reactiver, icon: 'pi pi-play', command: () => this.reactiverPoste(p) });
@@ -1245,6 +1341,15 @@ export class PostesListeComponent implements OnInit {
   /** Un poste est fusionnable (annulation de révision) s'il est le dernier maillon d'une chaîne. */
   estFusionnable(p: PosteDto): boolean {
     return !!p.posteOrigineId && !p.posteSuivantId;
+  }
+
+  /**
+   * Un poste est décalable (frontière avec son prédécesseur) s'il a lui-même un
+   * prédécesseur — y compris un maillon intermédiaire, contrairement à la fusion qui
+   * est réservée au dernier maillon.
+   */
+  estDecalable(p: PosteDto): boolean {
+    return !!p.posteOrigineId;
   }
 
   /**
@@ -1692,6 +1797,43 @@ export class PostesListeComponent implements OnInit {
         this.toast.add({ severity: 'success', summary: this.t.commun.succes });
         this.revisionDialogVisible = false;
         this.posteEnRevision = null;
+        this.charger();
+      },
+      error: (err) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message }),
+    });
+  }
+
+  ouvrirDecalage(p: PosteDto): void {
+    this.posteEnDecalage = p;
+    this.decalerForm.reset({
+      nouvelleDateEffet: p.debut ? parseIsoDateLocal(p.debut) : null,
+    });
+    this.decalerDialogVisible = true;
+  }
+
+  fermerDialogDecalage(): void {
+    this.decalerDialogVisible = false;
+    this.posteEnDecalage = null;
+  }
+
+  /**
+   * Enregistre le décalage de la date d'effet. En cas d'échec côté serveur (situation de
+   * concurrence non anticipée côté front), le dialog reste ouvert avec un message d'erreur.
+   */
+  enregistrerDecalage(): void {
+    const p = this.posteEnDecalage;
+    if (!p || !this.decalageValide()) return;
+
+    const foyerId = this.contexte.foyerId()!;
+    const scenarioId = this.contexte.scenarioId()!;
+    const v = this.decalerForm.value;
+    const req = { nouvelleDateEffet: this.toIso(v.nouvelleDateEffet!) };
+
+    this.posteSvc.decalerDateEffet(foyerId, scenarioId, p.id, req).subscribe({
+      next: () => {
+        this.toast.add({ severity: 'success', summary: this.t.commun.succes });
+        this.decalerDialogVisible = false;
+        this.posteEnDecalage = null;
         this.charger();
       },
       error: (err) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message }),
