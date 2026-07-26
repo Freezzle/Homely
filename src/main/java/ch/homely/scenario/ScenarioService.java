@@ -22,7 +22,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-/** T7.1 — CRUD Scénarios + RepartitionDefaut + dupliquer + définir référence. */
+/** T7.1 — CRUD Scénarios (+ période de répartition ouverte) + dupliquer + définir référence. */
 @Service
 @Transactional
 public class ScenarioService {
@@ -62,6 +62,10 @@ public class ScenarioService {
         Foyer foyer = foyerRepo.findById(foyerId)
                 .orElseThrow(() -> new RessourceIntrouvableException("Foyer introuvable"));
 
+        if (req.repartitions() == null || req.repartitions().isEmpty()) {
+            throw new RegleMetierException(CodesErreur.REPARTITION_INVALIDE,
+                    "La répartition initiale est requise à la création du scénario.");
+        }
         validerRepartition(req.repartitions());
 
         Scenario s = new Scenario();
@@ -69,31 +73,21 @@ public class ScenarioService {
         appliquer(s, req, foyerId);
         Scenario saved = scenarioRepo.save(s);
 
-        // Créer la période ouverte initiale depuis les repartitions
-        if (req.repartitions() != null && !req.repartitions().isEmpty()) {
-            creerOuMettreAJourPeriodeOuverte(saved, req.repartitions(), foyerId);
-        }
+        // Créer la période ouverte initiale depuis les repartitions saisies par l'utilisateur
+        creerOuMettreAJourPeriodeOuverte(saved, req.repartitions(), foyerId);
 
         return toDto(scenarioRepo.save(saved));
     }
 
+    /**
+     * Modifie les paramètres généraux du scénario (nom, année de départ, trésorerie initiale,
+     * horizon). La répartition n'est jamais impactée par cette opération : elle se gère
+     * exclusivement via les périodes de prorata dédiées ({@link RepartitionPeriodeService}).
+     */
     public ScenarioDto modifier(UUID foyerId, UUID scenarioId, ScenarioRequest req) {
         multiTenant.verifierAcces(foyerId, RoleFoyer.EDITOR);
         Scenario s = trouver(foyerId, scenarioId);
-        validerRepartition(req.repartitions());
-        s.getRepartitionsDefaut().clear();
-        // Flush immédiat pour exécuter les DELETE (orphanRemoval) avant les futurs INSERT,
-        // sinon Hibernate insère les nouvelles lignes avant de supprimer les anciennes
-        // (ordre de flush par défaut : insertions puis suppressions) → violation de la
-        // contrainte unique (scenario_id, membre_id).
-        scenarioRepo.saveAndFlush(s);
         appliquer(s, req, foyerId);
-
-        // Mettre à jour la période ouverte
-        if (req.repartitions() != null && !req.repartitions().isEmpty()) {
-            creerOuMettreAJourPeriodeOuverte(s, req.repartitions(), foyerId);
-        }
-
         return toDto(scenarioRepo.save(s));
     }
 
@@ -119,15 +113,6 @@ public class ScenarioService {
         copie.setTresorerieInitiale(src.getTresorerieInitiale());
         copie.setHorizonAnnees(src.getHorizonAnnees());
         copie.setEstReference(false);
-
-        // Copie repartitionsDefaut (compat)
-        for (RepartitionDefaut r : src.getRepartitionsDefaut()) {
-            RepartitionDefaut rd = new RepartitionDefaut();
-            rd.setScenario(copie);
-            rd.setMembre(r.getMembre());
-            rd.setQuotePart(r.getQuotePart());
-            copie.getRepartitionsDefaut().add(rd);
-        }
 
         // Copie des périodes
         List<RepartitionPeriode> srcPeriodes = periodeRepo.findByScenarioId(src.getId());
@@ -173,17 +158,6 @@ public class ScenarioService {
         s.setTresorerieInitiale(req.tresorerieInitiale() != null
                 ? req.tresorerieInitiale() : BigDecimal.ZERO);
         s.setHorizonAnnees(req.horizonAnnees() > 0 ? req.horizonAnnees() : 9);
-
-        for (ScenarioRequest.RepartitionDefautDto dto : req.repartitions()) {
-            Membre m = membreRepo.findByIdAndFoyerId(dto.membreId(), foyerId)
-                    .orElseThrow(() -> new RessourceIntrouvableException(
-                            "Membre introuvable : " + dto.membreId()));
-            RepartitionDefaut rd = new RepartitionDefaut();
-            rd.setScenario(s);
-            rd.setMembre(m);
-            rd.setQuotePart(dto.quotePart());
-            s.getRepartitionsDefaut().add(rd);
-        }
     }
 
     /**
@@ -239,12 +213,6 @@ public class ScenarioService {
     }
 
     private ScenarioDto toDto(Scenario s) {
-        // Répartitions défaut (compat) depuis repartitionsDefaut
-        List<ScenarioDto.RepartitionDefautDto> reps = s.getRepartitionsDefaut().stream()
-                .map(r -> new ScenarioDto.RepartitionDefautDto(
-                        r.getMembre().getId(), r.getMembre().getNom(), r.getQuotePart()))
-                .toList();
-
         // Périodes depuis repartitionsPeriodes
         List<RepartitionPeriodeDto> periodes = s.getRepartitionsPeriodes().stream()
                 .map(p -> {
@@ -260,7 +228,7 @@ public class ScenarioService {
                 })
                 .toList();
 
-        // Retrocompatibilité : "repartitions" = parts de la période ouverte
+        // "repartitions" (rétro-compat DTO) = parts de la période ouverte
         List<ScenarioDto.RepartitionDefautDto> repsOuverte = periodes.stream()
                 .filter(p -> p.fin() == null)
                 .findFirst()
@@ -268,7 +236,7 @@ public class ScenarioService {
                         .map(pp -> new ScenarioDto.RepartitionDefautDto(
                                 pp.membreId(), pp.nomMembre(), pp.quotePart()))
                         .toList())
-                .orElse(reps); // fallback sur l'ancien champ
+                .orElse(List.of());
 
         return new ScenarioDto(s.getId(), s.getNom(), s.isEstReference(),
                 s.getAnneeDepart(), s.getTresorerieInitiale(), s.getHorizonAnnees(),

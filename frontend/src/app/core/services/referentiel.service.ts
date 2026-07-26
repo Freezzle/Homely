@@ -17,7 +17,6 @@ export class FoyerService {
   constructor(private http: HttpClient) {}
   lister() { return this.http.get<FoyerDto[]>('/api/foyers'); }
   obtenir(id: string) { return this.http.get<FoyerDto>(`/api/foyers/${id}`); }
-  creer(req: FoyerRequest) { return this.http.post<FoyerDto>('/api/foyers', req); }
   modifier(id: string, req: FoyerRequest) { return this.http.put<FoyerDto>(`/api/foyers/${id}`, req); }
   supprimer(id: string) { return this.http.delete<void>(`/api/foyers/${id}`); }
   onboarding(req: FoyerOnboardingRequest) { return this.http.post<FoyerOnboardingResponse>('/api/foyers/onboarding', req); }

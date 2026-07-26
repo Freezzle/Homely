@@ -298,32 +298,34 @@
              </div>
 
             <!-- Répartitions — liste fixe basée sur les membres -->
-            <div class="flex flex-col gap-2">
-              <label class="text-sm font-medium">{{ t.foyer.onboarding.champs.repartition }}</label>
-              @for (rep of scenario().repartitions; track rep.membreOrdre) {
-                <div class="flex items-center gap-3">
-                  <span class="flex-1 text-sm">{{ rep.nomMembre }}</span>
-                  <p-inputnumber
-                    [ngModel]="rep.quotePart"
-                    (ngModelChange)="updateRepartition(rep.membreOrdre, $event)"
-                    [min]="0"
-                    [max]="100"
-                    [minFractionDigits]="0"
-                    [maxFractionDigits]="2"
-                    suffix=" %">
-                  </p-inputnumber>
+            @if (!monoMembre()) {
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-medium">{{ t.foyer.onboarding.champs.repartition }}</label>
+                @for (rep of scenario().repartitions; track rep.membreOrdre) {
+                  <div class="flex items-center gap-3">
+                    <span class="flex-1 text-sm">{{ rep.nomMembre }}</span>
+                    <p-inputnumber
+                      [ngModel]="rep.quotePart"
+                      (ngModelChange)="updateRepartition(rep.membreOrdre, $event)"
+                      [min]="0"
+                      [max]="100"
+                      [minFractionDigits]="0"
+                      [maxFractionDigits]="2"
+                      suffix=" %">
+                    </p-inputnumber>
+                  </div>
+                }
+                <div class="flex items-center gap-2 mt-1"
+                  [class.text-red-500]="!repartitionValide()"
+                  [class.text-green-600]="repartitionValide()">
+                  <i [class]="repartitionValide() ? 'pi pi-check-circle' : 'pi pi-exclamation-circle'"></i>
+                  <span class="text-sm">
+                    {{ t.foyer.onboarding.champs.sommeAttendue100 }}
+                    ({{ sommeRepartitions() | number:'1.0-2' }} %)
+                  </span>
                 </div>
-              }
-              <div class="flex items-center gap-2 mt-1"
-                [class.text-red-500]="!repartitionValide()"
-                [class.text-green-600]="repartitionValide()">
-                <i [class]="repartitionValide() ? 'pi pi-check-circle' : 'pi pi-exclamation-circle'"></i>
-                <span class="text-sm">
-                  {{ t.foyer.onboarding.champs.sommeAttendue100 }}
-                  ({{ sommeRepartitions() | number:'1.0-2' }} %)
-                </span>
               </div>
-            </div>
+            }
 
             <div class="flex justify-between">
               <p-button

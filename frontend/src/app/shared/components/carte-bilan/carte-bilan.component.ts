@@ -39,7 +39,6 @@ export class CarteBilanComponent {
   /** Couleur du membre (hex) — ignorée quand `variante` = 'foyer'. */
   readonly couleur = input<string>('#64748b');
   readonly initiales = input.required<string>();
-  readonly montantPrincipalLabel = input.required<string>();
   readonly montantPrincipal = input.required<number>();
   readonly devise = input.required<string>();
   readonly lignes = input.required<LigneDecomposition[]>();

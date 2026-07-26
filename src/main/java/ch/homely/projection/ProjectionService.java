@@ -200,11 +200,6 @@ public class ProjectionService {
             membres = derniere.getParts().stream()
                     .map(pp -> pp.getMembre().getId()).toList();
         }
-        if (membres.isEmpty()) {
-            // Ultime fallback : anciennes repartitionsDefaut
-            membres = scenario.getRepartitionsDefaut().stream()
-                    .map(r -> r.getMembre().getId()).toList();
-        }
 
         Map<String, Double> taux = tauxRepo.findAllByFoyerId(foyerId).stream()
                 .collect(Collectors.toMap(TauxChange::getDevise, t -> t.getTauxVersBase().doubleValue()));

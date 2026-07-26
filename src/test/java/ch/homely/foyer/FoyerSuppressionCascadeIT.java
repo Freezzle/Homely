@@ -79,7 +79,6 @@ class FoyerSuppressionCascadeIT {
         assertThat(count("SELECT COUNT(*) FROM taux_change WHERE foyer_id = ?", foyerId)).isZero();
         assertThat(count("SELECT COUNT(*) FROM poste p JOIN scenario s ON s.id = p.scenario_id WHERE s.foyer_id = ?", foyerId)).isZero();
         assertThat(count("SELECT COUNT(*) FROM objectif o JOIN scenario s ON s.id = o.scenario_id WHERE s.foyer_id = ?", foyerId)).isZero();
-        assertThat(count("SELECT COUNT(*) FROM repartition_defaut rd JOIN scenario s ON s.id = rd.scenario_id WHERE s.foyer_id = ?", foyerId)).isZero();
         assertThat(count("SELECT COUNT(*) FROM repartition_periode rp JOIN scenario s ON s.id = rp.scenario_id WHERE s.foyer_id = ?", foyerId)).isZero();
         assertThat(count("SELECT COUNT(*) FROM repartition_poste rp JOIN poste p ON p.id = rp.poste_id JOIN scenario s ON s.id = p.scenario_id WHERE s.foyer_id = ?", foyerId)).isZero();
         assertThat(count("SELECT COUNT(*) FROM ventilation_compte vc JOIN poste p ON p.id = vc.poste_id JOIN scenario s ON s.id = p.scenario_id WHERE s.foyer_id = ?", foyerId)).isZero();

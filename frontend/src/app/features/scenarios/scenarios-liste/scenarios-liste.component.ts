@@ -83,21 +83,27 @@ export class ScenariosListeComponent implements OnInit {
   ouvrirEdition(s: ScenarioDto): void {
     this.scenarioEnEdition = s;
     this.form.patchValue({ nom: s.nom, anneeDepart: s.anneeDepart, tresorerieInitiale: s.tresorerieInitiale, horizonAnnees: s.horizonAnnees });
+    // La répartition ne se modifie pas depuis ce formulaire : elle se gère via les
+    // périodes de prorata dédiées (app-repartition-periodes). On n'affiche rien et on
+    // n'en tient pas compte à l'enregistrement.
     this.repsMap = {};
-    // Conserve la précision décimale (ex. 33.33) au lieu d'arrondir à l'entier,
-    // ce qui déformerait des quotes-parts valides et casserait la fidélité au centime.
-    s.repartitions.forEach(r => { this.repsMap[r.membreId] = Math.round(r.quotePart * 10000) / 100; });
-    this.calculerSomme();
     this.dialogVisible = true;
+  }
+
+  /** Foyer mono-membre : la répartition ne se pose pas, 100% est envoyé sans être affiché. */
+  get monoMembre(): boolean {
+    return this.membres().length === 1;
   }
 
   private initReps(): void {
     this.repsMap = {};
     const membres = this.membres();
-    if (membres.length) {
-      const part = Math.round((100 / membres.length) * 100) / 100;
-      const reste = Math.round((100 - part * (membres.length - 1)) * 100) / 100;
-      membres.forEach((m, i) => { this.repsMap[m.id] = i === membres.length - 1 ? reste : part; });
+    if (membres.length === 1) {
+      // Un seul membre : 100% implicite, aucune saisie demandée.
+      this.repsMap[membres[0].id] = 100;
+    } else {
+      // Plusieurs membres : aucune suggestion, l'utilisateur doit renseigner chaque pourcentage.
+      membres.forEach(m => { this.repsMap[m.id] = 0; });
     }
     this.calculerSomme();
   }
@@ -121,9 +127,13 @@ export class ScenariosListeComponent implements OnInit {
   enregistrer(): void {
     const foyerId = this.contexte.foyerId()!;
     const v = this.form.value;
-    const repartitions = this.membres()
-      .filter(m => (this.repsMap[m.id] ?? 0) > 0)
-      .map(m => ({ membreId: m.id, quotePart: Math.round((this.repsMap[m.id] ?? 0) * 100) / 10000 }));
+    // En édition, la répartition n'est jamais envoyée : elle n'est pas affichée et ne doit
+    // pas être modifiée par ce formulaire (gérée via les périodes de prorata dédiées).
+    const repartitions = this.scenarioEnEdition
+      ? []
+      : this.membres()
+          .filter(m => (this.repsMap[m.id] ?? 0) > 0)
+          .map(m => ({ membreId: m.id, quotePart: Math.round((this.repsMap[m.id] ?? 0) * 100) / 10000 }));
     const req = { nom: v.nom!, anneeDepart: v.anneeDepart!, tresorerieInitiale: v.tresorerieInitiale ?? 0, horizonAnnees: v.horizonAnnees!, repartitions };
     const obs = this.scenarioEnEdition
       ? this.scenarioSvc.modifier(foyerId, this.scenarioEnEdition.id, req)

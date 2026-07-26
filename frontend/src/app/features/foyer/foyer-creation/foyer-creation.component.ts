@@ -128,6 +128,9 @@ export class FoyerCreationComponent implements OnInit {
 
   readonly annees: number[] = Array.from({ length: 20 }, (_, i) => new Date().getFullYear() - 5 + i);
 
+  // Foyer mono-membre : la répartition ne se pose pas, 100% est envoyé sans être affiché.
+  readonly monoMembre = computed(() => this.membres().length === 1);
+
   // Computed
   readonly sommeRepartitions = computed(() =>
     this.scenario().repartitions.reduce((acc, r) => acc + (r.quotePart ?? 0), 0)
@@ -276,7 +279,9 @@ export class FoyerCreationComponent implements OnInit {
     const repartitions: RepartitionLocal[] = this.membres().map((m) => ({
       membreOrdre: m.ordre,
       nomMembre: m.nom || this.i18n.instant('foyer.onboarding.defaults.membreNomTemplate', { index: m.ordre }),
-      quotePart: nb === 1 ? 100 : nb === 2 ? 50 : 0,
+      // Un seul membre : 100% implicite (champ non affiché). Sinon, aucune suggestion :
+      // l'utilisateur doit renseigner lui-même chaque pourcentage.
+      quotePart: nb === 1 ? 100 : 0,
     }));
     this.scenario.update(s => ({ ...s, repartitions }));
   }

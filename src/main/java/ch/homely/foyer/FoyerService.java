@@ -15,7 +15,6 @@ import ch.homely.membre.MembreRepository;
 import ch.homely.moteur.MoteurCalcul;
 import ch.homely.moteur.RepartitionCalcul;
 import ch.homely.projection.ProjectionService;
-import ch.homely.scenario.RepartitionDefaut;
 import ch.homely.scenario.RepartitionPeriode;
 import ch.homely.scenario.RepartitionPeriodePart;
 import ch.homely.scenario.Scenario;
@@ -206,17 +205,6 @@ public class FoyerService {
         }
         MoteurCalcul.validerRepartition(calculs);
 
-        // RepartitionDefaut (rétrocompat)
-        for (int i = 0; i < sc.repartitions().size(); i++) {
-            FoyerOnboardingRequest.RepartitionCreation rc = sc.repartitions().get(i);
-            Membre m = parOrdre.get(rc.membreOrdre());
-            RepartitionDefaut rd = new RepartitionDefaut();
-            rd.setScenario(scenario);
-            rd.setMembre(m);
-            rd.setQuotePart(rc.quotePart());
-            scenario.getRepartitionsDefaut().add(rd);
-        }
-
         scenarioRepo.save(scenario);
 
         // RepartitionPeriode ouverte (début = anneeDepart-01-01, fin = null)
@@ -366,18 +354,27 @@ public class FoyerService {
         scenario.setFoyer(foyer);
         scenario.setNom("Scénario de base");
         scenario.setEstReference(true);
-        scenario.setAnneeDepart(Year.now().getValue());
+        int anneeDepart = Year.now().getValue();
+        scenario.setAnneeDepart(anneeDepart);
         scenario.setTresorerieInitiale(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
         scenario.setHorizonAnnees(25);
+        scenarioRepo.save(scenario);
+
+        RepartitionPeriode periode = new RepartitionPeriode();
+        periode.setScenario(scenario);
+        periode.setDebut(LocalDate.of(anneeDepart, 1, 1));
+        periode.setFin(null);
 
         List<BigDecimal> quotes = repartitionEquilibreeDeuxDecimales(membres.size());
         for (int i = 0; i < membres.size(); i++) {
-            RepartitionDefaut rd = new RepartitionDefaut();
-            rd.setScenario(scenario);
-            rd.setMembre(membres.get(i));
-            rd.setQuotePart(quotes.get(i));
-            scenario.getRepartitionsDefaut().add(rd);
+            RepartitionPeriodePart part = new RepartitionPeriodePart();
+            part.setPeriode(periode);
+            part.setMembre(membres.get(i));
+            part.setQuotePart(quotes.get(i));
+            part.setOrdre(i);
+            periode.getParts().add(part);
         }
+        scenario.getRepartitionsPeriodes().add(periode);
 
         scenarioRepo.save(scenario);
     }

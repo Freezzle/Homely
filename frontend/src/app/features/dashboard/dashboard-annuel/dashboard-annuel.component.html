@@ -49,35 +49,46 @@
 
         <!-- ①bis Cartes membre + foyer (revenus/charges/réserves/solde annuels, décomposition) -->
         @if (ventilationAnnuelle()) {
-            <div class="flex items-center justify-between gap-2 mb-1">
-                <p-selectbutton [options]="vueDecompositionOptions" [ngModel]="vueDecomposition()"
-                                (ngModelChange)="vueDecomposition.set($event)"
-                                optionLabel="label" optionValue="value" [allowEmpty]="false"/>
-            </div>
-            @if (vueEffective() !== 'MEMBRE') {
-                <div class="grid grid-cols-1 gap-4 mb-4">
-                    <app-carte-bilan variante="foyer" [nom]="t.projection.foyer"
-                                     [sousTitre]="foyerSousTitreAnnuel()"
-                                     [initiales]="foyerInitiales()"
-                                     [montantPrincipalLabel]="t.projection.resteAVivreAnnee"
-                                     [montantPrincipal]="ventilationAnnuelle()!.agregat.soldeDisponible"
-                                     [devise]="deviseBase()" [lignes]="foyerLignesActuellesAnnuel()"
-                                     [tauxEffort]="tauxEffortAnnuel()"/>
-                </div>
-            }
 
-            @if (afficherParMembre() && vueEffective() !== 'FOYER') {
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    @for (mc of membresDataAnnuel(); track mc.id) {
-                        <app-carte-bilan variante="membre" [nom]="mc.nom" [sousTitre]="mc.sousTitre"
-                                         [couleur]="mc.couleur" [initiales]="mc.initiales"
-                                         [montantPrincipalLabel]="t.projection.resteAVivreAnnee"
-                                         [montantPrincipal]="mc.agregat.soldeDisponible"
-                                         [devise]="deviseBase()" [lignes]="lignesMembreAnnuel(mc)"
-                                         [tauxEffort]="mc.tauxEffort"/>
+            <p-card>
+                <div>
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
+                        <span class="text-xs font-bold text-surface-700 uppercase tracking-widest flex items-center gap-2">
+                              {{ t.projection.resteAVivreDeAnnee }}
+                            </span>
+                        <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
+                    </div>
+                    <div class="flex items-center justify-center gap-2 mb-4">
+                        <p-selectbutton [options]="vueDecompositionOptions" [ngModel]="vueDecomposition()"
+                                        (ngModelChange)="vueDecomposition.set($event)"
+                                        optionLabel="label" optionValue="value" [allowEmpty]="false"/>
+                    </div>
+                    @if (vueEffective() !== 'MEMBRE') {
+                        <div class="grid grid-cols-1 gap-4 mb-4">
+                            <app-carte-bilan variante="foyer" [nom]="t.projection.foyer"
+                                             [sousTitre]="foyerSousTitreAnnuel()"
+                                             [initiales]="foyerInitiales()"
+                                             [montantPrincipal]="ventilationAnnuelle()!.agregat.soldeDisponible"
+                                             [devise]="deviseBase()" [lignes]="foyerLignesActuellesAnnuel()"
+                                             [tauxEffort]="tauxEffortAnnuel()"/>
+                        </div>
                     }
+
+                    @if (afficherParMembre() && vueEffective() !== 'FOYER') {
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            @for (mc of membresDataAnnuel(); track mc.id) {
+                                <app-carte-bilan variante="membre" [nom]="mc.nom" [sousTitre]="mc.sousTitre"
+                                                 [couleur]="mc.couleur" [initiales]="mc.initiales"
+                                                 [montantPrincipal]="mc.agregat.soldeDisponible"
+                                                 [devise]="deviseBase()" [lignes]="lignesMembreAnnuel(mc)"
+                                                 [tauxEffort]="mc.tauxEffort"/>
+                            }
+                        </div>
+                    }
+
                 </div>
-            }
+            </p-card>
         }
 
         @if (vueEffective() !== 'MEMBRE') {
@@ -218,8 +229,8 @@
                 <div>
                     <div class="flex items-center gap-3 mb-4">
                         <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
-                        <span class="text-xs font-bold text-surface-400 uppercase tracking-widest flex items-center gap-2">
-                              <i class="pi pi-users text-sm"></i>&nbsp;{{ t.projection.contributionParMembre }}
+                        <span class="text-xs font-bold text-surface-700 uppercase tracking-widest flex items-center gap-2">
+                              {{ t.projection.contributionParMembre }}
                             </span>
                         <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
                     </div>

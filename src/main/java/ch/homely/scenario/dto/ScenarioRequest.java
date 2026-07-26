@@ -12,7 +12,12 @@ public record ScenarioRequest(
         @NotNull @Min(2020) int anneeDepart,
         BigDecimal tresorerieInitiale,
         @Min(1) @Max(100) int horizonAnnees,
-        @NotEmpty @Valid List<RepartitionDefautDto> repartitions
+        /**
+         * Répartition initiale (uniquement prise en compte à la création du scénario, pour
+         * initialiser sa période ouverte). Ignorée lors d'une modification : la répartition
+         * se gère alors exclusivement via les périodes de prorata dédiées.
+         */
+        @Valid List<RepartitionDefautDto> repartitions
 ) {
     public record RepartitionDefautDto(
             @NotNull UUID membreId,

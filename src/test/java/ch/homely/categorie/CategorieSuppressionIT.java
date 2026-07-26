@@ -180,12 +180,13 @@ class CategorieSuppressionIT {
     }
 
     private String creerScenario(String token, String foyerId) {
+        String membreId = premierMembreId(token, foyerId);
         Map<String, Object> payload = Map.of(
                 "nom", "Scénario Test",
                 "anneeDepart", 2025,
                 "horizonAnnees", 1,
                 "tresorerieInitiale", 0,
-                "repartitions", List.of()
+                "repartitions", List.of(Map.of("membreId", membreId, "quotePart", 1))
         );
         try {
             String body = client.post()
@@ -195,6 +196,16 @@ class CategorieSuppressionIT {
                     .body(MAPPER.writeValueAsString(payload))
                     .retrieve().body(String.class);
             return MAPPER.readTree(body).get("id").asText();
+        } catch (Exception e) { throw new RuntimeException(e); }
+    }
+
+    private String premierMembreId(String token, String foyerId) {
+        try {
+            String body = client.get()
+                    .uri("/api/foyers/" + foyerId + "/membres")
+                    .header("Authorization", "Bearer " + token)
+                    .retrieve().body(String.class);
+            return MAPPER.readTree(body).get(0).get("id").asText();
         } catch (Exception e) { throw new RuntimeException(e); }
     }
 
