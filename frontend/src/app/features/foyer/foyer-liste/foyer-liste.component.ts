@@ -12,38 +12,7 @@ import { I18nService } from '../../../core/i18n/i18n.service';
   selector: 'app-foyer-liste',
   standalone: true,
   imports: [CommonModule, CardModule, ButtonModule],
-  template: `
-    <div class="max-w-2xl mx-auto py-8">
-      <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold">{{ t.foyer.choisir }}</h1>
-        <p-button icon="pi pi-plus" [label]="t.foyer.nouveau" (click)="ouvrirCreation()" />
-      </div>
-
-      <div class="grid grid-cols-1 gap-4">
-        @for (foyer of foyers(); track foyer.id) {
-          <p-card
-            class="cursor-pointer hover:shadow-lg transition-shadow border-2"
-            [ngClass]="{'border-primary': foyer.id === contexte.foyerId()}"
-            (click)="selectionner(foyer)"
-          >
-            <div class="flex items-center justify-between">
-              <div>
-                <div class="font-semibold text-lg">{{ foyer.nom }}</div>
-                <div class="text-sm text-surface-500">{{ foyer.deviseBase }} · {{ foyer.monRole }}</div>
-              </div>
-              <i class="pi pi-chevron-right text-surface-400"></i>
-            </div>
-          </p-card>
-        }
-        @if (foyers().length === 0 && !chargement()) {
-          <div class="text-center py-12 text-surface-400">
-            <i class="pi pi-home text-4xl mb-4 block"></i>
-            <p>{{ t.foyer.aucun }} {{ t.foyer.creerPremier }}</p>
-          </div>
-        }
-      </div>
-    </div>
-  `,
+  templateUrl: './foyer-liste.component.html',
 })
 export class FoyerListeComponent implements OnInit {
   private readonly i18n = inject(I18nService);

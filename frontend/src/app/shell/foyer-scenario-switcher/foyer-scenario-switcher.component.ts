@@ -21,47 +21,7 @@ import { I18nService } from '../../core/i18n/i18n.service';
   selector: 'app-foyer-scenario-switcher',
   standalone: true,
   imports: [CommonModule, FormsModule, SelectModule, DialogModule],
-  template: `
-    <p-dialog [(visible)]="visible" [modal]="true" [header]="t.foyer.changerContexte"
-              class="w-full max-w-md">
-      <div class="flex flex-col gap-4 pt-2">
-        @if (foyers().length > 0) {
-          <div class="flex flex-col gap-1">
-            <label class="text-sm font-medium">{{ t.foyer.choisir }}</label>
-            <p-select appendTo="body"
-              [options]="foyers()"
-              [(ngModel)]="foyerSelectionne"
-              optionLabel="nom"
-              [placeholder]="t.foyer.choisir"
-              class="w-full"
-              (onChange)="onFoyerChange($event.value)"
-            />
-          </div>
-        }
-
-        @if (scenarios().length > 0) {
-          <div class="flex flex-col gap-1">
-            <label class="text-sm font-medium">{{ t.scenario.choisir }}</label>
-            <p-select appendTo="body"
-              [options]="scenarios()"
-              [(ngModel)]="scenarioSelectionne"
-              optionLabel="nom"
-              [placeholder]="t.scenario.choisir"
-              class="w-full"
-              (onChange)="onScenarioChange($event.value)"
-            >
-              <ng-template #item let-s>
-                <span>{{ s.nom }}</span>
-                @if (s.estReference) {
-                  <span class="ml-2 text-xs bg-primary text-white rounded px-1">{{ t.scenario.reference }}</span>
-                }
-              </ng-template>
-            </p-select>
-          </div>
-        }
-      </div>
-    </p-dialog>
-  `,
+  templateUrl: './foyer-scenario-switcher.component.html',
 })
 export class FoyerScenarioSwitcherComponent implements OnInit {
   readonly i18n = inject(I18nService);

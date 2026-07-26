@@ -14,41 +14,7 @@ import { I18nService } from '../../../core/i18n/i18n.service';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink,
     CardModule, InputTextModule, ButtonModule, MessageModule],
-  template: `
-    <div class="min-h-screen flex items-center justify-center bg-surface-50 dark:bg-surface-950">
-      <p-card class="w-full max-w-sm shadow-xl">
-        <ng-template #header>
-          <div class="text-center pt-6 pb-2">
-            <span class="text-4xl">🏠</span>
-            <h1 class="text-2xl font-bold text-primary mt-2">Homely</h1>
-          </div>
-        </ng-template>
-        <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-col gap-4">
-          <div class="flex flex-col gap-1">
-            <label class="text-sm font-medium">{{ t.auth.fullName }}</label>
-            <input pInputText formControlName="nomComplet" class="w-full" />
-          </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-sm font-medium">{{ t.auth.email }}</label>
-            <input pInputText formControlName="email" type="email" class="w-full" />
-          </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-sm font-medium">{{ t.auth.password }}</label>
-            <input pInputText formControlName="password" type="password" class="w-full" />
-          </div>
-          @if (erreur()) {
-            <p-message severity="error">{{ erreur() }}</p-message>
-          }
-          <p-button type="submit" [label]="t.auth.registerBtn" class="w-full"
-                    [loading]="chargement()" [disabled]="form.invalid" />
-          <div class="text-center text-sm text-surface-500">
-            {{ t.auth.alreadyAccount }}
-            <a routerLink="/login" class="text-primary hover:underline ml-1">{{ t.auth.loginBtn }}</a>
-          </div>
-        </form>
-      </p-card>
-    </div>
-  `,
+  templateUrl: './register.component.html',
 })
 export class RegisterComponent {
   private readonly i18n = inject(I18nService);

@@ -14,22 +14,7 @@ import {ViewportService} from '../core/services/viewport.service';
   selector: 'app-shell',
   standalone: true,
   imports: [RouterOutlet, CommonModule, SidebarModule, TopbarComponent, SidebarMenuComponent],
-  template: `
-      <p-sidebar-layout class="flex h-screen mx-auto w-full xl:max-w-2/3">
-          @if (contexte.foyerId()) {
-              @if (viewport.estCompact() && contexte.sidebarOuverte()) {
-                  <p-sidebar-backdrop />
-              }
-              <app-sidebar-menu />
-          }
-          <p-sidebar-main class="flex flex-col flex-1 overflow-hidden">
-              <app-topbar class="sticky top-0 z-10" />
-              <main class="flex-1 overflow-y-auto p-4 md:p-6">
-                  <router-outlet />
-              </main>
-          </p-sidebar-main>
-      </p-sidebar-layout>
-  `,
+  templateUrl: './shell.component.html',
 })
 export class ShellComponent implements OnInit, OnDestroy {
   contexte             = inject(ContexteService);

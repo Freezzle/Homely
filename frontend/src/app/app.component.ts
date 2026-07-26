@@ -9,10 +9,6 @@ import { MessageService, ConfirmationService } from 'primeng/api';
   standalone: true,
   imports: [RouterOutlet, ToastModule, ConfirmDialogModule],
   providers: [MessageService, ConfirmationService],
-  template: `
-    <p-toast position="top-right" />
-    <p-confirmdialog />
-    <router-outlet />
-  `,
+  templateUrl: './app.component.html',
 })
 export class AppComponent {}

@@ -1,0 +1,67 @@
+<p-confirmdialog />
+<div class="flex flex-col gap-4">
+  <div class="flex items-center gap-4">
+    <h1 class="text-2xl font-bold flex-1">{{ t.referentiels.membre.titre }}</h1>
+    @if (contexte.estEditor()) {
+      <p-button icon="pi pi-plus" [label]="t.commun.creer" (click)="ouvrirCreation()" />
+    }
+  </div>
+
+  <p-table [value]="membres()" class="p-datatable-sm p-datatable-striped" [loading]="chargement()">
+    <ng-template #header>
+      <tr>
+        <th>{{ t.referentiels.membre.couleur }}</th>
+        <th pSortableColumn="nom">{{ t.referentiels.membre.nom }} <p-sort-icon field="nom" /></th>
+        <th class="text-right">{{ t.referentiels.membre.ordre }}</th>
+        <th class="text-center">{{ t.referentiels.membre.actif }}</th>
+        <th></th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-m>
+      <tr>
+        <td>
+          <span class="inline-block w-5 h-5 rounded-full border border-surface-300"
+                [style.background-color]="m.couleur"></span>
+        </td>
+        <td class="font-medium">{{ m.nom }}</td>
+        <td class="text-right text-surface-500">{{ m.ordre }}</td>
+        <td class="text-center">
+          <i [class]="m.actif ? 'pi pi-check text-green-500' : 'pi pi-times text-surface-300'"></i>
+        </td>
+        <td>
+          <div class="flex gap-1">
+            @if (contexte.estEditor()) {
+              <p-button icon="pi pi-pencil" [text]="true" size="small" (click)="ouvrirEdition(m)" />
+              <p-button icon="pi pi-trash" [text]="true" severity="danger" size="small" (click)="supprimer(m)" />
+            }
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr><td colspan="5" class="text-center py-8 text-surface-400">{{ t.commun.aucunResultat }}</td></tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<p-dialog [(visible)]="dialogVisible" [header]="membreEnEdition ? t.commun.modifier : t.commun.creer"
+          [modal]="true" class="w-full max-w-md">
+  <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-medium">{{ t.referentiels.membre.nom }} *</label>
+      <input pInputText formControlName="nom" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-medium">{{ t.referentiels.membre.couleur }}</label>
+      <p-colorpicker appendTo="body" formControlName="couleur" />
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-medium">{{ t.referentiels.membre.ordre }}</label>
+      <p-inputnumber formControlName="ordre" [min]="1" [max]="99" class="w-full" />
+    </div>
+  </form>
+  <ng-template #footer>
+    <p-button [label]="t.commun.annuler" severity="secondary" (click)="dialogVisible = false" />
+    <p-button [label]="t.commun.enregistrer" (click)="enregistrer()" [disabled]="form.invalid" />
+  </ng-template>
+</p-dialog>

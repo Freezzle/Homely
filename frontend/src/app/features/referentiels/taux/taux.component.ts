@@ -25,66 +25,7 @@ import { I18nService } from '../../../core/i18n/i18n.service';
     InputTextModule, InputNumberModule,
     ConfirmDialogModule,
   ],
-  template: `
-    <p-confirmdialog />
-    <div class="flex flex-col gap-4">
-      <div class="flex items-center gap-4">
-        <h1 class="text-2xl font-bold flex-1">{{ t.referentiels.taux.titre }}</h1>
-        <p-tag [value]="t.foyer.deviseBase + ' : ' + contexte.deviseBase()" severity="info" />
-        @if (contexte.estEditor()) {
-          <p-button icon="pi pi-plus" [label]="t.commun.creer" (click)="ouvrirCreation()" />
-        }
-      </div>
-
-      <p-table [value]="taux()" class="p-datatable-sm p-datatable-striped" [loading]="chargement()">
-        <ng-template #header>
-          <tr>
-            <th>{{ t.referentiels.taux.devise }}</th>
-            <th class="text-right">{{ t.referentiels.taux.tauxVersBase }}</th>
-            <th></th>
-          </tr>
-        </ng-template>
-        <ng-template #body let-tx>
-          <tr>
-            <td class="font-medium">{{ tx.devise }}</td>
-            <td class="text-right">{{ tx.tauxVersBase }}</td>
-            <td>
-              <div class="flex gap-1">
-                @if (contexte.estEditor()) {
-                  <p-button icon="pi pi-pencil" [text]="true" size="small" (click)="ouvrirEdition(tx)" />
-                  <p-button icon="pi pi-trash" [text]="true" severity="danger" size="small" (click)="supprimer(tx)" />
-                }
-              </div>
-            </td>
-          </tr>
-        </ng-template>
-        <ng-template #emptymessage>
-          <tr><td colspan="3" class="text-center py-8 text-surface-400">{{ t.commun.aucunResultat }}</td></tr>
-        </ng-template>
-      </p-table>
-    </div>
-
-    <p-dialog [(visible)]="dialogVisible" [header]="tauxEnEdition ? t.commun.modifier : t.commun.creer"
-              [modal]="true" class="w-full max-w-sm">
-      <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">{{ t.referentiels.taux.devise }} *</label>
-          <input pInputText formControlName="devise" class="w-full"
-                 [readonly]="!!tauxEnEdition" placeholder="EUR, USD…" />
-        </div>
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">{{ t.referentiels.taux.tauxVersBase }} *</label>
-          <p-inputnumber formControlName="tauxVersBase" mode="decimal" [minFractionDigits]="6" [maxFractionDigits]="6"
-                         [min]="0.000001" class="w-full" />
-          <small class="text-surface-400">1 {{ (form.value.devise || '?') | uppercase }} = valeur {{ contexte.deviseBase() }}</small>
-        </div>
-      </form>
-      <ng-template #footer>
-        <p-button [label]="t.commun.annuler" severity="secondary" (click)="dialogVisible = false" />
-        <p-button [label]="t.commun.enregistrer" (click)="enregistrer()" [disabled]="form.invalid" />
-      </ng-template>
-    </p-dialog>
-  `,
+  templateUrl: './taux.component.html',
 })
 export class TauxComponent implements OnInit {
   private readonly i18n = inject(I18nService);

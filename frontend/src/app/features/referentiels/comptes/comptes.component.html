@@ -1,0 +1,97 @@
+<p-confirmdialog />
+<div class="flex flex-col gap-4">
+  <div class="flex items-center gap-4">
+    <h1 class="text-2xl font-bold flex-1">{{ t.referentiels.compte.titre }}</h1>
+    @if (contexte.estEditor()) {
+      <p-button icon="pi pi-plus" [label]="t.commun.creer" (click)="ouvrirCreation()" />
+    }
+  </div>
+
+  <p-table [value]="comptes()" class="p-datatable-sm p-datatable-striped" [loading]="chargement()">
+    <ng-template #header>
+      <tr>
+        <th pSortableColumn="libelle">{{ t.referentiels.compte.libelle }} <p-sort-icon field="libelle" /></th>
+        <th class="text-right">{{ t.referentiels.compte.soldeInitial }}</th>
+        <th>{{ t.referentiels.compte.devise }}</th>
+        <th class="text-right">{{ t.referentiels.compte.ordre }}</th>
+        <th></th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-c>
+      <tr>
+        <td>
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-medium">{{ c.libelle }}</span>
+            @for (mid of c.membreIds; track mid) {
+              @let m = membreParId(mid);
+              @if (m) {
+                <app-tag [couleur]="m.couleur" [texte]="m.nom" />
+              }
+            }
+          </div>
+        </td>
+        <td class="text-right">{{ c.soldeInitial | montant:c.devise }}</td>
+        <td class="text-surface-500">{{ c.devise }}</td>
+        <td class="text-right text-surface-500">{{ c.ordre }}</td>
+        <td>
+          <div class="flex gap-1">
+            @if (contexte.estEditor()) {
+              <p-button icon="pi pi-pencil" [text]="true" size="small" (click)="ouvrirEdition(c)" />
+              <p-button icon="pi pi-trash" [text]="true" severity="danger" size="small" (click)="supprimer(c)" />
+            }
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr><td colspan="5" class="text-center py-8 text-surface-400">{{ t.commun.aucunResultat }}</td></tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<p-dialog [(visible)]="dialogVisible" [header]="compteEnEdition ? t.commun.modifier : t.commun.creer"
+          [modal]="true" class="w-full max-w-lg">
+  <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-medium">{{ t.referentiels.compte.libelle }} *</label>
+      <input pInputText formControlName="libelle" class="w-full" />
+    </div>
+
+    <!-- Membres rattachés -->
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-medium">{{ t.referentiels.compte.membres }} *</label>
+      <p-multiselect
+        appendTo="body"
+        formControlName="membreIds"
+        [options]="membresActifs()"
+        optionLabel="nom"
+        optionValue="id"
+        [placeholder]="t.referentiels.compte.membresPlaceholder"
+        class="w-full"
+        display="chip" />
+      @if (form.get('membreIds')?.invalid && form.get('membreIds')?.touched) {
+        <p-message severity="warn">{{ t.referentiels.compte.membresRequis }}</p-message>
+      }
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-medium">{{ t.referentiels.compte.devise }}</label>
+        <p-select appendTo="body" formControlName="devise" [options]="devises" class="w-full" />
+      </div>
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-medium">{{ t.referentiels.compte.ordre }}</label>
+        <p-inputnumber formControlName="ordre" [min]="1" class="w-full" />
+      </div>
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-medium">{{ t.referentiels.compte.soldeInitial }}</label>
+      <p-inputnumber formControlName="soldeInitial" mode="decimal" [minFractionDigits]="2" class="w-full" />
+    </div>
+  </form>
+  <ng-template #footer>
+    <p-button [label]="t.commun.annuler" severity="secondary" (click)="dialogVisible = false" />
+    <p-button [label]="t.commun.enregistrer" (click)="enregistrer()"
+              [disabled]="form.invalid || !membreIdsNonVides()" />
+  </ng-template>
+</p-dialog>

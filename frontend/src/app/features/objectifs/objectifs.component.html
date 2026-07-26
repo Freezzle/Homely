@@ -1,0 +1,154 @@
+<p-confirmdialog />
+<div class="flex flex-col gap-4">
+  <div class="flex items-center gap-4">
+    <h1 class="text-2xl font-bold flex-1">{{ t.objectif.titre }}</h1>
+    @if (contexte.estEditor()) {
+      <p-button icon="pi pi-plus" [label]="t.commun.creer" (click)="ouvrirCreation()" />
+    }
+  </div>
+
+  @if (chargement()) {
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      @for (i of [1,2,3,4]; track i) { <p-skeleton height="220px" /> }
+    </div>
+  } @else {
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      @for (o of objectifsData(); track o.id) {
+        <p-card class="h-full" [class.opacity-60]="o.statut === 'ATTEINT'">
+          <ng-template #title>
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2 min-w-0">
+                <i class="pi pi-flag text-surface-400 shrink-0"></i>
+                <span class="font-bold truncate">{{ o.libelle }}</span>
+              </div>
+              <p-tag [value]="t.objectif.statuts[o.statut]" [rounded]="true"
+                     [severity]="o.statut === 'EN_RETARD' ? 'warn' : 'success'"/>
+            </div>
+          </ng-template>
+          <ng-template #subtitle>
+            <span class="text-xs">
+              @if (o.echeance) { {{ t.objectif.echeance }} {{ o.echeance | dateFr }} · }
+              @if (o.compteLibelle) { {{ o.compteLibelle }} · }
+              @if (o.actifLibelle) { {{ o.actifLibelle }} · }
+              {{ o.categorieLibelle }}
+            </span>
+          </ng-template>
+
+          <div class="flex flex-col gap-3">
+            @if (contexte.estEditor()) {
+              <div class="flex justify-end gap-1 -mt-2">
+                <p-button icon="pi pi-pencil" [text]="true" size="small" (click)="ouvrirEdition(o)" />
+                <p-button icon="pi pi-trash" [text]="true" severity="danger" size="small" (click)="supprimer(o)" />
+              </div>
+            }
+
+            <!-- Montants regroupés -->
+            <div class="flex items-baseline gap-1.5">
+              <span class="text-xl font-bold tabular-nums">{{ o.soldeActuel | montant }}</span>
+              <span class="text-surface-400">/</span>
+              <span class="text-surface-400 tabular-nums">{{ o.montantCible | montant }} ({{ t.objectif.cible }})</span>
+            </div>
+
+            <!-- Progression + jalons -->
+            <div class="relative">
+              <p-progressbar [value]="o.progression * 100" [showValue]="false" class="h-2"/>
+              <div class="absolute inset-0 flex items-center pointer-events-none">
+                @for (jalon of [25, 50, 75]; track jalon) {
+                  <span class="absolute w-2.5 h-2.5 rounded-full border-2 -translate-x-1/2 pointer-events-auto"
+                        [style.left.%]="jalon"
+                        [class.bg-surface-0]="o.progression * 100 < jalon"
+                        [class.border-surface-400]="o.progression * 100 < jalon"
+                        [class.bg-surface-700]="o.progression * 100 >= jalon"
+                        [class.border-surface-700]="o.progression * 100 >= jalon"
+                        [class.dark:bg-surface-200]="o.progression * 100 >= jalon"
+                        [class.dark:border-surface-200]="o.progression * 100 >= jalon"
+                        [pTooltip]="t.objectif.jalon + ' ' + jalon + ' %'" tooltipPosition="top"></span>
+                }
+              </div>
+            </div>
+
+            <!-- Note conditionnelle si en retard -->
+            @if (o.statut === 'EN_RETARD') {
+              <div class="text-xs text-surface-400">
+                {{ t.objectif.aCeRythme }} {{ o.echeance | dateFr }}
+                {{ t.objectif.verserPourTenir }} {{ o.epargneRequise | montant }}{{ t.objectif.parMoisPourTenirEcheance }}
+              </div>
+            }
+
+            <!-- Membres attachés + mensualité -->
+            <div class="flex items-center justify-between">
+              @if (o.membresAttaches.length > 0) {
+                <p-avatargroup>
+                  @for (m of o.membresAttaches; track m.id) {
+                    <p-avatar [label]="m.initiales" shape="circle" size="normal"
+                              [style.background-color]="m.couleur" class="text-white text-xs font-semibold"
+                              [pTooltip]="m.nom" tooltipPosition="top"/>
+                  }
+                </p-avatargroup>
+              } @else {
+                <span></span>
+              }
+              <span class="text-sm font-semibold text-surface-500">
+                {{ o.statut === 'ATTEINT' ? t.objectif.termine : (o.epargneRequise | montant) + t.objectif.parMois }}
+              </span>
+            </div>
+          </div>
+
+          <ng-template #footer>
+            <div class="flex flex-wrap gap-2">
+              @if (o.statut === 'ATTEINT') {
+                <p-button [label]="t.objectif.actions.convertirReserve" size="small" (click)="actionAVenir()"/>
+                <p-button [label]="t.objectif.actions.archiver" severity="secondary" [outlined]="true" size="small" (click)="actionAVenir()"/>
+              } @else {
+                <p-button [label]="t.objectif.actions.recalibrer" size="small" (click)="actionAVenir()"/>
+                <p-button [label]="t.objectif.actions.verserExtra" severity="secondary" [outlined]="true" size="small" (click)="actionAVenir()"/>
+                <p-button [label]="t.objectif.actions.mettreEnPause" severity="secondary" [outlined]="true" size="small" (click)="actionAVenir()"/>
+              }
+            </div>
+          </ng-template>
+        </p-card>
+      }
+      @if (objectifsData().length === 0) {
+        <div class="col-span-full text-center py-12 text-surface-400">
+          <i class="pi pi-flag text-4xl mb-4 block"></i>
+          <p>{{ t.commun.aucunResultat }}</p>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<p-dialog [(visible)]="dialogVisible" [header]="objectifEnEdition ? t.commun.modifier : t.commun.creer"
+          [modal]="true" class="w-full max-w-md">
+  <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-medium">{{ t.objectif.libelle }} *</label>
+      <input pInputText formControlName="libelle" class="w-full" />
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-medium">{{ t.objectif.montantCible }} *</label>
+        <p-inputnumber formControlName="montantCible" mode="decimal" [minFractionDigits]="2" class="w-full" />
+      </div>
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-medium">{{ t.objectif.echeance }}</label>
+        <p-datepicker appendTo="body" formControlName="echeance" dateFormat="dd/mm/yy" [showButtonBar]="true" class="w-full" />
+      </div>
+    </div>
+    <!-- Compte ou actif (XOR) -->
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-medium">{{ t.objectif.compte }}</label>
+      <p-select appendTo="body" formControlName="compteId" [options]="comptes()" optionLabel="libelle" optionValue="id"
+                [showClear]="true" class="w-full" (onChange)="onCompteChange($event)" />
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-medium">{{ t.objectif.actif }}</label>
+      <p-select appendTo="body" formControlName="actifId" [options]="actifs()" optionLabel="libelle" optionValue="id"
+                [showClear]="true" class="w-full" (onChange)="onActifChange($event)" />
+    </div>
+  </form>
+  <ng-template #footer>
+    <p-button [label]="t.commun.annuler" severity="secondary" (click)="dialogVisible = false" />
+    <p-button [label]="t.commun.enregistrer" (click)="enregistrer()" [disabled]="form.invalid" />
+  </ng-template>
+</p-dialog>

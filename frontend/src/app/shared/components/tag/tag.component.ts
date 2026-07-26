@@ -10,13 +10,7 @@ import { normaliserCouleur, couleurTexteContraste } from '../../utils/couleur.ut
 @Component({
   selector: 'app-tag',
   standalone: true,
-  template: `
-    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium leading-none"
-          [style.background-color]="couleurFond()"
-          [style.color]="couleurTexte()">
-      {{ texte() }}
-    </span>
-  `,
+  templateUrl: './tag.component.html',
 })
 export class TagComponent {
   readonly couleur = input<string | null | undefined>();
