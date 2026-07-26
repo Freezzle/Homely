@@ -4,6 +4,7 @@ target/
 !**/src/test/**/target/
 .kotlin
 .env.example
+env.example
 run-ng.ps1
 
 ### IntelliJ IDEA ###
