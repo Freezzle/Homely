@@ -1,7 +1,7 @@
 import { Component, inject, signal, computed, OnInit, input, effect, ViewChild, ElementRef } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, Validators, ReactiveFormsModule, FormArray, FormsModule } from '@angular/forms';
+import { FormBuilder, Validators, ReactiveFormsModule, FormArray, FormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
 import { startWith } from 'rxjs';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -24,12 +24,28 @@ import { SelectButtonModule } from 'primeng/selectbutton';
 import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
 import { ContexteService } from '../../../core/services/contexte.service';
 import { PosteService } from '../../../core/services/scenario-poste.service';
-import { CategorieService, CompteService } from '../../../core/services/referentiel.service';
+import { CategorieService, CompteService, TauxChangeService } from '../../../core/services/referentiel.service';
 import { PosteDto, CategorieDto, CompteDto, MembreDto, VentilationCompteDto, TypePoste, TypeRepartition } from '../../../core/models/api.models';
 import { MontantPipe, PeriodicitePipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
+import { localeDeLangue } from '../../../core/i18n/locale.util';
+import { buildConfiguredCurrencyOptions } from '../../../core/constants/devises.constants';
 import { TagComponent } from '../../../shared/components/tag/tag.component';
 import { toIsoDateLocal, parseIsoDateLocal } from '../../../core/utils/date.util';
+
+/**
+ * Validateur de groupe : la date de fin (si renseignée) ne peut pas être
+ * antérieure à la date de début. Sans ce garde-fou, le formulaire principal
+ * autorisait l'enregistrement de périodes incohérentes (`fin < debut`).
+ */
+function datesCoherentesValidator(group: AbstractControl): ValidationErrors | null {
+  const debut = group.get('debut')?.value as Date | null;
+  const fin = group.get('fin')?.value as Date | null;
+  if (debut && fin && fin.getTime() < debut.getTime()) {
+    return { finAvantDebut: true };
+  }
+  return null;
+}
 
 /**
  * Poste enrichi de métadonnées d'affichage calculées côté front pour le regroupement
@@ -68,6 +84,7 @@ export class PostesListeComponent implements OnInit {
   private posteSvc = inject(PosteService);
   private categorieSvc = inject(CategorieService);
   private compteSvc = inject(CompteService);
+  private tauxChangeSvc = inject(TauxChangeService);
   private toast = inject(MessageService);
   private confirm = inject(ConfirmationService);
   private fb = inject(FormBuilder);
@@ -75,13 +92,20 @@ export class PostesListeComponent implements OnInit {
   postes = signal<PosteDto[]>([]);
   categories = signal<CategorieDto[]>([]);
   comptes = signal<CompteDto[]>([]);
+  devisesDisponibles = signal<string[]>([this.contexte.deviseBase()]);
   chargement = signal(false);
+  enregistrementEnCours = signal(false);
   dialogVisible = false;
   apercuVisible = false;
   posteEnEdition: PosteDto | null = null;
   apercuData = signal<{ annee: number; contributions: { mois: number; contribution: number; }[] } | null>(null);
   membres = this.contexte.membres;
   sommeRepartition = 0;
+
+  /** Tolérance flottante : une somme visuellement à 100% ne doit jamais être refusée à tort. */
+  get sommeRepartitionValide(): boolean {
+    return Math.abs(this.sommeRepartition - 100) < 0.01;
+  }
 
   // ── Révision de montant planifiée ─────────────────────────
   revisionDialogVisible = false;
@@ -469,12 +493,12 @@ export class PostesListeComponent implements OnInit {
     this.calculerSomme();
   }
 
-  /** Parts égales entre tous les membres, même arrondi que la répartition par défaut d'un scénario. */
+  /** Parts égales entre tous les membres, en conservant 2 décimales pour éviter les résidus flottants. */
   private appliquerRepartitionEgale(): void {
     const n = this.repartitionsArray.length;
     if (!n) return;
-    const part = Math.round(100 / n);
-    const reste = 100 - part * (n - 1);
+    const part = Math.round((100 / n) * 100) / 100;
+    const reste = Math.round((100 - part * (n - 1)) * 100) / 100;
     this.repartitionsArray.controls.forEach((c, i) => {
       c.patchValue({ quotePart: i === n - 1 ? reste : part }, { emitEvent: false });
     });
@@ -493,7 +517,7 @@ export class PostesListeComponent implements OnInit {
       const membreId = c.get('membreId')?.value;
       const base = reps.find(r => r.membreId === membreId)?.quotePart ?? (n ? 1 / n : 0);
       const effective = (inverse && n > 1) ? (1 - base) / (n - 1) : base;
-      c.patchValue({ quotePart: Math.round(effective * 100) }, { emitEvent: false });
+      c.patchValue({ quotePart: Math.round(effective * 10000) / 100 }, { emitEvent: false });
     });
     this.calculerSomme();
   }
@@ -530,6 +554,7 @@ export class PostesListeComponent implements OnInit {
     description:     ['', Validators.required],
     categorieId:     [null as string | null],
     montant:         [0, [Validators.required, Validators.min(0)]],
+    devise:          [this.contexte.deviseBase(), Validators.required],
     periodiciteMois: [0, Validators.min(0)],
     mode:            ['MENSUALISE'],
     moment:          ['DEBUT_PERIODE'],
@@ -539,9 +564,50 @@ export class PostesListeComponent implements OnInit {
     debut:           [null as Date | null],
     fin:             [null as Date | null],
     repartitions:    this.fb.array([] as any[]),
-  });
+  }, { validators: [datesCoherentesValidator] });
 
   get repartitionsArray() { return this.form.get('repartitions') as FormArray; }
+
+  private readonly _chargerDevisesDisponiblesEffect = effect(() => {
+    const foyerId = this.contexte.foyerId();
+    const deviseBase = this.contexte.deviseBase();
+    const controleDevise = this.form.get('devise');
+
+    this.devisesDisponibles.set([deviseBase]);
+    if (!controleDevise?.value) {
+      controleDevise?.setValue(deviseBase, { emitEvent: false });
+    }
+
+    if (!foyerId) {
+      return;
+    }
+
+    this.tauxChangeSvc.lister(foyerId).subscribe({
+      next: taux => {
+        if (this.contexte.foyerId() !== foyerId) {
+          return;
+        }
+
+        const devises = buildConfiguredCurrencyOptions(
+          deviseBase,
+          taux.map(item => item.devise),
+        );
+
+        this.devisesDisponibles.set(devises);
+        if (!devises.includes((controleDevise?.value as string | null) ?? '')) {
+          controleDevise?.setValue(deviseBase, { emitEvent: false });
+        }
+      },
+      error: () => {
+        if (this.contexte.foyerId() !== foyerId) {
+          return;
+        }
+
+        this.devisesDisponibles.set([deviseBase]);
+        controleDevise?.setValue(deviseBase, { emitEvent: false });
+      },
+    });
+  });
 
   /** Signal réactif sur la valeur courante de typeRepartition (réagit aux changements du select) */
   private typeRepartitionValue = toSignal(
@@ -571,7 +637,7 @@ export class PostesListeComponent implements OnInit {
     const estimPct = this.form.value.estimPourcentage;
     // Si nature=ESTIMATION, estimPourcentage doit être non-null
     const isEstimationValid = nature === 'ESTIMATION' ? estimPct !== null && estimPct !== undefined && estimPct > 0 : true;
-    return isBaseValid && isEstimationValid && (!this.estCustomMultiMembre() || this.sommeRepartition === 100);
+    return isBaseValid && isEstimationValid && (!this.estCustomMultiMembre() || this.sommeRepartitionValide);
   }
 
   /** Effet : bascule Nature EFFECTIF→ESTIMATION pré-remplit 10%, ESTIMATION→EFFECTIF vide (null) */
@@ -1000,7 +1066,8 @@ export class PostesListeComponent implements OnInit {
   ouvrirCreation(): void {
     this.posteEnEdition = null;
     this.form.reset({ mode: 'MENSUALISE', moment: 'DEBUT_PERIODE', nature: 'EFFECTIF',
-                      periodiciteMois: 0, typeRepartition: 'AUTO', estimPourcentage: null });
+                      periodiciteMois: 0, devise: this.contexte.deviseBase(),
+                      typeRepartition: 'AUTO', estimPourcentage: null });
     this.initialiserRepartitions(undefined);
     this.frequenceChoisie.set(null);
     this.sousFrequence.set(null);
@@ -1015,7 +1082,7 @@ export class PostesListeComponent implements OnInit {
     this.posteEnEdition = p;
     this.form.patchValue({
       description: p.description, categorieId: p.categorieId,
-      montant: p.montant, periodiciteMois: p.periodiciteMois ?? 0,
+      montant: p.montant, devise: p.devise ?? this.contexte.deviseBase(), periodiciteMois: p.periodiciteMois ?? 0,
       mode: p.mode, moment: p.moment, nature: p.nature ?? 'EFFECTIF',
       estimPourcentage: p.estimPourcentage ?? null,
       typeRepartition: p.typeRepartition ?? 'AUTO',
@@ -1098,7 +1165,7 @@ export class PostesListeComponent implements OnInit {
     membres.forEach((m, i) => {
       const rep       = existantes?.find(r => r.membreId === m.id);
       const vent      = ventilationsExistantes?.find(v => v.membreId === m.id);
-      const quotePart = rep ? Math.round(rep.quotePart * 100) : 0;
+      const quotePart = rep ? Math.round(rep.quotePart * 10000) / 100 : 0;
       const compteId  = vent?.compteId ?? this.defaultCompteIdForMembre(m.id);
 
       if (i < this.repartitionsArray.length) {
@@ -1124,8 +1191,10 @@ export class PostesListeComponent implements OnInit {
   }
 
   calculerSomme(): void {
-    this.sommeRepartition = this.repartitionsArray.controls
+    const total = this.repartitionsArray.controls
       .reduce((s, c) => s + (c.get('quotePart')?.value ?? 0), 0);
+    // Neutralise les résidus binaires (ex. 33.33+33.33+33.34 = 100.00000000000001).
+    this.sommeRepartition = Math.round(total * 100) / 100;
   }
 
   /**
@@ -1141,6 +1210,11 @@ export class PostesListeComponent implements OnInit {
   }
 
   enregistrer(): void {
+    if (this.enregistrementEnCours()) return;
+    if (this.form.hasError('finAvantDebut')) {
+      this.toast.add({ severity: 'warn', summary: this.t.commun.erreur, detail: this.t.poste.finAvantDebut });
+      return;
+    }
     const foyerId = this.contexte.foyerId()!;
     const scenarioId = this.contexte.scenarioId()!;
     const v = this.form.value;
@@ -1163,12 +1237,12 @@ export class PostesListeComponent implements OnInit {
     const repartitions = isCustom && this.repartitionsArray.length
       ? this.repartitionsArray.controls.map(c => ({
           membreId: c.get('membreId')!.value,
-          quotePart: (c.get('quotePart')!.value ?? 0) / 100,
+          quotePart: Math.round((c.get('quotePart')!.value ?? 0) * 100) / 10000,
         })).filter(r => r.quotePart > 0)
       : undefined;
 
     // Validation somme seulement pour CUSTOM multi-membres
-    if (isCustom && this.membres().length > 1 && this.sommeRepartition !== 100) {
+    if (isCustom && this.membres().length > 1 && !this.sommeRepartitionValide) {
       this.toast.add({ severity: 'warn', summary: this.t.commun.erreur, detail: this.t.commun.repartitionInvalide });
       return;
     }
@@ -1184,6 +1258,7 @@ export class PostesListeComponent implements OnInit {
       description:     v.description!,
       categorieId:     v.categorieId ?? undefined,
       montant:         v.montant!,
+      devise:          v.devise ?? this.contexte.deviseBase(),
       periodiciteMois: periodicite,
       mode:            (estOneShot ? 'MENSUALISE' : v.mode) as any,
       moment:          (estOneShot ? 'DEBUT_PERIODE' : v.moment) as any,
@@ -1201,13 +1276,18 @@ export class PostesListeComponent implements OnInit {
       ? this.posteSvc.modifier(foyerId, scenarioId, this.posteEnEdition.id, req)
       : this.posteSvc.creer(foyerId, scenarioId, req);
 
+    this.enregistrementEnCours.set(true);
     obs.subscribe({
       next: () => {
+        this.enregistrementEnCours.set(false);
         this.toast.add({ severity: 'success', summary: this.t.commun.succes });
         this.dialogVisible = false;
         this.charger();
       },
-      error: (err) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message }),
+      error: (err) => {
+        this.enregistrementEnCours.set(false);
+        this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message });
+      },
     });
   }
 
@@ -1219,7 +1299,7 @@ export class PostesListeComponent implements OnInit {
         const scenarioId = this.contexte.scenarioId()!;
         this.posteSvc.supprimer(foyerId, scenarioId, p.id).subscribe({
           next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.charger(); },
-          error: () => this.toast.add({ severity: 'error', summary: this.t.commun.erreur }),
+          error: (err) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message }),
         });
       },
     });
@@ -1227,9 +1307,13 @@ export class PostesListeComponent implements OnInit {
 
   private toIso(d: Date): string { return toIsoDateLocal(d); }
 
+  private localeCourante(): string {
+    return localeDeLangue(this.i18n.currentLang());
+  }
+
   /** Formater un pourcentage avec 1 décimale */
   formatEstimationPourcentage(pct: number): string {
-    return new Intl.NumberFormat('fr-CH', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(pct);
+    return new Intl.NumberFormat(this.localeCourante(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(pct);
   }
 
   typeAccentClass = computed(() => {
@@ -1245,19 +1329,19 @@ export class PostesListeComponent implements OnInit {
     try {
       const [year, month] = v.split('-');
       const d = new Date(+year, +month - 1, 1);
-      return new Intl.DateTimeFormat('fr-CH', { month: 'short', year: 'numeric' }).format(d);
+      return new Intl.DateTimeFormat(this.localeCourante(), { month: 'short', year: 'numeric' }).format(d);
     } catch { return v; }
   }
 
   formaterMontant(montant: number, devise?: string): string {
-    return new Intl.NumberFormat('fr-CH', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(montant)
+    return new Intl.NumberFormat(this.localeCourante(), { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(montant)
       + (devise ? ` ${devise}` : '');
   }
 
   private formaterDateComplete(iso: string): string {
     const [year, month, day] = iso.split('-');
     const d = new Date(+year, +month - 1, +day);
-    return new Intl.DateTimeFormat('fr-CH', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d);
+    return new Intl.DateTimeFormat(this.localeCourante(), { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d);
   }
 
   /** Dernier jour du mois contenant la date donnée. */
@@ -1510,4 +1594,3 @@ export class PostesListeComponent implements OnInit {
     });
   }
 }
-

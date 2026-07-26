@@ -11,10 +11,11 @@ import { TagModule } from 'primeng/tag';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ContexteService } from '../../../core/services/contexte.service';
-import { ActifService } from '../../../core/services/referentiel.service';
+import { ActifService, TauxChangeService } from '../../../core/services/referentiel.service';
 import { ActifDto, TypeActif } from '../../../core/models/api.models';
 import { MontantPipe, PctPipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
+import { buildConfiguredCurrencyOptions } from '../../../core/constants/devises.constants';
 
 /** T10.2 — CRUD Actifs patrimoniaux */
 @Component({
@@ -34,6 +35,7 @@ export class ActifsComponent implements OnInit {
   readonly t = this.i18n.translations();
   contexte = inject(ContexteService);
   private actifSvc = inject(ActifService);
+  private tauxChangeSvc = inject(TauxChangeService);
   private toast = inject(MessageService);
   private confirm = inject(ConfirmationService);
   private fb = inject(FormBuilder);
@@ -56,7 +58,7 @@ export class ActifsComponent implements OnInit {
     { label: this.t.referentiels.actif.types.VEHICULE,         value: 'VEHICULE' },
     { label: this.t.referentiels.actif.types.AUTRE,            value: 'AUTRE' },
   ];
-  devises = ['CHF', 'EUR', 'USD', 'GBP', 'CAD'];
+  private readonly _devises = signal<string[]>([this.contexte.deviseBase()]);
 
   form = this.fb.group({
     libelle: ['', Validators.required],
@@ -66,6 +68,51 @@ export class ActifsComponent implements OnInit {
     tauxCroissanceAnnuel: [0],
     ordre: [1, Validators.required],
   });
+
+  private readonly _chargerDevisesEffect = effect(() => {
+    const foyerId = this.contexte.foyerId();
+    const deviseBase = this.contexte.deviseBase();
+    const controleDevise = this.form.get('devise');
+
+    this._devises.set([deviseBase]);
+    if (!controleDevise?.value) {
+      controleDevise?.setValue(deviseBase, { emitEvent: false });
+    }
+
+    if (!foyerId) {
+      return;
+    }
+
+    this.tauxChangeSvc.lister(foyerId).subscribe({
+      next: taux => {
+        if (this.contexte.foyerId() !== foyerId) {
+          return;
+        }
+
+        const devisesDisponibles = buildConfiguredCurrencyOptions(
+          deviseBase,
+          taux.map(item => item.devise),
+        );
+
+        this._devises.set(devisesDisponibles);
+        if (!devisesDisponibles.includes((controleDevise?.value as string | null) ?? '')) {
+          controleDevise?.setValue(deviseBase, { emitEvent: false });
+        }
+      },
+      error: () => {
+        if (this.contexte.foyerId() !== foyerId) {
+          return;
+        }
+
+        this._devises.set([deviseBase]);
+        controleDevise?.setValue(deviseBase, { emitEvent: false });
+      },
+    });
+  });
+
+  devisesOptions(): string[] {
+    return this._devises();
+  }
 
   typeActifLabel(type: TypeActif): string {
     return this.t.referentiels.actif.types[type] ?? type;
@@ -125,6 +172,4 @@ export class ActifsComponent implements OnInit {
     });
   }
 }
-
-
 

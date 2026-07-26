@@ -55,7 +55,8 @@
       </div>
       <div class="flex flex-col gap-1">
         <label class="text-sm font-medium">{{ t.referentiels.actif.devise }}</label>
-        <p-select appendTo="body" formControlName="devise" [options]="devises" class="w-full" />
+        <p-select appendTo="body" formControlName="devise" [options]="devisesOptions()" class="w-full" />
+        <small class="text-surface-400">{{ t.commun.deviseConfigureeAide }}</small>
       </div>
     </div>
     <div class="grid grid-cols-2 gap-4">

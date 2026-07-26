@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './core/guards/auth.guard';
+import { authGuard, roleGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   // ── Public ─────────────────────────────────────────────────────────────────
@@ -94,6 +94,7 @@ export const routes: Routes = [
           },
           {
             path: 'acces',
+            canActivate: [roleGuard('OWNER')],
             loadComponent: () => import('./features/parametres/acces/acces.component').then(m => m.AccesComponent),
           },
         ],

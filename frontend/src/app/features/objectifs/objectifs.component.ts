@@ -1,6 +1,6 @@
 import { Component, inject, signal, computed, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -15,6 +15,7 @@ import { TagModule } from 'primeng/tag';
 import { AvatarModule } from 'primeng/avatar';
 import { AvatarGroupModule } from 'primeng/avatargroup';
 import { TooltipModule } from 'primeng/tooltip';
+import { MessageModule } from 'primeng/message';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ContexteService } from '../../core/services/contexte.service';
 import { ObjectifService } from '../../core/services/scenario-poste.service';
@@ -36,7 +37,7 @@ type StatutObjectif = 'DANS_LES_TEMPS' | 'EN_RETARD' | 'ATTEINT';
     CardModule, ButtonModule, DialogModule, TagModule,
     InputTextModule, InputNumberModule, SelectModule, DatePickerModule,
     ProgressBarModule, SkeletonModule, ConfirmDialogModule,
-    AvatarModule, AvatarGroupModule, TooltipModule,
+    AvatarModule, AvatarGroupModule, TooltipModule, MessageModule,
     MontantPipe, DateFrPipe,
   ],
   templateUrl: './objectifs.component.html',
@@ -63,13 +64,23 @@ export class ObjectifsComponent implements OnInit {
 
   readonly membres = this.contexte.membres;
 
+  /**
+   * Un objectif doit être rattaché à exactement un support : un compte OU un actif
+   * (jamais les deux, jamais aucun) — docs/02 §4 "compte_id XOR actif_id".
+   */
+  private static readonly supportXorValidator = (group: AbstractControl): ValidationErrors | null => {
+    const compteId = group.get('compteId')?.value;
+    const actifId = group.get('actifId')?.value;
+    return (!!compteId) !== (!!actifId) ? null : { supportXor: true };
+  };
+
   form = this.fb.group({
     libelle: ['', Validators.required],
     montantCible: [0, [Validators.required, Validators.min(0.01)]],
     echeance: [null as Date | null],
     compteId: [null as string | null],
     actifId: [null as string | null],
-  });
+  }, { validators: ObjectifsComponent.supportXorValidator });
 
   private readonly _chargerEffect = effect(() => {
     const foyerId = this.contexte.foyerId();
@@ -147,10 +158,14 @@ export class ObjectifsComponent implements OnInit {
 
   onCompteChange(event: any): void {
     if (event.value) this.form.get('actifId')?.setValue(null);
+    this.form.get('compteId')?.markAsTouched();
+    this.form.get('actifId')?.markAsTouched();
   }
 
   onActifChange(event: any): void {
     if (event.value) this.form.get('compteId')?.setValue(null);
+    this.form.get('compteId')?.markAsTouched();
+    this.form.get('actifId')?.markAsTouched();
   }
 
   enregistrer(): void {
@@ -178,7 +193,7 @@ export class ObjectifsComponent implements OnInit {
       message: this.t.commun.confirmerSuppression,
       accept: () => this.objectifSvc.supprimer(this.contexte.foyerId()!, this.contexte.scenarioId()!, o.id).subscribe({
         next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.charger(); },
-        error: () => this.toast.add({ severity: 'error', summary: this.t.commun.erreur }),
+        error: (e) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: e?.error?.message }),
       }),
     });
   }

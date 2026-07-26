@@ -20,7 +20,6 @@
     "charges": "Expenses",
     "reserves": "Savings",
     "scenarios": "Scenarios",
-    "comparaison": "Comparison",
     "objectifs": "Goals",
     "referentiels": "Reference data",
     "comptes": "Accounts",
@@ -136,6 +135,9 @@
     "periodeOuverte": "Open",
     "debutPeriode": "Start",
     "finPeriode": "End (blank = open)",
+    "periodeFinAvantDebut": "The end date must be on or after the start date.",
+    "periodeChevauche": "This period overlaps an existing period.",
+    "periodeOuverteDejaExistante": "An open period (no end date) already exists; close it first.",
     "horizonAnneesUnite": "years"
   },
   "poste": {
@@ -224,6 +226,7 @@
       "DESCRIPTION": "Sort by description"
     },
     "debutRequisPourOneShot": "{{champ}} required for {{type}}",
+    "finAvantDebut": "The end date must be on or after the start date.",
     "filtreComptes": "Filter by account",
     "filtreMembres": "Filter by member",
     "filtreCategories": "Filter by category",
@@ -278,16 +281,19 @@
     "detailParMembre": "Detail by member",
     "detailMensuelParMembre": "Monthly detail by member",
     "contributionCategorieMembre": "Contribution by category and member",
+    "contributionParMembre": "Contribution by member",
     "vueFoyer": "Household",
     "vueParMembre": "By member",
     "vueTout": "Both",
     "vueCategorie": "Category",
     "vueTypePoste": "Item type",
     "vueCompte": "Account breakdown",
+    "vueDecompositionSousTitre": "Choose a category, item-type, or account reading.",
     "moisPrecedent": "Previous month",
     "moisSuivant": "Next month",
     "anneePrecedente": "Previous year",
     "anneeSuivante": "Next year",
+    "totalMois": "Total for the month",
     "totalAnnee": "Total for the year",
     "tresorerie": "Cash",
     "cascade": "Cash flow waterfall",
@@ -300,6 +306,7 @@
     "annee": "Year",
     "mois": "Month",
     "foyer": "Household",
+    "soldeMois": "Monthly balance",
     "resteAVivreMois": "Money left over for the month",
     "resteAVivreAnnee": "Available balance for the year",
     "quotePart": "Share",
@@ -309,9 +316,14 @@
     "membres": "members",
     "scenarioMot": "scenario",
     "tauxEffort": "Effort rate",
+    "tauxEffortFoyer": "Household effort rate",
+    "tauxEffortSeuilMensuel": "Visual thresholds: 50% and 75%",
     "tauxEffortConfortable": "Comfortable",
     "tauxEffortSoutenu": "Elevated",
     "tauxEffortCritique": "Critical",
+    "tauxEffortVert": "Low",
+    "tauxEffortAmbre": "Moderate",
+    "tauxEffortRouge": "High",
     "tauxEffortSeuils": "Indicative thresholds: 70% and 85%",
     "objectifPrefixe": "Goal ·",
     "prorataTitre": "The true prorata, month by month",
@@ -325,7 +337,14 @@
     "prorataApproximatifPour": "approximate for",
     "fluxMensuels": "Monthly flows",
     "detailMensuel": "Monthly detail",
-    "legendeGraphiqueMixte": "Stacked bars = expenses + savings · Green line = income"
+    "legendeGraphiqueMixte": "Stacked bars = expenses + savings · Green line = income",
+    "estimationMensuelle": "Monthly estimate",
+    "ventilationCategories": "Non-zero categories sorted by descending amount",
+    "aucuneCategorie": "No category for this scope.",
+    "repartitionCompteMembre": "Account breakdown by member",
+    "chargesParCompte": "Expenses by account",
+    "hauteurDynamiqueCompte": "Height adjusted to the number of accounts",
+    "aucuneChargeCompte": "No expense is assigned to an account for this member."
   },
   "commun": {
     "actions": "Actions",
@@ -349,6 +368,7 @@
     "chargement": "Loading…",
     "aucunResultat": "No results",
     "repartitionInvalide": "The sum of the shares must equal 100%.",
+    "deviseConfigureeAide": "To use other currencies here, first add an exchange rate in Reference data > Exchange rates.",
     "confirmerSuppression": "Are you sure you want to delete this item?",
     "suppressionImpossible": "Cannot delete: this item is referenced elsewhere.",
     "basculerTheme": "Toggle light/dark theme",
@@ -385,7 +405,8 @@
       "typeOptions": {
         "REVENU": "Income",
         "CHARGE": "Expense",
-        "RESERVE": "Savings"
+        "RESERVE": "Savings",
+        "PROJET": "Project"
       }
     },
     "actif": {
@@ -409,7 +430,10 @@
     "taux": {
       "titre": "Exchange rates",
       "devise": "Currency",
-      "tauxVersBase": "Rate to base currency"
+      "devisePlaceholder": "EUR, USD…",
+      "tauxVersBase": "Rate to base currency",
+      "tauxDeviseBaseVerrouille": "Rate locked to 1: this is the household's base currency.",
+      "egaliteTauxVersBase": "1 {{devise}} = value in {{deviseBase}}"
     }
   },
   "parametres": {
@@ -456,6 +480,7 @@
     "parMois": "/month",
     "termine": "Completed",
     "jalon": "Milestone",
+    "supportRequis": "Select exactly one linked account OR asset (not both, not neither).",
     "actions": {
       "recalibrer": "Recalibrate",
       "verserExtra": "Add an extra contribution",
@@ -464,14 +489,6 @@
       "archiver": "Archive"
     },
     "actionAVenir": "Feature coming soon."
-  },
-  "comparaison": {
-    "titre": "Scenario comparison",
-    "selectionner": "Select scenarios",
-    "tresorerie": "Compared cash",
-    "solde": "Compared available balance",
-    "ecart": "Difference vs reference",
-    "ecartMaxMin": "Difference (max-min)"
   },
   "mois": [
     "January",

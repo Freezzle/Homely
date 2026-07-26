@@ -19,6 +19,7 @@ import { FoyerService, MembreService } from '../../../core/services/referentiel.
 import { ContexteService } from '../../../core/services/contexte.service';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { FoyerOnboardingRequest } from '../../../core/models/api.models';
+import { DEFAULT_BASE_CURRENCY, SUPPORTED_FOYER_BASE_CURRENCIES } from '../../../core/constants/devises.constants';
 
 // ── Modèles internes du wizard ──────────────────────────────────────────────
 
@@ -85,9 +86,9 @@ export class FoyerCreationComponent implements OnInit {
 
   // ── Étape 0 : Foyer ──────────────────────────────────────────────────────
   foyerNom = signal<string>(this.t.foyer.onboarding.defaults.foyerNom);
-  foyerDevise = signal<string>('CHF');
+  foyerDevise = signal<string>(DEFAULT_BASE_CURRENCY);
 
-  readonly devises = ['CHF', 'EUR', 'USD', 'GBP', 'CAD'];
+  readonly devises = SUPPORTED_FOYER_BASE_CURRENCIES;
 
   // ── Étape 1 : Membres ────────────────────────────────────────────────────
   membres = signal<MembreLocal[]>([
@@ -282,7 +283,7 @@ export class FoyerCreationComponent implements OnInit {
 
   // ── Soumission finale ─────────────────────────────────────────────────────
   creer(): void {
-    if (!this.etape4Valide()) return;
+    if (!this.etape4Valide() || this.enCours()) return;
     this.enCours.set(true);
 
     const sc = this.scenario();
@@ -327,12 +328,11 @@ export class FoyerCreationComponent implements OnInit {
           },
         });
       },
-      error: () => {
+      error: (err) => {
         this.enCours.set(false);
-        this.toast.add({ severity: 'error', summary: this.t.commun.erreur, life: 5000 });
+        this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message, life: 5000 });
       },
     });
   }
 }
-
 

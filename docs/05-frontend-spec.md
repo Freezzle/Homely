@@ -244,15 +244,6 @@ Composant unique `PostesListeComponent` paramétré par `type` via `input<TypePo
 - Les périodes ouvertes (fin = null) sont affichées avec un tag « Ouverte ».
 - Masqué automatiquement si mono-membre.
 
-**Comparaison** (`ComparaisonComponent`) :
-- `p-multiselect` de sélection des scénarios à comparer (min 2 ; pré-sélectionne les 2
-  premiers).
-- Bouton **Comparer** → appelle `GET .../projection/comparaison`.
-- **Graphique trésorerie** : `p-chart type="line"` multi-séries, une couleur par scénario.
-- **Graphique solde** : `p-chart type="bar"` groupé.
-- **Tableau des écarts** : `p-table` avec colonnes Année + une colonne par scénario +
-  colonne Écart (max − min).
-
 ### 3.5 Patrimoine (net worth)
 
 **Endpoint** : `GET .../projection/patrimoine`

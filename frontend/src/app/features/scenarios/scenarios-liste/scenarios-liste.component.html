@@ -80,14 +80,14 @@
     <div class="flex flex-col gap-2">
       <div class="flex items-center justify-between">
         <label class="text-sm font-medium">{{ t.scenario.repartition }}</label>
-        <span class="text-sm" [class.text-green-600]="sommeRep === 100" [class.text-red-500]="sommeRep !== 100">
+        <span class="text-sm" [class.text-green-600]="sommeRepValide" [class.text-red-500]="!sommeRepValide">
           {{ sommeRep }}%
         </span>
       </div>
       @for (m of membres(); track m.id) {
         <div class="flex items-center gap-3">
           <span class="flex-1 text-sm">{{ m.nom }}</span>
-          <input pInputText [value]="repsMap[m.id]" type="number" min="0" max="100"
+          <input pInputText [value]="repsMap[m.id]" type="number" min="0" max="100" step="0.01"
                  class="w-24 text-right" (input)="onRepChange(m.id, $any($event.target).value)" />
           <span class="text-sm">%</span>
         </div>
@@ -97,6 +97,6 @@
   <ng-template #footer>
     <p-button [label]="t.commun.annuler" severity="secondary" (click)="dialogVisible = false" />
     <p-button [label]="t.commun.enregistrer" (click)="enregistrer()"
-              [disabled]="form.invalid || sommeRep !== 100" />
+              [disabled]="form.invalid || !sommeRepValide" />
   </ng-template>
 </p-dialog>

@@ -81,18 +81,21 @@
                       [showButtonBar]="true" [showClear]="true"/>
       </div>
     </div>
+    @if (periodeErreur) {
+      <p-message severity="warn">{{ periodeErreur }}</p-message>
+    }
 
     <div class="flex flex-col gap-2">
       <div class="flex items-center justify-between">
         <label class="text-sm font-medium">{{ t.poste.repartition }} *
           <span class="ml-2 font-normal text-xs"
-                [class.text-green-600]="sommeParts === 100"
-                [class.text-red-500]="sommeParts !== 100">
+                [class.text-green-600]="sommePartsValide"
+                [class.text-red-500]="!sommePartsValide">
             {{ sommeParts }}%
           </span>
         </label>
       </div>
-      @if (sommeParts !== 100) {
+      @if (!sommePartsValide) {
         <p-message severity="warn">{{ t.commun.repartitionInvalide }}</p-message>
       }
       <div formArrayName="parts" class="flex flex-col gap-2">
@@ -100,7 +103,7 @@
           <div [formGroupName]="i" class="grid grid-cols-2 items-center gap-3">
             <span class="text-sm">{{ membres()[i]?.nom }}</span>
             <p-inputnumber formControlName="quotePart" [min]="0" [max]="100"
-                           suffix="%" [minFractionDigits]="0"
+                           suffix="%" [minFractionDigits]="0" [maxFractionDigits]="2"
                            (onInput)="calculerSomme()"/>
           </div>
         }
@@ -110,6 +113,6 @@
   <ng-template #footer>
     <p-button [label]="t.commun.annuler" severity="secondary" (click)="formVisible = false"/>
     <p-button [label]="t.commun.enregistrer" (click)="enregistrer()"
-              [disabled]="form.invalid || sommeParts !== 100"/>
+              [disabled]="form.invalid || !sommePartsValide || !periodeValide"/>
   </ng-template>
 </p-dialog>

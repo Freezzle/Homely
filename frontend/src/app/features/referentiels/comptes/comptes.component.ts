@@ -13,11 +13,12 @@ import { MessageModule } from 'primeng/message';
 import { TagModule } from 'primeng/tag';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ContexteService } from '../../../core/services/contexte.service';
-import { CompteService, MembreService } from '../../../core/services/referentiel.service';
+import { CompteService, MembreService, TauxChangeService } from '../../../core/services/referentiel.service';
 import { CompteDto, MembreDto } from '../../../core/models/api.models';
 import { MontantPipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { TagComponent } from '../../../shared/components/tag/tag.component';
+import { buildConfiguredCurrencyOptions } from '../../../core/constants/devises.constants';
 
 /** T10.2 — CRUD Comptes avec rattachement membres */
 @Component({
@@ -38,6 +39,7 @@ export class ComptesComponent implements OnInit {
   contexte = inject(ContexteService);
   private compteSvc  = inject(CompteService);
   private membreSvc  = inject(MembreService);
+  private tauxChangeSvc = inject(TauxChangeService);
   private toast      = inject(MessageService);
   private confirm    = inject(ConfirmationService);
   private fb         = inject(FormBuilder);
@@ -48,7 +50,7 @@ export class ComptesComponent implements OnInit {
   dialogVisible = false;
   compteEnEdition: CompteDto | null = null;
 
-  devises = ['CHF', 'EUR', 'USD', 'GBP', 'CAD'];
+  private readonly _devises = signal<string[]>([this.contexte.deviseBase()]);
 
   form = this.fb.group({
     libelle:      ['', Validators.required],
@@ -57,6 +59,51 @@ export class ComptesComponent implements OnInit {
     devise:       [this.contexte.deviseBase()],
     ordre:        [1, Validators.required],
   });
+
+  private readonly _chargerDevisesEffect = effect(() => {
+    const foyerId = this.contexte.foyerId();
+    const deviseBase = this.contexte.deviseBase();
+    const controleDevise = this.form.get('devise');
+
+    this._devises.set([deviseBase]);
+    if (!controleDevise?.value) {
+      controleDevise?.setValue(deviseBase, { emitEvent: false });
+    }
+
+    if (!foyerId) {
+      return;
+    }
+
+    this.tauxChangeSvc.lister(foyerId).subscribe({
+      next: taux => {
+        if (this.contexte.foyerId() !== foyerId) {
+          return;
+        }
+
+        const devisesDisponibles = buildConfiguredCurrencyOptions(
+          deviseBase,
+          taux.map(item => item.devise),
+        );
+
+        this._devises.set(devisesDisponibles);
+        if (!devisesDisponibles.includes((controleDevise?.value as string | null) ?? '')) {
+          controleDevise?.setValue(deviseBase, { emitEvent: false });
+        }
+      },
+      error: () => {
+        if (this.contexte.foyerId() !== foyerId) {
+          return;
+        }
+
+        this._devises.set([deviseBase]);
+        controleDevise?.setValue(deviseBase, { emitEvent: false });
+      },
+    });
+  });
+
+  devisesOptions(): string[] {
+    return this._devises();
+  }
 
   membreIdsNonVides(): boolean {
     const ids = this.form.get('membreIds')?.value;

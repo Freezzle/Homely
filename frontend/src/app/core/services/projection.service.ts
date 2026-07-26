@@ -1,8 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import {
-  ProjectionAnnuelleDto, TresorerieDto, VentilationsDto,
-  ComparaisonDto, ApercuPosteDto
+  ProjectionAnnuelleDto, VentilationsDto,
 } from '../models/api.models';
 
 /** T9.3 — Service HTTP projection scopé par foyer/scénario. */
@@ -20,23 +19,9 @@ export class ProjectionService {
     );
   }
 
-  tresorerie(foyerId: string, scenarioId: string) {
-    return this.http.get<TresorerieDto>(
-      `${this.base(foyerId, scenarioId)}/tresorerie`
-    );
-  }
-
   mensuelle(foyerId: string, scenarioId: string, annee: number, mois: number) {
     return this.http.get<VentilationsDto>(
       `${this.base(foyerId, scenarioId)}/mensuelle`, { params: { annee, mois } }
-    );
-  }
-
-
-  comparaison(foyerId: string, scenarioIds: string[]) {
-    const params = new HttpParams().set('scenarioIds', scenarioIds.join(','));
-    return this.http.get<ComparaisonDto>(
-      `/api/foyers/${foyerId}/projection/comparaison`, { params }
     );
   }
 }

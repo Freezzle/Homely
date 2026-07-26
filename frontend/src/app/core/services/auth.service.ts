@@ -2,13 +2,17 @@ import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap, catchError, throwError, finalize, shareReplay } from 'rxjs';
-import { LoginRequest, RegisterRequest, TokensResponse, MoiResponse } from '../models/api.models';
+import { LoginRequest, RegisterRequest, AuthResponse, MoiResponse } from '../models/api.models';
 import { ContexteService } from './contexte.service';
 
 /**
  * T9.1 — Service d'authentification.
  * accessToken : signal en mémoire (effacé au refresh navigateur).
- * refreshToken : localStorage (persiste après fermeture navigateur/nouvel onglet).
+ * refreshToken : jamais lu ni stocké en JavaScript. Il est transmis par le
+ * backend via un cookie httpOnly/Secure/SameSite=Strict (`rt`, scope
+ * `/api/auth`) : le navigateur l'envoie automatiquement sur les requêtes
+ * `withCredentials` vers `/api/auth/*`, sans qu'aucun code JS n'y accède —
+ * protection contre l'exfiltration XSS (cf. consignes sécurité du projet).
  * Verrou _refreshObservable : une seule requête refresh à la fois (shareReplay),
  * évite la race condition de multiples 401 simultanés au redémarrage.
  */
@@ -19,18 +23,17 @@ export class AuthService {
   readonly estConnecte = () => this._token() !== null;
 
   /** Verrou anti-double-refresh : toutes les requêtes concurrentes partagent le même appel. */
-  private _refreshObservable: Observable<TokensResponse> | null = null;
+  private _refreshObservable: Observable<AuthResponse> | null = null;
 
   constructor(private http: HttpClient, private router: Router, private contexte: ContexteService) {}
 
   login(req: LoginRequest) {
     // Evite d'afficher l'ancien contexte pendant le switch de compte.
     this.contexte.reset();
-    return this.http.post<TokensResponse>('/api/auth/login', req).pipe(
-      tap(res => {
-        this._token.set(res.accessToken);
-        localStorage.setItem('__rt', res.refreshToken);
-      })
+    // withCredentials : indispensable pour que le navigateur accepte/renvoie
+    // le cookie httpOnly du refresh token (jamais lu depuis le JS).
+    return this.http.post<AuthResponse>('/api/auth/login', req, { withCredentials: true }).pipe(
+      tap(res => this._token.set(res.accessToken))
     );
   }
 
@@ -43,24 +46,20 @@ export class AuthService {
   }
 
   /**
-   * Rafraîchit le token d'accès.
+   * Rafraîchit le token d'accès à partir du refresh token porté par le cookie
+   * httpOnly (envoyé automatiquement par le navigateur, jamais lu en JS).
    * Si un refresh est déjà en cours, retourne le même Observable (shareReplay)
    * pour éviter de multiples appels simultanés au backend.
    */
-  rafraichirToken(): Observable<TokensResponse> {
+  rafraichirToken(): Observable<AuthResponse> {
     if (this._refreshObservable) {
       return this._refreshObservable;
     }
-    const rt = localStorage.getItem('__rt');
-    if (!rt) return throwError(() => new Error('No refresh token'));
 
     this._refreshObservable = this.http
-      .post<TokensResponse>('/api/auth/refresh', { refreshToken: rt })
+      .post<AuthResponse>('/api/auth/refresh', {}, { withCredentials: true })
       .pipe(
-        tap(res => {
-          this._token.set(res.accessToken);
-          localStorage.setItem('__rt', res.refreshToken);
-        }),
+        tap(res => this._token.set(res.accessToken)),
         catchError(err => {
           this.deconnecter();
           return throwError(() => err);
@@ -73,14 +72,10 @@ export class AuthService {
   }
 
   deconnecter(): void {
-    const rt = localStorage.getItem('__rt');
-    if (rt) {
-      // Best-effort : invalider le refresh token côté serveur
-      this.http.post('/api/auth/logout', { refreshToken: rt })
-        .subscribe({ error: () => {} });
-    }
+    // Best-effort : invalide le refresh token côté serveur et efface le cookie.
+    this.http.post('/api/auth/logout', {}, { withCredentials: true })
+      .subscribe({ error: () => {} });
     this._token.set(null);
-    localStorage.removeItem('__rt');
     this.contexte.reset();
     this.router.navigate(['/login']);
   }

@@ -1,5 +1,5 @@
 import { Component, inject, signal, OnInit, effect } from '@angular/core';
-import { CommonModule, UpperCasePipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -20,7 +20,7 @@ import { I18nService } from '../../../core/i18n/i18n.service';
   standalone: true,
   providers: [ConfirmationService],
   imports: [
-    CommonModule, ReactiveFormsModule, UpperCasePipe,
+    CommonModule, ReactiveFormsModule,
     TableModule, ButtonModule, DialogModule, TagModule,
     InputTextModule, InputNumberModule,
     ConfirmDialogModule,
@@ -50,6 +50,32 @@ export class TauxComponent implements OnInit {
     if (this.contexte.foyerId()) this.charger();
   });
 
+  /**
+   * Le taux de la devise de base du foyer vers elle-même vaut toujours 1 par
+   * définition — il ne doit pas pouvoir être modifié (docs/01 §7).
+   * On verrouille le champ dès que la devise saisie correspond à `deviseBase`.
+   */
+  private readonly _verrouillerTauxBaseSub = this.form.get('devise')!.valueChanges.subscribe(devise => {
+    this.appliquerVerrouTauxBase(devise);
+  });
+
+  private appliquerVerrouTauxBase(devise: string | null | undefined): void {
+    const tauxCtrl = this.form.get('tauxVersBase')!;
+    if ((devise ?? '').trim().toUpperCase() === this.contexte.deviseBase()) {
+      tauxCtrl.setValue(1, { emitEvent: false });
+      tauxCtrl.disable({ emitEvent: false });
+    } else if (tauxCtrl.disabled) {
+      tauxCtrl.enable({ emitEvent: false });
+    }
+  }
+
+  egaliteTauxVersBase(): string {
+    return this.i18n.instant('referentiels.taux.egaliteTauxVersBase', {
+      devise: (this.form.value.devise || '?').toUpperCase(),
+      deviseBase: this.contexte.deviseBase(),
+    });
+  }
+
   ngOnInit(): void {}
 
   charger(): void {
@@ -66,19 +92,25 @@ export class TauxComponent implements OnInit {
     this.tauxEnEdition = null;
     this.form.reset({ devise: '', tauxVersBase: 1 });
     this.form.get('devise')?.enable();
+    this.appliquerVerrouTauxBase('');
     this.dialogVisible = true;
   }
 
   ouvrirEdition(tx: TauxChangeDto): void {
     this.tauxEnEdition = tx;
     this.form.patchValue({ devise: tx.devise, tauxVersBase: tx.tauxVersBase });
+    this.appliquerVerrouTauxBase(tx.devise);
     this.dialogVisible = true;
   }
 
   enregistrer(): void {
     const foyerId = this.contexte.foyerId()!;
-    const v = this.form.value;
-    const req = { devise: v.devise!.toUpperCase(), tauxVersBase: v.tauxVersBase! };
+    const v = this.form.getRawValue();
+    const devise = v.devise!.toUpperCase();
+    // Garde-fou : le taux de la devise de base vers elle-même est toujours 1,
+    // même si le contrôle a été réactivé par erreur (ex. patch programmatique).
+    const tauxVersBase = devise === this.contexte.deviseBase() ? 1 : v.tauxVersBase!;
+    const req = { devise, tauxVersBase };
     this.tauxSvc.creerOuModifier(foyerId, req).subscribe({
       next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.dialogVisible = false; this.charger(); },
       error: (e) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: e?.error?.message }),
@@ -90,13 +122,11 @@ export class TauxComponent implements OnInit {
       message: this.t.commun.confirmerSuppression,
       accept: () => this.tauxSvc.supprimer(this.contexte.foyerId()!, tx.id).subscribe({
         next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.charger(); },
-        error: () => this.toast.add({ severity: 'error', summary: this.t.commun.erreur }),
+        error: (err) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message }),
       }),
     });
   }
 }
-
-
 
 
 

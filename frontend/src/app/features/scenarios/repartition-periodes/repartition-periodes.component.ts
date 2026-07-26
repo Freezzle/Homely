@@ -76,7 +76,7 @@ export class RepartitionPeriodesComponent implements OnInit {
     if (!foyerId) return;
     this.periodeSvc.lister(foyerId, this.scenarioId()).subscribe({
       next: p => this.periodes.set(p),
-      error: () => this.toast.add({ severity: 'error', summary: this.t.commun.erreur }),
+      error: (err) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message }),
     });
   }
 
@@ -93,7 +93,7 @@ export class RepartitionPeriodesComponent implements OnInit {
       debut: p.debut ? parseIsoDateLocal(p.debut) : null,
       fin:   p.fin   ? parseIsoDateLocal(p.fin)   : null,
     });
-    this.initialiserParts(p.parts.map(pp => ({ membreId: pp.membreId, quotePart: Math.round(pp.quotePart * 100) })));
+    this.initialiserParts(p.parts.map(pp => ({ membreId: pp.membreId, quotePart: Math.round(pp.quotePart * 10000) / 100 })));
     this.formVisible = true;
   }
 
@@ -113,10 +113,63 @@ export class RepartitionPeriodesComponent implements OnInit {
   }
 
   calculerSomme(): void {
-    this.sommeParts = this.partsArray.controls.reduce((s, c) => s + (c.get('quotePart')?.value ?? 0), 0);
+    const total = this.partsArray.controls.reduce((s, c) => s + (c.get('quotePart')?.value ?? 0), 0);
+    // Neutralise les résidus binaires (ex. 33.33+33.33+33.34 = 100.00000000000001).
+    this.sommeParts = Math.round(total * 100) / 100;
+  }
+
+  /** Tolérance flottante : une somme visuellement à 100% ne doit jamais être refusée à tort. */
+  get sommePartsValide(): boolean {
+    return Math.abs(this.sommeParts - 100) < 0.01;
+  }
+
+  /**
+   * Miroir côté UX des règles serveur (docs/01 §6.5) : fin >= début, pas de
+   * chevauchement entre périodes, au plus une période ouverte par scénario.
+   * Retourne le message d'erreur à afficher, ou null si la période est valide.
+   */
+  get periodeErreur(): string | null {
+    const v = this.form.value;
+    const debut = v.debut as Date | null;
+    if (!debut) return null;
+    const fin = (v.fin as Date | null) ?? null;
+
+    if (fin && fin.getTime() < debut.getTime()) {
+      return this.t.scenario.periodeFinAvantDebut;
+    }
+
+    const autres = this.periodes().filter(p => p.id !== this.periodeEnEdition?.id);
+    const debutTime = debut.getTime();
+    const finTime = fin ? fin.getTime() : Number.POSITIVE_INFINITY;
+
+    for (const p of autres) {
+      if (!p.debut) continue;
+      const pDebutTime = parseIsoDateLocal(p.debut).getTime();
+      const pFinTime = p.fin ? parseIsoDateLocal(p.fin).getTime() : Number.POSITIVE_INFINITY;
+      // Deux intervalles [debut,fin] et [pDebut,pFin] se chevauchent si
+      // debut <= pFin ET pDebut <= fin (bornes incluses : la fin d'une période
+      // et le début de la suivante ne doivent pas être le même jour).
+      if (debutTime <= pFinTime && pDebutTime <= finTime) {
+        return this.t.scenario.periodeChevauche;
+      }
+    }
+
+    if (!fin && autres.some(p => !p.fin)) {
+      return this.t.scenario.periodeOuverteDejaExistante;
+    }
+
+    return null;
+  }
+
+  get periodeValide(): boolean {
+    return this.periodeErreur === null;
   }
 
   enregistrer(): void {
+    if (!this.periodeValide) {
+      this.toast.add({ severity: 'warn', summary: this.t.commun.erreur, detail: this.periodeErreur! });
+      return;
+    }
     const foyerId = this.contexte.foyerId()!;
     const v = this.form.value;
     const req = {
@@ -124,7 +177,7 @@ export class RepartitionPeriodesComponent implements OnInit {
       fin:   v.fin   ? this.toIso(v.fin!)   : undefined,
       parts: this.partsArray.controls.map(c => ({
         membreId: c.get('membreId')!.value,
-        quotePart: (c.get('quotePart')!.value ?? 0) / 100,
+        quotePart: Math.round((c.get('quotePart')!.value ?? 0) * 100) / 10000,
       })),
     };
 

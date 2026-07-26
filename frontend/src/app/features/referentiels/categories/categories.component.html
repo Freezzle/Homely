@@ -19,7 +19,8 @@
       <tr>
         <td class="font-medium">{{ c.libelle }}</td>
         <td>
-          <p-tag [value]="c.typePoste" [severity]="c.typePoste === 'REVENU' ? 'success' : c.typePoste === 'CHARGE' ? 'danger' : 'info'" />
+          <p-tag [value]="c.typePoste"
+                 [severity]="c.typePoste === 'REVENU' ? 'success' : c.typePoste === 'CHARGE' ? 'danger' : c.typePoste === 'RESERVE' ? 'info' : 'warn'" />
         </td>
         <td class="text-right text-surface-500">{{ c.ordre }}</td>
         <td>

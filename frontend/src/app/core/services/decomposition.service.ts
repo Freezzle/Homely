@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { I18nService } from '../i18n/i18n.service';
+import { localeDeLangue } from '../i18n/locale.util';
 import {
   CategorieDto, CompteDto, MembreDto, ObjectifDto, ScenarioDto, TypeCategorie,
   VentilationAggregatDto, VentilationSplitDto,
@@ -203,7 +204,7 @@ export class DecompositionService {
   }
 
   formatPct(v: number): string {
-    return Intl.NumberFormat('fr-CH', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(v);
+    return Intl.NumberFormat(localeDeLangue(this.i18n.currentLang()), { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(v);
   }
 
   /** Sous-titre « Quote-part X % · période … » pour la carte d'un membre (vue mensuelle). */

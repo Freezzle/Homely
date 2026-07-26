@@ -42,13 +42,17 @@
     <div class="flex flex-col gap-1">
       <label class="text-sm font-medium">{{ t.referentiels.taux.devise }} *</label>
       <input pInputText formControlName="devise" class="w-full"
-             [readonly]="!!tauxEnEdition" placeholder="EUR, USD…" />
+             [readonly]="!!tauxEnEdition" [placeholder]="t.referentiels.taux.devisePlaceholder" />
     </div>
     <div class="flex flex-col gap-1">
       <label class="text-sm font-medium">{{ t.referentiels.taux.tauxVersBase }} *</label>
       <p-inputnumber formControlName="tauxVersBase" mode="decimal" [minFractionDigits]="6" [maxFractionDigits]="6"
                      [min]="0.000001" class="w-full" />
-      <small class="text-surface-400">1 {{ (form.value.devise || '?') | uppercase }} = valeur {{ contexte.deviseBase() }}</small>
+      @if (form.get('tauxVersBase')?.disabled) {
+        <small class="text-surface-400">{{ t.referentiels.taux.tauxDeviseBaseVerrouille }}</small>
+      } @else {
+        <small class="text-surface-400">{{ egaliteTauxVersBase() }}</small>
+      }
     </div>
   </form>
   <ng-template #footer>

@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CardModule } from 'primeng/card';
@@ -11,6 +11,7 @@ import { Router } from '@angular/router';
 import { ContexteService } from '../../core/services/contexte.service';
 import { FoyerService } from '../../core/services/referentiel.service';
 import { I18nService } from '../../core/i18n/i18n.service';
+import { DEFAULT_BASE_CURRENCY, SUPPORTED_FOYER_BASE_CURRENCIES } from '../../core/constants/devises.constants';
 
 /** T10.2 — Paramètres du foyer (OWNER) */
 @Component({
@@ -24,7 +25,7 @@ import { I18nService } from '../../core/i18n/i18n.service';
   ],
   templateUrl: './parametres.component.html',
 })
-export class ParametresComponent implements OnInit {
+export class ParametresComponent {
   private readonly i18n = inject(I18nService);
   readonly t = this.i18n.translations();
   contexte = inject(ContexteService);
@@ -34,23 +35,35 @@ export class ParametresComponent implements OnInit {
   private fb = inject(FormBuilder);
 
   sauvegarde = signal(false);
-  devises = ['CHF', 'EUR', 'USD', 'GBP', 'CAD'];
+  devises = SUPPORTED_FOYER_BASE_CURRENCIES;
 
   form = this.fb.group({
     nom: ['', Validators.required],
-    deviseBase: ['CHF', Validators.required],
+    deviseBase: [DEFAULT_BASE_CURRENCY, Validators.required],
   });
 
-  ngOnInit(): void {
+  /**
+   * Le formulaire doit toujours refléter le foyer courant : si l'utilisateur
+   * change de foyer via le sélecteur du shell sans quitter cet écran, il ne
+   * doit pas pouvoir enregistrer les valeurs de l'ancien foyer sur le nouveau.
+   * `effect()` repatch le formulaire (et mémorise le foyer ciblé par
+   * `enregistrer()`) à chaque changement de `foyerCourant()`.
+   */
+  private foyerCibleId: string | null = null;
+
+  private readonly _syncFoyerEffect = effect(() => {
     const foyer = this.contexte.foyerCourant();
+    this.foyerCibleId = foyer?.id ?? null;
     if (foyer) {
       this.form.patchValue({ nom: foyer.nom, deviseBase: foyer.deviseBase });
+    } else {
+      this.form.reset({ nom: '', deviseBase: DEFAULT_BASE_CURRENCY });
     }
-  }
+  });
 
   enregistrer(): void {
-    const foyerId = this.contexte.foyerId();
-    if (!foyerId) return;
+    const foyerId = this.foyerCibleId;
+    if (!foyerId || foyerId !== this.contexte.foyerId()) return;
     this.sauvegarde.set(true);
     const v = this.form.value;
     this.foyerSvc.modifier(foyerId, { nom: v.nom!, deviseBase: v.deviseBase! }).subscribe({
@@ -80,4 +93,3 @@ export class ParametresComponent implements OnInit {
     });
   }
 }
-

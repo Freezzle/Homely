@@ -1,67 +1,196 @@
 <div class="flex flex-col gap-6">
 
-    <!-- ── En-tête + sélecteurs ──────────────────────────────────────────── -->
-    <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+    <div class="flex flex-col xl:flex-row xl:items-center gap-3">
         <div class="flex-1 min-w-0">
             <h1 class="text-2xl font-bold">{{ t.nav.dashboardMensuel }}</h1>
             <p class="text-sm text-surface-500 mt-0.5">
                 {{ t.mois[mois - 1] }} {{ annee }}
             </p>
         </div>
-        <div class="flex gap-2 shrink-0">
-            <p-button icon="pi pi-chevron-left" [text]="true" [rounded]="true"
-                      [disabled]="!peutReculer()" (onClick)="moisPrecedent()"
-                      [ariaLabel]="t.projection.moisPrecedent"/>
-            <p-select appendTo="body" [options]="annees" [(ngModel)]="annee"
-                      (onChange)="charger()" class="w-28"/>
-            <p-select appendTo="body" [options]="moisOptions" [(ngModel)]="mois"
-                      optionLabel="label" optionValue="value"
-                      (onChange)="charger()" class="w-36"/>
-            <p-button icon="pi pi-chevron-right" [text]="true" [rounded]="true"
-                      [disabled]="!peutAvancer()" (onClick)="moisSuivant()"
-                      [ariaLabel]="t.projection.moisSuivant"/>
+        <div class="flex flex-col sm:flex-row sm:items-center gap-3 xl:justify-end">
+            <div class="flex gap-2 shrink-0">
+                <p-button icon="pi pi-chevron-left" [text]="true" [rounded]="true"
+                          [disabled]="!peutReculer()" (onClick)="moisPrecedent()"
+                          [ariaLabel]="t.projection.moisPrecedent"/>
+                <p-select appendTo="body" [options]="annees" [(ngModel)]="annee"
+                          (onChange)="charger()" class="w-28"/>
+                <p-select appendTo="body" [options]="moisOptions" [(ngModel)]="mois"
+                          optionLabel="label" optionValue="value"
+                          (onChange)="charger()" class="w-36"/>
+                <p-button icon="pi pi-chevron-right" [text]="true" [rounded]="true"
+                          [disabled]="!peutAvancer()" (onClick)="moisSuivant()"
+                          [ariaLabel]="t.projection.moisSuivant"/>
+            </div>
+            @if (afficherParMembre()) {
+                <p-selectbutton [options]="vueOptions" [ngModel]="vue()" (ngModelChange)="vue.set($event)"
+                                optionLabel="label" optionValue="value" [allowEmpty]="false"/>
+            }
         </div>
     </div>
 
-    <!-- ── Skeletons ─────────────────────────────────────────────────────── -->
     @if (chargement()) {
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
             @for (i of [1, 2, 3, 4]; track i) {
                 <p-skeleton height="104px" borderRadius="12px"/>
             }
         </div>
-        <p-skeleton height="80px" borderRadius="12px"/>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <p-skeleton height="148px" borderRadius="12px"/>
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
             @for (i of [1, 2, 3]; track i) {
+                <p-skeleton height="280px" borderRadius="12px"/>
+            }
+        </div>
+        <p-skeleton height="80px" borderRadius="12px"/>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            @for (i of [1, 2]; track i) {
                 <p-skeleton height="260px" borderRadius="12px"/>
             }
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             @for (i of [1, 2]; track i) {
-                <p-skeleton height="240px" borderRadius="12px"/>
+                <p-skeleton height="340px" borderRadius="12px"/>
             }
         </div>
 
     } @else if (ventilations()) {
 
-        <!-- ① Cartes membre + foyer (reste à vivre, décomposition, taux d'effort) -->
-        <div class="flex items-center justify-between gap-2 mb-1">
+        @if (vueEffective() !== 'MEMBRE') {
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                @for (kpi of foyerKpis(); track kpi.label) {
+                    <p-card [class]="'border ' + kpi.borderClass">
+                        <div class="flex flex-col gap-2">
+                            <span class="text-sm text-surface-500">{{ kpi.label }}</span>
+                            <span class="text-2xl font-bold tabular-nums" [class]="kpi.accentClass">
+                                {{ kpi.montant | montant }}
+                            </span>
+                        </div>
+                    </p-card>
+                }
+            </div>
+
+            <p-card>
+                <div class="flex flex-col gap-4">
+                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                        <div>
+                            <div class="font-semibold text-base">{{ $any(t.projection).tauxEffortFoyer }}</div>
+                            <div class="text-sm text-surface-500">{{ $any(t.projection).tauxEffortSeuilMensuel }}</div>
+                        </div>
+                        <p-tag [severity]="severityEffort(tauxEffort())"
+                               [value]="formatPct(tauxEffort()) + ' % · ' + tauxEffortDescription(tauxEffort())"/>
+                    </div>
+
+                    <div class="relative pt-6">
+                        <div class="h-4 rounded-full bg-surface-200 dark:bg-surface-700 overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-300"
+                                 [class]="classesCouleurEffort(tauxEffort())"
+                                 [style.width.%]="tauxEffort()"></div>
+                        </div>
+                        <div class="absolute top-0 left-1/2 -translate-x-1/2 text-xs text-surface-400">50 %</div>
+                        <div class="absolute top-0" style="left: 75%; transform: translateX(-50%)">
+                            <span class="text-xs text-surface-400">75 %</span>
+                        </div>
+                        <div class="absolute inset-y-5 border-l border-dashed border-surface-400/80" style="left: 50%"></div>
+                        <div class="absolute inset-y-5 border-l border-dashed border-surface-400/80" style="left: 75%"></div>
+                    </div>
+                </div>
+            </p-card>
+
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                <p-card>
+                    <ng-template #header>
+                        <div class="px-5 pt-5 pb-2">
+                            <div>
+                                <div class="font-semibold text-base">{{ t.projection.revenus }}</div>
+                                <div class="text-xs text-surface-400">{{ $any(t.projection).ventilationCategories }}</div>
+                            </div>
+                        </div>
+                    </ng-template>
+                    <div class="space-y-3">
+                        @for (row of categoriesParType().revenus; track row.id) {
+                            <div class="flex items-center justify-between gap-3 text-sm">
+                                <span class="text-surface-700 dark:text-surface-200">{{ row.libelle }}</span>
+                                <span class="font-semibold text-green-600 tabular-nums">{{ row.montant | montant }}</span>
+                            </div>
+                        } @empty {
+                            <div class="text-sm text-surface-400">{{ $any(t.projection).aucuneCategorie }}</div>
+                        }
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-surface-200 dark:border-surface-700 flex items-center justify-between text-sm font-semibold">
+                        <span>{{ t.projection.totalMois }}</span>
+                        <span class="text-green-600 tabular-nums">{{ totalParType().revenus | montant }}</span>
+                    </div>
+                </p-card>
+
+                <p-card>
+                    <ng-template #header>
+                        <div class="px-5 pt-5 pb-2">
+                            <div>
+                                <div class="font-semibold text-base">{{ t.projection.charges }}</div>
+                                <div class="text-xs text-surface-400">{{ $any(t.projection).ventilationCategories }}</div>
+                            </div>
+                        </div>
+                    </ng-template>
+                    <div class="space-y-3">
+                        @for (row of categoriesParType().charges; track row.id) {
+                            <div class="flex items-center justify-between gap-3 text-sm">
+                                <span class="text-surface-700 dark:text-surface-200">{{ row.libelle }}</span>
+                                <span class="font-semibold text-red-500 tabular-nums">{{ row.montant | montant }}</span>
+                            </div>
+                        } @empty {
+                            <div class="text-sm text-surface-400">{{ $any(t.projection).aucuneCategorie }}</div>
+                        }
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-surface-200 dark:border-surface-700 flex items-center justify-between text-sm font-semibold">
+                        <span>{{ t.projection.totalMois }}</span>
+                        <span class="text-red-500 tabular-nums">{{ totalParType().charges | montant }}</span>
+                    </div>
+                </p-card>
+
+                <p-card>
+                    <ng-template #header>
+                        <div class="px-5 pt-5 pb-2">
+                            <div>
+                                <div class="font-semibold text-base">{{ t.projection.reserves }}</div>
+                                <div class="text-xs text-surface-400">{{ $any(t.projection).ventilationCategories }}</div>
+                            </div>
+                        </div>
+                    </ng-template>
+                    <div class="space-y-3">
+                        @for (row of categoriesParType().reserves; track row.id) {
+                            <div class="flex items-center justify-between gap-3 text-sm">
+                                <span class="text-surface-700 dark:text-surface-200">{{ row.libelle }}</span>
+                                <span class="font-semibold text-blue-500 tabular-nums">{{ row.montant | montant }}</span>
+                            </div>
+                        } @empty {
+                            <div class="text-sm text-surface-400">{{ $any(t.projection).aucuneCategorie }}</div>
+                        }
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-surface-200 dark:border-surface-700 flex items-center justify-between text-sm font-semibold">
+                        <span>{{ t.projection.totalMois }}</span>
+                        <span class="text-blue-500 tabular-nums">{{ totalParType().reserves | montant }}</span>
+                    </div>
+                </p-card>
+            </div>
+        }
+
+        <div class="flex items-center justify-between gap-2">
+            <div>
+                <div class="font-semibold text-base">{{ t.projection.detailParMembre }}</div>
+                <div class="text-sm text-surface-500">{{ $any(t.projection).vueDecompositionSousTitre }}</div>
+            </div>
             <p-selectbutton [options]="vueDecompositionOptions" [ngModel]="vueDecomposition()"
                             (ngModelChange)="vueDecomposition.set($event)"
                             optionLabel="label" optionValue="value" [allowEmpty]="false"/>
-            @if (afficherParMembre()) {
-              <p-selectbutton [options]="vueOptions" [ngModel]="vue()" (ngModelChange)="vue.set($event)"
-                              optionLabel="label" optionValue="value" [allowEmpty]="false"/>
-            }
         </div>
+
         @if (vueEffective() !== 'MEMBRE') {
-            <div class="grid grid-cols-1 gap-4 mb-4">
+            <div class="grid grid-cols-1 gap-4">
                 <app-carte-bilan variante="foyer" [nom]="t.projection.foyer" [sousTitre]="foyerSousTitre()"
-                                         [initiales]="foyerInitiales()"
-                                         [montantPrincipalLabel]="t.projection.resteAVivreMois"
-                                         [montantPrincipal]="ventilations()!.agregat.soldeDisponible"
-                                         [devise]="deviseBase()" [lignes]="foyerLignesActuelles()"
-                                         [tauxEffort]="tauxEffort()"/>
+                                 [initiales]="foyerInitiales()"
+                                 [montantPrincipalLabel]="t.projection.resteAVivreMois"
+                                 [montantPrincipal]="ventilations()!.agregat.soldeDisponible"
+                                 [devise]="deviseBase()" [lignes]="foyerLignesActuelles()"
+                                 [tauxEffort]="tauxEffort()"/>
             </div>
         }
 
@@ -69,11 +198,119 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 @for (mc of membresData(); track mc.id) {
                     <app-carte-bilan variante="membre" [nom]="mc.nom" [sousTitre]="mc.sousTitre"
-                                             [couleur]="mc.couleur" [initiales]="mc.initiales"
-                                             [montantPrincipalLabel]="t.projection.resteAVivreMois"
-                                             [montantPrincipal]="mc.agregat.soldeDisponible"
-                                             [devise]="deviseBase()" [lignes]="lignesMembre(mc)"
-                                             [tauxEffort]="mc.tauxEffort"/>
+                                     [couleur]="mc.couleur" [initiales]="mc.initiales"
+                                     [montantPrincipalLabel]="t.projection.resteAVivreMois"
+                                     [montantPrincipal]="mc.agregat.soldeDisponible"
+                                     [devise]="deviseBase()" [lignes]="lignesMembre(mc)"
+                                     [tauxEffort]="mc.tauxEffort"/>
+                }
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                @for (mc of membresData(); track mc.id) {
+                    <p-card>
+                        <ng-template #header>
+                            <div class="px-5 pt-5 pb-2 flex items-start justify-between gap-3">
+                                <div>
+                                    <div class="font-semibold text-base">{{ mc.nom }}</div>
+                                    <div class="text-xs text-surface-400">{{ t.projection.contributionCategorieMembre }}</div>
+                                </div>
+                                <p-tag [severity]="mc.effortSeverity"
+                                       [value]="t.projection.tauxEffort + ' ' + formatPct(mc.tauxEffort) + ' %'"/>
+                            </div>
+                        </ng-template>
+
+                        <div class="space-y-5">
+                            <div>
+                                <div class="text-xs font-semibold uppercase tracking-wide text-surface-400 mb-2">{{ t.projection.revenus }}</div>
+                                <div class="space-y-2">
+                                    @for (row of mc.categories.revenus; track row.id) {
+                                        <div class="flex items-center justify-between gap-3 text-sm">
+                                            <span class="text-surface-700 dark:text-surface-200">{{ row.libelle }}</span>
+                                            <span class="font-semibold text-green-600 tabular-nums">{{ row.montant | montant }}</span>
+                                        </div>
+                                    } @empty {
+                                        <div class="text-sm text-surface-400">{{ $any(t.projection).aucuneCategorie }}</div>
+                                    }
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="text-xs font-semibold uppercase tracking-wide text-surface-400 mb-2">{{ t.projection.charges }}</div>
+                                <div class="space-y-2">
+                                    @for (row of mc.categories.charges; track row.id) {
+                                        <div class="flex items-center justify-between gap-3 text-sm">
+                                            <span class="text-surface-700 dark:text-surface-200">{{ row.libelle }}</span>
+                                            <span class="font-semibold text-red-500 tabular-nums">{{ row.montant | montant }}</span>
+                                        </div>
+                                    } @empty {
+                                        <div class="text-sm text-surface-400">{{ $any(t.projection).aucuneCategorie }}</div>
+                                    }
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="text-xs font-semibold uppercase tracking-wide text-surface-400 mb-2">{{ t.projection.reserves }}</div>
+                                <div class="space-y-2">
+                                    @for (row of mc.categories.reserves; track row.id) {
+                                        <div class="flex items-center justify-between gap-3 text-sm">
+                                            <span class="text-surface-700 dark:text-surface-200">{{ row.libelle }}</span>
+                                            <span class="font-semibold text-blue-500 tabular-nums">{{ row.montant | montant }}</span>
+                                        </div>
+                                    } @empty {
+                                        <div class="text-sm text-surface-400">{{ $any(t.projection).aucuneCategorie }}</div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </p-card>
+                }
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                @for (mc of membresData(); track mc.id) {
+                    <p-card>
+                        <ng-template #header>
+                            <div class="px-5 pt-5 pb-2">
+                                <div class="font-semibold text-base">{{ mc.nom }}</div>
+                                <div class="text-xs text-surface-400">{{ $any(t.projection).repartitionCompteMembre }}</div>
+                            </div>
+                        </ng-template>
+
+                        <div class="grid grid-cols-2 gap-3 mb-5">
+                            <div class="rounded-xl bg-surface-50 dark:bg-surface-800 p-3">
+                                <div class="text-xs text-surface-400">{{ t.projection.revenus }}</div>
+                                <div class="text-lg font-semibold text-green-600 tabular-nums">{{ mc.agregat.revenus | montant }}</div>
+                            </div>
+                            <div class="rounded-xl bg-surface-50 dark:bg-surface-800 p-3">
+                                <div class="text-xs text-surface-400">{{ t.projection.charges }}</div>
+                                <div class="text-lg font-semibold text-red-500 tabular-nums">{{ mc.agregat.charges | montant }}</div>
+                            </div>
+                            <div class="rounded-xl bg-surface-50 dark:bg-surface-800 p-3">
+                                <div class="text-xs text-surface-400">{{ t.projection.reserves }}</div>
+                                <div class="text-lg font-semibold text-blue-500 tabular-nums">{{ mc.agregat.reserves | montant }}</div>
+                            </div>
+                            <div class="rounded-xl bg-surface-50 dark:bg-surface-800 p-3">
+                                <div class="text-xs text-surface-400">{{ t.projection.solde }}</div>
+                                <div class="text-lg font-semibold tabular-nums"
+                                     [class.text-emerald-600]="mc.agregat.soldeDisponible >= 0"
+                                     [class.text-red-500]="mc.agregat.soldeDisponible < 0">
+                                    {{ mc.agregat.soldeDisponible | montant }}
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (mc.chargesParCompte.length) {
+                            <div class="flex items-center justify-between gap-3 mb-3">
+                                <div class="text-sm font-semibold">{{ $any(t.projection).chargesParCompte }}</div>
+                                <div class="text-xs text-surface-400">{{ $any(t.projection).hauteurDynamiqueCompte }}</div>
+                            </div>
+                            <p-chart type="bar" [data]="$any(mc.compteChartData)" [options]="compteChartOptions"
+                                     class="w-full block" [style.height.px]="mc.compteChartHeight"/>
+                        } @else {
+                            <div class="text-sm text-surface-400">{{ $any(t.projection).aucuneChargeCompte }}</div>
+                        }
+                    </p-card>
                 }
             </div>
         }

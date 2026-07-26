@@ -5,6 +5,9 @@ import { SelectModule } from 'primeng/select';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { SkeletonModule } from 'primeng/skeleton';
 import { ButtonModule } from 'primeng/button';
+import { CardModule } from 'primeng/card';
+import { ChartModule } from 'primeng/chart';
+import { TagModule } from 'primeng/tag';
 import { forkJoin } from 'rxjs';
 import { ContexteService } from '../../../core/services/contexte.service';
 import { ProjectionService } from '../../../core/services/projection.service';
@@ -12,7 +15,9 @@ import { CategorieService, CompteService } from '../../../core/services/referent
 import { PosteService, ObjectifService } from '../../../core/services/scenario-poste.service';
 import { DecompositionService } from '../../../core/services/decomposition.service';
 import { VentilationsDto, VentilationAggregatDto, CategorieDto, CompteDto, TypeCategorie, PosteDto, ObjectifDto } from '../../../core/models/api.models';
+import { MontantPipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
+import { localeDeLangue } from '../../../core/i18n/locale.util';
 import { CarteBilanComponent, LigneDecomposition, MembreTagInfo } from '../../../shared/components/carte-bilan/carte-bilan.component';
 
 @Component({
@@ -20,6 +25,7 @@ import { CarteBilanComponent, LigneDecomposition, MembreTagInfo } from '../../..
   standalone: true,
   imports: [
     CommonModule, FormsModule, SelectModule, SelectButtonModule, SkeletonModule, ButtonModule,
+    CardModule, ChartModule, TagModule, MontantPipe,
     CarteBilanComponent,
   ],
   templateUrl: './dashboard-mensuel.component.html',
@@ -114,6 +120,13 @@ export class DashboardMensuelComponent implements OnInit {
     return this.decomp.formatPct(v);
   }
 
+  private localeCourante(): string {
+    return localeDeLangue(this.i18n.currentLang());
+  }
+
+  private readonly fmtCompact = (v: number) =>
+    Intl.NumberFormat(this.localeCourante(), { notation: 'compact', maximumFractionDigits: 1 }).format(v);
+
   /** Initiales (1 à 2 lettres) à partir d'un nom/prénom — utilisées dans les avatars. */
   private initiales(nom: string): string {
     return this.decomp.initiales(nom);
@@ -139,6 +152,39 @@ export class DashboardMensuelComponent implements OnInit {
       ? 'border-emerald-500'
       : 'border-red-500'
   );
+
+  foyerKpis = computed(() => {
+    const ag = this.ventilations()?.agregat ?? { revenus: 0, charges: 0, reserves: 0, soldeDisponible: 0 };
+    return [
+      { label: this.t.projection.revenus, montant: ag.revenus, borderClass: 'border-green-500/40', accentClass: 'text-green-600' },
+      { label: this.t.projection.charges, montant: ag.charges, borderClass: 'border-red-500/40', accentClass: 'text-red-500' },
+      { label: this.t.projection.reserves, montant: ag.reserves, borderClass: 'border-blue-500/40', accentClass: 'text-blue-500' },
+      {
+        label: this.t.projection.solde,
+        montant: ag.soldeDisponible,
+        borderClass: ag.soldeDisponible >= 0 ? 'border-emerald-500/50' : 'border-red-500/50',
+        accentClass: ag.soldeDisponible >= 0 ? 'text-emerald-600' : 'text-red-500',
+      },
+    ];
+  });
+
+  classesCouleurEffort(taux: number): string {
+    if (taux >= 75) return 'bg-red-500';
+    if (taux >= 50) return 'bg-amber-500';
+    return 'bg-emerald-500';
+  }
+
+  severityEffort(taux: number): 'success' | 'warn' | 'danger' {
+    if (taux >= 75) return 'danger';
+    if (taux >= 50) return 'warn';
+    return 'success';
+  }
+
+  tauxEffortDescription(taux: number): string {
+    if (taux >= 75) return this.t.projection.tauxEffortCritique;
+    if (taux >= 50) return this.t.projection.tauxEffortSoutenu;
+    return this.t.projection.tauxEffortConfortable;
+  }
 
   foyerInitiales = computed(() => this.initiales(this.contexte.foyerCourant()?.nom ?? this.t.projection.foyer));
 
@@ -285,24 +331,64 @@ export class DashboardMensuelComponent implements OnInit {
         .filter(r => r.montant !== 0)
         .sort((a, b) => b.montant - a.montant);
 
+      const categories = {
+        revenus: makeList('REVENU'),
+        charges: makeList('CHARGE'),
+        reserves: makeList('RESERVE'),
+      };
+
       return {
         id: m.id, nom: m.nom, couleur: m.couleur,
         initiales: this.initiales(m.nom),
         sousTitre: this.sousTitrePeriode(m.id),
         decomposition: this.construireDecomposition({
-          revenus: makeList('REVENU'),
-          charges: makeList('CHARGE'),
-          reserves: makeList('RESERVE'),
+          revenus: categories.revenus,
+          charges: categories.charges,
+          reserves: categories.reserves,
         }),
         cascadeDecomposition: this.decomp.construireCascadeDecomposition(m.id, agregat, v, nbMembres),
         compteDecomposition: chargesParCompte.map(c => ({
           id: c.id, libelle: c.libelle, montantAbs: c.montant, signe: -1 as const,
           tags: this.membresTagsCompte(c.id, m.id),
         })),
+        categories,
+        chargesParCompte,
+        compteChartData: this.buildCompteChartData(chargesParCompte, m.couleur),
+        compteChartHeight: Math.max(chargesParCompte.length * 38 + 16, 160),
+        effortSeverity: this.severityEffort(tauxEffort),
         agregat, tauxEffort,
       };
     });
   });
+
+  readonly compteChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: 'y' as const,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: {
+        grid: { color: 'rgba(128,128,128,0.08)' },
+        ticks: { callback: (v: unknown) => this.fmtCompact(Number(v)) },
+      },
+      y: { grid: { display: false } },
+    },
+  };
+
+  private buildCompteChartData(chargesParCompte: { id: string; libelle: string; montant: number }[], couleur: string): object {
+    return {
+      labels: chargesParCompte.map(compte => compte.libelle),
+      datasets: [
+        {
+          label: this.t.projection.charges,
+          data: chargesParCompte.map(compte => compte.montant),
+          backgroundColor: couleur,
+          borderRadius: 8,
+          maxBarThickness: 22,
+        },
+      ],
+    };
+  }
 
   // ── Effets & chargement ──────────────────────────────────────────────────────
 

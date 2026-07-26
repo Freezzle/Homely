@@ -135,7 +135,7 @@
         <p-datepicker appendTo="body" formControlName="echeance" dateFormat="dd/mm/yy" [showButtonBar]="true" class="w-full" />
       </div>
     </div>
-    <!-- Compte ou actif (XOR) -->
+    <!-- Compte ou actif (XOR obligatoire) -->
     <div class="flex flex-col gap-1">
       <label class="text-sm font-medium">{{ t.objectif.compte }}</label>
       <p-select appendTo="body" formControlName="compteId" [options]="comptes()" optionLabel="libelle" optionValue="id"
@@ -146,6 +146,9 @@
       <p-select appendTo="body" formControlName="actifId" [options]="actifs()" optionLabel="libelle" optionValue="id"
                 [showClear]="true" class="w-full" (onChange)="onActifChange($event)" />
     </div>
+    @if (form.errors?.['supportXor'] && (form.get('compteId')?.touched || form.get('actifId')?.touched)) {
+      <p-message severity="warn">{{ t.objectif.supportRequis }}</p-message>
+    }
   </form>
   <ng-template #footer>
     <p-button [label]="t.commun.annuler" severity="secondary" (click)="dialogVisible = false" />

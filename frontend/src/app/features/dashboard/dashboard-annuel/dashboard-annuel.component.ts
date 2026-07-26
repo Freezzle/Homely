@@ -21,6 +21,7 @@ import {
 } from '../../../core/models/api.models';
 import { MontantPipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
+import { localeDeLangue } from '../../../core/i18n/locale.util';
 import { CarteBilanComponent, LigneDecomposition } from '../../../shared/components/carte-bilan/carte-bilan.component';
 
 @Component({
@@ -106,17 +107,55 @@ export class DashboardAnnuelComponent implements OnInit {
   }
 
   // ── Helpers formatage ──────────────────────────────────────��────────────────
+  private localeCourante(): string {
+    return localeDeLangue(this.i18n.currentLang());
+  }
+
   private readonly fmtCompact = (v: number) =>
-    Intl.NumberFormat('fr-CH', { notation: 'compact', maximumFractionDigits: 1 }).format(v);
+    Intl.NumberFormat(this.localeCourante(), { notation: 'compact', maximumFractionDigits: 1 }).format(v);
 
   readonly fmtMensuel = (v: number) =>
-    Intl.NumberFormat('fr-CH', { notation: 'compact', maximumFractionDigits: 0 }).format(v / 12);
+    Intl.NumberFormat(this.localeCourante(), { notation: 'compact', maximumFractionDigits: 0 }).format(v / 12);
 
   soldeCardBorder = computed(() =>
     (this.projection()?.totalAnnuel.soldeDisponible ?? 0) >= 0
       ? 'border-emerald-500'
       : 'border-red-500'
   );
+
+  annualKpis = computed(() => {
+    const total = this.projection()?.totalAnnuel ?? { revenus: 0, charges: 0, reserves: 0, soldeDisponible: 0 };
+    return [
+      {
+        label: this.t.projection.revenus,
+        montant: total.revenus,
+        estimationMensuelle: this.fmtMensuel(total.revenus),
+        borderClass: 'border-green-500/40',
+        accentClass: 'text-green-600',
+      },
+      {
+        label: this.t.projection.charges,
+        montant: total.charges,
+        estimationMensuelle: this.fmtMensuel(total.charges),
+        borderClass: 'border-red-500/40',
+        accentClass: 'text-red-500',
+      },
+      {
+        label: this.t.projection.reserves,
+        montant: total.reserves,
+        estimationMensuelle: this.fmtMensuel(total.reserves),
+        borderClass: 'border-blue-500/40',
+        accentClass: 'text-blue-500',
+      },
+      {
+        label: this.t.projection.solde,
+        montant: total.soldeDisponible,
+        estimationMensuelle: this.fmtMensuel(total.soldeDisponible),
+        borderClass: total.soldeDisponible >= 0 ? 'border-emerald-500/50' : 'border-red-500/50',
+        accentClass: total.soldeDisponible >= 0 ? 'text-emerald-600' : 'text-red-500',
+      },
+    ];
+  });
 
   // ── Options Chart.js ────────────────────────────────────────────────────────
   readonly mixedChartOptions = {
@@ -224,11 +263,11 @@ export class DashboardAnnuelComponent implements OnInit {
   // ── Le vrai prorata, mois par mois ──────────────────────────────────────────
 
   formatPct1(v: number): string {
-    return Intl.NumberFormat('fr-CH', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(v);
+    return Intl.NumberFormat(this.localeCourante(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(v);
   }
 
   formatMontantSansDevise(v: number): string {
-    return Intl.NumberFormat('fr-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(v));
+    return Intl.NumberFormat(this.localeCourante(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(v));
   }
 
   /** Quote-part (en %) configurée pour un membre à un mois donné de l'année sélectionnée. */
@@ -272,7 +311,7 @@ export class DashboardAnnuelComponent implements OnInit {
   });
 
   private formatPctEntier(v: number): string {
-    return Intl.NumberFormat('fr-CH', { maximumFractionDigits: 0 }).format(v);
+    return Intl.NumberFormat(this.localeCourante(), { maximumFractionDigits: 0 }).format(v);
   }
 
   readonly prorataChartOptions = {

@@ -2,7 +2,6 @@ package ch.homely.projection;
 
 import ch.homely.foyer.RoleFoyer;
 import ch.homely.projection.dto.ApercuPosteDto;
-import ch.homely.projection.dto.ComparaisonDto;
 import ch.homely.securite.MultiTenantService;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,14 +23,6 @@ public class ProjectionExtraController {
                                       MultiTenantService multiTenant) {
         this.projectionService = projectionService;
         this.multiTenant       = multiTenant;
-    }
-
-    /** T8.5 — Comparaison multi-scénarios (query param scenarioIds=id1,id2,...) */
-    @GetMapping("/projection/comparaison")
-    public ComparaisonDto comparaison(@PathVariable UUID foyerId,
-                                       @RequestParam List<UUID> scenarioIds) {
-        multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
-        return projectionService.comparaison(foyerId, scenarioIds);
     }
 
     /** T8.6 — Aperçu mensuel d'un poste */

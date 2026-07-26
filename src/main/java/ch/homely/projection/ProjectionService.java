@@ -145,42 +145,6 @@ public class ProjectionService {
                 bd(split.reservesPerso()), bd(split.reservesPartage()));
     }
 
-
-    // ── T8.5 ─────────────────────────────────────────────────────────────────
-
-    public ComparaisonDto comparaison(UUID foyerId, List<UUID> scenarioIds) {
-        List<String> noms = new ArrayList<>();
-        List<ProjectionPluriannuelle> projections = new ArrayList<>();
-        for (UUID sid : scenarioIds) {
-            Scenario s = scenarioRepo.findByIdAndFoyerId(sid, foyerId)
-                    .orElseThrow(() -> new EntityNotFoundException("Scénario introuvable : " + sid));
-            noms.add(s.getNom());
-            projections.add(MoteurCalcul.projectionPluriannuelle(chargerParametres(foyerId, sid)));
-        }
-
-        int minAnnee = projections.stream().flatMap(p -> p.annees().stream())
-                .mapToInt(ProjectionAnnuelle::annee).min().orElse(0);
-        int maxAnnee = projections.stream().flatMap(p -> p.annees().stream())
-                .mapToInt(ProjectionAnnuelle::annee).max().orElse(0);
-
-        List<ComparaisonDto.SerieAnnuelleDto> series = new ArrayList<>();
-        for (int annee = minAnnee; annee <= maxAnnee; annee++) {
-            final int a = annee;
-            Map<UUID, BigDecimal> soldes = new LinkedHashMap<>();
-            Map<UUID, BigDecimal> tresos  = new LinkedHashMap<>();
-            for (int i = 0; i < scenarioIds.size(); i++) {
-                UUID sid = scenarioIds.get(i);
-                projections.get(i).tresorerie().stream().filter(t -> t.annee() == a).findFirst()
-                        .ifPresent(t -> {
-                            soldes.put(sid, bd(t.soldeAnnuel()));
-                            tresos.put(sid, bd(t.tresorerieFinAnnee()));
-                        });
-            }
-            if (!soldes.isEmpty()) series.add(new ComparaisonDto.SerieAnnuelleDto(a, soldes, tresos));
-        }
-        return new ComparaisonDto(scenarioIds, noms, series);
-    }
-
     // ── T8.6 ─────────────────────────────────────────────────────────────────
 
     public ApercuPosteDto apercuPoste(UUID foyerId, UUID scenarioId, UUID posteId, int annee) {

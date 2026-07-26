@@ -1,4 +1,5 @@
-import { Component, inject, signal, OnInit, effect } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
+import { toObservable, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -10,6 +11,8 @@ import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
+import { of } from 'rxjs';
+import { switchMap, catchError } from 'rxjs/operators';
 import { ContexteService } from '../../../core/services/contexte.service';
 import { FoyerService } from '../../../core/services/referentiel.service';
 import { AccesFoyerDto, RoleFoyer } from '../../../core/models/api.models';
@@ -39,6 +42,7 @@ export class AccesComponent implements OnInit {
 
   acces = signal<AccesFoyerDto[]>([]);
   chargement = signal(false);
+  enCours = signal(false);
   inviteVisible = false;
   roleVisible = false;
   accesEnEdition: AccesFoyerDto | null = null;
@@ -58,10 +62,30 @@ export class AccesComponent implements OnInit {
     return this.t.acces.roles[role] ?? role;
   }
 
-  // effect() en initialiseur de champ = contexte d'injection valide ✓
-  private readonly _chargerEffect = effect(() => {
-    if (this.contexte.foyerId()) this.charger();
-  });
+  /**
+   * Flux réactif sur le foyer courant : `switchMap` annule automatiquement toute
+   * requête `listerAcces` encore en vol dès que le foyer change, ce qui évite
+   * qu'une réponse tardive d'un ancien foyer n'écrase les accès affichés pour
+   * le foyer nouvellement sélectionné (fuite d'informations inter-foyers).
+   */
+  private readonly _chargerSub = toObservable(this.contexte.foyerId)
+    .pipe(
+      switchMap(foyerId => {
+        if (!foyerId) {
+          this.acces.set([]);
+          return of(null);
+        }
+        this.chargement.set(true);
+        return this.foyerSvc.listerAcces(foyerId).pipe(
+          catchError(() => of(null)),
+        );
+      }),
+      takeUntilDestroyed(),
+    )
+    .subscribe(a => {
+      this.chargement.set(false);
+      if (a) this.acces.set(a);
+    });
 
   ngOnInit(): void {}
 
@@ -69,9 +93,11 @@ export class AccesComponent implements OnInit {
     const foyerId = this.contexte.foyerId();
     if (!foyerId) return;
     this.chargement.set(true);
-    this.foyerSvc.listerAcces(foyerId).subscribe({
-      next: a => { this.acces.set(a); this.chargement.set(false); },
-      error: () => this.chargement.set(false),
+    this.foyerSvc.listerAcces(foyerId).pipe(
+      catchError(() => of(null)),
+    ).subscribe(a => {
+      this.chargement.set(false);
+      if (a) this.acces.set(a);
     });
   }
 
@@ -81,11 +107,13 @@ export class AccesComponent implements OnInit {
   }
 
   inviter(): void {
+    if (this.enCours()) return;
+    this.enCours.set(true);
     const foyerId = this.contexte.foyerId()!;
     const v = this.inviteForm.value;
     this.foyerSvc.inviter(foyerId, { email: v.email!, role: v.role as RoleFoyer }).subscribe({
-      next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.inviteVisible = false; this.charger(); },
-      error: (e) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: e?.error?.message }),
+      next: () => { this.enCours.set(false); this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.inviteVisible = false; this.charger(); },
+      error: (e) => { this.enCours.set(false); this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: e?.error?.message }); },
     });
   }
 
@@ -96,20 +124,26 @@ export class AccesComponent implements OnInit {
   }
 
   changerRole(): void {
+    if (this.enCours()) return;
+    this.enCours.set(true);
     const foyerId = this.contexte.foyerId()!;
     this.foyerSvc.changerRole(foyerId, this.accesEnEdition!.id, { role: this.nouveauRole }).subscribe({
-      next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.roleVisible = false; this.charger(); },
-      error: (e) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: e?.error?.message }),
+      next: () => { this.enCours.set(false); this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.roleVisible = false; this.charger(); },
+      error: (e) => { this.enCours.set(false); this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: e?.error?.message }); },
     });
   }
 
   retirer(a: AccesFoyerDto): void {
     this.confirm.confirm({
       message: this.t.commun.confirmerSuppression,
-      accept: () => this.foyerSvc.retirerAcces(this.contexte.foyerId()!, a.id).subscribe({
-        next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.charger(); },
-        error: (e) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: e?.error?.message }),
-      }),
+      accept: () => {
+        if (this.enCours()) return;
+        this.enCours.set(true);
+        this.foyerSvc.retirerAcces(this.contexte.foyerId()!, a.id).subscribe({
+          next: () => { this.enCours.set(false); this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.charger(); },
+          error: (e) => { this.enCours.set(false); this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: e?.error?.message }); },
+        });
+      },
     });
   }
 }

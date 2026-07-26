@@ -44,3 +44,8 @@ app:
     refresh-expiration-ms: 604800000    # 7 jours
   cors:
     allowed-origins: ${CORS_ORIGINS:http://localhost:4200,http://80.218.235.95:4200}
+  cookies:
+    # Attribut Secure du cookie de refresh token. À laisser à true dès que le
+    # déploiement est servi en HTTPS (recommandé) ; ne mettre à false que pour
+    # un environnement de développement/démo servi en clair (http://).
+    secure: ${COOKIE_SECURE:true}

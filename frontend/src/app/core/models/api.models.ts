@@ -1,7 +1,12 @@
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export interface LoginRequest { email: string; motDePasse: string; }
 export interface RegisterRequest { email: string; motDePasse: string; nomComplet: string; }
-export interface TokensResponse { accessToken: string; refreshToken: string; }
+/**
+ * Réponse login/refresh : ne contient jamais le refresh token (transmis
+ * exclusivement via un cookie httpOnly géré par le navigateur, jamais lu ni
+ * stocké en JavaScript — voir AuthService).
+ */
+export interface AuthResponse { accessToken: string; expiresIn: number; }
 export interface MoiResponse { id: string; email: string; nomComplet: string; }
 
 // ── Foyer & accès ────────────────────────────────────────────────────────────
@@ -43,7 +48,7 @@ export interface MembreRequest { nom: string; couleur: string; ordre: number; }
 export interface CompteDto { id: string; libelle: string; soldeInitial: number; devise: string; ordre: number; actif: boolean; membreIds: string[]; }
 export interface CompteRequest { libelle: string; soldeInitial: number; devise?: string; ordre: number; membreIds: string[]; }
 
-export type TypeCategorie = 'REVENU' | 'CHARGE' | 'RESERVE';
+export type TypeCategorie = 'REVENU' | 'CHARGE' | 'RESERVE' | 'PROJET';
 export interface CategorieDto { id: string; libelle: string; typePoste: TypeCategorie; ordre: number; actif: boolean; }
 export interface CategorieRequest { libelle: string; typePoste: TypeCategorie; ordre: number; }
 
@@ -167,5 +172,3 @@ export interface VentilationsDto {
   parMembreSplit: Record<string, VentilationSplitDto>;
 }
 export interface SerieAnnuelleDto { annee: number; soldeParScenario: Record<string, number>; tresorerieParScenario: Record<string, number>; }
-export interface ComparaisonDto { scenarioIds: string[]; nomScenarios: string[]; series: SerieAnnuelleDto[]; }
-export interface ApercuPosteDto { annee: number; contributions: { mois: number; contribution: number; }[]; }

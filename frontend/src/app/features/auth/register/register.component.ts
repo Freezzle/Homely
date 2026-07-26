@@ -33,7 +33,7 @@ export class RegisterComponent {
   chargement = signal(false);
 
   submit(): void {
-    if (this.form.invalid) return;
+    if (this.form.invalid || this.chargement()) return;
     this.chargement.set(true);
     this.erreur.set(null);
     const { email, password, nomComplet } = this.form.value;

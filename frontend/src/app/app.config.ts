@@ -8,13 +8,18 @@ import { routes } from './app.routes';
 import { jwtInterceptor } from './core/interceptors/jwt.interceptor';
 import { dateInterceptor } from './core/interceptors/date.interceptor';
 import { registerLocaleData } from '@angular/common';
+import localeEnGB from '@angular/common/locales/en-GB';
+import localeEnGBExtra from '@angular/common/locales/extra/en-GB';
 import localeFrCH from '@angular/common/locales/fr-CH';
 import localeFrCHExtra from '@angular/common/locales/extra/fr-CH';
 import { provideTranslateService, TranslateService } from '@ngx-translate/core';
 import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 import { firstValueFrom } from 'rxjs';
 import { langueInitiale } from './core/i18n/i18n.service';
+import { localeDeLangue } from './core/i18n/locale.util';
+import { environment } from '../environments/environment';
 
+registerLocaleData(localeEnGB, 'en-GB', localeEnGBExtra);
 registerLocaleData(localeFrCH, 'fr-CH', localeFrCHExtra);
 
 // Langue choisie par l'utilisateur lors d'une session précédente (préférence UI
@@ -79,7 +84,7 @@ export const appConfig: ApplicationConfig = {
     // le body déjà normalisé (Date → ISO wall-clock local marqué UTC).
     provideHttpClient(withInterceptors([dateInterceptor, jwtInterceptor])),
     provideAnimationsAsync(),
-    { provide: LOCALE_ID, useValue: 'fr-CH' },
+    { provide: LOCALE_ID, useValue: localeDeLangue(langueDemarrage) },
     // i18n : traductions chargées depuis assets/i18n/<lang>.json (ngx-translate).
     // FR par défaut/fallback ; démarre sur la langue persistée si l'utilisateur en a choisi une.
     provideTranslateService({
@@ -90,7 +95,7 @@ export const appConfig: ApplicationConfig = {
     // Attend le chargement des traductions avant le premier rendu (évite un flash de clés brutes).
     provideAppInitializer(() => firstValueFrom(inject(TranslateService).use(langueDemarrage))),
     providePrimeNG({
-      license: 'eyJpZCI6IjY0ODZiNDE2LWIwYmEtNGQwNC05MzJiLTExNGRlMjk5N2I4OCIsInByb2R1Y3QiOiJwcmltZXVpIiwidGllciI6ImNvbW11bml0eSIsInR5cGUiOiJkZXYiLCJpYXQiOjE3ODQ0NzU4MTIsImV4cCI6MTgxNjAxMTgxMn0.wIoIS_g63WBgx6HVxpqchtgndwzbltV-IAwPQ0tp_Zb3qnf0p0MKwJXs0CeSX7HXzKRzYIUbzucYcLIt2VDjBA',
+      license: environment.primeNgLicense,
       theme: {
         preset: SohoPreset,
         options: {

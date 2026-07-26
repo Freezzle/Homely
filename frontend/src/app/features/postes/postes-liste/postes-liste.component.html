@@ -293,7 +293,7 @@
                 <input #descriptionInput pInputText formControlName="description" class="w-full"
                        [placeholder]="t.poste.description"/>
             </div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid gap-4 md:grid-cols-3">
                 <div class="flex flex-col gap-1">
                     <label class="text-sm font-medium">{{ t.poste.categorie }}</label>
                     <p-select appendTo="body" formControlName="categorieId" [options]="categories()"
@@ -302,6 +302,11 @@
                 <div class="flex flex-col gap-1">
                     <label class="text-sm font-medium">{{ t.poste.montant }} *</label>
                     <p-inputnumber formControlName="montant" mode="decimal" [minFractionDigits]="2" class="w-full"/>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-sm font-medium">{{ t.poste.devise }}</label>
+                    <p-select appendTo="body" formControlName="devise" [options]="devisesDisponibles()" class="w-full"/>
+                    <small class="text-surface-400">{{ t.commun.deviseConfigureeAide }}</small>
                 </div>
             </div>
         </div>
@@ -355,6 +360,9 @@
                                       [showButtonBar]="true" class="w-full"></p-datepicker>
                     </div>
                 </div>
+                @if (form.hasError('finAvantDebut')) {
+                    <p-message severity="warn">{{ t.poste.finAvantDebut }}</p-message>
+                }
 
                 <!-- Moment + Mode : visibles seulement si la fréquence "Autre" est choisie -->
                 @if (sousFrequence() === 'AUTRE') {
@@ -406,13 +414,13 @@
                     <label class="text-sm font-medium">
                         {{ t.poste.repartition }}
                         <span class="text-sm"
-                              [class.text-green-600]="sommeRepartition === 100"
-                              [class.text-red-500]="sommeRepartition !== 100 && repartitionsArray.length > 0">
+                              [class.text-green-600]="sommeRepartitionValide"
+                              [class.text-red-500]="!sommeRepartitionValide && repartitionsArray.length > 0">
               {{ sommeRepartition }}%
             </span>
                     </label>
                 </div>
-                @if (sommeRepartition !== 100 && repartitionsArray.length > 0) {
+                @if (!sommeRepartitionValide && repartitionsArray.length > 0) {
                     <p-message severity="warn">{{ t.commun.repartitionInvalide }}</p-message>
                 }
                 <div formArrayName="repartitions" class="flex flex-col gap-2">
@@ -421,7 +429,7 @@
                             <span class="col-span-7 text-sm truncate">{{ membres()[i]?.nom }}</span>
                             <div class="col-span-5 min-w-[7.5rem]">
                                 <p-inputnumber formControlName="quotePart" [min]="0" [max]="100"
-                                               suffix="%" [minFractionDigits]="0" class="w-full"
+                                               suffix="%" [minFractionDigits]="0" [maxFractionDigits]="2" class="w-full"
                                                inputStyleClass="w-full"
                                                (onInput)="onQuotePartChange(i)"></p-inputnumber>
                             </div>
@@ -441,7 +449,7 @@
                             <span class="col-span-4 text-sm truncate">{{ membres()[i]?.nom }}</span>
                             <div class="col-span-8 min-w-0">
                                 <p-select appendTo="body" formControlName="compteId"
-                                          [options]="comptes()" optionLabel="libelle"
+                                          [options]="comptesForMembre(ctrl.get('membreId')?.value)" optionLabel="libelle"
                                           optionValue="id"
                                           [placeholder]="t.poste.ventilation" class="w-full"
                                           [showClear]="true"
@@ -481,7 +489,7 @@
                         @if (ctrl.get('membreId')?.value === membreUniqueId()) {
                             <div [formGroupName]="i">
                                 <p-select appendTo="body" formControlName="compteId"
-                                          [options]="comptes()" optionLabel="libelle"
+                                          [options]="comptesForMembre(ctrl.get('membreId')?.value)" optionLabel="libelle"
                                           optionValue="id"
                                           [placeholder]="t.poste.ventilation" class="w-full"
                                           [showClear]="true">
@@ -519,7 +527,7 @@
                             <span class="col-span-5 text-sm truncate">{{ membres()[i]?.nom }}</span>
                             <div class="col-span-7 min-w-0">
                                 <p-select appendTo="body" formControlName="compteId"
-                                          [options]="comptes()" optionLabel="libelle"
+                                          [options]="comptesForMembre(ctrl.get('membreId')?.value)" optionLabel="libelle"
                                           optionValue="id"
                                           [placeholder]="t.poste.ventilation" class="w-full"
                                           [showClear]="true">
@@ -573,7 +581,7 @@
     <ng-template #footer>
         <p-button [label]="t.commun.annuler" severity="secondary" (click)="fermerDialogPoste()"/>
         <p-button [label]="t.commun.enregistrer" (click)="enregistrer()"
-                  [disabled]="!isFormValid()"/>
+                  [disabled]="!isFormValid() || enregistrementEnCours()" [loading]="enregistrementEnCours()"/>
     </ng-template>
 </p-dialog>
 

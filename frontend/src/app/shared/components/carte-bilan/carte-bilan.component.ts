@@ -6,6 +6,7 @@ import { DividerModule } from 'primeng/divider';
 import { MeterGroupModule } from 'primeng/metergroup';
 import { TagModule } from 'primeng/tag';
 import { I18nService } from '../../../core/i18n/i18n.service';
+import { localeDeLangue } from '../../../core/i18n/locale.util';
 
 /** Tag membre (nom + couleur) affiché sur une ligne de décomposition « Compte » (co-titulaires). */
 export interface MembreTagInfo { membreId: string; label: string; couleur: string; couleurTexte: string; }
@@ -51,6 +52,6 @@ export class CarteBilanComponent {
 
   /** Montant sans le symbole de devise — utilisé pour le chiffre principal des cartes. */
   formatMontantSansDevise(v: number): string {
-    return Intl.NumberFormat('fr-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
+    return Intl.NumberFormat(localeDeLangue(this.i18n.currentLang()), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
   }
 }

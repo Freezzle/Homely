@@ -170,8 +170,6 @@ Format des tâches : `T<epic>.<n>`.
   organisation des champs et icônes de mode en liste).
 - [x] **T10.6** **Patrimoine** : courbe net worth + répartition + tableau comptes/actifs.
 - [x] **T10.7** **Objectifs** : cartes + barres de progression + formulaire.
-- [x] **T10.8** **Comparaison de scénarios** : multi-sélection + graphe multi-séries +
-  tableau des écarts.
 
 ---
 

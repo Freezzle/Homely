@@ -56,7 +56,7 @@
   </form>
   <ng-template #footer>
     <p-button [label]="t.commun.annuler" severity="secondary" (click)="inviteVisible = false" />
-    <p-button [label]="t.acces.inviter" (click)="inviter()" [disabled]="inviteForm.invalid" />
+    <p-button [label]="t.acces.inviter" (click)="inviter()" [disabled]="inviteForm.invalid || enCours()" [loading]="enCours()" />
   </ng-template>
 </p-dialog>
 
@@ -67,6 +67,6 @@
   </div>
   <ng-template #footer>
     <p-button [label]="t.commun.annuler" severity="secondary" (click)="roleVisible = false" />
-    <p-button [label]="t.commun.enregistrer" (click)="changerRole()" />
+    <p-button [label]="t.commun.enregistrer" (click)="changerRole()" [disabled]="enCours()" [loading]="enCours()" />
   </ng-template>
 </p-dialog>

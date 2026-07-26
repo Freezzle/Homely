@@ -20,7 +20,6 @@
     "charges": "Charges",
     "reserves": "Réserves",
     "scenarios": "Scénarios",
-    "comparaison": "Comparaison",
     "objectifs": "Objectifs",
     "referentiels": "Référentiels",
     "comptes": "Comptes",
@@ -136,6 +135,9 @@
     "periodeOuverte": "Ouverte",
     "debutPeriode": "Début",
     "finPeriode": "Fin (vide = ouverte)",
+    "periodeFinAvantDebut": "La date de fin doit être postérieure ou égale à la date de début.",
+    "periodeChevauche": "Cette période chevauche une période existante.",
+    "periodeOuverteDejaExistante": "Il existe déjà une période ouverte (sans date de fin) ; fermez-la d'abord.",
     "horizonAnneesUnite": "ans"
   },
   "poste": {
@@ -224,6 +226,7 @@
       "DESCRIPTION": "Tri par description"
     },
     "debutRequisPourOneShot": "{{champ}} requis pour {{type}}",
+    "finAvantDebut": "La date de fin doit être postérieure ou égale à la date de début.",
     "filtreComptes": "Filtre par compte",
     "filtreMembres": "Filtre par membre",
     "filtreCategories": "Filtre par catégorie",
@@ -278,16 +281,19 @@
     "detailParMembre": "Détail par membre",
     "detailMensuelParMembre": "Détail mensuel par membre",
     "contributionCategorieMembre": "Contribution par catégorie et par membre",
+    "contributionParMembre": "Contribution par membre",
     "vueFoyer": "Foyer",
     "vueParMembre": "Par membre",
     "vueTout": "Les deux",
     "vueCategorie": "Catégorie",
     "vueTypePoste": "Type de poste",
     "vueCompte": "Répartition des comptes",
+    "vueDecompositionSousTitre": "Choisissez la lecture catégorie, type de poste ou compte.",
     "moisPrecedent": "Mois précédent",
     "moisSuivant": "Mois suivant",
     "anneePrecedente": "Année précédente",
     "anneeSuivante": "Année suivante",
+    "totalMois": "Total du mois",
     "totalAnnee": "Total année",
     "tresorerie": "Trésorerie",
     "cascade": "Cascade de trésorerie",
@@ -300,6 +306,7 @@
     "annee": "Année",
     "mois": "Mois",
     "foyer": "Foyer",
+    "soldeMois": "Solde du mois",
     "resteAVivreMois": "Reste à vivre du mois",
     "resteAVivreAnnee": "Solde disponible de l'année",
     "quotePart": "Quote-part",
@@ -309,9 +316,14 @@
     "membres": "membres",
     "scenarioMot": "scénario",
     "tauxEffort": "Taux d'effort",
+    "tauxEffortFoyer": "Taux d'effort foyer",
+    "tauxEffortSeuilMensuel": "Seuils visuels : 50 % et 75 %",
     "tauxEffortConfortable": "Confortable",
     "tauxEffortSoutenu": "Soutenu",
     "tauxEffortCritique": "Critique",
+    "tauxEffortVert": "Faible",
+    "tauxEffortAmbre": "Modéré",
+    "tauxEffortRouge": "Élevé",
     "tauxEffortSeuils": "Seuils indicatifs : 70 % et 85 %",
     "objectifPrefixe": "Objectif ·",
     "prorataTitre": "Le vrai prorata, mois par mois",
@@ -325,7 +337,14 @@
     "prorataApproximatifPour": "approximatif pour",
     "fluxMensuels": "Flux mensuels",
     "detailMensuel": "Détail mensuel",
-    "legendeGraphiqueMixte": "Barres empilées = charges + réserves · Ligne verte = revenus"
+    "legendeGraphiqueMixte": "Barres empilées = charges + réserves · Ligne verte = revenus",
+    "estimationMensuelle": "Estimation mensuelle",
+    "ventilationCategories": "Catégories non nulles triées par montant décroissant",
+    "aucuneCategorie": "Aucune catégorie pour ce périmètre.",
+    "repartitionCompteMembre": "Répartition par compte et par membre",
+    "chargesParCompte": "Charges par compte",
+    "hauteurDynamiqueCompte": "Hauteur ajustée au nombre de comptes",
+    "aucuneChargeCompte": "Aucune charge ventilée sur un compte pour ce membre."
   },
   "commun": {
     "actions": "Actions",
@@ -349,6 +368,7 @@
     "chargement": "Chargement…",
     "aucunResultat": "Aucun résultat",
     "repartitionInvalide": "La somme des quotes-parts doit être égale à 100 %.",
+    "deviseConfigureeAide": "Pour utiliser d'autres devises, ajoutez d'abord un taux dans Référentiels > Taux de change.",
     "confirmerSuppression": "Êtes-vous sûr de vouloir supprimer cet élément ?",
     "suppressionImpossible": "Suppression impossible : cet élément est référencé.",
     "basculerTheme": "Basculer le thème clair/sombre",
@@ -385,7 +405,8 @@
       "typeOptions": {
         "REVENU": "Revenu",
         "CHARGE": "Charge",
-        "RESERVE": "Réserve"
+        "RESERVE": "Réserve",
+        "PROJET": "Projet"
       }
     },
     "actif": {
@@ -409,7 +430,10 @@
     "taux": {
       "titre": "Taux de change",
       "devise": "Devise",
-      "tauxVersBase": "Taux vers devise de base"
+      "devisePlaceholder": "EUR, USD…",
+      "tauxVersBase": "Taux vers devise de base",
+      "tauxDeviseBaseVerrouille": "Taux figé à 1 : il s'agit de la devise de base du foyer.",
+      "egaliteTauxVersBase": "1 {{devise}} = valeur {{deviseBase}}"
     }
   },
   "parametres": {
@@ -456,6 +480,7 @@
     "parMois": "/mois",
     "termine": "Terminé",
     "jalon": "Jalon",
+    "supportRequis": "Sélectionnez exactement un compte OU un actif lié (pas les deux, pas aucun).",
     "actions": {
       "recalibrer": "Recalibrer",
       "verserExtra": "Verser un extra",
@@ -464,14 +489,6 @@
       "archiver": "Archiver"
     },
     "actionAVenir": "Fonctionnalité à venir."
-  },
-  "comparaison": {
-    "titre": "Comparaison de scénarios",
-    "selectionner": "Sélectionner des scénarios",
-    "tresorerie": "Trésorerie comparée",
-    "solde": "Solde disponible comparé",
-    "ecart": "Écart vs référence",
-    "ecartMaxMin": "Écart (max-min)"
   },
   "mois": [
     "Janvier",

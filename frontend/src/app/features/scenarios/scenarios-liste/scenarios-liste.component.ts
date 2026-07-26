@@ -84,7 +84,9 @@ export class ScenariosListeComponent implements OnInit {
     this.scenarioEnEdition = s;
     this.form.patchValue({ nom: s.nom, anneeDepart: s.anneeDepart, tresorerieInitiale: s.tresorerieInitiale, horizonAnnees: s.horizonAnnees });
     this.repsMap = {};
-    s.repartitions.forEach(r => { this.repsMap[r.membreId] = Math.round(r.quotePart * 100); });
+    // Conserve la précision décimale (ex. 33.33) au lieu d'arrondir à l'entier,
+    // ce qui déformerait des quotes-parts valides et casserait la fidélité au centime.
+    s.repartitions.forEach(r => { this.repsMap[r.membreId] = Math.round(r.quotePart * 10000) / 100; });
     this.calculerSomme();
     this.dialogVisible = true;
   }
@@ -93,20 +95,27 @@ export class ScenariosListeComponent implements OnInit {
     this.repsMap = {};
     const membres = this.membres();
     if (membres.length) {
-      const part = Math.round(100 / membres.length);
-      const reste = 100 - part * (membres.length - 1);
+      const part = Math.round((100 / membres.length) * 100) / 100;
+      const reste = Math.round((100 - part * (membres.length - 1)) * 100) / 100;
       membres.forEach((m, i) => { this.repsMap[m.id] = i === membres.length - 1 ? reste : part; });
     }
     this.calculerSomme();
   }
 
   onRepChange(membreId: string, val: string): void {
-    this.repsMap[membreId] = parseInt(val, 10) || 0;
+    this.repsMap[membreId] = parseFloat(val) || 0;
     this.calculerSomme();
   }
 
   calculerSomme(): void {
-    this.sommeRep = Object.values(this.repsMap).reduce((s, v) => s + (v || 0), 0);
+    const total = Object.values(this.repsMap).reduce((s, v) => s + (v || 0), 0);
+    // Neutralise les résidus binaires (ex. 33.33+33.33+33.34 = 100.00000000000001).
+    this.sommeRep = Math.round(total * 100) / 100;
+  }
+
+  /** Tolérance flottante : évite qu'une somme visuellement à 100% (ex. 99.999999) soit refusée à tort. */
+  get sommeRepValide(): boolean {
+    return Math.abs(this.sommeRep - 100) < 0.01;
   }
 
   enregistrer(): void {
@@ -114,7 +123,7 @@ export class ScenariosListeComponent implements OnInit {
     const v = this.form.value;
     const repartitions = this.membres()
       .filter(m => (this.repsMap[m.id] ?? 0) > 0)
-      .map(m => ({ membreId: m.id, quotePart: (this.repsMap[m.id] ?? 0) / 100 }));
+      .map(m => ({ membreId: m.id, quotePart: Math.round((this.repsMap[m.id] ?? 0) * 100) / 10000 }));
     const req = { nom: v.nom!, anneeDepart: v.anneeDepart!, tresorerieInitiale: v.tresorerieInitiale ?? 0, horizonAnnees: v.horizonAnnees!, repartitions };
     const obs = this.scenarioEnEdition
       ? this.scenarioSvc.modifier(foyerId, this.scenarioEnEdition.id, req)

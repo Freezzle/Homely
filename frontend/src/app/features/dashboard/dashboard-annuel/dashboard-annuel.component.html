@@ -1,20 +1,27 @@
 <div class="flex flex-col gap-6">
 
     <!-- ── En-tête ───────────────────────────────────────────────────────── -->
-    <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+    <div class="flex flex-col xl:flex-row xl:items-center gap-3">
         <div class="flex-1 min-w-0">
             <h1 class="text-2xl font-bold">{{ t.nav.dashboardAnnuel }}</h1>
             <p class="text-sm text-surface-500 mt-0.5">{{ anneeSelectionnee }}</p>
         </div>
-        <div class="flex gap-2 shrink-0">
-            <p-button icon="pi pi-chevron-left" [text]="true" [rounded]="true"
-                      [disabled]="!peutReculer()" (onClick)="anneePrecedente()"
-                      [ariaLabel]="t.projection.anneePrecedente"/>
-            <p-select appendTo="body" [options]="annees" [(ngModel)]="anneeSelectionnee"
-                      (onChange)="charger()" class="w-32 shrink-0"/>
-            <p-button icon="pi pi-chevron-right" [text]="true" [rounded]="true"
-                      [disabled]="!peutAvancer()" (onClick)="anneeSuivante()"
-                      [ariaLabel]="t.projection.anneeSuivante"/>
+        <div class="flex flex-col sm:flex-row sm:items-center gap-3 xl:justify-end">
+            <div class="flex gap-2 shrink-0">
+                <p-button icon="pi pi-chevron-left" [text]="true" [rounded]="true"
+                          [disabled]="!peutReculer()" (onClick)="anneePrecedente()"
+                          [ariaLabel]="t.projection.anneePrecedente"/>
+                <p-select appendTo="body" [options]="annees" [(ngModel)]="anneeSelectionnee"
+                          (onChange)="charger()" class="w-32 shrink-0"/>
+                <p-button icon="pi pi-chevron-right" [text]="true" [rounded]="true"
+                          [disabled]="!peutAvancer()" (onClick)="anneeSuivante()"
+                          [ariaLabel]="t.projection.anneeSuivante"/>
+            </div>
+            @if (afficherParMembre()) {
+                <p-selectbutton [options]="vueOptions" [ngModel]="vue()" (ngModelChange)="vue.set($event)"
+                                optionLabel="label" optionValue="value" [allowEmpty]="false"
+                                class="shrink-0"/>
+            }
         </div>
     </div>
 
@@ -39,17 +46,28 @@
         <p-skeleton height="400px" borderRadius="12px"/>
 
     } @else if (projection()) {
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            @for (kpi of annualKpis(); track kpi.label) {
+                <p-card [class]="'border ' + kpi.borderClass">
+                    <div class="flex flex-col gap-2">
+                        <span class="text-sm text-surface-500">{{ kpi.label }}</span>
+                        <span class="text-2xl font-bold tabular-nums" [class]="kpi.accentClass">
+                            {{ kpi.montant | montant }}
+                        </span>
+                        <span class="text-xs text-surface-400">
+                            {{ t.projection.estimationMensuelle }} · {{ kpi.estimationMensuelle }}
+                        </span>
+                    </div>
+                </p-card>
+            }
+        </div>
+
         <!-- ①bis Cartes membre + foyer (revenus/charges/réserves/solde annuels, décomposition) -->
         @if (ventilationAnnuelle()) {
             <div class="flex items-center justify-between gap-2 mb-1">
                 <p-selectbutton [options]="vueDecompositionOptions" [ngModel]="vueDecomposition()"
                                 (ngModelChange)="vueDecomposition.set($event)"
                                 optionLabel="label" optionValue="value" [allowEmpty]="false"/>
-                @if (afficherParMembre()) {
-                    <p-selectbutton [options]="vueOptions" [ngModel]="vue()" (ngModelChange)="vue.set($event)"
-                                    optionLabel="label" optionValue="value" [allowEmpty]="false"
-                                    class="shrink-0"/>
-                }
             </div>
             @if (vueEffective() !== 'MEMBRE') {
                 <div class="grid grid-cols-1 gap-4 mb-4">
@@ -153,6 +171,59 @@
                         </ng-template>
                     </p-table>
                 </div>
+
+                <div class="sm:hidden space-y-2">
+                    @for (m of projection()!.mois; track m.numero) {
+                        <div class="rounded-xl bg-surface-50 dark:bg-surface-800 p-3">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="font-semibold text-sm">{{ t.mois[m.numero - 1] }}</span>
+                                <span class="text-sm font-bold tabular-nums"
+                                      [class.text-emerald-600]="m.agregat.soldeDisponible >= 0"
+                                      [class.text-red-500]="m.agregat.soldeDisponible < 0">
+                                    {{ m.agregat.soldeDisponible | montant }}
+                                </span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-1 text-center">
+                                <div>
+                                    <div class="text-xs text-surface-400">{{ t.projection.revenus }}</div>
+                                    <div class="text-xs font-semibold text-green-600 tabular-nums">{{ m.agregat.revenus | montant }}</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-surface-400">{{ t.projection.charges }}</div>
+                                    <div class="text-xs font-semibold text-red-500 tabular-nums">{{ m.agregat.charges | montant }}</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-surface-400">{{ t.projection.reserves }}</div>
+                                    <div class="text-xs font-semibold text-blue-500 tabular-nums">{{ m.agregat.reserves | montant }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    <div class="rounded-xl bg-surface-100 dark:bg-surface-700 p-3 border border-surface-200 dark:border-surface-600">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-bold text-sm">{{ t.projection.totalAnnee }}</span>
+                            <span class="font-bold text-sm tabular-nums"
+                                  [class.text-emerald-600]="projection()!.totalAnnuel.soldeDisponible >= 0"
+                                  [class.text-red-500]="projection()!.totalAnnuel.soldeDisponible < 0">
+                                {{ projection()!.totalAnnuel.soldeDisponible | montant }}
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-1 text-center">
+                            <div>
+                                <div class="text-xs text-surface-400">{{ t.projection.revenus }}</div>
+                                <div class="text-xs font-semibold text-green-600 tabular-nums">{{ projection()!.totalAnnuel.revenus | montant }}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-surface-400">{{ t.projection.charges }}</div>
+                                <div class="text-xs font-semibold text-red-500 tabular-nums">{{ projection()!.totalAnnuel.charges | montant }}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-surface-400">{{ t.projection.reserves }}</div>
+                                <div class="text-xs font-semibold text-blue-500 tabular-nums">{{ projection()!.totalAnnuel.reserves | montant }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </p-card>
         }
 
@@ -163,7 +234,7 @@
                     <div class="flex items-center gap-3 mb-4">
                         <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
                         <span class="text-xs font-bold text-surface-400 uppercase tracking-widest flex items-center gap-2">
-                              <i class="pi pi-users text-sm"></i>&nbsp;Contribution par membre
+                              <i class="pi pi-users text-sm"></i>&nbsp;{{ t.projection.contributionParMembre }}
                             </span>
                         <div class="h-px flex-1 bg-surface-200 dark:bg-surface-700"></div>
                     </div>
