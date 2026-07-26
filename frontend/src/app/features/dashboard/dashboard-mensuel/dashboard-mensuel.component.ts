@@ -145,45 +145,10 @@ export class DashboardMensuelComponent implements OnInit {
     return this.decomp.construireDecomposition(detail, this.objectifs());
   }
 
-  // ── Helpers ─────────────────────────────────────────────────────────────────
-
-  soldeCardBorder = computed(() =>
-    (this.ventilations()?.agregat.soldeDisponible ?? 0) >= 0
-      ? 'border-emerald-500'
-      : 'border-red-500'
-  );
-
-  foyerKpis = computed(() => {
-    const ag = this.ventilations()?.agregat ?? { revenus: 0, charges: 0, reserves: 0, soldeDisponible: 0 };
-    return [
-      { label: this.t.projection.revenus, montant: ag.revenus, borderClass: 'border-green-500/40', accentClass: 'text-green-600' },
-      { label: this.t.projection.charges, montant: ag.charges, borderClass: 'border-red-500/40', accentClass: 'text-red-500' },
-      { label: this.t.projection.reserves, montant: ag.reserves, borderClass: 'border-blue-500/40', accentClass: 'text-blue-500' },
-      {
-        label: this.t.projection.solde,
-        montant: ag.soldeDisponible,
-        borderClass: ag.soldeDisponible >= 0 ? 'border-emerald-500/50' : 'border-red-500/50',
-        accentClass: ag.soldeDisponible >= 0 ? 'text-emerald-600' : 'text-red-500',
-      },
-    ];
-  });
-
-  classesCouleurEffort(taux: number): string {
-    if (taux >= 75) return 'bg-red-500';
-    if (taux >= 50) return 'bg-amber-500';
-    return 'bg-emerald-500';
-  }
-
   severityEffort(taux: number): 'success' | 'warn' | 'danger' {
     if (taux >= 75) return 'danger';
     if (taux >= 50) return 'warn';
     return 'success';
-  }
-
-  tauxEffortDescription(taux: number): string {
-    if (taux >= 75) return this.t.projection.tauxEffortCritique;
-    if (taux >= 50) return this.t.projection.tauxEffortSoutenu;
-    return this.t.projection.tauxEffortConfortable;
   }
 
   foyerInitiales = computed(() => this.initiales(this.contexte.foyerCourant()?.nom ?? this.t.projection.foyer));
@@ -286,18 +251,6 @@ export class DashboardMensuelComponent implements OnInit {
     };
   });
 
-  totalParType = computed(() => {
-    const d   = this.categoriesParType();
-    const sum = (rows: { montant: number }[]) => rows.reduce((s, r) => s + r.montant, 0);
-    return { revenus: sum(d.revenus), charges: sum(d.charges), reserves: sum(d.reserves) };
-  });
-
-  totalParMembreType = computed(() => {
-    const d   = this.membresParType();
-    const sum = (rows: { montant: number }[]) => rows.reduce((s, r) => s + r.montant, 0);
-    return { revenus: sum(d.revenus), charges: sum(d.charges), reserves: sum(d.reserves) };
-  });
-
   // ── Cascade de trésorerie (perso / partagé, calculée par le moteur backend) ─
 
   /** Décomposition « cascade » foyer multi-membres : somme des splits perso/partagé de tous les membres. */
@@ -360,20 +313,6 @@ export class DashboardMensuelComponent implements OnInit {
       };
     });
   });
-
-  readonly compteChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    indexAxis: 'y' as const,
-    plugins: { legend: { display: false } },
-    scales: {
-      x: {
-        grid: { color: 'rgba(128,128,128,0.08)' },
-        ticks: { callback: (v: unknown) => this.fmtCompact(Number(v)) },
-      },
-      y: { grid: { display: false } },
-    },
-  };
 
   private buildCompteChartData(chargesParCompte: { id: string; libelle: string; montant: number }[], couleur: string): object {
     return {

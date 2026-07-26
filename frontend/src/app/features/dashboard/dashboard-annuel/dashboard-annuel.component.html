@@ -46,21 +46,6 @@
         <p-skeleton height="400px" borderRadius="12px"/>
 
     } @else if (projection()) {
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            @for (kpi of annualKpis(); track kpi.label) {
-                <p-card [class]="'border ' + kpi.borderClass">
-                    <div class="flex flex-col gap-2">
-                        <span class="text-sm text-surface-500">{{ kpi.label }}</span>
-                        <span class="text-2xl font-bold tabular-nums" [class]="kpi.accentClass">
-                            {{ kpi.montant | montant }}
-                        </span>
-                        <span class="text-xs text-surface-400">
-                            {{ t.projection.estimationMensuelle }} · {{ kpi.estimationMensuelle }}
-                        </span>
-                    </div>
-                </p-card>
-            }
-        </div>
 
         <!-- ①bis Cartes membre + foyer (revenus/charges/réserves/solde annuels, décomposition) -->
         @if (ventilationAnnuelle()) {
