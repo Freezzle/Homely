@@ -16,11 +16,14 @@ Format des tâches : `T<epic>.<n>`.
 - [x] **T0.1** Backend **Spring Boot 4** (Java 21, Maven) : dépendances Web, Data JPA,
   Validation, Security, PostgreSQL, Flyway, MapStruct, Lombok, springdoc, Caffeine,
   Testcontainers. *Accept.* : `mvn verify` vert, `/health` répond, Swagger UI accessible.
-- [x] **T0.2** Frontend **Angular 22** (standalone, strict, signals) + **PrimeNG 21** +
+- [x] **T0.2** Frontend **Angular 22** (standalone, strict, signals) + **PrimeNG 22** +
   PrimeIcons + **Tailwind CSS v4** couplé via `tailwindcss-primeui` et CSS layers (ordre
   `tailwind, primeng`, preset Aura — voir doc 03 §6.1) + Chart.js. *Accept.* : `ng build`
   + `ng lint` verts ; page shell affiche un composant PrimeNG stylé **et** une classe
   utilitaire Tailwind (`bg-primary`) rendue correctement (preuve du couplage).
+  **⚠️ Corrigé par cette cartographie** : `package.json` réel indique `primeng@^22.0.0`
+  (la migration PrimeNG 21→22 évoquée comme « à planifier » dans le README racine est en
+  fait déjà faite).
 - [x] **T0.3** `docker-compose` dev (PostgreSQL + back + front), `.env.example`,
   Dockerfiles multi-stage. *Accept.* : `docker compose up` démarre la stack.
 - [ ] **T0.4** GitHub Actions : jobs back (build+test) et front (build+lint+test) sur PR.
@@ -87,8 +90,11 @@ Format des tâches : `T<epic>.<n>`.
 
 ### E5 · Erreurs & fondations API
 - [x] **T5.1** `@RestControllerAdvice` → `ApiError` uniforme + codes métier ([doc 04 §2](04-api-spec.md)).
-- [~] **T5.2** Pagination/tri standard + Bean Validation sur les DTO. *Accept.* : payload
+- [ ] **T5.2** Pagination/tri standard + Bean Validation sur les DTO. *Accept.* : payload
   invalide → 400 structuré ; règle métier → 422.
+  **⚠️ Corrigé par cette cartographie : la pagination/tri n'est pas implémentée du tout**
+  (tous les endpoints de liste renvoient un tableau JSON brut). Repassé de `[~]` à `[ ]`.
+  La validation Bean/règle métier (400/422), elle, est bien en place.
 
 ---
 
@@ -105,8 +111,10 @@ Format des tâches : `T<epic>.<n>`.
   référence ». *Accept.* : 2ᵉ référence → 409 ; répartition ≠ 1 → 422.
 - [x] **T7.2** CRUD Poste + RepartitionPoste + VentilationCompte + `montantMensualise`
   calculé. *Accept.* : override répartition validé ; cohérence foyer/scénario.
-- [ ] **T7.3** `:dupliquer` scénario (copie profonde postes/objectifs/répartitions) et
+- [x] **T7.3** `:dupliquer` scénario (copie profonde postes/objectifs/répartitions) et
   `:definir-reference`. *Accept.* : le duplicata est indépendant de l'original.
+  *Vérifié dans le code* : `ScenarioService.dupliquer()` / `.definirReference()`,
+  endpoints `POST .../scenarios/{id}:dupliquer` et `:definir-reference`.
 - [x] **T7.4** CRUD Objectif (support compte XOR actif) + calculs [doc 01 §10](01-business-rules-engine.md).
   *Accept.* : progression/épargne requise/date prévue correctes sur un cas de test.
 - [x] **T7.5** Nature de poste (`EFFECTIF`/`ESTIMATION`) + migration `V5__poste_nature.sql`.
@@ -124,6 +132,22 @@ Format des tâches : `T<epic>.<n>`.
   - Liste postes : badge Nature affiche « Estimation ± X.X% » (formaté 1 décimale).
   - Champ descriptif : le moteur ne l'utilise pas dans les projections (réservé usage futur
     de stress-test / plage min–max).
+- [x] **T7.7** Périodes de répartition (`RepartitionPeriode`/`RepartitionPeriodePart`,
+  migration `V7__repartition_periode.sql`) : remplace `RepartitionDefaut` (conservée en
+  legacy) par des fenêtres temporelles de quotes-parts, classification `AUTO` /
+  `REVERSE_AUTO` / `CUSTOM` par poste. *Accept.* : endpoints CRUD
+  `/scenarios/{id}/periodes` ; somme des parts = 1 par période ; couverture testée par
+  le moteur (doc 01 §6). **Non documenté avant cette cartographie.**
+- [x] **T7.8** Cycle de vie du poste — révision de montant, annulation, décalage de
+  fenêtre, clôture/réactivation (`PosteController`/`PosteService`, migration
+  `V12__poste_origine.sql` pour le chaînage `posteOrigineId`). *Accept.* : endpoints
+  `POST .../postes/{id}/reviser-montant`, `annuler-revision`, `decaler-date-effet`,
+  `cloturer`, `reactiver`. **Non documenté avant cette cartographie.**
+- [x] **T7.9** Relation Compte ↔ Membre en N-N (migration `V8__compte_membre.sql`) :
+  un compte peut être rattaché à plusieurs membres, un membre à plusieurs comptes ;
+  suppression de `compte.type` et `poste.compte_source`. *Accept.* : création/édition de
+  compte sans membre actif rattaché → 422 `COMPTE_SANS_MEMBRE`. **Non documenté avant
+  cette cartographie.**
 
 ---
 
@@ -135,10 +159,16 @@ Format des tâches : `T<epic>.<n>`.
 - [x] **T8.2** `projection/tresorerie` (+ courbe mensuelle). *Accept.* : == vecteurs T3.
 - [x] **T8.3** `projection/mensuelle` (ventilations). *Accept.* : totaux == somme des
   ventilations.
-- [x] **T8.4** `projection/patrimoine` (net worth, [doc 01 §9](01-business-rules-engine.md)). *Accept.* : sur un
+- [ ] **T8.4** `projection/patrimoine` (net worth, [doc 01 §9](01-business-rules-engine.md)). *Accept.* : sur un
   cas jouet, soldes projetés = calcul manuel (transfert réserve source→destination géré).
-- [x] **T8.5** `projection/comparaison` multi-scénarios. *Accept.* : séries alignées par
+  **⚠️ Corrigé par cette cartographie : aucun endpoint, service ni DTO de ce nom n'existe
+  dans le code actuel (`ch.homely.projection`) ; seuls les `Actif` sont gérés en CRUD
+  référentiel. Repassé de `[x]` à `[ ]`.** Pas d'écran frontend associé non plus (voir
+  T10.6).
+- [ ] **T8.5** `projection/comparaison` multi-scénarios. *Accept.* : séries alignées par
   année pour 2+ scénarios.
+  **⚠️ Corrigé par cette cartographie : aucun endpoint de ce nom n'existe dans le code
+  actuel. Repassé de `[x]` à `[ ]`.** Pas d'écran frontend associé non plus (voir T10.3).
 - [x] **T8.6** `postes/{id}/apercu?annee=` (contribution mensuelle d'un poste).
 - [x] **T8.7** Projection annuelle enrichie : `moisReel` et `moisParMembreReel`.
   *Accept.* : payload annuel inclut les séries mensualisées et réelles.
@@ -160,6 +190,8 @@ Format des tâches : `T<epic>.<n>`.
 - [x] **T10.2** Référentiels (CRUD) + Paramètres foyer + Accès (OWNER) + **dialog création de
   foyer enrichi** (saisie des membres initiaux, validation min. 1 membre, couleur picker).
 - [x] **T10.3** Scénarios (liste, hypothèses, duplication, définir référence).
+  **⚠️ Corrigé par cette cartographie** : pas d'écran de **comparaison** côte-à-côte de
+  scénarios (dépend de T8.5, non implémenté).
 - [x] **T10.4** **Tableau de bord annuel** : KPI + flux mensuels foyer + flux par membre +
   tableau détaillé annuel. *Accept.* : chiffres affichés == vecteurs T2 sur le seed.
 - [x] **T10.5** **Tableau de bord du mois** : KPI foyer, catégories séparées
@@ -168,7 +200,11 @@ Format des tâches : `T<epic>.<n>`.
   synthèse par membre, suppression des visuels peu pertinents).
 - [x] **T10.10** UX dialog poste (nature, affichage conditionnel mode/moment,
   organisation des champs et icônes de mode en liste).
-- [x] **T10.6** **Patrimoine** : courbe net worth + répartition + tableau comptes/actifs.
+- [ ] **T10.6** **Patrimoine** : courbe net worth + répartition + tableau comptes/actifs.
+  **⚠️ Corrigé par cette cartographie : aucun écran/route/composant « patrimoine »
+  n'existe dans le frontend actuel** (dépend de l'endpoint backend T8.4, lui-même non
+  implémenté). Les `Actif` sont uniquement gérés en CRUD référentiel
+  (`referentiels/actifs`). Repassé de `[x]` à `[ ]`.
 - [x] **T10.7** **Objectifs** : cartes + barres de progression + formulaire.
 
 ---
@@ -180,6 +216,14 @@ Format des tâches : `T<epic>.<n>`.
 - [x] **T11.4** README d'exécution (dev + prod) et documentation OpenAPI publiée.
   *Livré* : README racine avec parcours d'exécution local/compose/prod et procédure de
   publication OpenAPI (export JSON/YAML + emplacement versionné sous `docs/openapi/`).
+- [ ] **T11.5** Couverture de tests unitaires frontend. **Identifié par cette
+  cartographie : 0 fichier `.spec.ts` existe dans `frontend/src/app`** malgré le socle
+  Jasmine/Karma configuré. *Accept.* : au moins les services critiques (auth, contexte,
+  projection) et un composant représentatif par pattern (CRUD référentiel, dashboard)
+  sont couverts ; `ng test` intégré à la CI (T0.4) une fois ce chantier commencé.
+- [ ] **T11.6** Pipeline CI GitHub Actions (doublon volontaire de T0.4, resitué ici car
+  bloquant pour la Definition of Done « tests verts en CI »). Tant qu'il est absent, la
+  DoD ne peut être vérifiée qu'en local.
 
 ---
 
@@ -190,3 +234,9 @@ Format des tâches : `T<epic>.<n>`.
 4. Multi-tenant respecté (aucune fuite inter-foyers). Validation d'entrée présente.
 5. DTO ≠ entités ; endpoints documentés (OpenAPI). UI sans texte en dur (clés i18n).
 6. Les **vecteurs golden** (doc 01) restent reproduits au centime.
+7. **Documentation `/docs` à jour** avec l'état réel livré (règle détaillée dans
+   [`docs/README.md` §4-ter](README.md#4-ter-règle-permanente-pour-lagent--maintenir-la-documentation-à-jour)) :
+   statut de la case du backlog corrigé si besoin, doc 01/02/03/04/05 mis à jour si le
+   moteur/domaine/architecture/API/frontend a changé, et écart noté dans
+   [`docs/00-synthese.md`](00-synthese.md) si un doute subsiste. Ne pas laisser une tâche
+   cochée `[x]` sans le code correspondant, ni un écran/endpoint réel non documenté.

@@ -9,7 +9,7 @@
 
 ```
 ┌─────────────────────────┐      HTTPS / REST + JWT       ┌──────────────────────────┐
-│ Angular 22 + PrimeNG 21  │  ─────────────────────────▶  │  Spring Boot 4 (Java 21)  │
+│ Angular 22 + PrimeNG 22  │  ─────────────────────────▶  │  Spring Boot 4 (Java 21)  │
 │ + Tailwind v4 (SPA,      │  ◀─────────────────────────  │  API stateless            │
 │  standalone, signals)    │        JSON DTO               │                          │
 └─────────────────────────┘                               │  ┌────────────────────┐  │
@@ -42,11 +42,13 @@ ch.homely
 ├── categorie/         # Categorie
 ├── actif/             # Actif
 ├── taux/              # TauxChange
-├── scenario/          # Scenario, RepartitionDefaut, duplication
-├── poste/             # Poste, RepartitionPoste, VentilationCompte, NaturePoste
+├── scenario/          # Scenario, RepartitionPeriode (+RepartitionDefaut legacy), duplication
+├── poste/             # Poste, RepartitionPoste, VentilationCompte, NaturePoste, révisions
 ├── objectif/          # Objectif
 ├── moteur/            # ★ MoteurCalcul (pur) + projection réelle/mensualisée
-└── projection/        # endpoints annuel/mensuel/tresorerie/patrimoine/comparaison
+└── projection/        # endpoints réels : annuelle / annuelle-complete / tresorerie /
+                       #   mensuelle / apercu poste (patrimoine et comparaison ne sont
+                       #   PAS implémentés à ce jour — voir docs/06 T8.4/T8.5)
 ```
 
 Chaque feature : `controller` (REST) → `service` (métier/validation) → `repository`
@@ -70,21 +72,24 @@ Chaque feature : `controller` (REST) → `service` (métier/validation) → `rep
 
 ## 3. Sécurité & authentification
 
-- **JWT** : `access token` (courte durée, ex. 15 min) + `refresh token` (rotation).
-  Signature HMAC (secret) ou RSA. Mots de passe **BCrypt**.
+- **JWT** : `access token` (15 min, signature HMAC-SHA256) + `refresh token` opaque
+  (rotation, 7 jours, stocké en base dans `token_refresh`, transmis via **cookie
+  httpOnly/Secure/SameSite=Strict** — jamais lisible en JS côté client, jamais renvoyé
+  dans le corps JSON de connexion). Mots de passe **BCrypt**.
 - Endpoints publics : `/api/auth/register`, `/api/auth/login`, `/api/auth/refresh`, `/api/auth/logout`.
   Tout le reste exige un token valide.
 - **Autorisation multi-tenant** : chaque requête cible un foyer (`/api/foyers/{foyerId}/…`).
-  Un filtre/intercepteur vérifie que l'utilisateur courant possède un `AccesFoyer` sur ce
+  `MultiTenantService` vérifie que l'utilisateur courant possède un `AccesFoyer` sur ce
   foyer, et applique le rôle :
   - `VIEWER` : lecture seule (GET).
   - `EDITOR` : lecture + écriture des postes/scénarios/objectifs/référentiels.
   - `OWNER` : + gestion des accès (inviter/retirer des utilisateurs), suppression du foyer.
 - **Scoping systématique** : toute requête repository filtre par `foyerId` (ou
   `scenarioId` appartenant au foyer). **Ne jamais** exposer une entité d'un autre foyer
-  (test de sécurité obligatoire : accès croisé → 403/404).
-- CORS configuré pour l'origine du frontend. Headers de sécurité (CSP a minima côté
-  serveur d'hébergement du front).
+  (test de sécurité obligatoire : accès croisé → 403/404). Toute tentative d'accès
+  inter-foyers est journalisée.
+- CORS configuré pour l'origine du frontend (`app.cors.allowed-origins`, env
+  `CORS_ORIGINS`). Headers de sécurité (CSP a minima côté serveur d'hébergement du front).
 
 ## 4. Multi-devises
 
@@ -131,33 +136,39 @@ Chaque feature : `controller` (REST) → `service` (métier/validation) → `rep
 
 - **Angular 22**, **standalone components** (pas de NgModule), **signals** pour l'état
   local, **Angular Router** avec lazy-loading par feature, **strict mode** TS activé.
-- **PrimeNG 21.1.x** pour les composants (tables, formulaires, dialogs, menus), **p-chart**
-  (Chart.js) pour les graphiques, **PrimeIcons**. Thème par **tokens de design** (preset
-  Aura via `@primeng/themes`, mode styled).
+- **PrimeNG 22.0.x** (migration effectuée — `package.json` réel) pour les composants
+  (tables, formulaires, dialogs, menus), **p-chart** (Chart.js) pour les graphiques,
+  **PrimeIcons**. Thème par **tokens de design** (preset Aura via `@primeng/themes`, mode
+  styled).
 - **Tailwind CSS v4** pour la mise en page, l'espacement et les utilitaires, **couplé à
   PrimeNG** (voir §6.1). Tailwind **remplace PrimeFlex** (legacy).
 - Couche **services HTTP** typés (un service par ressource) + **interceptor** JWT
-  (ajout du token, refresh transparent sur 401, redirection login).
-- **State** : privilégier des *signal stores* légers par feature (ou NgRx SignalStore si
-  volume le justifie) ; le contexte « foyer courant » et « scénario courant » sont des
-  signals globaux (service `ContexteService`).
-- Structure :
+  (ajout du token, refresh transparent sur 401, redirection login) + **interceptor date**
+  (corrige le décalage fuseau horaire entre `p-datepicker` local et le backend UTC).
+- **State** : le contexte « foyer courant » et « scénario courant » sont des signals
+  globaux (service `ContexteService`) ; chaque feature gère son propre état local en
+  signals (pas de store centralisé de type NgRx à ce jour).
+- Structure **réelle** (`frontend/src/app`) :
 ```
 src/app/
-├── core/            # auth, interceptors, guards, contexte foyer/scénario, config
-├── shared/          # composants/pipes/directives réutilisables, modèles TS (DTO)
-├── layout/          # shell (topbar, menu latéral, sélecteur foyer/scénario)
+├── core/            # guards, interceptors (jwt, date), services (ContexteService,
+                     #   I18nService…), pipes (montant/date Intl), constants, models, utils
+├── shared/          # composants réutilisables (carte-bilan, tag), utils
+├── shell/            # topbar, sidebar-menu, foyer-scenario-switcher
 └── features/
     ├── auth/            # login, register
-    ├── foyer/           # gestion foyer, membres, accès (invitations)
-    ├── referentiels/    # comptes, catégories, actifs, taux de change
-    ├── scenarios/       # liste, duplication, hypothèses, comparaison
-    ├── postes/          # revenus, charges, réserves (CRUD + tableaux)
-    ├── dashboard-annuel/
-    ├── dashboard-mensuel/
-    ├── patrimoine/      # net worth
-    └── objectifs/
+    ├── foyer/           # foyer-creation (onboarding), foyer-liste
+    ├── referentiels/    # membres, comptes, categories, actifs, taux
+    ├── scenarios/       # scenarios-liste, repartition-periodes
+    ├── postes/          # postes-liste (revenus/charges/réserves, même composant réutilisé)
+    ├── dashboard/        # dashboard-annuel, dashboard-mensuel
+    ├── objectifs/        # objectifs (cartes + progression)
+    └── parametres/       # paramètres foyer, acces (gestion des invitations, OWNER)
 ```
+> ⚠️ Il n'existe **pas** de feature `patrimoine/` dédiée : les `Actif` sont gérés en CRUD
+> référentiel uniquement (`referentiels/actifs`), sans dashboard de patrimoine net
+> agrégé ni courbe net worth (voir docs/06 T8.4). Il n'existe pas non plus d'écran de
+> comparaison de scénarios (voir docs/06 T8.5).
 
 ### 6.1 Couplage PrimeNG + Tailwind CSS v4 (intégration officielle)
 
@@ -217,15 +228,22 @@ Suivre le guide officiel `primeng.dev/tailwind`. Points clés :
 
 - Backend : JUnit 5 + AssertJ, tests d'intégration avec **Testcontainers** (PostgreSQL),
   couverture visée **> 90 % sur le module `moteur`** (règle métier critique).
-- Frontend : tests unitaires (Vitest/Jasmine) sur services et composants clés ;
-  éventuellement e2e (Playwright) sur les parcours principaux.
-- **GitHub Actions** : build + tests back, build + lint + tests front, sur chaque PR.
-  Bloquer le merge si les tests du moteur échouent.
-- Lint/format : Spotless/Checkstyle (Java), ESLint + Prettier (front).
+- Frontend : **état réel — aucun test unitaire écrit** (0 fichier `.spec.ts` malgré la
+  configuration Jasmine/Karma présente dans `angular.json`/`package.json`). À prioriser
+  avant d'étendre le périmètre fonctionnel.
+- **GitHub Actions : non implémenté à ce jour** (pas de `.github/workflows/*.yml`).
+  Cible : build + tests back, build + lint + tests front, sur chaque PR, bloquant si les
+  tests du moteur échouent (voir docs/06 T0.4).
+- Lint/format : Spotless/Checkstyle (Java), ESLint + Prettier (front) — à vérifier au cas
+  par cas selon la configuration effective du dépôt.
 
 ## 9. Observabilité & robustesse
 
-- Gestion d'erreurs centralisée (`@RestControllerAdvice`) → format `ApiError` uniforme
-  (voir doc 04). Logs structurés. Actuator (`/health`, `/info`) exposé de façon sécurisée.
-- Validation d'entrée systématique (Bean Validation sur les DTO) ; messages localisables.
-- Pagination + tri sur toutes les listes potentiellement longues (postes).
+- Gestion d'erreurs centralisée (`@RestControllerAdvice` → `GlobalExceptionHandler`) →
+  format `ApiError` uniforme (voir doc 04). Logs structurés. Actuator (`/health`, `/info`)
+  exposé de façon sécurisée.
+- Validation d'entrée systématique (Bean Validation sur les DTO, `PosteValidator` pour les
+  règles spécifiques poste/nature). Messages localisables.
+- **Pagination + tri sur les listes : cible non atteinte.** Toutes les listes (postes
+  compris) renvoient actuellement un tableau JSON brut, sans pagination ni tri serveur
+  (voir docs/06 T5.2).

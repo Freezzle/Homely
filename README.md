@@ -18,14 +18,23 @@ Application de prévision budgétaire familiale (SaaS multi-foyers) construite a
 
 ## Exécution en développement
 
-### Option 1 — script intégré (Windows PowerShell)
+### Option 1 — scripts locaux (Windows PowerShell)
 
 ```powershell
 Set-Location "E:\Applications\Homely"
-.\dev.ps1
+docker compose up -d postgres
+mvn spring-boot:run
 ```
 
-Le script démarre PostgreSQL (Docker), le backend (`:8080`) et le frontend (`:4200`).
+```powershell
+Set-Location "E:\Applications\Homely"
+.\run-ng.ps1 serve
+```
+
+`run-ng.ps1` est un wrapper du CLI Angular (`ng serve` par défaut, installe les
+dépendances npm si `node_modules` est absent). **Il n'existe pas de script unique
+`dev.ps1` démarrant toute la stack** — lancer PostgreSQL, le backend et le frontend
+séparément (voir Option 2 ci-dessous pour le détail).
 
 ### Option 2 — manuel
 

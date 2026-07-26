@@ -15,7 +15,6 @@ import { CategorieService, CompteService } from '../../../core/services/referent
 import { PosteService, ObjectifService } from '../../../core/services/scenario-poste.service';
 import { DecompositionService } from '../../../core/services/decomposition.service';
 import { VentilationsDto, VentilationAggregatDto, CategorieDto, CompteDto, TypeCategorie, PosteDto, ObjectifDto } from '../../../core/models/api.models';
-import { MontantPipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { localeDeLangue } from '../../../core/i18n/locale.util';
 import { CarteBilanComponent, LigneDecomposition, MembreTagInfo } from '../../../shared/components/carte-bilan/carte-bilan.component';
@@ -25,7 +24,7 @@ import { CarteBilanComponent, LigneDecomposition, MembreTagInfo } from '../../..
   standalone: true,
   imports: [
     CommonModule, FormsModule, SelectModule, SelectButtonModule, SkeletonModule, ButtonModule,
-    CardModule, ChartModule, TagModule, MontantPipe,
+    CardModule, ChartModule, TagModule,
     CarteBilanComponent,
   ],
   templateUrl: './dashboard-mensuel.component.html',

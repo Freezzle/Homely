@@ -15,8 +15,10 @@
   `/api/foyers/{foyerId}/scenarios/{scenarioId}/…`.
 - Verbes : `GET` (liste/détail), `POST` (création), `PUT` (remplacement), `PATCH`
   (modification partielle), `DELETE`.
-- Listes : pagination `?page=&size=&sort=champ,asc|desc`, réponse `{ content, page,
-  size, totalElements, totalPages }`.
+- Listes : **cible** pagination `?page=&size=&sort=champ,asc|desc`, réponse `{ content,
+  page, size, totalElements, totalPages }`. **État réel (2026) : non implémenté** — tous
+  les endpoints de liste renvoient actuellement un tableau JSON brut, sans pagination ni
+  tri serveur (voir backlog `docs/06` T5.2).
 - Codes : 200/201/204 succès ; 400 (payload invalide), 401 (non authentifié), 403 (droit
   insuffisant), 404 (introuvable/hors périmètre), 409 (conflit, ex. 2ᵉ scénario de
   référence), 422 (règle métier, ex. somme quotes-parts ≠ 1).
@@ -146,12 +148,15 @@ progressive dans les finances communes). Chaque période a une fenêtre `debut` 
 (null = ouverte). La période active pour un mois donné est celle dont la fenêtre inclut ce
 mois.
 
+> ⚠️ Chemin réel du contrôleur (`RepartitionPeriodeController`) : `.../periodes`, **pas**
+> `.../repartition-periodes`.
+
 | Méthode | Endpoint | Description |
 |---|---|---|
-| GET | `/api/foyers/{foyerId}/scenarios/{scenarioId}/repartition-periodes` | Liste des périodes du scénario |
-| POST | `/api/foyers/{foyerId}/scenarios/{scenarioId}/repartition-periodes` | Créer une période |
-| PUT | `/api/…/repartition-periodes/{periodeId}` | Modifier une période |
-| DELETE | `/api/…/repartition-periodes/{periodeId}` | Supprimer une période |
+| GET | `/api/foyers/{foyerId}/scenarios/{scenarioId}/periodes` | Liste des périodes du scénario |
+| POST | `/api/foyers/{foyerId}/scenarios/{scenarioId}/periodes` | Créer une période |
+| PUT | `/api/…/periodes/{periodeId}` | Modifier une période |
+| DELETE | `/api/…/periodes/{periodeId}` | Supprimer une période |
 
 Corps `POST`/`PUT` :
 ```json
@@ -181,7 +186,8 @@ Réponse :
 
 Scopés : `/api/foyers/{foyerId}/scenarios/{scenarioId}/postes`.
 
-- `GET …/postes?type=CHARGE&page=&size=&sort=` → liste paginée avec `montantMensualise` calculé.
+- `GET …/postes?type=CHARGE` → liste brute (non paginée, voir §1) avec `montantMensualise`
+  calculé.
 - `POST …/postes` → création. Corps :
 
 ```json
@@ -249,7 +255,24 @@ Exemple poste ESTIMATION (nourriture variable) :
 - `GET …/postes/{id}` → détail (avec `montantMensualise` calculé).
 - `PUT …/postes/{id}` / `PATCH …/postes/{id}` → modification (mêmes règles que POST).
 - `DELETE …/postes/{id}` → suppression.
-- `POST …/postes/{id}:dupliquer` → duplication d'un poste (confort de saisie).
+
+### 7.0-bis Révision, clôture et décalage (cycle de vie réel du poste)
+
+Fonctionnalités **implémentées mais non documentées jusqu'ici**. Un poste n'est jamais
+« modifié en silence » sur son montant historique : ces actions créent une nouvelle
+version chaînée ou ferment simplement la fenêtre de validité.
+
+| Méthode | Endpoint | Description |
+|---|---|---|
+| POST | `…/postes/{id}/reviser-montant` | Crée un **nouveau poste** chaîné (`posteOrigineId` = poste d'origine) avec un nouveau montant à partir d'une date d'effet ; clôture le poste d'origine à la veille. |
+| POST | `…/postes/{id}/annuler-revision` | Supprime le poste successeur créé par une révision et rouvre le poste d'origine. |
+| POST | `…/postes/{id}/decaler-date-effet` | Modifie `debut`/`fin` (fenêtre de validité) sans créer de nouvelle version. |
+| POST | `…/postes/{id}/cloturer` | Ferme la fenêtre de validité (`fin` = date de clôture). |
+| POST | `…/postes/{id}/reactiver` | Réouvre un poste clôturé (retire `fin`). |
+
+> ⚠️ **Pas de duplication de poste** (`:dupliquer`) — contrairement à ce que cette section
+> indiquait précédemment, aucun endpoint de ce type n'existe dans le code actuel. Seule la
+> **duplication de scénario** (§6.1) copie les postes en profondeur.
 
 ### 7.1 Aperçu mensuel d'un poste
 
@@ -389,8 +412,14 @@ Renvoie la trésorerie cumulée sur toutes les années de l'horizon :
 `parCompteMembre` permet d'afficher les charges par compte et par membre (graphique
 horizontal dans le dashboard mensuel).
 
-### 9.4 Patrimoine / net worth
-`GET …/scenarios/{scenarioId}/projection/patrimoine` :
+### 9.4 Patrimoine / net worth — ⚠️ NON IMPLÉMENTÉ (spécification cible)
+
+> **État réel (2026) : cet endpoint n'existe pas dans le code.** Les `Actif` sont bien
+> gérés en CRUD référentiel (§5), mais aucun service/contrôleur ne calcule ni n'expose de
+> patrimoine net agrégé (comptes + actifs projetés). Ce qui suit reste la **spécification
+> cible** à implémenter (voir backlog `docs/06`, tâche T8.4).
+
+`GET …/scenarios/{scenarioId}/projection/patrimoine` (cible) :
 ```json
 {
   "annees": [
@@ -414,8 +443,13 @@ horizontal dans le dashboard mensuel).
 `patrimoineNet` = somme des `soldesComptes` + somme des `soldesActifs`. Les actifs sont
 projetés en appliquant `tauxCroissanceAnnuel` capitalisé année par année.
 
-### 9.5 Comparaison de scénarios (what-if)
-`GET /api/foyers/{foyerId}/projection/comparaison?scenarioIds=A,B,C`
+### 9.5 Comparaison de scénarios (what-if) — ⚠️ NON IMPLÉMENTÉ (spécification cible)
+
+> **État réel (2026) : cet endpoint n'existe pas dans le code**, ni aucun écran frontend
+> associé. Ce qui suit reste la **spécification cible** à implémenter (voir backlog
+> `docs/06`, tâche T8.5).
+
+`GET /api/foyers/{foyerId}/projection/comparaison?scenarioIds=A,B,C` (cible)
 Réponse alignée par année pour un graphe multi-séries :
 ```json
 {

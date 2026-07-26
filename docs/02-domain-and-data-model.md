@@ -69,13 +69,14 @@ foyerId)`.
 
 ### Membre
 Personne du budget (Dylan, Mélanie…). Champs : `id`, `foyerId`, `nom`, `couleur` (hex,
-pour les graphiques), `ordre`, `actif`. **N membres autorisés.**
+pour les graphiques), `actif`. **N membres autorisés.** *(la colonne `ordre` a été
+supprimée en V13 ; le tri est désormais automatique par nom côté application.)*
 
 ### Compte
 Compte bancaire du foyer. Champs : `id`, `foyerId`, `libelle`,
 `soldeInitial` (décimal, au 1ᵉʳ janvier de l'année de départ du scénario
 de référence — utilisé par le module patrimoine), `devise` (défaut = deviseBase),
-`ordre`, `actif`.
+`actif`. *(la colonne `ordre` a été supprimée en V13 ; tri automatique par libellé.)*
 
 Relation N-N avec `Membre` via la table de liaison `compte_membre`. Un compte appartient à
 **1..N membres**. Lors de la création ou modification, seuls les membres **actifs** peuvent
@@ -85,12 +86,17 @@ sans au moins un membre** (422 `COMPTE_SANS_MEMBRE`).
 
 ### Categorie
 Classification d'un poste. Champs : `id`, `foyerId`, `libelle`, `typePoste` (REVENU |
-CHARGE | RESERVE | PROJET), `ordre`, `actif`. Les catégories `PROJET` servent aux objectifs.
+CHARGE | RESERVE | PROJET), `actif`. Les catégories `PROJET` servent aux objectifs.
+*(la colonne `ordre` a été supprimée en V13 ; tri automatique par typePoste + libellé.)*
+Depuis V11, `poste.categorieId` référence `Categorie` en `ON DELETE SET NULL` : supprimer
+une catégorie ne bloque plus et ne supprime pas les postes qui l'utilisaient (ils sont
+simplement dissociés).
 
 ### Actif
 Élément de patrimoine hors compte courant. Champs : `id`, `foyerId`, `libelle`,
 `typeActif` (voir enum), `soldeInitial`, `devise`, `tauxCroissanceAnnuel` (décimal, ex.
-0,03 pour +3 %/an ; défaut 0), `ordre`, `actif`.
+0,03 pour +3 %/an ; défaut 0), `actif`. *(la colonne `ordre` a été supprimée en V13 ; tri
+automatique par libellé.)*
 
 ### TauxChange
 Taux de conversion prévisionnel vers la devise de base. Champs : `id`, `foyerId`,
@@ -125,14 +131,25 @@ Quote-part d'un membre dans une période. Champs : `id`, `periodeId`, `membreId`
 
 ### Poste
 Ligne budgétaire récurrente. Champs :
-`id`, `scenarioId`, `type` (REVENU | CHARGE | RESERVE), `description`, `categorieId`,
+`id`, `scenarioId`, `type` (REVENU | CHARGE | RESERVE), `description`, `categorieId`
+(nullable, `ON DELETE SET NULL` depuis V11),
 `montant` (décimal ≥ 0), `devise` (défaut = deviseBase), `periodiciteMois` (int **≥ 0** ;
 0 = ponctuel one-shot), `debut` (date null), `fin` (date null), `mode` (MENSUALISE |
 PERIODIQUE), `moment` (DEBUT_PERIODE | FIN_PERIODE), `nature` (EFFECTIF | ESTIMATION,
 descriptif), `estimPourcentage` (NUMERIC(3,1), nullable — obligatoire si nature=ESTIMATION,
 null si nature=EFFECTIF ; représente la plage de variation ± du montant, ex. 10.0 signifie
 montant peut varier de montant×0.90 à montant×1.10), `typeRepartition` (AUTO | REVERSE_AUTO
-| CUSTOM, défaut AUTO), `ordre`, `dateCreation`, `dateModification`.
+| CUSTOM, défaut AUTO), `ordre`, `posteOrigineId` (UUID nullable, `ON DELETE SET NULL`
+depuis V12 — référence le poste dont celui-ci est issu par révision de montant),
+`dateCreation`, `dateModification`.
+
+**Cycle de vie réel (`PosteController`/`PosteService`)** : au-delà du CRUD classique, un
+poste peut être **révisé** (`POST .../reviser-montant` crée un nouveau poste chaîné via
+`posteOrigineId` et clôture l'ancien), la révision peut être **annulée**
+(`.../annuler-revision`), sa fenêtre peut être **décalée** (`.../decaler-date-effet`) sans
+changer de version, et il peut être **clôturé**/**réactivé** (`.../cloturer`,
+`.../reactiver`) en jouant sur `fin`. Il n'existe **pas** d'endpoint de duplication de
+poste (`:dupliquer`) dans le code actuel.
 
 **Sémantique de `typeRepartition`** :
 - `AUTO` : les quotes-parts suivent la `RepartitionPeriode` active du scénario à la date
@@ -180,7 +197,7 @@ Correspondance des libellés Excel → enums (à respecter dans le seed) :
 - Mode : `mensualisé` → `MENSUALISE`, `périodique` → `PERIODIQUE`.
 - Moment : `début périodicité` → `DEBUT_PERIODE`, `fin périodicité` → `FIN_PERIODE`.
 
-## 4. Schéma SQL (PostgreSQL) — état consolidé après V1→V10
+## 4. Schéma SQL (PostgreSQL) — état consolidé après V1→V13
 
 > Conventions : `snake_case`, PK `uuid` (`gen_random_uuid()`), montants `NUMERIC(15,2)`,
 > taux `NUMERIC(10,6)`, `TIMESTAMPTZ` pour les dates système, `DATE` pour les dates métier.
@@ -228,12 +245,12 @@ CREATE TABLE acces_foyer (
 );
 
 -- ── Membres ─────────────────────────────────────────────────────────────────
+-- Note : la colonne `ordre` a été supprimée en V13 (tri désormais automatique par nom).
 CREATE TABLE membre (
   id       UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
   foyer_id UUID         NOT NULL REFERENCES foyer(id) ON DELETE CASCADE,
   nom      VARCHAR(120) NOT NULL,
   couleur  VARCHAR(7),
-  ordre    INT          NOT NULL DEFAULT 0,
   actif    BOOLEAN      NOT NULL DEFAULT TRUE
 );
 CREATE INDEX idx_membre_foyer ON membre (foyer_id);
@@ -241,13 +258,13 @@ CREATE INDEX idx_membre_foyer ON membre (foyer_id);
 -- ── Comptes bancaires ────────────────────────────────────────────────────────
 -- Note : la colonne `type` (COURANT/EPARGNE/COMMUN/AUTRE) a été supprimée en V8.
 --        La colonne `compte_source` sur `poste` a aussi été supprimée en V8.
+--        La colonne `ordre` a été supprimée en V13 (tri désormais automatique par libellé).
 CREATE TABLE compte (
   id            UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
   foyer_id      UUID          NOT NULL REFERENCES foyer(id) ON DELETE CASCADE,
   libelle       VARCHAR(120)  NOT NULL,
   solde_initial NUMERIC(15,2) NOT NULL DEFAULT 0,
   devise        VARCHAR(3),
-  ordre         INT           NOT NULL DEFAULT 0,
   actif         BOOLEAN       NOT NULL DEFAULT TRUE
 );
 CREATE INDEX idx_compte_foyer ON compte (foyer_id);
@@ -263,18 +280,19 @@ CREATE INDEX idx_compte_membre_membre ON compte_membre (membre_id);
 
 -- ── Catégories de postes ─────────────────────────────────────────────────────
 -- Note : la colonne `systeme` (bool) a été supprimée en V6.
+--        La colonne `ordre` a été supprimée en V13 (tri auto par typePoste + libellé).
 CREATE TABLE categorie (
   id         UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
   foyer_id   UUID         NOT NULL REFERENCES foyer(id) ON DELETE CASCADE,
   libelle    VARCHAR(120) NOT NULL,
   type_poste VARCHAR(16)  NOT NULL
              CHECK (type_poste IN ('REVENU','CHARGE','RESERVE','PROJET')),
-  ordre      INT          NOT NULL DEFAULT 0,
   actif      BOOLEAN      NOT NULL DEFAULT TRUE
 );
 CREATE INDEX idx_categorie_foyer ON categorie (foyer_id, type_poste);
 
 -- ── Actifs patrimoniaux ──────────────────────────────────────────────────────
+-- Note : la colonne `ordre` a été supprimée en V13 (tri auto par libellé).
 CREATE TABLE actif (
   id                     UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
   foyer_id               UUID          NOT NULL REFERENCES foyer(id) ON DELETE CASCADE,
@@ -287,7 +305,6 @@ CREATE TABLE actif (
   solde_initial          NUMERIC(15,2) NOT NULL DEFAULT 0,
   devise                 VARCHAR(3),
   taux_croissance_annuel NUMERIC(10,6) NOT NULL DEFAULT 0,
-  ordre                  INT           NOT NULL DEFAULT 0,
   actif                  BOOLEAN       NOT NULL DEFAULT TRUE
 );
 CREATE INDEX idx_actif_foyer ON actif (foyer_id);
@@ -349,12 +366,14 @@ CREATE TABLE repartition_defaut (
 );
 
 -- ── Postes budgétaires ───────────────────────────────────────────────────────
+-- Note : `categorie_id` est ON DELETE SET NULL depuis V11 (suppression d'une catégorie
+--        ne bloque plus, le poste est conservé et dissocié).
 CREATE TABLE poste (
   id                UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
   scenario_id       UUID          NOT NULL REFERENCES scenario(id) ON DELETE CASCADE,
   type              VARCHAR(16)   NOT NULL CHECK (type IN ('REVENU','CHARGE','RESERVE')),
   description       VARCHAR(255)  NOT NULL,
-  categorie_id      UUID          REFERENCES categorie(id),
+  categorie_id      UUID          REFERENCES categorie(id) ON DELETE SET NULL,
   montant           NUMERIC(15,2) NOT NULL DEFAULT 0,
   devise            VARCHAR(3),
   periodicite_mois  INT           NOT NULL DEFAULT 1,
@@ -370,6 +389,7 @@ CREATE TABLE poste (
   type_repartition  VARCHAR(16)   NOT NULL DEFAULT 'AUTO'
                     CHECK (type_repartition IN ('AUTO','REVERSE_AUTO','CUSTOM')),
   ordre             INT           NOT NULL DEFAULT 0,
+  poste_origine_id  UUID          REFERENCES poste(id) ON DELETE SET NULL,  -- V12 : chaînage des révisions de montant
   date_creation     TIMESTAMPTZ   NOT NULL DEFAULT now(),
   date_modification TIMESTAMPTZ   NOT NULL DEFAULT now(),
   CONSTRAINT chk_periodicite CHECK (periodicite_mois >= 0),   -- 0 = one-shot
@@ -379,6 +399,7 @@ CREATE TABLE poste (
 CREATE INDEX idx_poste_scenario_type ON poste (scenario_id, type);
 CREATE INDEX idx_poste_nature        ON poste (nature);
 CREATE INDEX idx_poste_estim_pourcentage ON poste (estim_pourcentage);
+CREATE INDEX idx_poste_origine_id ON poste (poste_origine_id);
 
 -- ── Répartitions par poste (CUSTOM uniquement) ──────────────────────────────
 CREATE TABLE repartition_poste (
@@ -421,7 +442,12 @@ CREATE INDEX idx_objectif_scenario ON objectif (scenario_id);
 > V4 (seed réel) → V5 (poste.nature) → V6 (suppression categorie.systeme) →
 > V7 (repartition_periode + type_repartition) → V8 (compte_membre, suppression
 > compte.type et poste.compte_source) → V9 (nettoyage ventilations à 0%) →
-> **V10 (poste.estim_pourcentage — plage de variation ± pour les postes ESTIMATION)**.
+> V10 (poste.estim_pourcentage — plage de variation ± pour les postes ESTIMATION) →
+> **V11** (poste.categorie_id passe en `ON DELETE SET NULL`, pour ne pas bloquer la
+> suppression d'une catégorie) → **V12** (poste.poste_origine_id — chaînage des
+> révisions de montant planifiées, `ON DELETE SET NULL`) → **V13** (suppression de la
+> colonne `ordre` sur membre/compte/categorie/actif — tri désormais automatique côté
+> application, par libellé/nom).
 >
 > Migration V10 : postes existants avec `nature='ESTIMATION'` reçoivent automatiquement
 > `estim_pourcentage = 10.0` (valeur par défaut). Postes `EFFECTIF` conservent `NULL`.

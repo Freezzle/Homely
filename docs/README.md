@@ -58,15 +58,15 @@ test dérivés des vraies données** y figurent : le moteur DOIT les reproduire 
 | Doc API | **springdoc-openapi**                             | Swagger UI |
 | Auth | **JWT** (access + refresh), BCrypt                | Rôles par foyer |
 | Frontend | **Angular 22** (standalone components, signals)   | strict mode |
-| UI Kit | **PrimeNG 21.1.x**, PrimeIcons                    | thème par tokens (preset Aura) |
+| UI Kit | **PrimeNG 22.x**, PrimeIcons                      | thème par tokens (preset Aura) |
 | CSS / layout | **Tailwind CSS (v4)** couplé à PrimeNG            | plugin officiel `tailwindcss-primeui` + CSS layers (remplace PrimeFlex) |
 | Graphiques | **Chart.js** via `p-chart` (PrimeNG)              | |
 | i18n | **ngx-translate** (`@ngx-translate/core` + `http-loader`) + `Intl` | traductions JSON (`assets/i18n/fr.json`, `en.json`), sélecteur FR/EN dans la topbar, formats devise/date localisés |
-| Build/CI | Maven (back), Angular CLI (front), GitHub Actions | |
+| Build/CI | Maven (back), Angular CLI (front), GitHub Actions | ⚠️ pipeline CI non implémenté à ce jour (voir docs/06 T0.4) |
 
 > ⚠️ Socles du projet : Spring Boot **4**, Angular **22**, Tailwind CSS **v4**.
-> L'application tourne actuellement avec PrimeNG **21.1.x** (migration vers 22 à planifier
-> explicitement). Pour les autres dépendances, garder des versions stables compatibles.
+> L'application tourne avec **PrimeNG 22** (migration depuis 21 effectuée). Pour les
+> autres dépendances, garder des versions stables compatibles.
 
 ## 4. Comment lire cette spécification
 
@@ -74,28 +74,83 @@ test dérivés des vraies données** y figurent : le moteur DOIT les reproduire 
 |---|---|---|
 | — | [`../README.md`](../README.md) | Exécution projet (dev/prod), stack runtime, publication OpenAPI |
 | — | [`README.md`](README.md) | Ce fichier : vision, périmètre, stack, glossaire |
-| 1 | [`docs/01-business-rules-engine.md`](docs/01-business-rules-engine.md) | **LE moteur de calcul** (règles exactes + vecteurs de test) — pièce maîtresse |
-| 2 | [`docs/02-domain-and-data-model.md`](docs/02-domain-and-data-model.md) | Modèle de domaine, entités, schéma SQL, mapping JPA |
-| 3 | [`docs/03-architecture.md`](docs/03-architecture.md) | Architecture back/front, sécurité, multi-tenant, multi-devises, i18n |
-| 4 | [`docs/04-api-spec.md`](docs/04-api-spec.md) | Contrats REST (endpoints, DTO, erreurs, auth) |
-| 5 | [`docs/05-frontend-spec.md`](docs/05-frontend-spec.md) | Écrans Angular + composants PrimeNG + graphiques |
-| 6 | [`docs/06-backlog-and-tasks.md`](docs/06-backlog-and-tasks.md) | Backlog séquencé (epics → tâches + critères d'acceptation) |
-| — | [`docs/openapi/README.md`](docs/openapi/README.md) | Procédure de publication des snapshots OpenAPI |
-| — | [`.github/copilot-instructions.md`](.github/copilot-instructions.md) | Conventions de code et garde-fous pour l'agent |
+| 0 | [`docs/00-synthese.md`](00-synthese.md) | **Cartographie de synthèse** métier + technique, état réel du code, écarts vs documentation |
+| 1 | [`docs/01-business-rules-engine.md`](01-business-rules-engine.md) | **LE moteur de calcul** (règles exactes + vecteurs de test) — pièce maîtresse |
+| 2 | [`docs/02-domain-and-data-model.md`](02-domain-and-data-model.md) | Modèle de domaine, entités, schéma SQL, mapping JPA |
+| 3 | [`docs/03-architecture.md`](03-architecture.md) | Architecture back/front, sécurité, multi-tenant, multi-devises, i18n |
+| 4 | [`docs/04-api-spec.md`](04-api-spec.md) | Contrats REST (endpoints, DTO, erreurs, auth) |
+| 5 | [`docs/05-frontend-spec.md`](05-frontend-spec.md) | Écrans Angular + composants PrimeNG + graphiques |
+| 6 | [`docs/06-backlog-and-tasks.md`](06-backlog-and-tasks.md) | Backlog séquencé (epics → tâches + critères d'acceptation) |
+| — | [`docs/openapi/README.md`](openapi/README.md) | Procédure de publication des snapshots OpenAPI |
+| — | [`.github/copilot-instructions.md`](../.github/copilot-instructions.md) | Conventions de code et garde-fous pour l'agent |
 
-**Ordre de développement recommandé** : lire 1 → 2 → 3, puis construire dans l'ordre du
-backlog (6). Le moteur (doc 1) se développe **en test-first** : écrire d'abord les tests
-depuis les vecteurs fournis, puis implémenter jusqu'au vert.
+**Ordre de développement recommandé** : lire 0 (état réel) → 1 → 2 → 3, puis construire
+dans l'ordre du backlog (6). Le moteur (doc 1) se développe **en test-first** : écrire
+d'abord les tests depuis les vecteurs fournis, puis implémenter jusqu'au vert.
 
-## 4-bis. État actuel (implémenté)
+## 4-bis. État actuel (implémenté) — voir aussi [docs/00-synthese.md](00-synthese.md)
 
-- Auth JWT access + refresh (rotation), logout explicite, guards Angular.
+- Auth JWT access (15 min) + refresh (rotation, 7 jours, cookie httpOnly), logout
+  explicite, guards Angular.
 - CRUD référentiels et scénarios opérationnels avec scoping multi-foyers strict.
 - CRUD postes avec répartition par membre, ventilation compte par membre, aperçu mensuel.
+- Cycle de vie du poste : révision de montant chaînée, annulation, décalage de fenêtre,
+  clôture/réactivation.
+- Périodes de répartition (`RepartitionPeriode`) : quotes-parts variables dans le temps,
+  classification `AUTO`/`REVERSE_AUTO`/`CUSTOM` par poste.
 - Paramètres de poste enrichis : `mode`, `moment`, `nature` (`EFFECTIF`/`ESTIMATION`).
 - Projection annuelle enrichie : `mois`, `moisReel`, `moisParMembre`, `moisParMembreReel`.
 - Dashboard mensuel : KPI foyer + ventilations catégories + synthèse par membre.
-- Script de dev local `dev.ps1` (PostgreSQL + backend + frontend en hot reload).
+- `run-ng.ps1` : wrapper local pour lancer le frontend Angular (`ng serve`).
+
+**Non implémenté à ce jour** (malgré une mention antérieure « fait » dans le backlog,
+corrigée par la cartographie `docs/00`) :
+- Projection **patrimoine / net worth** (endpoint + écran).
+- **Comparaison de scénarios** (endpoint + écran).
+- **Pagination/tri** standard sur les listes API.
+- Pipeline **CI GitHub Actions**.
+- Couverture de **tests unitaires frontend** (0 fichier `.spec.ts`).
+
+## 4-ter. Règle permanente pour l'agent : maintenir la documentation à jour
+
+> **Toute tâche de développement (nouvelle fonctionnalité, correction, refactor,
+> changement de dépendance) doit se terminer par une revue et, si nécessaire, une mise à
+> jour des documents concernés dans `/docs`.** Ne pas attendre une demande explicite de
+> « cartographie » pour le faire : c'est une étape normale de la Definition of Done (voir
+> [doc 06](06-backlog-and-tasks.md)).
+
+Concrètement, à la fin de chaque tâche, l'agent doit se demander :
+
+1. **Le moteur ou le modèle de domaine a changé ?** → mettre à jour
+   [`docs/01-business-rules-engine.md`](01-business-rules-engine.md) (règles/vecteurs) et/ou
+   [`docs/02-domain-and-data-model.md`](02-domain-and-data-model.md) (entités, schéma SQL,
+   nouvelle migration Flyway à lister).
+2. **L'architecture, la sécurité ou la stack ont changé ?** (nouvelle dépendance montée de
+   version, nouveau mécanisme de cache/auth, CI ajoutée…) → mettre à jour
+   [`docs/03-architecture.md`](03-architecture.md).
+3. **Un endpoint a été ajouté/modifié/supprimé ?** → mettre à jour
+   [`docs/04-api-spec.md`](04-api-spec.md) (méthode, path, DTO, codes d'erreur).
+4. **Un écran, une route ou un composant Angular a été ajouté/modifié/supprimé ?** →
+   mettre à jour [`docs/05-frontend-spec.md`](05-frontend-spec.md).
+5. **Une tâche du backlog est terminée, démarrée, ou son statut réel diffère de ce qui est
+   écrit ?** → mettre à jour la case `[ ]`/`[~]`/`[x]` correspondante dans
+   [`docs/06-backlog-and-tasks.md`](06-backlog-and-tasks.md). **Ne jamais cocher une tâche
+   sans avoir vérifié que le code correspondant existe réellement** (voir l'incident
+   corrigé par `docs/00-synthese.md` : des tâches avaient été marquées `[x]` sans code
+   associé — patrimoine, comparaison de scénarios).
+6. **Un écart entre la doc et le code a été introduit ou corrigé ?** → répercuter dans le
+   tableau « Écarts documentation ↔ code » de [`docs/00-synthese.md`](00-synthese.md),
+   et/ou dans la section « État actuel » ci-dessus (§4-bis).
+
+Règles pratiques :
+- Documenter **l'état réel du code**, pas l'intention — si une fonctionnalité est
+  partiellement faite, le dire explicitement plutôt que cocher `[x]` par optimisme.
+- Une mise à jour de doc peut être un simple paragraphe ou une ligne de tableau ; pas
+  besoin de réécrire un document entier pour un petit changement.
+- En cas de doute sur l'ampleur de la mise à jour nécessaire, préférer une note courte
+  mais exacte à une omission.
+- Ces mises à jour de documentation font partie de la même PR que le code — pas une PR
+  séparée « doc » à faire « plus tard ».
 
 ## 5. Glossaire / langage ubiquitaire
 

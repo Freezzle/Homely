@@ -15,11 +15,13 @@
   - Tableau de bord annuel
   - Tableau de bord du mois
   - Revenus · Charges · Réserves
-  - Scénarios (& comparaison)
-  - Patrimoine
+  - Scénarios
   - Objectifs
   - Référentiels (Membres, Comptes, Catégories, Actifs, Taux de change)
   - Paramètres du foyer / Accès
+  > ⚠️ Pas d'entrée « Patrimoine » ni « Comparaison de scénarios » dans le menu réel : ces
+  > deux fonctionnalités ne sont pas implémentées côté frontend (voir §3.5 et docs/06
+  > T8.4/T8.5).
 - **Layout** : `ShellComponent` en colonne pleine hauteur (`flex flex-col h-screen`),
   largeur centrée max `md:max-w-2/3`.
 
@@ -51,7 +53,7 @@ Signals exposés :
 Changer foyer ou scénario via `setFoyer()` / `setScenario()` déclenche les effets
 réactifs dans tous les composants abonnés.
 
-## 2. Routes (lazy)
+## 2. Routes (lazy) — état réel (`app.routes.ts`)
 
 ```
 /login                                  (public)
@@ -59,15 +61,17 @@ réactifs dans tous les composants abonnés.
 /foyers                                 (choix / création de foyer)
 /f/:foyerId
   ├── /dashboard-annuel
-  ├── /dashboard-mensuel
+  ├── /dashboard-mensuel                (route par défaut de /f/:foyerId)
   ├── /revenus | /charges | /reserves
-  ├── /scenarios | /scenarios/comparaison
-  ├── /patrimoine
+  ├── /scenarios
   ├── /objectifs
   ├── /referentiels/(membres|comptes|categories|actifs|taux)
   ├── /parametres
   └── /acces                            (indépendant de /parametres)
 ```
+
+> ⚠️ Pas de route `/patrimoine` ni `/scenarios/comparaison` dans le code actuel (voir
+> §3.5 et docs/06 T8.4/T8.5) — à créer si ces fonctionnalités sont priorisées.
 
 `AuthGuard` protège toute la zone `/f/**` et la route shell racine. Les actions d'écriture
 sont masquées dans les templates via `contexte.estEditor()` / `contexte.estOwner()` (pas
@@ -218,7 +222,7 @@ Composant unique `PostesListeComponent` paramétré par `type` via `input<TypePo
 
 **Endpoint** : `GET/POST/PUT/DELETE .../postes`
 
-### 3.4 Scénarios & comparaison
+### 3.4 Scénarios
 
 **Liste** (`ScenariosListeComponent`) :
 - `p-table` colonnes : Nom · Statut (badge « Référence » si `estReference`) · Année de
@@ -227,6 +231,8 @@ Composant unique `PostesListeComponent` paramétré par `type` via `input<TypePo
   supprimer (supprimer et définir référence masqués pour le scénario de référence).
 - **Bouton périodes** (📅, `RepartitionPeriodesComponent`) : visible seulement si le foyer
   a >1 membre.
+- ⚠️ Pas d'écran de **comparaison côte-à-côte** de plusieurs scénarios à ce jour (chaque
+  dashboard n'affiche que le scénario courant) — voir docs/06 T8.5.
 
 **Formulaire d'édition/création** (dialog `p-dialog max-w-lg`) :
 - Nom · Année de départ · Trésorerie initiale · Horizon.
@@ -244,9 +250,15 @@ Composant unique `PostesListeComponent` paramétré par `type` via `input<TypePo
 - Les périodes ouvertes (fin = null) sont affichées avec un tag « Ouverte ».
 - Masqué automatiquement si mono-membre.
 
-### 3.5 Patrimoine (net worth)
+### 3.5 Patrimoine (net worth) — ⚠️ NON IMPLÉMENTÉ (spécification cible)
 
-**Endpoint** : `GET .../projection/patrimoine`
+> **État réel (2026) : cet écran n'existe pas** (pas de route `/patrimoine`, pas de
+> composant). Les `Actif` sont uniquement gérés en CRUD référentiel (§3.7). Ce qui suit
+> reste la **spécification cible**, dépendante de l'endpoint backend `projection/patrimoine`
+> lui-même non implémenté (voir [doc 04 §9.4](04-api-spec.md)) — voir backlog `docs/06`
+> tâche T8.4.
+
+**Endpoint cible** : `GET .../projection/patrimoine`
 
 - **Graphique mixte** (`p-chart type="bar"`, hauteur 320 px) :
   - Ligne **Patrimoine net** (violet, `fill: true`).
@@ -256,9 +268,6 @@ Composant unique `PostesListeComponent` paramétré par `type` via `input<TypePo
   actifs.
 - **Tableau évolution annuelle** (`p-table` scrollable) : colonnes Année · Patrimoine net
   puis une colonne par compte puis une colonne par actif.
-
-> ⚠️ La vue patrimoine n'inclut **pas** de graphique doughnut — la spec initiale est
-> désactualisée. La vue actuelle est un graphique mixte `line + bar`.
 
 ### 3.6 Objectifs
 
@@ -278,28 +287,32 @@ Composant unique `PostesListeComponent` paramétré par `type` via `input<TypePo
 Écrans CRUD simples (`p-table` + `p-dialog`).
 
 **Membres** :
-- Table : couleur (pastille ronde) · Nom · Ordre · Actif (✓ / ✗).
-- Formulaire : nom · `p-colorpicker` · ordre.
+- Table : couleur (pastille ronde) · Nom · Actif (✓ / ✗). *(tri automatique par nom —
+  colonne `ordre` supprimée en V13)*
+- Formulaire : nom · `p-colorpicker`.
 
 **Comptes** :
-- Table : Libellé · Solde initial · Devise · Membres rattachés (tags `p-tag`) · Ordre.
+- Table : Libellé · Solde initial · Devise · Membres rattachés (tags `p-tag`). *(tri
+  automatique par libellé)*
 - Formulaire : libellé · `p-multiselect` membres actifs (`display="chip"`,
   **obligatoire** — au moins un ; validation Bean side UI + 422 côté serveur) · devise ·
-  ordre · solde initial.
+  solde initial.
 - À la création, tous les membres actifs sont pré-sélectionnés par défaut.
 - À l'édition, seuls les membres **actifs** parmi les rattachés sont re-sélectionnables
   (les inactifs sont préservés côté serveur).
 
 **Catégories** :
-- Table : Libellé · Type de poste (filtrable) · Ordre · Actif.
-- Formulaire : libellé · type · ordre.
+- Table : Libellé · Type de poste (filtrable) · Actif. *(tri automatique par type +
+  libellé)*
+- Formulaire : libellé · type.
 
 **Actifs** :
-- Table : Libellé · Type · Valeur initiale · Taux croissance/an · Ordre.
+- Table : Libellé · Type · Valeur initiale · Taux croissance/an. *(tri automatique par
+  libellé)*
 - Types (enum `TypeActif`) : Compte épargne · 3ᵉ pilier · Investissement · Crypto ·
   Immobilier · Véhicule · Autre.
 - Formulaire : libellé · type (défaut = Autre) · devise · valeur initiale · taux de
-  croissance (%/an, saisi en % et divisé par 100 à l'envoi) · ordre.
+  croissance (%/an, saisi en % et divisé par 100 à l'envoi).
 
 **Taux de change** :
 - Table : Devise · Taux vers devise de base.
@@ -381,4 +394,12 @@ Composant unique `PostesListeComponent` paramétré par `type` via `input<TypePo
 | Revenus / Charges / Réserves | Écrans de saisie Revenus / Charges / Réserves |
 | Paramètres | Référentiels + Paramètres foyer + hypothèses de scénario |
 | Moteur | *(non exposé : calcul serveur)* — visible via projections/graphiques |
-| *(listes projets, types actifs)* | Objectifs & Patrimoine (modules nouveaux) |
+| *(listes projets)* | Objectifs |
+| *(listes types actifs)* | ⚠️ Patrimoine — **non implémenté**, actifs en CRUD référentiel seulement (§3.5) |
+
+## 6. Tests frontend — état réel
+
+Le socle Jasmine/Karma est configuré (`angular.json`, `package.json`), mais **aucun
+fichier `.spec.ts` n'est présent** dans `frontend/src/app` à ce jour : couverture de
+tests unitaires **0 %**. À traiter avant d'étendre significativement le périmètre
+fonctionnel (voir docs/06).
