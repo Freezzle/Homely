@@ -154,7 +154,7 @@
     "debut": "Start",
     "fin": "End",
     "mode": "Strategy",
-    "moment": "Timing",
+    "moment": "Term to be due",
     "nature": "Nature",
     "modeTooltip": "Monthly = amount smoothed each month (amount / frequency). Periodic = full amount charged once per cycle.",
     "momentTooltip": "Is the full amount due at the start or the end of the frequency cycle?",
@@ -380,7 +380,6 @@
       "titre": "Members",
       "nom": "Name",
       "couleur": "Color",
-      "ordre": "Order",
       "actif": "Active"
     },
     "compte": {
@@ -388,7 +387,6 @@
       "libelle": "Label",
       "soldeInitial": "Initial balance",
       "devise": "Currency",
-      "ordre": "Order",
       "membres": "Linked members",
       "membresRequis": "At least one active member required",
       "membresPlaceholder": "Select members…"
@@ -397,7 +395,6 @@
       "titre": "Categories",
       "libelle": "Label",
       "typePoste": "Item type",
-      "ordre": "Order",
       "dialogSuppressionTitre": "Delete category",
       "dialogSuppressionInfo": "Items associated with this category will be unlinked. You can optionally migrate them to another category of the same type.",
       "migrerVers": "Migrate items to",
@@ -416,7 +413,6 @@
       "soldeInitial": "Initial value",
       "devise": "Currency",
       "tauxCroissance": "Annual growth rate (%)",
-      "ordre": "Order",
       "types": {
         "COMPTE_EPARGNE": "Savings account",
         "TROISIEME_PILIER": "3rd pillar",

@@ -8,9 +8,9 @@ import java.util.UUID;
 
 public interface CategorieRepository extends JpaRepository<Categorie, UUID> {
 
-    List<Categorie> findAllByFoyerIdAndActifTrueOrderByTypePosteAscOrdreAsc(UUID foyerId);
+    List<Categorie> findAllByFoyerIdAndActifTrueOrderByTypePosteAscLibelleAsc(UUID foyerId);
 
-    List<Categorie> findAllByFoyerIdAndTypePosteAndActifTrueOrderByOrdre(UUID foyerId, TypeCategorie typePoste);
+    List<Categorie> findAllByFoyerIdAndTypePosteAndActifTrueOrderByLibelleAsc(UUID foyerId, TypeCategorie typePoste);
 
     Optional<Categorie> findByIdAndFoyerId(UUID id, UUID foyerId);
 

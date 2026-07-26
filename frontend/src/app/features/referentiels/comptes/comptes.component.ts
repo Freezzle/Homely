@@ -57,7 +57,6 @@ export class ComptesComponent implements OnInit {
     membreIds:    [[] as string[], Validators.required],
     soldeInitial: [0],
     devise:       [this.contexte.deviseBase()],
-    ordre:        [1, Validators.required],
   });
 
   private readonly _chargerDevisesEffect = effect(() => {
@@ -143,10 +142,9 @@ export class ComptesComponent implements OnInit {
 
   ouvrirCreation(): void {
     this.compteEnEdition = null;
-    const ordre = this.comptes().length > 0 ? Math.max(...this.comptes().map(c => c.ordre)) + 1 : 1;
     // Pré-sélectionner tous les membres actifs par défaut
     const tousIds = this.membresActifs().map(m => m.id);
-    this.form.reset({ libelle: '', membreIds: tousIds, soldeInitial: 0, devise: this.contexte.deviseBase(), ordre });
+    this.form.reset({ libelle: '', membreIds: tousIds, soldeInitial: 0, devise: this.contexte.deviseBase() });
     this.dialogVisible = true;
   }
 
@@ -156,7 +154,7 @@ export class ComptesComponent implements OnInit {
     const membreIdsActifs = c.membreIds.filter(id => this.membresActifs().some(m => m.id === id));
     this.form.patchValue({
       libelle: c.libelle, membreIds: membreIdsActifs,
-      soldeInitial: c.soldeInitial, devise: c.devise, ordre: c.ordre,
+      soldeInitial: c.soldeInitial, devise: c.devise,
     });
     this.dialogVisible = true;
   }
@@ -170,7 +168,6 @@ export class ComptesComponent implements OnInit {
       membreIds: v.membreIds as string[],
       soldeInitial: v.soldeInitial ?? 0,
       devise: v.devise ?? undefined,
-      ordre: v.ordre!,
     };
     const obs = this.compteEnEdition
       ? this.compteSvc.modifier(foyerId, this.compteEnEdition.id, req)

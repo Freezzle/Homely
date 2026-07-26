@@ -143,20 +143,16 @@ public class FoyerService {
             m.setFoyer(foyer);
             m.setNom(mc.nom());
             m.setCouleur(mc.couleur() != null ? mc.couleur().toUpperCase() : "#6366F1");
-            m.setOrdre(i + 1);
             membreRepo.save(m);
             parOrdre.put(i + 1, m);
         }
 
-        // 4. Catégories — ordre auto-incrémenté par type
-        Map<ch.homely.categorie.TypeCategorie, Integer> ordresParType = new HashMap<>();
+        // 4. Catégories
         for (FoyerOnboardingRequest.CategorieCreation cc : req.categories()) {
-            int ordre = ordresParType.merge(cc.typePoste(), 1, Integer::sum);
             Categorie cat = new Categorie();
             cat.setFoyer(foyer);
             cat.setLibelle(cc.libelle());
             cat.setTypePoste(cc.typePoste());
-            cat.setOrdre(ordre);
             categorieRepo.save(cat);
         }
 
@@ -168,7 +164,6 @@ public class FoyerService {
             compte.setLibelle(cc.libelle());
             compte.setSoldeInitial(cc.soldeInitial() != null
                     ? cc.soldeInitial() : BigDecimal.ZERO);
-            compte.setOrdre(i);
             // Résolution des membres par ordre local
             for (Integer ordre : cc.membreOrdres()) {
                 Membre m = parOrdre.get(ordre);
@@ -356,13 +351,11 @@ public class FoyerService {
 
     private List<Membre> creerMembresInitials(Foyer foyer, List<FoyerRequest.MembreCreationRequest> membresReq) {
         List<Membre> membres = new ArrayList<>();
-        int ordre = 1;
         for (FoyerRequest.MembreCreationRequest req : membresReq) {
             Membre m = new Membre();
             m.setFoyer(foyer);
             m.setNom(req.nom());
             m.setCouleur(req.couleur() != null ? req.couleur().toUpperCase() : "#6366F1");
-            m.setOrdre(ordre++);
             membres.add(membreRepo.save(m));
         }
         return membres;

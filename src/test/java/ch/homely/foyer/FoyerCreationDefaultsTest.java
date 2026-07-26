@@ -75,9 +75,6 @@ class FoyerCreationDefaultsTest {
         assertThat(membres.get(0).get("nom").asText()).isEqualTo("Alice");
         assertThat(membres.get(1).get("nom").asText()).isEqualTo("Bob");
         assertThat(membres.get(2).get("nom").asText()).isEqualTo("Charlie");
-        assertThat(membres.get(0).get("ordre").asInt()).isEqualTo(1);
-        assertThat(membres.get(1).get("ordre").asInt()).isEqualTo(2);
-        assertThat(membres.get(2).get("ordre").asInt()).isEqualTo(3);
 
         String scenariosBody = client.get().uri("/api/foyers/" + foyerId + "/scenarios")
                 .header("Authorization", "Bearer " + token)

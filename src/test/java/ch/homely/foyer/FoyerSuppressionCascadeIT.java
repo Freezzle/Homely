@@ -55,7 +55,7 @@ class FoyerSuppressionCascadeIT {
     void supprimerFoyer_avecPostesEtCategories_supprimeEnCascade() {
         String token = creerEtLogin("foyer_del_1@test.ch");
         String foyerId = creerFoyer(token, "Foyer suppression cascade");
-        String catId = creerCategorie(token, foyerId, "Charges fixes", "CHARGE", 1);
+        String catId = creerCategorie(token, foyerId, "Charges fixes", "CHARGE");
         String scenarioId = premierScenarioId(token, foyerId);
         String membreId = premierMembreId(token, foyerId);
         String compteId = creerCompte(token, foyerId, membreId);
@@ -153,8 +153,8 @@ class FoyerSuppressionCascadeIT {
         }
     }
 
-    private String creerCategorie(String token, String foyerId, String libelle, String typePoste, int ordre) {
-        Map<String, Object> payload = Map.of("libelle", libelle, "typePoste", typePoste, "ordre", ordre);
+    private String creerCategorie(String token, String foyerId, String libelle, String typePoste) {
+        Map<String, Object> payload = Map.of("libelle", libelle, "typePoste", typePoste);
         try {
             String body = client.post()
                     .uri("/api/foyers/" + foyerId + "/categories")

@@ -33,7 +33,7 @@ public class ActifService {
     @Transactional(readOnly = true)
     public List<ActifDto> lister(UUID foyerId) {
         multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
-        return actifRepo.findAllByFoyerIdAndActifTrueOrderByOrdre(foyerId).stream()
+        return actifRepo.findAllByFoyerIdAndActifTrueOrderByLibelleAsc(foyerId).stream()
                 .map(this::toDto).toList();
     }
 
@@ -74,7 +74,6 @@ public class ActifService {
         a.setDevise(req.devise());
         a.setTauxCroissanceAnnuel(
                 req.tauxCroissanceAnnuel() != null ? req.tauxCroissanceAnnuel() : BigDecimal.ZERO);
-        a.setOrdre(req.ordre());
     }
 
     private Actif trouver(UUID foyerId, UUID actifId) {
@@ -84,7 +83,6 @@ public class ActifService {
 
     private ActifDto toDto(Actif a) {
         return new ActifDto(a.getId(), a.getLibelle(), a.getTypeActif(),
-                a.getSoldeInitial(), a.getDevise(), a.getTauxCroissanceAnnuel(),
-                a.getOrdre(), a.isActif());
+                a.getSoldeInitial(), a.getDevise(), a.getTauxCroissanceAnnuel(), a.isActif());
     }
 }

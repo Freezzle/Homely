@@ -13,7 +13,6 @@
         <th pSortableColumn="libelle">{{ t.referentiels.compte.libelle }} <p-sort-icon field="libelle" /></th>
         <th class="text-right">{{ t.referentiels.compte.soldeInitial }}</th>
         <th>{{ t.referentiels.compte.devise }}</th>
-        <th class="text-right">{{ t.referentiels.compte.ordre }}</th>
         <th></th>
       </tr>
     </ng-template>
@@ -32,7 +31,6 @@
         </td>
         <td class="text-right">{{ c.soldeInitial | montant:c.devise }}</td>
         <td class="text-surface-500">{{ c.devise }}</td>
-        <td class="text-right text-surface-500">{{ c.ordre }}</td>
         <td>
           <div class="flex gap-1">
             @if (contexte.estEditor()) {
@@ -44,7 +42,7 @@
       </tr>
     </ng-template>
     <ng-template #emptymessage>
-      <tr><td colspan="5" class="text-center py-8 text-surface-400">{{ t.commun.aucunResultat }}</td></tr>
+      <tr><td colspan="4" class="text-center py-8 text-surface-400">{{ t.commun.aucunResultat }}</td></tr>
     </ng-template>
   </p-table>
 </div>
@@ -74,16 +72,10 @@
       }
     </div>
 
-    <div class="grid grid-cols-2 gap-4">
-      <div class="flex flex-col gap-1">
-        <label class="text-sm font-medium">{{ t.referentiels.compte.devise }}</label>
-        <p-select appendTo="body" formControlName="devise" [options]="devisesOptions()" class="w-full" />
-        <small class="text-surface-400">{{ t.commun.deviseConfigureeAide }}</small>
-      </div>
-      <div class="flex flex-col gap-1">
-        <label class="text-sm font-medium">{{ t.referentiels.compte.ordre }}</label>
-        <p-inputnumber formControlName="ordre" [min]="1" class="w-full" />
-      </div>
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-medium">{{ t.referentiels.compte.devise }}</label>
+      <p-select appendTo="body" formControlName="devise" [options]="devisesOptions()" class="w-full" />
+      <small class="text-surface-400">{{ t.commun.deviseConfigureeAide }}</small>
     </div>
     <div class="flex flex-col gap-1">
       <label class="text-sm font-medium">{{ t.referentiels.compte.soldeInitial }}</label>

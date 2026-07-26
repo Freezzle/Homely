@@ -12,6 +12,5 @@ public record CompteRequest(
         @NotBlank @Size(max = 120) String libelle,
         BigDecimal soldeInitial,
         @Size(min = 3, max = 3) String devise,
-        int ordre,
         @NotEmpty Set<UUID> membreIds
 ) {}

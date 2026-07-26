@@ -56,7 +56,7 @@ class PosteClotureIT {
         String token = creerEtLogin("cloture_ok@test.ch");
         String foyerId = creerFoyer(token, "Foyer Clôture OK");
         String scenarioId = creerScenario(token, foyerId);
-        String catId = creerCategorie(token, foyerId, "Loyer", "CHARGE", 1);
+        String catId = creerCategorie(token, foyerId, "Loyer", "CHARGE");
         String posteId = creerPoste(token, foyerId, scenarioId, catId, "2025-01-01", null, 1800);
 
         JsonNode resultat = cloturer(token, foyerId, scenarioId, posteId, "2026-07-31");
@@ -71,7 +71,7 @@ class PosteClotureIT {
         String token = creerEtLogin("reactiver_ok@test.ch");
         String foyerId = creerFoyer(token, "Foyer Réactiver OK");
         String scenarioId = creerScenario(token, foyerId);
-        String catId = creerCategorie(token, foyerId, "Loyer2", "CHARGE", 1);
+        String catId = creerCategorie(token, foyerId, "Loyer2", "CHARGE");
         String posteId = creerPoste(token, foyerId, scenarioId, catId, "2025-01-01", "2020-01-31", 1800);
 
         JsonNode resultat = reactiver(token, foyerId, scenarioId, posteId);
@@ -86,7 +86,7 @@ class PosteClotureIT {
         String token = creerEtLogin("cloture_interm@test.ch");
         String foyerId = creerFoyer(token, "Foyer Clôture Intermédiaire");
         String scenarioId = creerScenario(token, foyerId);
-        String catId = creerCategorie(token, foyerId, "Chaîne", "CHARGE", 1);
+        String catId = creerCategorie(token, foyerId, "Chaîne", "CHARGE");
         String origineId = creerPoste(token, foyerId, scenarioId, catId, "2024-01-01", null, 1000);
 
         reviser(token, foyerId, scenarioId, origineId, 1100, "2026-01-01");
@@ -102,7 +102,7 @@ class PosteClotureIT {
         String token = creerEtLogin("reactiver_interm@test.ch");
         String foyerId = creerFoyer(token, "Foyer Réactiver Intermédiaire");
         String scenarioId = creerScenario(token, foyerId);
-        String catId = creerCategorie(token, foyerId, "Chaîne2", "CHARGE", 1);
+        String catId = creerCategorie(token, foyerId, "Chaîne2", "CHARGE");
         String origineId = creerPoste(token, foyerId, scenarioId, catId, "2024-01-01", null, 1000);
 
         reviser(token, foyerId, scenarioId, origineId, 1100, "2026-01-01");
@@ -118,7 +118,7 @@ class PosteClotureIT {
         String token = creerEtLogin("cloture_avant@test.ch");
         String foyerId = creerFoyer(token, "Foyer Clôture Avant");
         String scenarioId = creerScenario(token, foyerId);
-        String catId = creerCategorie(token, foyerId, "Test", "CHARGE", 1);
+        String catId = creerCategorie(token, foyerId, "Test", "CHARGE");
         String posteId = creerPoste(token, foyerId, scenarioId, catId, "2025-06-01", null, 100);
 
         assertThatThrownBy(() -> cloturer(token, foyerId, scenarioId, posteId, "2025-01-31"))
@@ -132,7 +132,7 @@ class PosteClotureIT {
         String tokenA = creerEtLogin("cloture_a@test.ch");
         String foyerAId = creerFoyer(tokenA, "Foyer A Clôture");
         String scenarioId = creerScenario(tokenA, foyerAId);
-        String catId = creerCategorie(tokenA, foyerAId, "Cat A", "CHARGE", 1);
+        String catId = creerCategorie(tokenA, foyerAId, "Cat A", "CHARGE");
         String posteId = creerPoste(tokenA, foyerAId, scenarioId, catId, "2025-01-01", null, 100);
 
         String tokenB = creerEtLogin("cloture_b@test.ch");
@@ -149,7 +149,7 @@ class PosteClotureIT {
         String tokenA = creerEtLogin("reactiver_a@test.ch");
         String foyerAId = creerFoyer(tokenA, "Foyer A Réactiver");
         String scenarioId = creerScenario(tokenA, foyerAId);
-        String catId = creerCategorie(tokenA, foyerAId, "Cat A", "CHARGE", 1);
+        String catId = creerCategorie(tokenA, foyerAId, "Cat A", "CHARGE");
         String posteId = creerPoste(tokenA, foyerAId, scenarioId, catId, "2025-01-01", "2020-01-31", 100);
 
         String tokenB = creerEtLogin("reactiver_b@test.ch");
@@ -206,8 +206,8 @@ class PosteClotureIT {
         } catch (Exception e) { throw new RuntimeException(e); }
     }
 
-    private String creerCategorie(String token, String foyerId, String libelle, String typePoste, int ordre) {
-        Map<String, Object> payload = Map.of("libelle", libelle, "typePoste", typePoste, "ordre", ordre);
+    private String creerCategorie(String token, String foyerId, String libelle, String typePoste) {
+        Map<String, Object> payload = Map.of("libelle", libelle, "typePoste", typePoste);
         try {
             String body = client.post()
                     .uri("/api/foyers/" + foyerId + "/categories")

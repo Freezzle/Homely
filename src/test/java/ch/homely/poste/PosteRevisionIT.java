@@ -56,7 +56,7 @@ class PosteRevisionIT {
         String token = creerEtLogin("revision_ok@test.ch");
         String foyerId = creerFoyer(token, "Foyer Révision OK");
         String scenarioId = creerScenario(token, foyerId);
-        String catId = creerCategorie(token, foyerId, "Loyer", "CHARGE", 1);
+        String catId = creerCategorie(token, foyerId, "Loyer", "CHARGE");
         String posteId = creerPoste(token, foyerId, scenarioId, catId, "2025-01-01", null, 1800);
 
         JsonNode reponse = reviser(token, foyerId, scenarioId, posteId, 1950, "2027-01-01");
@@ -94,7 +94,7 @@ class PosteRevisionIT {
         String token = creerEtLogin("revision_termine@test.ch");
         String foyerId = creerFoyer(token, "Foyer Révision Terminé");
         String scenarioId = creerScenario(token, foyerId);
-        String catId = creerCategorie(token, foyerId, "Ancien", "CHARGE", 1);
+        String catId = creerCategorie(token, foyerId, "Ancien", "CHARGE");
         String posteId = creerPoste(token, foyerId, scenarioId, catId, "2020-01-01", "2020-12-31", 100);
 
         assertThatThrownBy(() -> reviser(token, foyerId, scenarioId, posteId, 150, "2027-01-01"))
@@ -108,7 +108,7 @@ class PosteRevisionIT {
         String token = creerEtLogin("revision_avant@test.ch");
         String foyerId = creerFoyer(token, "Foyer Révision Avant");
         String scenarioId = creerScenario(token, foyerId);
-        String catId = creerCategorie(token, foyerId, "Test", "CHARGE", 1);
+        String catId = creerCategorie(token, foyerId, "Test", "CHARGE");
         String posteId = creerPoste(token, foyerId, scenarioId, catId, "2025-06-01", null, 100);
 
         assertThatThrownBy(() -> reviser(token, foyerId, scenarioId, posteId, 150, "2025-06-01"))
@@ -122,7 +122,7 @@ class PosteRevisionIT {
         String token = creerEtLogin("revision_apresfin@test.ch");
         String foyerId = creerFoyer(token, "Foyer Révision Après Fin");
         String scenarioId = creerScenario(token, foyerId);
-        String catId = creerCategorie(token, foyerId, "Test2", "CHARGE", 1);
+        String catId = creerCategorie(token, foyerId, "Test2", "CHARGE");
         String posteId = creerPoste(token, foyerId, scenarioId, catId, "2025-01-01", "2026-06-30", 100);
 
         assertThatThrownBy(() -> reviser(token, foyerId, scenarioId, posteId, 150, "2027-01-01"))
@@ -136,7 +136,7 @@ class PosteRevisionIT {
         String token = creerEtLogin("revision_chaine@test.ch");
         String foyerId = creerFoyer(token, "Foyer Révision Chaîne");
         String scenarioId = creerScenario(token, foyerId);
-        String catId = creerCategorie(token, foyerId, "Chaîne", "CHARGE", 1);
+        String catId = creerCategorie(token, foyerId, "Chaîne", "CHARGE");
         String origineId = creerPoste(token, foyerId, scenarioId, catId, "2024-01-01", null, 1000);
 
         JsonNode premiere = reviser(token, foyerId, scenarioId, origineId, 1100, "2026-01-01");
@@ -155,7 +155,7 @@ class PosteRevisionIT {
         String tokenA = creerEtLogin("revision_a@test.ch");
         String foyerAId = creerFoyer(tokenA, "Foyer A Révision");
         String scenarioId = creerScenario(tokenA, foyerAId);
-        String catId = creerCategorie(tokenA, foyerAId, "Cat A", "CHARGE", 1);
+        String catId = creerCategorie(tokenA, foyerAId, "Cat A", "CHARGE");
         String posteId = creerPoste(tokenA, foyerAId, scenarioId, catId, "2025-01-01", null, 100);
 
         String tokenB = creerEtLogin("revision_b@test.ch");
@@ -212,8 +212,8 @@ class PosteRevisionIT {
         } catch (Exception e) { throw new RuntimeException(e); }
     }
 
-    private String creerCategorie(String token, String foyerId, String libelle, String typePoste, int ordre) {
-        Map<String, Object> payload = Map.of("libelle", libelle, "typePoste", typePoste, "ordre", ordre);
+    private String creerCategorie(String token, String foyerId, String libelle, String typePoste) {
+        Map<String, Object> payload = Map.of("libelle", libelle, "typePoste", typePoste);
         try {
             String body = client.post()
                     .uri("/api/foyers/" + foyerId + "/categories")

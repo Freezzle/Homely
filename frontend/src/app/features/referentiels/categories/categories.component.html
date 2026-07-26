@@ -11,7 +11,6 @@
       <tr>
         <th pSortableColumn="libelle">{{ t.referentiels.categorie.libelle }} <p-sort-icon field="libelle" /></th>
         <th>{{ t.referentiels.categorie.typePoste }}</th>
-        <th class="text-right">{{ t.referentiels.categorie.ordre }}</th>
         <th></th>
       </tr>
     </ng-template>
@@ -22,7 +21,6 @@
           <p-tag [value]="c.typePoste"
                  [severity]="c.typePoste === 'REVENU' ? 'success' : c.typePoste === 'CHARGE' ? 'danger' : c.typePoste === 'RESERVE' ? 'info' : 'warn'" />
         </td>
-        <td class="text-right text-surface-500">{{ c.ordre }}</td>
         <td>
           <div class="flex gap-1">
             @if (contexte.estEditor()) {
@@ -47,15 +45,9 @@
       <label class="text-sm font-medium">{{ t.referentiels.categorie.libelle }} *</label>
       <input pInputText formControlName="libelle" class="w-full" />
     </div>
-    <div class="grid grid-cols-2 gap-4">
-      <div class="flex flex-col gap-1">
-        <label class="text-sm font-medium">{{ t.referentiels.categorie.typePoste }}</label>
-        <p-select appendTo="body" formControlName="typePoste" [options]="typeOptions" optionLabel="label" optionValue="value" class="w-full" />
-      </div>
-      <div class="flex flex-col gap-1">
-        <label class="text-sm font-medium">{{ t.referentiels.categorie.ordre }}</label>
-        <p-inputnumber formControlName="ordre" [min]="1" class="w-full" />
-      </div>
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-medium">{{ t.referentiels.categorie.typePoste }}</label>
+      <p-select appendTo="body" formControlName="typePoste" [options]="typeOptions" optionLabel="label" optionValue="value" class="w-full" />
     </div>
   </form>
   <ng-template #footer>

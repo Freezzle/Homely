@@ -36,8 +36,8 @@ public class CategorieService {
     public List<CategorieDto> lister(UUID foyerId, TypeCategorie typePoste) {
         multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
         List<Categorie> cats = typePoste != null
-                ? categorieRepo.findAllByFoyerIdAndTypePosteAndActifTrueOrderByOrdre(foyerId, typePoste)
-                : categorieRepo.findAllByFoyerIdAndActifTrueOrderByTypePosteAscOrdreAsc(foyerId);
+                ? categorieRepo.findAllByFoyerIdAndTypePosteAndActifTrueOrderByLibelleAsc(foyerId, typePoste)
+                : categorieRepo.findAllByFoyerIdAndActifTrueOrderByTypePosteAscLibelleAsc(foyerId);
         return cats.stream().map(this::toDto).toList();
     }
 
@@ -55,7 +55,6 @@ public class CategorieService {
         c.setFoyer(foyer);
         c.setLibelle(req.libelle());
         c.setTypePoste(req.typePoste());
-        c.setOrdre(req.ordre());
         return toDto(categorieRepo.save(c));
     }
 
@@ -63,7 +62,6 @@ public class CategorieService {
         multiTenant.verifierAcces(foyerId, RoleFoyer.EDITOR);
         Categorie c = trouver(foyerId, categorieId);
         c.setLibelle(req.libelle());
-        c.setOrdre(req.ordre());
         return toDto(categorieRepo.save(c));
     }
 
@@ -88,7 +86,6 @@ public class CategorieService {
     }
 
     private CategorieDto toDto(Categorie c) {
-        return new CategorieDto(c.getId(), c.getLibelle(), c.getTypePoste(),
-                c.getOrdre(), c.isActif());
+        return new CategorieDto(c.getId(), c.getLibelle(), c.getTypePoste(), c.isActif());
     }
 }

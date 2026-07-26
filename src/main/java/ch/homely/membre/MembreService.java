@@ -39,7 +39,7 @@ public class MembreService {
     @Transactional(readOnly = true)
     public List<MembreDto> lister(UUID foyerId) {
         multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
-        return membreRepo.findAllByFoyerIdAndActifTrueOrderByOrdre(foyerId).stream()
+        return membreRepo.findAllByFoyerIdAndActifTrueOrderByNomAsc(foyerId).stream()
                 .map(this::toDto).toList();
     }
 
@@ -57,7 +57,6 @@ public class MembreService {
         m.setFoyer(foyer);
         m.setNom(req.nom());
         m.setCouleur(req.couleur());
-        m.setOrdre(req.ordre());
         Membre saved = membreRepo.save(m);
         // Hook : ajouter le membre avec 0% dans toutes les périodes existantes
         periodeService.onMembreAjoute(foyerId, saved);
@@ -69,7 +68,6 @@ public class MembreService {
         Membre m = trouver(foyerId, membreId);
         m.setNom(req.nom());
         m.setCouleur(req.couleur());
-        m.setOrdre(req.ordre());
         return toDto(membreRepo.save(m));
     }
 
@@ -91,6 +89,6 @@ public class MembreService {
     }
 
     private MembreDto toDto(Membre m) {
-        return new MembreDto(m.getId(), m.getNom(), m.getCouleur(), m.getOrdre(), m.isActif());
+        return new MembreDto(m.getId(), m.getNom(), m.getCouleur(), m.isActif());
     }
 }

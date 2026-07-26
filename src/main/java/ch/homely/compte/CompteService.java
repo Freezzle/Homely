@@ -42,7 +42,7 @@ public class CompteService {
     @Transactional(readOnly = true)
     public List<CompteDto> lister(UUID foyerId) {
         multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
-        return compteRepo.findAllByFoyerIdAndActifTrueOrderByOrdre(foyerId).stream()
+        return compteRepo.findAllByFoyerIdAndActifTrueOrderByLibelleAsc(foyerId).stream()
                 .map(this::toDto).toList();
     }
 
@@ -82,7 +82,6 @@ public class CompteService {
         c.setLibelle(req.libelle());
         c.setSoldeInitial(req.soldeInitial() != null ? req.soldeInitial() : BigDecimal.ZERO);
         c.setDevise(req.devise());
-        c.setOrdre(req.ordre());
 
         // Résoudre les membres actifs demandés (scopés foyer)
         Set<UUID> demandes = req.membreIds();
@@ -115,6 +114,6 @@ public class CompteService {
                 .map(Membre::getId)
                 .collect(Collectors.toSet());
         return new CompteDto(c.getId(), c.getLibelle(),
-                c.getSoldeInitial(), c.getDevise(), c.getOrdre(), c.isActif(), membreIds);
+                c.getSoldeInitial(), c.getDevise(), c.isActif(), membreIds);
     }
 }

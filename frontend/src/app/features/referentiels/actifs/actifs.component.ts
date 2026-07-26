@@ -66,7 +66,6 @@ export class ActifsComponent implements OnInit {
     soldeInitial: [0],
     devise: [this.contexte.deviseBase()],
     tauxCroissanceAnnuel: [0],
-    ordre: [1, Validators.required],
   });
 
   private readonly _chargerDevisesEffect = effect(() => {
@@ -132,14 +131,13 @@ export class ActifsComponent implements OnInit {
 
   ouvrirCreation(): void {
     this.actifEnEdition = null;
-    const ordre = this.actifs().length > 0 ? Math.max(...this.actifs().map(a => a.ordre)) + 1 : 1;
-    this.form.reset({ libelle: '', typeActif: 'AUTRE', soldeInitial: 0, devise: this.contexte.deviseBase(), tauxCroissanceAnnuel: 0, ordre });
+    this.form.reset({ libelle: '', typeActif: 'AUTRE', soldeInitial: 0, devise: this.contexte.deviseBase(), tauxCroissanceAnnuel: 0 });
     this.dialogVisible = true;
   }
 
   ouvrirEdition(a: ActifDto): void {
     this.actifEnEdition = a;
-    this.form.patchValue({ libelle: a.libelle, typeActif: a.typeActif, soldeInitial: a.soldeInitial, devise: a.devise, tauxCroissanceAnnuel: a.tauxCroissanceAnnuel * 100, ordre: a.ordre });
+    this.form.patchValue({ libelle: a.libelle, typeActif: a.typeActif, soldeInitial: a.soldeInitial, devise: a.devise, tauxCroissanceAnnuel: a.tauxCroissanceAnnuel * 100 });
     this.dialogVisible = true;
   }
 
@@ -151,7 +149,6 @@ export class ActifsComponent implements OnInit {
       soldeInitial: v.soldeInitial ?? 0,
       devise: v.devise ?? undefined,
       tauxCroissanceAnnuel: (v.tauxCroissanceAnnuel ?? 0) / 100,
-      ordre: v.ordre!,
     };
     const obs = this.actifEnEdition
       ? this.actifSvc.modifier(foyerId, this.actifEnEdition.id, req)

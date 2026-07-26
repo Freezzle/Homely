@@ -9,7 +9,7 @@ import java.util.UUID;
 
 public interface MembreRepository extends JpaRepository<Membre, UUID> {
 
-    List<Membre> findAllByFoyerIdAndActifTrueOrderByOrdre(UUID foyerId);
+    List<Membre> findAllByFoyerIdAndActifTrueOrderByNomAsc(UUID foyerId);
 
     Optional<Membre> findByIdAndFoyerId(UUID id, UUID foyerId);
 

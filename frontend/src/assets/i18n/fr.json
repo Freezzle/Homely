@@ -154,7 +154,7 @@
     "debut": "Début",
     "fin": "Fin",
     "mode": "Stratégie",
-    "moment": "Moment",
+    "moment": "Terme à échoir",
     "nature": "Nature",
     "modeTooltip": "Mensualisé = montant lissé chaque mois (montant / périodicité). Périodique = montant plein imputé une seule fois par cycle.",
     "momentTooltip": "Le montant plein tombe-t-il au début ou à la fin du cycle de périodicité ?",
@@ -380,7 +380,6 @@
       "titre": "Membres",
       "nom": "Nom",
       "couleur": "Couleur",
-      "ordre": "Ordre",
       "actif": "Actif"
     },
     "compte": {
@@ -388,7 +387,6 @@
       "libelle": "Libellé",
       "soldeInitial": "Solde initial",
       "devise": "Devise",
-      "ordre": "Ordre",
       "membres": "Membres rattachés",
       "membresRequis": "Au moins un membre actif requis",
       "membresPlaceholder": "Sélectionner les membres…"
@@ -397,7 +395,6 @@
       "titre": "Catégories",
       "libelle": "Libellé",
       "typePoste": "Type de poste",
-      "ordre": "Ordre",
       "dialogSuppressionTitre": "Supprimer la catégorie",
       "dialogSuppressionInfo": "Les postes associés à cette catégorie seront désassociés. Vous pouvez optionnellement les migrer vers une autre catégorie de même type.",
       "migrerVers": "Migrer les postes vers",
@@ -416,7 +413,6 @@
       "soldeInitial": "Valeur initiale",
       "devise": "Devise",
       "tauxCroissance": "Taux croissance/an (%)",
-      "ordre": "Ordre",
       "types": {
         "COMPTE_EPARGNE": "Compte épargne",
         "TROISIEME_PILIER": "3ᵉ pilier",

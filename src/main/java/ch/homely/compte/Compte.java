@@ -35,9 +35,6 @@ public class Compte {
     private String devise;
 
     @Column(nullable = false)
-    private int ordre = 0;
-
-    @Column(nullable = false)
     private boolean actif = true;
 
     /** Membres rattachés à ce compte (1..N). */

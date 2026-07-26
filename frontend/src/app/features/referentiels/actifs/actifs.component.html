@@ -14,7 +14,6 @@
         <th>{{ t.referentiels.actif.typeActif }}</th>
         <th class="text-right">{{ t.referentiels.actif.soldeInitial }}</th>
         <th class="text-right">{{ t.referentiels.actif.tauxCroissance }}</th>
-        <th class="text-right">{{ t.referentiels.actif.ordre }}</th>
         <th></th>
       </tr>
     </ng-template>
@@ -24,7 +23,6 @@
         <td><p-tag [value]="typeActifLabel(a.typeActif)" severity="secondary" /></td>
         <td class="text-right">{{ a.soldeInitial | montant:a.devise }}</td>
         <td class="text-right text-surface-500">{{ a.tauxCroissanceAnnuel | pct:1 }}</td>
-        <td class="text-right text-surface-500">{{ a.ordre }}</td>
         <td>
           <div class="flex gap-1">
             @if (contexte.estEditor()) {
@@ -36,7 +34,7 @@
       </tr>
     </ng-template>
     <ng-template #emptymessage>
-      <tr><td colspan="6" class="text-center py-8 text-surface-400">{{ t.commun.aucunResultat }}</td></tr>
+      <tr><td colspan="5" class="text-center py-8 text-surface-400">{{ t.commun.aucunResultat }}</td></tr>
     </ng-template>
   </p-table>
 </div>
@@ -69,10 +67,6 @@
         <p-inputnumber formControlName="tauxCroissanceAnnuel" mode="decimal" [minFractionDigits]="2"
                        [min]="-100" [max]="100" class="w-full" />
       </div>
-    </div>
-    <div class="flex flex-col gap-1">
-      <label class="text-sm font-medium">{{ t.referentiels.actif.ordre }}</label>
-      <p-inputnumber formControlName="ordre" [min]="1" class="w-full" />
     </div>
   </form>
   <ng-template #footer>

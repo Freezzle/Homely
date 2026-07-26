@@ -60,7 +60,7 @@ class CategorieSuppressionIT {
         String foyerId = creerFoyer(token, "Foyer Test Cat Del");
 
         // Créer une catégorie personnalisée
-        String catId = creerCategorie(token, foyerId, "Loisirs", "CHARGE", 10);
+        String catId = creerCategorie(token, foyerId, "Loisirs", "CHARGE");
 
         // Supprimer
         client.delete()
@@ -82,7 +82,7 @@ class CategorieSuppressionIT {
     void supprimerCategorie_dissociePostes() throws Exception {
         String token = creerEtLogin("cat_del_2@test.ch");
         String foyerId = creerFoyer(token, "Foyer Cat Dissoc");
-        String catId = creerCategorie(token, foyerId, "Alimentation", "CHARGE", 5);
+        String catId = creerCategorie(token, foyerId, "Alimentation", "CHARGE");
         String scenarioId = creerScenario(token, foyerId);
 
         // Créer un poste rattaché à cette catégorie
@@ -117,7 +117,7 @@ class CategorieSuppressionIT {
     void supprimerCategorie_interFoyers_renvoie403() {
         String tokenA = creerEtLogin("cat_del_a@test.ch");
         String foyerAId = creerFoyer(tokenA, "Foyer A Cat");
-        String catId = creerCategorie(tokenA, foyerAId, "Sport", "CHARGE", 3);
+        String catId = creerCategorie(tokenA, foyerAId, "Sport", "CHARGE");
 
         String tokenB = creerEtLogin("cat_del_b@test.ch");
         creerFoyer(tokenB, "Foyer B Cat"); // B a son propre foyer
@@ -166,8 +166,8 @@ class CategorieSuppressionIT {
         } catch (Exception e) { throw new RuntimeException(e); }
     }
 
-    private String creerCategorie(String token, String foyerId, String libelle, String typePoste, int ordre) {
-        Map<String, Object> payload = Map.of("libelle", libelle, "typePoste", typePoste, "ordre", ordre);
+    private String creerCategorie(String token, String foyerId, String libelle, String typePoste) {
+        Map<String, Object> payload = Map.of("libelle", libelle, "typePoste", typePoste);
         try {
             String body = client.post()
                     .uri("/api/foyers/" + foyerId + "/categories")

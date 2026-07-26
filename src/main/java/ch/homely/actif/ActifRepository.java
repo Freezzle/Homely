@@ -8,7 +8,7 @@ import java.util.UUID;
 
 public interface ActifRepository extends JpaRepository<Actif, UUID> {
 
-    List<Actif> findAllByFoyerIdAndActifTrueOrderByOrdre(UUID foyerId);
+    List<Actif> findAllByFoyerIdAndActifTrueOrderByLibelleAsc(UUID foyerId);
 
     Optional<Actif> findByIdAndFoyerId(UUID id, UUID foyerId);
 

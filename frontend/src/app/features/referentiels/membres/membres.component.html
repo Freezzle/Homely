@@ -12,7 +12,6 @@
       <tr>
         <th>{{ t.referentiels.membre.couleur }}</th>
         <th pSortableColumn="nom">{{ t.referentiels.membre.nom }} <p-sort-icon field="nom" /></th>
-        <th class="text-right">{{ t.referentiels.membre.ordre }}</th>
         <th class="text-center">{{ t.referentiels.membre.actif }}</th>
         <th></th>
       </tr>
@@ -24,7 +23,6 @@
                 [style.background-color]="m.couleur"></span>
         </td>
         <td class="font-medium">{{ m.nom }}</td>
-        <td class="text-right text-surface-500">{{ m.ordre }}</td>
         <td class="text-center">
           <i [class]="m.actif ? 'pi pi-check text-green-500' : 'pi pi-times text-surface-300'"></i>
         </td>
@@ -39,7 +37,7 @@
       </tr>
     </ng-template>
     <ng-template #emptymessage>
-      <tr><td colspan="5" class="text-center py-8 text-surface-400">{{ t.commun.aucunResultat }}</td></tr>
+      <tr><td colspan="4" class="text-center py-8 text-surface-400">{{ t.commun.aucunResultat }}</td></tr>
     </ng-template>
   </p-table>
 </div>
@@ -54,10 +52,6 @@
     <div class="flex flex-col gap-1">
       <label class="text-sm font-medium">{{ t.referentiels.membre.couleur }}</label>
       <p-colorpicker appendTo="body" formControlName="couleur" />
-    </div>
-    <div class="flex flex-col gap-1">
-      <label class="text-sm font-medium">{{ t.referentiels.membre.ordre }}</label>
-      <p-inputnumber formControlName="ordre" [min]="1" [max]="99" class="w-full" />
     </div>
   </form>
   <ng-template #footer>

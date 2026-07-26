@@ -64,7 +64,6 @@ export class CategoriesComponent implements OnInit {
   form = this.fb.group({
     libelle: ['', Validators.required],
     typePoste: ['REVENU' as TypeCategorie, Validators.required],
-    ordre: [1, Validators.required],
   });
 
   ngOnInit(): void {}
@@ -81,21 +80,20 @@ export class CategoriesComponent implements OnInit {
 
   ouvrirCreation(): void {
     this.categorieEnEdition = null;
-    const ordre = this.categories().length + 1;
-    this.form.reset({ libelle: '', typePoste: 'REVENU', ordre });
+    this.form.reset({ libelle: '', typePoste: 'REVENU' });
     this.dialogVisible = true;
   }
 
   ouvrirEdition(c: CategorieDto): void {
     this.categorieEnEdition = c;
-    this.form.patchValue({ libelle: c.libelle, typePoste: c.typePoste, ordre: c.ordre });
+    this.form.patchValue({ libelle: c.libelle, typePoste: c.typePoste });
     this.dialogVisible = true;
   }
 
   enregistrer(): void {
     const foyerId = this.contexte.foyerId()!;
     const v = this.form.value;
-    const req = { libelle: v.libelle!, typePoste: v.typePoste as TypeCategorie, ordre: v.ordre! };
+    const req = { libelle: v.libelle!, typePoste: v.typePoste as TypeCategorie };
     const obs = this.categorieEnEdition
       ? this.categorieSvc.modifier(foyerId, this.categorieEnEdition.id, req)
       : this.categorieSvc.creer(foyerId, req);

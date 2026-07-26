@@ -44,7 +44,6 @@ export class MembresComponent implements OnInit {
   form = this.fb.group({
     nom: ['', Validators.required],
     couleur: ['#6366f1'],
-    ordre: [1, Validators.required],
   });
 
   // effect() en initialiseur de champ = contexte d'injection valide ✓
@@ -66,14 +65,13 @@ export class MembresComponent implements OnInit {
 
   ouvrirCreation(): void {
     this.membreEnEdition = null;
-    const ordre = this.membres().length > 0 ? Math.max(...this.membres().map(m => m.ordre)) + 1 : 1;
-    this.form.reset({ nom: '', couleur: '#6366f1', ordre });
+    this.form.reset({ nom: '', couleur: '#6366f1' });
     this.dialogVisible = true;
   }
 
   ouvrirEdition(m: MembreDto): void {
     this.membreEnEdition = m;
-    this.form.patchValue({ nom: m.nom, couleur: m.couleur, ordre: m.ordre });
+    this.form.patchValue({ nom: m.nom, couleur: m.couleur });
     this.dialogVisible = true;
   }
 
@@ -83,7 +81,7 @@ export class MembresComponent implements OnInit {
     // p-colorpicker format hex retourne parfois sans '#' → normalisation défensive
     const raw = v.couleur ?? '6366f1';
     const couleur = raw.startsWith('#') ? raw : '#' + raw;
-    const req = { nom: v.nom!, couleur, ordre: v.ordre! };
+    const req = { nom: v.nom!, couleur };
     const obs = this.membreEnEdition
       ? this.membreSvc.modifier(foyerId, this.membreEnEdition.id, req)
       : this.membreSvc.creer(foyerId, req);

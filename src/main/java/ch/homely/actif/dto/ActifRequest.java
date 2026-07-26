@@ -12,6 +12,5 @@ public record ActifRequest(
         @NotNull TypeActif typeActif,
         BigDecimal soldeInitial,
         @Size(min = 3, max = 3) String devise,
-        BigDecimal tauxCroissanceAnnuel,
-        int ordre
+        BigDecimal tauxCroissanceAnnuel
 ) {}

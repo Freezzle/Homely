@@ -57,7 +57,7 @@ class PosteAnnulerRevisionIT {
         String token = creerEtLogin("annuler_ok@test.ch");
         String foyerId = creerFoyer(token, "Foyer Annuler OK");
         String scenarioId = creerScenario(token, foyerId);
-        String catId = creerCategorie(token, foyerId, "Loyer", "CHARGE", 1);
+        String catId = creerCategorie(token, foyerId, "Loyer", "CHARGE");
         String posteId = creerPoste(token, foyerId, scenarioId, catId, "2025-01-01", null, 1800);
 
         JsonNode revision = reviser(token, foyerId, scenarioId, posteId, 1950, "2027-01-01");
@@ -81,7 +81,7 @@ class PosteAnnulerRevisionIT {
         String token = creerEtLogin("annuler_fin@test.ch");
         String foyerId = creerFoyer(token, "Foyer Annuler Fin");
         String scenarioId = creerScenario(token, foyerId);
-        String catId = creerCategorie(token, foyerId, "Loyer2", "CHARGE", 1);
+        String catId = creerCategorie(token, foyerId, "Loyer2", "CHARGE");
         String posteId = creerPoste(token, foyerId, scenarioId, catId, "2025-01-01", "2028-06-30", 1800);
 
         JsonNode revision = reviser(token, foyerId, scenarioId, posteId, 1950, "2027-01-01");
@@ -98,7 +98,7 @@ class PosteAnnulerRevisionIT {
         String token = creerEtLogin("annuler_chaine@test.ch");
         String foyerId = creerFoyer(token, "Foyer Annuler Chaîne");
         String scenarioId = creerScenario(token, foyerId);
-        String catId = creerCategorie(token, foyerId, "Chaîne", "CHARGE", 1);
+        String catId = creerCategorie(token, foyerId, "Chaîne", "CHARGE");
         String origineId = creerPoste(token, foyerId, scenarioId, catId, "2024-01-01", null, 1000);
 
         JsonNode premiere = reviser(token, foyerId, scenarioId, origineId, 1100, "2026-01-01");
@@ -124,7 +124,7 @@ class PosteAnnulerRevisionIT {
         String token = creerEtLogin("annuler_norev@test.ch");
         String foyerId = creerFoyer(token, "Foyer Sans Révision");
         String scenarioId = creerScenario(token, foyerId);
-        String catId = creerCategorie(token, foyerId, "Normal", "CHARGE", 1);
+        String catId = creerCategorie(token, foyerId, "Normal", "CHARGE");
         String posteId = creerPoste(token, foyerId, scenarioId, catId, "2025-01-01", null, 500);
 
         assertThatThrownBy(() -> annulerRevision(token, foyerId, scenarioId, posteId))
@@ -138,7 +138,7 @@ class PosteAnnulerRevisionIT {
         String token = creerEtLogin("annuler_interm@test.ch");
         String foyerId = creerFoyer(token, "Foyer Maillon Intermédiaire");
         String scenarioId = creerScenario(token, foyerId);
-        String catId = creerCategorie(token, foyerId, "Chaîne2", "CHARGE", 1);
+        String catId = creerCategorie(token, foyerId, "Chaîne2", "CHARGE");
         String origineId = creerPoste(token, foyerId, scenarioId, catId, "2024-01-01", null, 1000);
 
         JsonNode premiere = reviser(token, foyerId, scenarioId, origineId, 1100, "2026-01-01");
@@ -156,7 +156,7 @@ class PosteAnnulerRevisionIT {
         String tokenA = creerEtLogin("annuler_a@test.ch");
         String foyerAId = creerFoyer(tokenA, "Foyer A Annuler");
         String scenarioId = creerScenario(tokenA, foyerAId);
-        String catId = creerCategorie(tokenA, foyerAId, "Cat A", "CHARGE", 1);
+        String catId = creerCategorie(tokenA, foyerAId, "Cat A", "CHARGE");
         String posteId = creerPoste(tokenA, foyerAId, scenarioId, catId, "2025-01-01", null, 100);
         JsonNode revision = reviser(tokenA, foyerAId, scenarioId, posteId, 150, "2027-01-01");
         String nouveauId = revision.get("posteCree").get("id").asText();
@@ -215,8 +215,8 @@ class PosteAnnulerRevisionIT {
         } catch (Exception e) { throw new RuntimeException(e); }
     }
 
-    private String creerCategorie(String token, String foyerId, String libelle, String typePoste, int ordre) {
-        Map<String, Object> payload = Map.of("libelle", libelle, "typePoste", typePoste, "ordre", ordre);
+    private String creerCategorie(String token, String foyerId, String libelle, String typePoste) {
+        Map<String, Object> payload = Map.of("libelle", libelle, "typePoste", typePoste);
         try {
             String body = client.post()
                     .uri("/api/foyers/" + foyerId + "/categories")

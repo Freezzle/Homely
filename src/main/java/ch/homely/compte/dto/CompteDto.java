@@ -9,7 +9,6 @@ public record CompteDto(
         String libelle,
         BigDecimal soldeInitial,
         String devise,
-        int ordre,
         boolean actif,
         Set<UUID> membreIds
 ) {}

@@ -39,8 +39,5 @@ public class Actif {
     private BigDecimal tauxCroissanceAnnuel = BigDecimal.ZERO;
 
     @Column(nullable = false)
-    private int ordre = 0;
-
-    @Column(nullable = false)
     private boolean actif = true;
 }

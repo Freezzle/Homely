@@ -7,4 +7,4 @@ import java.util.UUID;
 
 public record ActifDto(UUID id, String libelle, TypeActif typeActif,
                        BigDecimal soldeInitial, String devise,
-                       BigDecimal tauxCroissanceAnnuel, int ordre, boolean actif) {}
+                       BigDecimal tauxCroissanceAnnuel, boolean actif) {}

@@ -29,8 +29,5 @@ public class Membre {
     private String couleur;
 
     @Column(nullable = false)
-    private int ordre = 0;
-
-    @Column(nullable = false)
     private boolean actif = true;
 }

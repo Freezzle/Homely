@@ -57,7 +57,7 @@ class PosteDecalerDateEffetIT {
         String token = creerEtLogin("decaler_repousser@test.ch");
         String foyerId = creerFoyer(token, "Foyer Décaler Repousser");
         String scenarioId = creerScenario(token, foyerId);
-        String catId = creerCategorie(token, foyerId, "Loyer", "CHARGE", 1);
+        String catId = creerCategorie(token, foyerId, "Loyer", "CHARGE");
         String posteId = creerPoste(token, foyerId, scenarioId, catId, "2025-01-01", null, 1800);
 
         JsonNode revision = reviser(token, foyerId, scenarioId, posteId, 1950, "2026-01-01");
@@ -80,7 +80,7 @@ class PosteDecalerDateEffetIT {
         String token = creerEtLogin("decaler_avancer@test.ch");
         String foyerId = creerFoyer(token, "Foyer Décaler Avancer");
         String scenarioId = creerScenario(token, foyerId);
-        String catId = creerCategorie(token, foyerId, "Loyer2", "CHARGE", 1);
+        String catId = creerCategorie(token, foyerId, "Loyer2", "CHARGE");
         String posteId = creerPoste(token, foyerId, scenarioId, catId, "2025-01-01", null, 1800);
 
         JsonNode revision = reviser(token, foyerId, scenarioId, posteId, 1950, "2026-06-01");
@@ -100,7 +100,7 @@ class PosteDecalerDateEffetIT {
         String token = creerEtLogin("decaler_interm@test.ch");
         String foyerId = creerFoyer(token, "Foyer Décaler Intermédiaire");
         String scenarioId = creerScenario(token, foyerId);
-        String catId = creerCategorie(token, foyerId, "Chaîne", "CHARGE", 1);
+        String catId = creerCategorie(token, foyerId, "Chaîne", "CHARGE");
         String origineId = creerPoste(token, foyerId, scenarioId, catId, "2024-01-01", null, 1000);
 
         JsonNode premiere = reviser(token, foyerId, scenarioId, origineId, 1100, "2025-06-01");
@@ -132,7 +132,7 @@ class PosteDecalerDateEffetIT {
         String token = creerEtLogin("decaler_egaledebut@test.ch");
         String foyerId = creerFoyer(token, "Foyer Rejet Début");
         String scenarioId = creerScenario(token, foyerId);
-        String catId = creerCategorie(token, foyerId, "Loyer3", "CHARGE", 1);
+        String catId = creerCategorie(token, foyerId, "Loyer3", "CHARGE");
         String posteId = creerPoste(token, foyerId, scenarioId, catId, "2025-01-01", null, 1800);
 
         JsonNode revision = reviser(token, foyerId, scenarioId, posteId, 1950, "2026-01-01");
@@ -149,7 +149,7 @@ class PosteDecalerDateEffetIT {
         String token = creerEtLogin("decaler_finfigee@test.ch");
         String foyerId = creerFoyer(token, "Foyer Rejet Fin");
         String scenarioId = creerScenario(token, foyerId);
-        String catId = creerCategorie(token, foyerId, "Chaîne3", "CHARGE", 1);
+        String catId = creerCategorie(token, foyerId, "Chaîne3", "CHARGE");
         String origineId = creerPoste(token, foyerId, scenarioId, catId, "2024-01-01", null, 1000);
 
         JsonNode premiere = reviser(token, foyerId, scenarioId, origineId, 1100, "2025-06-01");
@@ -167,7 +167,7 @@ class PosteDecalerDateEffetIT {
         String token = creerEtLogin("decaler_finmanuelle@test.ch");
         String foyerId = creerFoyer(token, "Foyer Fin Manuelle");
         String scenarioId = creerScenario(token, foyerId);
-        String catId = creerCategorie(token, foyerId, "Loyer4", "CHARGE", 1);
+        String catId = creerCategorie(token, foyerId, "Loyer4", "CHARGE");
         String posteId = creerPoste(token, foyerId, scenarioId, catId, "2025-01-01", null, 1800);
 
         JsonNode revision = reviser(token, foyerId, scenarioId, posteId, 1950, "2026-01-01");
@@ -196,7 +196,7 @@ class PosteDecalerDateEffetIT {
         String token = creerEtLogin("decaler_norev@test.ch");
         String foyerId = creerFoyer(token, "Foyer Sans Révision Décalage");
         String scenarioId = creerScenario(token, foyerId);
-        String catId = creerCategorie(token, foyerId, "Normal", "CHARGE", 1);
+        String catId = creerCategorie(token, foyerId, "Normal", "CHARGE");
         String posteId = creerPoste(token, foyerId, scenarioId, catId, "2025-01-01", null, 500);
 
         assertThatThrownBy(() -> decalerDateEffet(token, foyerId, scenarioId, posteId, "2025-06-01"))
@@ -210,7 +210,7 @@ class PosteDecalerDateEffetIT {
         String tokenA = creerEtLogin("decaler_a@test.ch");
         String foyerAId = creerFoyer(tokenA, "Foyer A Décaler");
         String scenarioId = creerScenario(tokenA, foyerAId);
-        String catId = creerCategorie(tokenA, foyerAId, "Cat A", "CHARGE", 1);
+        String catId = creerCategorie(tokenA, foyerAId, "Cat A", "CHARGE");
         String posteId = creerPoste(tokenA, foyerAId, scenarioId, catId, "2025-01-01", null, 100);
         JsonNode revision = reviser(tokenA, foyerAId, scenarioId, posteId, 150, "2026-01-01");
         String nouveauId = revision.get("posteCree").get("id").asText();
@@ -269,8 +269,8 @@ class PosteDecalerDateEffetIT {
         } catch (Exception e) { throw new RuntimeException(e); }
     }
 
-    private String creerCategorie(String token, String foyerId, String libelle, String typePoste, int ordre) {
-        Map<String, Object> payload = Map.of("libelle", libelle, "typePoste", typePoste, "ordre", ordre);
+    private String creerCategorie(String token, String foyerId, String libelle, String typePoste) {
+        Map<String, Object> payload = Map.of("libelle", libelle, "typePoste", typePoste);
         try {
             String body = client.post()
                     .uri("/api/foyers/" + foyerId + "/categories")

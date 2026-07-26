@@ -42,19 +42,19 @@ export interface InviterAccesRequest { email: string; role: RoleFoyer; }
 export interface ChangerRoleRequest { role: RoleFoyer; }
 
 // ── Référentiels ─────────────────────────────────────────────────────────────
-export interface MembreDto { id: string; nom: string; couleur: string; ordre: number; actif: boolean; }
-export interface MembreRequest { nom: string; couleur: string; ordre: number; }
+export interface MembreDto { id: string; nom: string; couleur: string; actif: boolean; }
+export interface MembreRequest { nom: string; couleur: string; }
 
-export interface CompteDto { id: string; libelle: string; soldeInitial: number; devise: string; ordre: number; actif: boolean; membreIds: string[]; }
-export interface CompteRequest { libelle: string; soldeInitial: number; devise?: string; ordre: number; membreIds: string[]; }
+export interface CompteDto { id: string; libelle: string; soldeInitial: number; devise: string; actif: boolean; membreIds: string[]; }
+export interface CompteRequest { libelle: string; soldeInitial: number; devise?: string; membreIds: string[]; }
 
 export type TypeCategorie = 'REVENU' | 'CHARGE' | 'RESERVE' | 'PROJET';
-export interface CategorieDto { id: string; libelle: string; typePoste: TypeCategorie; ordre: number; actif: boolean; }
-export interface CategorieRequest { libelle: string; typePoste: TypeCategorie; ordre: number; }
+export interface CategorieDto { id: string; libelle: string; typePoste: TypeCategorie; actif: boolean; }
+export interface CategorieRequest { libelle: string; typePoste: TypeCategorie; }
 
 export type TypeActif = 'COMPTE_EPARGNE' | 'TROISIEME_PILIER' | 'INVESTISSEMENT' | 'CRYPTO' | 'IMMOBILIER' | 'VEHICULE' | 'AUTRE';
-export interface ActifDto { id: string; libelle: string; typeActif: TypeActif; soldeInitial: number; devise: string; tauxCroissanceAnnuel: number; ordre: number; actif: boolean; }
-export interface ActifRequest { libelle: string; typeActif: TypeActif; soldeInitial: number; devise?: string; tauxCroissanceAnnuel: number; ordre: number; }
+export interface ActifDto { id: string; libelle: string; typeActif: TypeActif; soldeInitial: number; devise: string; tauxCroissanceAnnuel: number; actif: boolean; }
+export interface ActifRequest { libelle: string; typeActif: TypeActif; soldeInitial: number; devise?: string; tauxCroissanceAnnuel: number; }
 
 export interface TauxChangeDto { id: string; devise: string; tauxVersBase: number; }
 export interface TauxChangeRequest { devise: string; tauxVersBase: number; }
