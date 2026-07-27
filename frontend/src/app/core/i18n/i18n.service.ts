@@ -73,9 +73,7 @@ export class I18nService {
   }
 
   /**
-   * Traduction instantanée d'une clé avec interpolation de paramètres
-   * (ex. `instant('foyer.onboarding.defaults.membreNomTemplate', { index: 2 })`
-   * → « Membre 2 »). Remplace l'ancien helper maison `format()`.
+   * Traduction instantanée d'une clé avec interpolation de paramètres. Remplace l'ancien helper maison `format()`.
    */
   instant(key: string, params?: InterpolationParameters): string {
     return this.translate.instant(key, params);

@@ -86,8 +86,6 @@
         "membresDuFoyer": "Household members"
       },
       "defaults": {
-        "foyerNom": "My household",
-        "membreNomTemplate": "Member {{index}}",
         "compteLibelle": "Checking account",
         "scenarioNom": "Default scenario",
         "categories": {

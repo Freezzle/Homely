@@ -85,18 +85,18 @@ export class FoyerCreationComponent implements OnInit {
   enCours = signal(false);
 
   // ── Étape 0 : Foyer ──────────────────────────────────────────────────────
-  foyerNom = signal<string>(this.t.foyer.onboarding.defaults.foyerNom);
+  foyerNom = signal<string>('');
   foyerDevise = signal<string>(DEFAULT_BASE_CURRENCY);
 
   readonly devises = SUPPORTED_FOYER_BASE_CURRENCIES;
 
   // ── Étape 1 : Membres ────────────────────────────────────────────────────
   membres = signal<MembreLocal[]>([
-    { nom: this.i18n.instant('foyer.onboarding.defaults.membreNomTemplate', { index: 1 }), couleur: '#6366f1', ordre: 1 },
+    { nom: '', couleur: '#6366f1', ordre: 1 },
   ]);
 
   readonly membreOptions = computed(() =>
-    this.membres().map(m => ({ label: m.nom || this.i18n.instant('foyer.onboarding.defaults.membreNomTemplate', { index: m.ordre }), value: m.ordre }))
+    this.membres().map(m => ({ label: m.nom, value: m.ordre }))
   );
 
   // ── Étape 2 : Comptes ────────────────────────────────────────────────────
@@ -214,7 +214,7 @@ export class FoyerCreationComponent implements OnInit {
     this.membres.update(list => [
       ...list,
       {
-        nom: this.i18n.instant('foyer.onboarding.defaults.membreNomTemplate', { index: ordre }),
+        nom: '',
         couleur: '#6366f1',
         ordre,
       },
@@ -278,7 +278,7 @@ export class FoyerCreationComponent implements OnInit {
     const nb = this.membres().length;
     const repartitions: RepartitionLocal[] = this.membres().map((m) => ({
       membreOrdre: m.ordre,
-      nomMembre: m.nom || this.i18n.instant('foyer.onboarding.defaults.membreNomTemplate', { index: m.ordre }),
+      nomMembre: m.nom,
       // Un seul membre : 100% implicite (champ non affiché). Sinon, aucune suggestion :
       // l'utilisateur doit renseigner lui-même chaque pourcentage.
       quotePart: nb === 1 ? 100 : 0,

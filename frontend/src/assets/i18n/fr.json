@@ -86,8 +86,6 @@
         "membresDuFoyer": "Les membres du foyer"
       },
       "defaults": {
-        "foyerNom": "Mon foyer",
-        "membreNomTemplate": "Membre {{index}}",
         "compteLibelle": "Compte courant",
         "scenarioNom": "Scénario par défaut",
         "categories": {
