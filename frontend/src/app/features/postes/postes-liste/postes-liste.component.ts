@@ -34,6 +34,7 @@ import { TagComponent } from '../../../shared/components/tag/tag.component';
 import { toIsoDateLocal, parseIsoDateLocal } from '../../../core/utils/date.util';
 import { arrondirSommeRepartition, sommeRepartitionValide as estSommeRepartitionValide } from '../../../core/utils/repartition.util';
 import { formatPeriodeMois, formaterMontantSimple } from '../../../core/utils/format-affichage.util';
+import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
 import { PosteApercuDialogComponent } from '../poste-apercu-dialog/poste-apercu-dialog.component';
 import { PosteHistoriqueDrawerComponent, MaillonHistorique } from '../poste-historique-drawer/poste-historique-drawer.component';
 import { PosteRevisionDialogComponent } from '../poste-revision-dialog/poste-revision-dialog.component';
@@ -1047,13 +1048,13 @@ export class PostesListeComponent {
     obs.subscribe({
       next: () => {
         this.enregistrementEnCours.set(false);
-        this.toast.add({ severity: 'success', summary: this.t.commun.succes });
+        notifierSucces(this.toast, this.t.commun.succes);
         this.dialogVisible = false;
         this.charger();
       },
       error: (err) => {
         this.enregistrementEnCours.set(false);
-        this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message });
+        notifierErreur(this.toast, this.t.commun.erreur, err);
       },
     });
   }
@@ -1065,8 +1066,8 @@ export class PostesListeComponent {
         const foyerId = this.contexte.foyerId()!;
         const scenarioId = this.contexte.scenarioId()!;
         this.posteSvc.supprimer(foyerId, scenarioId, p.id).subscribe({
-          next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.charger(); },
-          error: (err) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message }),
+          next: () => { notifierSucces(this.toast, this.t.commun.succes); this.charger(); },
+          error: (err) => notifierErreur(this.toast, this.t.commun.erreur, err),
         });
       },
     });
@@ -1128,7 +1129,7 @@ export class PostesListeComponent {
         });
         this.charger();
       },
-      error: (err) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message }),
+      error: (err) => notifierErreur(this.toast, this.t.commun.erreur, err),
     });
   }
 
@@ -1252,8 +1253,8 @@ export class PostesListeComponent {
         const foyerId = this.contexte.foyerId()!;
         const scenarioId = this.contexte.scenarioId()!;
         this.posteSvc.annulerRevision(foyerId, scenarioId, p.id).subscribe({
-          next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.charger(); },
-          error: (err) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message }),
+          next: () => { notifierSucces(this.toast, this.t.commun.succes); this.charger(); },
+          error: (err) => notifierErreur(this.toast, this.t.commun.erreur, err),
         });
       },
     });

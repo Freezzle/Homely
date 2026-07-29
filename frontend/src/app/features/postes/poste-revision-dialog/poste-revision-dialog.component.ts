@@ -15,6 +15,7 @@ import { PosteService } from '../../../core/services/scenario-poste.service';
 import { PosteDto } from '../../../core/models/api.models';
 import { toIsoDateLocal, parseIsoDateLocal } from '../../../core/utils/date.util';
 import { formatPeriodeMois, formaterMontantSimple, localeCouranteDeLangue } from '../../../core/utils/format-affichage.util';
+import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
 
 /**
  * Dialog autonome de révision de montant planifiée d'un poste. Extrait de
@@ -149,13 +150,13 @@ export class PosteRevisionDialogComponent {
     this.posteSvc.reviser(foyerId, scenarioId, p.id, req).subscribe({
       next: () => {
         this.enregistrementEnCours = false;
-        this.toast.add({ severity: 'success', summary: this.t.commun.succes });
+        notifierSucces(this.toast, this.t.commun.succes);
         this.visibleChange.emit(false);
         this.enregistre.emit();
       },
       error: (err) => {
         this.enregistrementEnCours = false;
-        this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message });
+        notifierErreur(this.toast, this.t.commun.erreur, err);
       },
     });
   }

@@ -17,12 +17,13 @@ import { PosteService, ObjectifService } from '../../../core/services/scenario-p
 import { DecompositionService, VentilationLike } from '../../../core/services/decomposition.service';
 import {
   ProjectionAnnuelleDto, AggregatDto, VentilationsDto, VentilationAggregatDto, VentilationSplitDto,
-  CategorieDto, CompteDto, PosteDto, ObjectifDto, TypeCategorie,
+  CategorieDto, CompteDto, PosteDto, ObjectifDto, TypeCategorie, ScenarioDto,
 } from '../../../core/models/api.models';
 import { MontantPipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { localeDeLangue } from '../../../core/i18n/locale.util';
 import { CarteBilanComponent, LigneDecomposition } from '../../../shared/components/carte-bilan/carte-bilan.component';
+import { creerChargementReactif } from '../../../core/utils/reference-data.util';
 
 @Component({
   selector: 'app-dashboard-annuel',
@@ -489,26 +490,37 @@ export class DashboardAnnuelComponent {
 
   // ── Effets & chargement ─────────────────────────────────────────────────────
 
+  /** Clé de chargement des données de référence : non nulle seulement si foyer + scénario sont connus. */
+  private readonly _refCle = computed<{ foyerId: string; sc: ScenarioDto } | null>(() => {
+    const foyerId = this.contexte.foyerId();
+    const sc = this.contexte.scenarioCourant();
+    return foyerId && sc ? { foyerId, sc } : null;
+  });
+
+  /** Catégories/comptes/postes/objectifs du scénario courant — voir `creerChargementReactif`. */
+  private readonly _refData = creerChargementReactif(this._refCle, ({ foyerId, sc }) =>
+    forkJoin([
+      this.categorieSvc.lister(foyerId),
+      this.compteSvc.lister(foyerId),
+      this.posteSvc.lister(foyerId, sc.id),
+      this.objectifSvc.lister(foyerId, sc.id),
+    ]),
+  );
+
   private readonly _initEffect = effect(() => {
     const sc = this.contexte.scenarioCourant();
-    const foyerId = this.contexte.foyerId();
     if (sc) {
       this.annees = Array.from({ length: sc.horizonAnnees }, (_, i) => sc.anneeDepart + i);
       this.anneeSelectionnee = sc.anneeDepart;
     }
-    if (foyerId && sc) {
-      forkJoin([
-        this.categorieSvc.lister(foyerId),
-        this.compteSvc.lister(foyerId),
-        this.posteSvc.lister(foyerId, sc.id),
-        this.objectifSvc.lister(foyerId, sc.id),
-      ]).subscribe(([cats, cptes, postes, objectifs]) => {
-        this.categories.set(cats);
-        this.comptes.set(cptes);
-        this.postes.set(postes);
-        this.objectifs.set(objectifs);
-        this.charger();
-      });
+    const data = this._refData.donnees();
+    if (data) {
+      const [cats, cptes, postes, objectifs] = data;
+      this.categories.set(cats);
+      this.comptes.set(cptes);
+      this.postes.set(postes);
+      this.objectifs.set(objectifs);
+      this.charger();
     }
   });
 

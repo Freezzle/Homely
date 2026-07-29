@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, effect } from '@angular/core';
+import { Component, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
 import { CardModule } from 'primeng/card';
@@ -17,13 +17,16 @@ import { AvatarGroupModule } from 'primeng/avatargroup';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageModule } from 'primeng/message';
 import { MessageService, ConfirmationService } from 'primeng/api';
+import { forkJoin } from 'rxjs';
 import { ContexteService } from '../../core/services/contexte.service';
 import { ObjectifService } from '../../core/services/scenario-poste.service';
 import { CompteService, ActifService, CategorieService } from '../../core/services/referentiel.service';
-import { ObjectifDto, CompteDto, ActifDto, CategorieDto } from '../../core/models/api.models';
+import { ObjectifDto } from '../../core/models/api.models';
 import { MontantPipe, DateFrPipe } from '../../core/pipes/format.pipes';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { toIsoDateLocal, parseIsoDateLocal } from '../../core/utils/date.util';
+import { creerCrudReferentielScenario } from '../../core/utils/crud-referentiel.util';
+import { creerChargementReactif } from '../../core/utils/reference-data.util';
 
 type StatutObjectif = 'DANS_LES_TEMPS' | 'EN_RETARD' | 'ATTEINT';
 
@@ -54,11 +57,14 @@ export class ObjectifsComponent {
   private confirm = inject(ConfirmationService);
   private fb = inject(FormBuilder);
 
-  objectifs = signal<ObjectifDto[]>([]);
-  comptes = signal<CompteDto[]>([]);
-  actifs = signal<ActifDto[]>([]);
-  categories = signal<CategorieDto[]>([]);
-  chargement = signal(false);
+  private readonly _crud = creerCrudReferentielScenario(this.contexte, this.objectifSvc, this.toast, {
+    succes: this.t.commun.succes,
+    erreur: this.t.commun.erreur,
+    suppressionImpossible: this.t.commun.erreur,
+  });
+
+  objectifs = this._crud.items;
+  chargement = this._crud.chargement;
   dialogVisible = false;
   objectifEnEdition: ObjectifDto | null = null;
 
@@ -82,26 +88,17 @@ export class ObjectifsComponent {
     actifId: [null as string | null],
   }, { validators: ObjectifsComponent.supportXorValidator });
 
-  private readonly _chargerEffect = effect(() => {
-    const foyerId = this.contexte.foyerId();
-    const scenarioId = this.contexte.scenarioId();
-    if (foyerId) {
-      this.compteSvc.lister(foyerId).subscribe(c => this.comptes.set(c));
-      this.actifSvc.lister(foyerId).subscribe(a => this.actifs.set(a));
-      this.categorieSvc.lister(foyerId).subscribe(c => this.categories.set(c));
-    }
-    if (foyerId && scenarioId) this.charger();
-  });
+  /** Comptes/actifs/catégories du foyer courant, utilisés pour rattacher un objectif à un support. */
+  private readonly _refData = creerChargementReactif(this.contexte.foyerId, foyerId =>
+    forkJoin([this.compteSvc.lister(foyerId), this.actifSvc.lister(foyerId), this.categorieSvc.lister(foyerId)]),
+  );
+
+  comptes = computed(() => this._refData.donnees()?.[0] ?? []);
+  actifs = computed(() => this._refData.donnees()?.[1] ?? []);
+  categories = computed(() => this._refData.donnees()?.[2] ?? []);
 
   charger(): void {
-    const foyerId = this.contexte.foyerId();
-    const scenarioId = this.contexte.scenarioId();
-    if (!foyerId || !scenarioId) return;
-    this.chargement.set(true);
-    this.objectifSvc.lister(foyerId, scenarioId).subscribe({
-      next: o => { this.objectifs.set(o); this.chargement.set(false); },
-      error: () => this.chargement.set(false),
-    });
+    this._crud.charger();
   }
 
   private initiales(nom: string): string {
@@ -167,8 +164,6 @@ export class ObjectifsComponent {
   }
 
   enregistrer(): void {
-    const foyerId = this.contexte.foyerId()!;
-    const scenarioId = this.contexte.scenarioId()!;
     const v = this.form.value;
     const req = {
       libelle: v.libelle!,
@@ -177,24 +172,16 @@ export class ObjectifsComponent {
       compteId: v.compteId ?? undefined,
       actifId: v.actifId ?? undefined,
     };
-    const obs = this.objectifEnEdition
-      ? this.objectifSvc.modifier(foyerId, scenarioId, this.objectifEnEdition.id, req)
-      : this.objectifSvc.creer(foyerId, scenarioId, req);
-    obs.subscribe({
-      next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.dialogVisible = false; this.charger(); },
-      error: (e) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: e?.error?.message }),
-    });
+    this._crud.enregistrer(this.objectifEnEdition?.id ?? null, req, () => { this.dialogVisible = false; });
   }
 
   supprimer(o: ObjectifDto): void {
     this.confirm.confirm({
       message: this.t.commun.confirmerSuppression,
-      accept: () => this.objectifSvc.supprimer(this.contexte.foyerId()!, this.contexte.scenarioId()!, o.id).subscribe({
-        next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.charger(); },
-        error: (e) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: e?.error?.message }),
-      }),
+      accept: () => this._crud.supprimer(o.id),
     });
   }
+
 
   /** Boutons d'action des cartes objectifs — visuels uniquement pour l'instant. */
   actionAVenir(): void {

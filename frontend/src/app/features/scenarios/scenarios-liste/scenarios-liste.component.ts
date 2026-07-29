@@ -17,6 +17,7 @@ import { MontantPipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { RepartitionPeriodesComponent } from '../repartition-periodes/repartition-periodes.component';
 import { arrondirSommeRepartition, sommeRepartitionValide as estSommeRepartitionValide } from '../../../core/utils/repartition.util';
+import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
 
 @Component({
   selector: 'app-scenarios-liste',
@@ -139,24 +140,24 @@ export class ScenariosListeComponent {
       : this.scenarioSvc.creer(foyerId, req);
     obs.subscribe({
       next: () => {
-        this.toast.add({ severity: 'success', summary: this.t.commun.succes });
+        notifierSucces(this.toast, this.t.commun.succes);
         this.dialogVisible = false;
         this.charger();
         this.contexte.notifierRefresh();
       },
-      error: (e) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: e?.error?.message }),
+      error: (e) => notifierErreur(this.toast, this.t.commun.erreur, e),
     });
   }
 
   dupliquer(s: ScenarioDto): void {
     this.scenarioSvc.dupliquer(this.contexte.foyerId()!, s.id).subscribe({
-      next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.charger(); this.contexte.notifierRefresh(); },
+      next: () => { notifierSucces(this.toast, this.t.commun.succes); this.charger(); this.contexte.notifierRefresh(); },
     });
   }
 
   definirReference(s: ScenarioDto): void {
     this.scenarioSvc.definirReference(this.contexte.foyerId()!, s.id).subscribe({
-      next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.charger(); this.contexte.notifierRefresh(); },
+      next: () => { notifierSucces(this.toast, this.t.commun.succes); this.charger(); this.contexte.notifierRefresh(); },
     });
   }
 
@@ -164,7 +165,7 @@ export class ScenariosListeComponent {
     this.confirm.confirm({
       message: this.t.commun.confirmerSuppression,
       accept: () => this.scenarioSvc.supprimer(this.contexte.foyerId()!, s.id).subscribe({
-        next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.charger(); this.contexte.notifierRefresh(); },
+        next: () => { notifierSucces(this.toast, this.t.commun.succes); this.charger(); this.contexte.notifierRefresh(); },
       }),
     });
   }

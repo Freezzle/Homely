@@ -17,6 +17,7 @@ import { ContexteService } from '../../../core/services/contexte.service';
 import { FoyerService } from '../../../core/services/referentiel.service';
 import { AccesFoyerDto, RoleFoyer } from '../../../core/models/api.models';
 import { I18nService } from '../../../core/i18n/i18n.service';
+import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
 
 /** T10.2 — Gestion des accès (OWNER uniquement) */
 @Component({
@@ -110,8 +111,8 @@ export class AccesComponent {
     const foyerId = this.contexte.foyerId()!;
     const v = this.inviteForm.value;
     this.foyerSvc.inviter(foyerId, { email: v.email!, role: v.role as RoleFoyer }).subscribe({
-      next: () => { this.enCours.set(false); this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.inviteVisible = false; this.charger(); },
-      error: (e) => { this.enCours.set(false); this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: e?.error?.message }); },
+      next: () => { this.enCours.set(false); notifierSucces(this.toast, this.t.commun.succes); this.inviteVisible = false; this.charger(); },
+      error: (e) => { this.enCours.set(false); notifierErreur(this.toast, this.t.commun.erreur, e); },
     });
   }
 
@@ -126,8 +127,8 @@ export class AccesComponent {
     this.enCours.set(true);
     const foyerId = this.contexte.foyerId()!;
     this.foyerSvc.changerRole(foyerId, this.accesEnEdition!.id, { role: this.nouveauRole }).subscribe({
-      next: () => { this.enCours.set(false); this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.roleVisible = false; this.charger(); },
-      error: (e) => { this.enCours.set(false); this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: e?.error?.message }); },
+      next: () => { this.enCours.set(false); notifierSucces(this.toast, this.t.commun.succes); this.roleVisible = false; this.charger(); },
+      error: (e) => { this.enCours.set(false); notifierErreur(this.toast, this.t.commun.erreur, e); },
     });
   }
 
@@ -138,8 +139,8 @@ export class AccesComponent {
         if (this.enCours()) return;
         this.enCours.set(true);
         this.foyerSvc.retirerAcces(this.contexte.foyerId()!, a.id).subscribe({
-          next: () => { this.enCours.set(false); this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.charger(); },
-          error: (e) => { this.enCours.set(false); this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: e?.error?.message }); },
+          next: () => { this.enCours.set(false); notifierSucces(this.toast, this.t.commun.succes); this.charger(); },
+          error: (e) => { this.enCours.set(false); notifierErreur(this.toast, this.t.commun.erreur, e); },
         });
       },
     });

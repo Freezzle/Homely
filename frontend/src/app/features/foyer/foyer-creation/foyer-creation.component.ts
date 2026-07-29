@@ -20,6 +20,7 @@ import { ContexteService } from '../../../core/services/contexte.service';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { FoyerOnboardingRequest } from '../../../core/models/api.models';
 import { DEFAULT_BASE_CURRENCY, SUPPORTED_FOYER_BASE_CURRENCIES } from '../../../core/constants/devises.constants';
+import { notifierErreur } from '../../../core/utils/toast.util';
 
 // ── Modèles internes du wizard ──────────────────────────────────────────────
 
@@ -335,7 +336,7 @@ export class FoyerCreationComponent implements OnInit {
       },
       error: (err) => {
         this.enCours.set(false);
-        this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message, life: 5000 });
+        notifierErreur(this.toast, this.t.commun.erreur, err, 5000);
       },
     });
   }

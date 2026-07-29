@@ -1,4 +1,4 @@
-import { Component, inject, signal, effect } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {FormBuilder, Validators, ReactiveFormsModule, FormsModule} from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -15,6 +15,8 @@ import { CategorieService } from '../../../core/services/referentiel.service';
 import { CategorieDto, TypeCategorie } from '../../../core/models/api.models';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { DialogSuppressionComponent } from '../../../shared/components/dialog-suppression/dialog-suppression.component';
+import { creerCrudReferentiel } from '../../../core/utils/crud-referentiel.util';
+import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
 
 /** T10.2 — CRUD Catégories */
 @Component({
@@ -36,8 +38,14 @@ export class CategoriesComponent {
   private toast = inject(MessageService);
   private fb = inject(FormBuilder);
 
-  categories = signal<CategorieDto[]>([]);
-  chargement = signal(false);
+  private readonly _crud = creerCrudReferentiel(this.contexte, this.categorieSvc, this.toast, {
+    succes: this.t.commun.succes,
+    erreur: this.t.commun.erreur,
+    suppressionImpossible: this.t.commun.suppressionImpossible,
+  });
+
+  categories = this._crud.items;
+  chargement = this._crud.chargement;
   suppressionEnCours = signal(false);
 
   // Dialog création/édition
@@ -52,10 +60,6 @@ export class CategoriesComponent {
   /** Catégories disponibles pour la migration (même typePoste, hors catégorie à supprimer) */
   categoriesMigration = signal<CategorieDto[]>([]);
 
-  private readonly _chargerEffect = effect(() => {
-    if (this.contexte.foyerId()) this.charger();
-  });
-
   typeOptions: { label: string; value: TypeCategorie }[] = [
     { label: this.t.referentiels.categorie.typeOptions.REVENU, value: 'REVENU' },
     { label: this.t.referentiels.categorie.typeOptions.CHARGE, value: 'CHARGE' },
@@ -69,13 +73,7 @@ export class CategoriesComponent {
   });
 
   charger(): void {
-    const foyerId = this.contexte.foyerId();
-    if (!foyerId) return;
-    this.chargement.set(true);
-    this.categorieSvc.lister(foyerId).subscribe({
-      next: c => { this.categories.set(c); this.chargement.set(false); },
-      error: () => this.chargement.set(false),
-    });
+    this._crud.charger();
   }
 
   ouvrirCreation(): void {
@@ -91,16 +89,9 @@ export class CategoriesComponent {
   }
 
   enregistrer(): void {
-    const foyerId = this.contexte.foyerId()!;
     const v = this.form.value;
     const req = { libelle: v.libelle!, typePoste: v.typePoste as TypeCategorie };
-    const obs = this.categorieEnEdition
-      ? this.categorieSvc.modifier(foyerId, this.categorieEnEdition.id, req)
-      : this.categorieSvc.creer(foyerId, req);
-    obs.subscribe({
-      next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.dialogVisible = false; this.charger(); },
-      error: (e) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: e?.error?.message }),
-    });
+    this._crud.enregistrer(this.categorieEnEdition?.id ?? null, req, () => { this.dialogVisible = false; });
   }
 
   ouvrirSuppression(c: CategorieDto): void {
@@ -121,13 +112,13 @@ export class CategoriesComponent {
       .supprimer(foyerId, c.id, this.migrerVersCategorieId ?? undefined)
       .subscribe({
         next: () => {
-          this.toast.add({ severity: 'success', summary: this.t.commun.succes });
+          notifierSucces(this.toast, this.t.commun.succes);
           this.suppressionDialogVisible = false;
           this.suppressionEnCours.set(false);
           this.charger();
         },
         error: () => {
-          this.toast.add({ severity: 'error', summary: this.t.commun.suppressionImpossible });
+          notifierErreur(this.toast, this.t.commun.suppressionImpossible);
           this.suppressionEnCours.set(false);
         },
       });

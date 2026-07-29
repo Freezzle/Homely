@@ -18,6 +18,7 @@ import { PctPipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { TagComponent } from '../../../shared/components/tag/tag.component';
 import { toIsoDateLocal, parseIsoDateLocal } from '../../../core/utils/date.util';
+import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
 
 /**
  * Composant d'édition des périodes de répartition (prorata) d'un scénario.
@@ -74,7 +75,7 @@ export class RepartitionPeriodesComponent {
     if (!foyerId) return;
     this.periodeSvc.lister(foyerId, this.scenarioId()).subscribe({
       next: p => this.periodes.set(p),
-      error: (err) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message }),
+      error: (err) => notifierErreur(this.toast, this.t.commun.erreur, err),
     });
   }
 
@@ -185,12 +186,12 @@ export class RepartitionPeriodesComponent {
 
     obs.subscribe({
       next: () => {
-        this.toast.add({ severity: 'success', summary: this.t.commun.succes });
+        notifierSucces(this.toast, this.t.commun.succes);
         this.formVisible = false;
         // Recharger les données sans fermer le dialog liste qui est déjà visible derrière
         this.chargerPeriodes();
       },
-      error: (err) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message }),
+      error: (err) => notifierErreur(this.toast, this.t.commun.erreur, err),
     });
   }
 
@@ -201,10 +202,10 @@ export class RepartitionPeriodesComponent {
         const foyerId = this.contexte.foyerId()!;
         this.periodeSvc.supprimer(foyerId, this.scenarioId(), p.id).subscribe({
           next: () => {
-            this.toast.add({ severity: 'success', summary: this.t.commun.succes });
+            notifierSucces(this.toast, this.t.commun.succes);
             this.chargerPeriodes();
           },
-          error: (err) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message }),
+          error: (err) => notifierErreur(this.toast, this.t.commun.erreur, err),
         });
       },
     });

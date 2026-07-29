@@ -15,6 +15,7 @@ import { PosteDto } from '../../../core/models/api.models';
 import { toIsoDateLocal } from '../../../core/utils/date.util';
 import { formatPeriodeMois, localeCouranteDeLangue } from '../../../core/utils/format-affichage.util';
 import { finDeMois, moisEffectifCloture, prochainMoisPeriodique, posteDebuteApresMoisCourant } from '../../../core/utils/poste-periodicite.util';
+import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
 
 /** Options de l'action rapide « Terminer » (clôture d'un poste). */
 type OptionCloture = 'MOIS_COURANT' | 'PROCHAIN_PERIODIQUE' | 'PERSONNALISEE';
@@ -132,13 +133,13 @@ export class PosteClotureDialogComponent {
     this.posteSvc.cloturer(foyerId, scenarioId, p.id, { fin: toIsoDateLocal(fin) }).subscribe({
       next: () => {
         this.enregistrementEnCours = false;
-        this.toast.add({ severity: 'success', summary: this.t.commun.succes });
+        notifierSucces(this.toast, this.t.commun.succes);
         this.visibleChange.emit(false);
         this.enregistre.emit();
       },
       error: (err) => {
         this.enregistrementEnCours = false;
-        this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message });
+        notifierErreur(this.toast, this.t.commun.erreur, err);
       },
     });
   }

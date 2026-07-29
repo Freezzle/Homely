@@ -14,10 +14,11 @@ import { ProjectionService } from '../../../core/services/projection.service';
 import { CategorieService, CompteService } from '../../../core/services/referentiel.service';
 import { PosteService, ObjectifService } from '../../../core/services/scenario-poste.service';
 import { DecompositionService } from '../../../core/services/decomposition.service';
-import { VentilationsDto, VentilationAggregatDto, CategorieDto, CompteDto, TypeCategorie, PosteDto, ObjectifDto } from '../../../core/models/api.models';
+import { VentilationsDto, VentilationAggregatDto, CategorieDto, CompteDto, TypeCategorie, PosteDto, ObjectifDto, ScenarioDto } from '../../../core/models/api.models';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { localeDeLangue } from '../../../core/i18n/locale.util';
 import { CarteBilanComponent, LigneDecomposition, MembreTagInfo } from '../../../shared/components/carte-bilan/carte-bilan.component';
+import { creerChargementReactif } from '../../../core/utils/reference-data.util';
 
 @Component({
   selector: 'app-dashboard-mensuel',
@@ -330,26 +331,37 @@ export class DashboardMensuelComponent {
 
   // ── Effets & chargement ──────────────────────────────────────────────────────
 
-  private readonly _initEffect = effect(() => {
-    const sc      = this.contexte.scenarioCourant();
+  /** Clé de chargement des données de référence : non nulle seulement si foyer + scénario sont connus. */
+  private readonly _refCle = computed<{ foyerId: string; sc: ScenarioDto } | null>(() => {
     const foyerId = this.contexte.foyerId();
+    const sc = this.contexte.scenarioCourant();
+    return foyerId && sc ? { foyerId, sc } : null;
+  });
+
+  /** Catégories/comptes/postes/objectifs du scénario courant — voir `creerChargementReactif`. */
+  private readonly _refData = creerChargementReactif(this._refCle, ({ foyerId, sc }) =>
+    forkJoin([
+      this.categorieSvc.lister(foyerId),
+      this.compteSvc.lister(foyerId),
+      this.posteSvc.lister(foyerId, sc.id),
+      this.objectifSvc.lister(foyerId, sc.id),
+    ]),
+  );
+
+  private readonly _initEffect = effect(() => {
+    const sc = this.contexte.scenarioCourant();
     if (sc) {
       this.annees = Array.from({ length: sc.horizonAnnees }, (_, i) => sc.anneeDepart + i);
       this.annee  = sc.anneeDepart;
     }
-    if (foyerId && sc) {
-      forkJoin([
-        this.categorieSvc.lister(foyerId),
-        this.compteSvc.lister(foyerId),
-        this.posteSvc.lister(foyerId, sc.id),
-        this.objectifSvc.lister(foyerId, sc.id),
-      ]).subscribe(([cats, cptes, postes, objectifs]) => {
-        this.categories.set(cats);
-        this.comptes.set(cptes);
-        this.postes.set(postes);
-        this.objectifs.set(objectifs);
-        this.charger();
-      });
+    const data = this._refData.donnees();
+    if (data) {
+      const [cats, cptes, postes, objectifs] = data;
+      this.categories.set(cats);
+      this.comptes.set(cptes);
+      this.postes.set(postes);
+      this.objectifs.set(objectifs);
+      this.charger();
     }
   });
 

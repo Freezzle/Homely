@@ -1,4 +1,4 @@
-import { Component, inject, signal, effect } from '@angular/core';
+import { Component, inject, computed, Signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -13,6 +13,8 @@ import { ContexteService } from '../../../core/services/contexte.service';
 import { TauxChangeService } from '../../../core/services/referentiel.service';
 import { TauxChangeDto } from '../../../core/models/api.models';
 import { I18nService } from '../../../core/i18n/i18n.service';
+import { creerChargementReactif } from '../../../core/utils/reference-data.util';
+import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
 
 /** T10.2 — Taux de change (CRUD upsert) */
 @Component({
@@ -36,8 +38,6 @@ export class TauxComponent {
   private confirm = inject(ConfirmationService);
   private fb = inject(FormBuilder);
 
-  taux = signal<TauxChangeDto[]>([]);
-  chargement = signal(false);
   dialogVisible = false;
   tauxEnEdition: TauxChangeDto | null = null;
 
@@ -46,9 +46,11 @@ export class TauxComponent {
     tauxVersBase: [1, [Validators.required, Validators.min(0.000001)]],
   });
 
-  private readonly _chargerEffect = effect(() => {
-    if (this.contexte.foyerId()) this.charger();
-  });
+  /** Taux de change du foyer courant — chargement réactif annulant toute requête obsolète (voir `creerChargementReactif`). */
+  private readonly _refData = creerChargementReactif(this.contexte.foyerId, foyerId => this.tauxSvc.lister(foyerId));
+
+  taux: Signal<TauxChangeDto[]> = computed(() => this._refData.donnees() ?? []);
+  chargement: Signal<boolean> = this._refData.chargement;
 
   /**
    * Le taux de la devise de base du foyer vers elle-même vaut toujours 1 par
@@ -77,13 +79,7 @@ export class TauxComponent {
   }
 
   charger(): void {
-    const foyerId = this.contexte.foyerId();
-    if (!foyerId) return;
-    this.chargement.set(true);
-    this.tauxSvc.lister(foyerId).subscribe({
-      next: t => { this.taux.set(t); this.chargement.set(false); },
-      error: () => this.chargement.set(false),
-    });
+    this._refData.recharger();
   }
 
   ouvrirCreation(): void {
@@ -110,8 +106,8 @@ export class TauxComponent {
     const tauxVersBase = devise === this.contexte.deviseBase() ? 1 : v.tauxVersBase!;
     const req = { devise, tauxVersBase };
     this.tauxSvc.creerOuModifier(foyerId, req).subscribe({
-      next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.dialogVisible = false; this.charger(); },
-      error: (e) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: e?.error?.message }),
+      next: () => { notifierSucces(this.toast, this.t.commun.succes); this.dialogVisible = false; this.charger(); },
+      error: (e) => notifierErreur(this.toast, this.t.commun.erreur, e),
     });
   }
 
@@ -119,8 +115,8 @@ export class TauxComponent {
     this.confirm.confirm({
       message: this.t.commun.confirmerSuppression,
       accept: () => this.tauxSvc.supprimer(this.contexte.foyerId()!, tx.id).subscribe({
-        next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.charger(); },
-        error: (err) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message }),
+        next: () => { notifierSucces(this.toast, this.t.commun.succes); this.charger(); },
+        error: (err) => notifierErreur(this.toast, this.t.commun.erreur, err),
       }),
     });
   }
