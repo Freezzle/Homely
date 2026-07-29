@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit, effect } from '@angular/core';
+import { Component, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
 import { CardModule } from 'primeng/card';
@@ -42,7 +42,7 @@ type StatutObjectif = 'DANS_LES_TEMPS' | 'EN_RETARD' | 'ATTEINT';
   ],
   templateUrl: './objectifs.component.html',
 })
-export class ObjectifsComponent implements OnInit {
+export class ObjectifsComponent {
   private readonly i18n = inject(I18nService);
   readonly t = this.i18n.translations();
   contexte = inject(ContexteService);
@@ -92,8 +92,6 @@ export class ObjectifsComponent implements OnInit {
     }
     if (foyerId && scenarioId) this.charger();
   });
-
-  ngOnInit(): void {}
 
   charger(): void {
     const foyerId = this.contexte.foyerId();

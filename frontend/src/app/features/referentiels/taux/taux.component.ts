@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, effect } from '@angular/core';
+import { Component, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -27,7 +27,7 @@ import { I18nService } from '../../../core/i18n/i18n.service';
   ],
   templateUrl: './taux.component.html',
 })
-export class TauxComponent implements OnInit {
+export class TauxComponent {
   private readonly i18n = inject(I18nService);
   readonly t = this.i18n.translations();
   contexte = inject(ContexteService);
@@ -75,8 +75,6 @@ export class TauxComponent implements OnInit {
       deviseBase: this.contexte.deviseBase(),
     });
   }
-
-  ngOnInit(): void {}
 
   charger(): void {
     const foyerId = this.contexte.foyerId();

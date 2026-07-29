@@ -1,0 +1,8 @@
+<p-dialog [visible]="visible()" (visibleChange)="visibleChange.emit($event)"
+          [header]="titre()" [modal]="true" class="w-full max-w-lg">
+  <ng-content />
+  <ng-template #footer>
+    <p-button [label]="libelleAnnuler()" severity="secondary" (click)="fermer()" />
+    <p-button [label]="libelleSupprimer()" severity="danger" [loading]="enCours()" (click)="confirmer.emit()" />
+  </ng-template>
+</p-dialog>

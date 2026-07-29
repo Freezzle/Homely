@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit, input, effect, ViewChild, ElementRef } from '@angular/core';
+import { Component, inject, signal, computed, input, effect, ViewChild, ElementRef } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule, FormArray, FormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
@@ -29,9 +29,13 @@ import { PosteDto, CategorieDto, CompteDto, MembreDto, VentilationCompteDto, Typ
 import { MontantPipe, PeriodicitePipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { localeDeLangue } from '../../../core/i18n/locale.util';
-import { buildConfiguredCurrencyOptions } from '../../../core/constants/devises.constants';
+import { creerDevisesDisponibles } from '../../../core/utils/devise-options.util';
 import { TagComponent } from '../../../shared/components/tag/tag.component';
 import { toIsoDateLocal, parseIsoDateLocal } from '../../../core/utils/date.util';
+import { arrondirSommeRepartition, sommeRepartitionValide as estSommeRepartitionValide } from '../../../core/utils/repartition.util';
+import { formatPeriodeMois, formaterMontantSimple } from '../../../core/utils/format-affichage.util';
+import { PosteApercuDialogComponent } from '../poste-apercu-dialog/poste-apercu-dialog.component';
+import { PosteHistoriqueDrawerComponent, MaillonHistorique } from '../poste-historique-drawer/poste-historique-drawer.component';
 
 /**
  * Validateur de groupe : la date de fin (si renseignée) ne peut pas être
@@ -72,10 +76,10 @@ type OptionCloture = 'MOIS_COURANT' | 'PROCHAIN_PERIODIQUE' | 'PERSONNALISEE';
             InputTextModule, InputNumberModule, SelectModule, MultiSelectModule, DatePickerModule,
             TagModule, TooltipModule, CardModule, MessageModule, ConfirmDialogModule, SkeletonModule, DrawerModule, CheckboxModule,
             MenuModule, SelectButtonModule,
-            MontantPipe, PeriodicitePipe, TagComponent],
+            MontantPipe, PeriodicitePipe, TagComponent, PosteApercuDialogComponent, PosteHistoriqueDrawerComponent],
   templateUrl: './postes-liste.component.html',
 })
-export class PostesListeComponent implements OnInit {
+export class PostesListeComponent {
   readonly i18n = inject(I18nService);
   readonly t = this.i18n.translations();
   readonly type = input<TypePoste>('REVENU');
@@ -92,7 +96,6 @@ export class PostesListeComponent implements OnInit {
   postes = signal<PosteDto[]>([]);
   categories = signal<CategorieDto[]>([]);
   comptes = signal<CompteDto[]>([]);
-  devisesDisponibles = signal<string[]>([this.contexte.deviseBase()]);
   chargement = signal(false);
   enregistrementEnCours = signal(false);
   dialogVisible = false;
@@ -104,7 +107,7 @@ export class PostesListeComponent implements OnInit {
 
   /** Tolérance flottante : une somme visuellement à 100% ne doit jamais être refusée à tort. */
   get sommeRepartitionValide(): boolean {
-    return Math.abs(this.sommeRepartition - 100) < 0.01;
+    return estSommeRepartitionValide(this.sommeRepartition);
   }
 
   // ── Révision de montant planifiée ─────────────────────────
@@ -229,7 +232,7 @@ export class PostesListeComponent implements OnInit {
   // ── Historique de la chaîne de révisions (lecture seule) ──
   historiqueDrawerVisible = signal(false);
   historiquePosteDescription = signal<string>('');
-  historiqueMaillons = signal<{ poste: PosteDto; ecartMontant: number | null; ecartPourcentage: number | null }[]>([]);
+  historiqueMaillons = signal<MaillonHistorique[]>([]);
   historiqueEvolutionGlobale = signal<{ signe: string; pct: string } | null>(null);
   /** Poste temporairement mis en surbrillance après navigation depuis le drawer d'historique. */
   posteEnSurbrillanceId = signal<string | null>(null);
@@ -568,46 +571,7 @@ export class PostesListeComponent implements OnInit {
 
   get repartitionsArray() { return this.form.get('repartitions') as FormArray; }
 
-  private readonly _chargerDevisesDisponiblesEffect = effect(() => {
-    const foyerId = this.contexte.foyerId();
-    const deviseBase = this.contexte.deviseBase();
-    const controleDevise = this.form.get('devise');
-
-    this.devisesDisponibles.set([deviseBase]);
-    if (!controleDevise?.value) {
-      controleDevise?.setValue(deviseBase, { emitEvent: false });
-    }
-
-    if (!foyerId) {
-      return;
-    }
-
-    this.tauxChangeSvc.lister(foyerId).subscribe({
-      next: taux => {
-        if (this.contexte.foyerId() !== foyerId) {
-          return;
-        }
-
-        const devises = buildConfiguredCurrencyOptions(
-          deviseBase,
-          taux.map(item => item.devise),
-        );
-
-        this.devisesDisponibles.set(devises);
-        if (!devises.includes((controleDevise?.value as string | null) ?? '')) {
-          controleDevise?.setValue(deviseBase, { emitEvent: false });
-        }
-      },
-      error: () => {
-        if (this.contexte.foyerId() !== foyerId) {
-          return;
-        }
-
-        this.devisesDisponibles.set([deviseBase]);
-        controleDevise?.setValue(deviseBase, { emitEvent: false });
-      },
-    });
-  });
+  devisesDisponibles = creerDevisesDisponibles(this.contexte, this.tauxChangeSvc, this.form.get('devise'));
 
   /** Signal réactif sur la valeur courante de typeRepartition (réagit aux changements du select) */
   private typeRepartitionValue = toSignal(
@@ -865,8 +829,6 @@ export class PostesListeComponent implements OnInit {
       this.compteSvc.lister(foyerId).subscribe(c => this.comptes.set(c));
     }
   });
-
-  ngOnInit(): void {}
 
   charger(): void {
     const foyerId = this.contexte.foyerId();
@@ -1194,7 +1156,7 @@ export class PostesListeComponent implements OnInit {
     const total = this.repartitionsArray.controls
       .reduce((s, c) => s + (c.get('quotePart')?.value ?? 0), 0);
     // Neutralise les résidus binaires (ex. 33.33+33.33+33.34 = 100.00000000000001).
-    this.sommeRepartition = Math.round(total * 100) / 100;
+    this.sommeRepartition = arrondirSommeRepartition(total);
   }
 
   /**
@@ -1325,17 +1287,11 @@ export class PostesListeComponent implements OnInit {
   });
 
   formatPeriode(v?: string | null): string {
-    if (!v) return '–';
-    try {
-      const [year, month] = v.split('-');
-      const d = new Date(+year, +month - 1, 1);
-      return new Intl.DateTimeFormat(this.localeCourante(), { month: 'short', year: 'numeric' }).format(d);
-    } catch { return v; }
+    return formatPeriodeMois(v, this.localeCourante());
   }
 
   formaterMontant(montant: number, devise?: string): string {
-    return new Intl.NumberFormat(this.localeCourante(), { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(montant)
-      + (devise ? ` ${devise}` : '');
+    return formaterMontantSimple(montant, this.localeCourante(), devise);
   }
 
   private formaterDateComplete(iso: string): string {
@@ -1521,12 +1477,20 @@ export class PostesListeComponent implements OnInit {
 
     if (membres.length === 0) return;
 
-    const maillons = membres.map((m, i) => {
-      if (i === 0) return { poste: m, ecartMontant: null, ecartPourcentage: null };
+    const maillons: MaillonHistorique[] = membres.map((m, i) => {
+      const periode = `${this.formatPeriode(m.debut)} – ${m.fin ? this.formatPeriode(m.fin) : (i === membres.length - 1 ? this.t.poste.historiquePeriodeEnCours : '–')}`;
+      if (i === 0) {
+        return { posteId: m.id, periode, montant: m.montant, devise: m.devise, ecartLabel: null, ecartPositif: null };
+      }
       const precedent = membres[i - 1];
       const ecartMontant = m.montant - precedent.montant;
       const ecartPourcentage = precedent.montant !== 0 ? (ecartMontant / precedent.montant) * 100 : null;
-      return { poste: m, ecartMontant, ecartPourcentage };
+      const ecartLabel = this.i18n.instant('poste.historiqueEcart', {
+        signe: ecartMontant >= 0 ? '+' : '',
+        montant: this.formaterMontant(ecartMontant, m.devise),
+        pct: ecartPourcentage !== null ? ecartPourcentage.toFixed(1) : '–',
+      });
+      return { posteId: m.id, periode, montant: m.montant, devise: m.devise, ecartLabel, ecartPositif: ecartMontant >= 0 };
     });
 
     const premier = membres[0];

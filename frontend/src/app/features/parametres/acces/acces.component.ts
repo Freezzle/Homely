@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { toObservable, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
@@ -11,7 +11,7 @@ import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
-import { of } from 'rxjs';
+import { combineLatest, of } from 'rxjs';
 import { switchMap, catchError } from 'rxjs/operators';
 import { ContexteService } from '../../../core/services/contexte.service';
 import { FoyerService } from '../../../core/services/referentiel.service';
@@ -31,7 +31,7 @@ import { I18nService } from '../../../core/i18n/i18n.service';
   ],
   templateUrl: './acces.component.html',
 })
-export class AccesComponent implements OnInit {
+export class AccesComponent {
   private readonly i18n = inject(I18nService);
   readonly t = this.i18n.translations();
   contexte = inject(ContexteService);
@@ -63,14 +63,21 @@ export class AccesComponent implements OnInit {
   }
 
   /**
-   * Flux réactif sur le foyer courant : `switchMap` annule automatiquement toute
-   * requête `listerAcces` encore en vol dès que le foyer change, ce qui évite
-   * qu'une réponse tardive d'un ancien foyer n'écrase les accès affichés pour
-   * le foyer nouvellement sélectionné (fuite d'informations inter-foyers).
+   * Flux réactif unique sur le foyer courant + un déclencheur de rafraîchissement manuel :
+   * `switchMap` annule automatiquement toute requête `listerAcces` encore en vol dès que
+   * le foyer change (ou qu'un nouveau rafraîchissement est demandé), ce qui évite qu'une
+   * réponse tardive d'un ancien foyer n'écrase les accès affichés pour le foyer nouvellement
+   * sélectionné (fuite d'informations inter-foyers). `charger()` réutilise ce même flux
+   * (via `_refreshTrigger`) plutôt que de dupliquer un appel HTTP indépendant.
    */
-  private readonly _chargerSub = toObservable(this.contexte.foyerId)
+  private readonly _refreshTrigger = signal(0);
+
+  private readonly _chargerSub = combineLatest([
+    toObservable(this.contexte.foyerId),
+    toObservable(this._refreshTrigger),
+  ])
     .pipe(
-      switchMap(foyerId => {
+      switchMap(([foyerId]) => {
         if (!foyerId) {
           this.acces.set([]);
           return of(null);
@@ -87,18 +94,9 @@ export class AccesComponent implements OnInit {
       if (a) this.acces.set(a);
     });
 
-  ngOnInit(): void {}
-
+  /** Déclenche un rechargement via le flux réactif unique (voir `_chargerSub`). */
   charger(): void {
-    const foyerId = this.contexte.foyerId();
-    if (!foyerId) return;
-    this.chargement.set(true);
-    this.foyerSvc.listerAcces(foyerId).pipe(
-      catchError(() => of(null)),
-    ).subscribe(a => {
-      this.chargement.set(false);
-      if (a) this.acces.set(a);
-    });
+    this._refreshTrigger.update(v => v + 1);
   }
 
   ouvrirInvitation(): void {

@@ -684,78 +684,9 @@
 </p-dialog>
 
 <!-- Dialog aperçu mensuel -->
-<p-dialog [(visible)]="apercuVisible" [header]="t.poste.apercu" [modal]="true" class="w-96">
-    @if (apercuData()) {
-        <p-table [value]="apercuData()!.contributions" class="p-datatable-sm">
-            <ng-template #header>
-                <tr>
-                    <th>{{ t.projection.mois }}</th>
-                    <th class="text-right">{{ t.poste.contribution }}</th>
-                </tr>
-            </ng-template>
-            <ng-template #body let-c>
-                <tr>
-                    <td>{{ t.mois[c.mois - 1] }}</td>
-                    <td class="text-right">{{ c.contribution | montant }}</td>
-                </tr>
-            </ng-template>
-        </p-table>
-    }
-</p-dialog>
+<app-poste-apercu-dialog [t]="t" [visible]="apercuVisible" (visibleChange)="apercuVisible = $event" [data]="apercuData()" />
 
 <!-- ── Drawer historique de la chaîne de révisions (lecture seule) ── -->
-<p-drawer [(visible)]="historiqueDrawerVisible" position="right"
-          [header]="i18n.instant('poste.historiqueTitre', { description: historiquePosteDescription() })"
-          styleClass="w-full sm:w-96">
-    @if (historiqueEvolutionGlobale(); as evolution) {
-        <div class="mb-4 px-3 py-2 rounded-lg bg-surface-100 dark:bg-surface-800 text-sm font-medium text-center"
-             [class.text-green-600]="evolution.signe === '+'"
-             [class.text-red-500]="evolution.signe !== '+'">
-            {{ i18n.instant('poste.historiqueEvolutionGlobale', { signe: evolution.signe, pct: evolution.pct }) }}
-        </div>
-    }
-
-    <div class="flex flex-col">
-        @for (m of historiqueMaillons(); track m.poste.id; let first = $first; let last = $last) {
-            @if (!first) {
-                <div class="flex justify-center -my-0.5">
-                    <div class="w-px h-3" [class.bg-primary]="last" [class.bg-surface-300]="!last" [class.dark:bg-surface-600]="!last"></div>
-                </div>
-            }
-            <button type="button"
-                    class="text-left rounded-lg border px-3 py-2.5 transition-colors duration-150 cursor-pointer"
-                    [class.border-primary]="last"
-                    [class.bg-primary-50]="last"
-                    [class.dark:bg-primary-950]="last"
-                    [class.border-surface-200]="!last"
-                    [class.dark:border-surface-700]="!last"
-                    [class.hover:border-primary-400]="!last"
-                    (click)="navigerVersPoste(m.poste.id)">
-                <div class="flex items-center justify-between gap-2">
-                    <span class="text-xs text-surface-500 dark:text-surface-400">
-                        {{ formatPeriode(m.poste.debut) }} –
-                        {{ m.poste.fin ? formatPeriode(m.poste.fin) : (last ? t.poste.historiquePeriodeEnCours : '–') }}
-                    </span>
-                </div>
-                <div class="font-semibold mt-1" [class.text-surface-900]="last" [class.dark:text-surface-100]="last"
-                     [class.text-surface-600]="!last" [class.dark:text-surface-300]="!last">
-                    {{ m.poste.montant | montant:m.poste.devise }}
-                </div>
-                <div class="text-xs mt-0.5"
-                     [class.text-green-600]="m.ecartMontant !== null && m.ecartMontant >= 0"
-                     [class.text-red-500]="m.ecartMontant !== null && m.ecartMontant < 0"
-                     [class.text-surface-400]="m.ecartMontant === null">
-                    @if (m.ecartMontant === null) {
-                        {{ t.poste.historiqueMontantOrigine }}
-                    } @else {
-                        {{ i18n.instant('poste.historiqueEcart', {
-                            signe: m.ecartMontant >= 0 ? '+' : '',
-                            montant: formaterMontant(m.ecartMontant, m.poste.devise),
-                            pct: m.ecartPourcentage !== null ? m.ecartPourcentage.toFixed(1) : '–'
-                        }) }}
-                    }
-                </div>
-            </button>
-        }
-    </div>
-</p-drawer>
+<app-poste-historique-drawer [t]="t" [visible]="historiqueDrawerVisible()" (visibleChange)="historiqueDrawerVisible.set($event)"
+    [posteDescription]="historiquePosteDescription()" [maillons]="historiqueMaillons()"
+    [evolutionGlobale]="historiqueEvolutionGlobale()" (navigerVersPoste)="navigerVersPoste($event)" />

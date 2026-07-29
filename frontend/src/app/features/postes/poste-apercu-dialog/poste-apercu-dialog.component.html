@@ -1,0 +1,19 @@
+<p-dialog [visible]="visible()" (visibleChange)="visibleChange.emit($event)"
+          [header]="t().poste.apercu" [modal]="true" class="w-96">
+  @if (data()) {
+    <p-table [value]="data()!.contributions" class="p-datatable-sm">
+      <ng-template #header>
+        <tr>
+          <th>{{ t().projection.mois }}</th>
+          <th class="text-right">{{ t().poste.contribution }}</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-c>
+        <tr>
+          <td>{{ t().mois[c.mois - 1] }}</td>
+          <td class="text-right">{{ c.contribution | montant }}</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  }
+</p-dialog>

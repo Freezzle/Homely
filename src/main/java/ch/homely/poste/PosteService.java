@@ -78,6 +78,7 @@ public class PosteService {
     @Transactional(readOnly = true)
     public PosteDto obtenir(UUID foyerId, UUID scenarioId, UUID posteId) {
         multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
+        verifierScenario(foyerId, scenarioId);
         return toDto(trouver(scenarioId, posteId), Map.of());
     }
 

@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit, effect } from '@angular/core';
+import { Component, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SelectModule } from 'primeng/select';
@@ -29,7 +29,7 @@ import { CarteBilanComponent, LigneDecomposition, MembreTagInfo } from '../../..
   ],
   templateUrl: './dashboard-mensuel.component.html',
 })
-export class DashboardMensuelComponent implements OnInit {
+export class DashboardMensuelComponent {
   private readonly i18n = inject(I18nService);
   readonly t = this.i18n.translations();
   private contexte     = inject(ContexteService);
@@ -365,8 +365,6 @@ export class DashboardMensuelComponent implements OnInit {
       if (this.vue() !== 'MEMBRE') this.vue.set('MEMBRE');
     }
   });
-
-  ngOnInit(): void {}
 
   charger(): void {
     const foyerId    = this.contexte.foyerId();

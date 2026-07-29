@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, effect } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -13,6 +13,7 @@ import { ContexteService } from '../../../core/services/contexte.service';
 import { MembreService } from '../../../core/services/referentiel.service';
 import { MembreDto } from '../../../core/models/api.models';
 import { I18nService } from '../../../core/i18n/i18n.service';
+import { creerCrudReferentiel } from '../../../core/utils/crud-referentiel.util';
 
 /** T10.2 — CRUD Membres */
 @Component({
@@ -27,7 +28,7 @@ import { I18nService } from '../../../core/i18n/i18n.service';
   ],
   templateUrl: './membres.component.html',
 })
-export class MembresComponent implements OnInit {
+export class MembresComponent {
   private readonly i18n = inject(I18nService);
   readonly t = this.i18n.translations();
   contexte = inject(ContexteService);
@@ -36,8 +37,14 @@ export class MembresComponent implements OnInit {
   private confirm = inject(ConfirmationService);
   private fb = inject(FormBuilder);
 
-  membres = signal<MembreDto[]>([]);
-  chargement = signal(false);
+  private readonly _crud = creerCrudReferentiel(this.contexte, this.membreSvc, this.toast, {
+    succes: this.t.commun.succes,
+    erreur: this.t.commun.erreur,
+    suppressionImpossible: this.t.commun.suppressionImpossible,
+  });
+
+  membres = this._crud.items;
+  chargement = this._crud.chargement;
   dialogVisible = false;
   membreEnEdition: MembreDto | null = null;
 
@@ -45,23 +52,6 @@ export class MembresComponent implements OnInit {
     nom: ['', Validators.required],
     couleur: ['#6366f1'],
   });
-
-  // effect() en initialiseur de champ = contexte d'injection valide ✓
-  private readonly _chargerEffect = effect(() => {
-    if (this.contexte.foyerId()) this.charger();
-  });
-
-  ngOnInit(): void {}
-
-  charger(): void {
-    const foyerId = this.contexte.foyerId();
-    if (!foyerId) return;
-    this.chargement.set(true);
-    this.membreSvc.lister(foyerId).subscribe({
-      next: m => { this.membres.set(m); this.chargement.set(false); },
-      error: () => this.chargement.set(false),
-    });
-  }
 
   ouvrirCreation(): void {
     this.membreEnEdition = null;
@@ -76,32 +66,18 @@ export class MembresComponent implements OnInit {
   }
 
   enregistrer(): void {
-    const foyerId = this.contexte.foyerId()!;
     const v = this.form.value;
     // p-colorpicker format hex retourne parfois sans '#' → normalisation défensive
     const raw = v.couleur ?? '6366f1';
     const couleur = raw.startsWith('#') ? raw : '#' + raw;
     const req = { nom: v.nom!, couleur };
-    const obs = this.membreEnEdition
-      ? this.membreSvc.modifier(foyerId, this.membreEnEdition.id, req)
-      : this.membreSvc.creer(foyerId, req);
-    obs.subscribe({
-      next: () => {
-        this.toast.add({ severity: 'success', summary: this.t.commun.succes });
-        this.dialogVisible = false;
-        this.charger();
-      },
-      error: (e) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: e?.error?.message }),
-    });
+    this._crud.enregistrer(this.membreEnEdition?.id ?? null, req, () => { this.dialogVisible = false; });
   }
 
   supprimer(m: MembreDto): void {
     this.confirm.confirm({
       message: this.t.commun.confirmerSuppression,
-      accept: () => this.membreSvc.supprimer(this.contexte.foyerId()!, m.id).subscribe({
-        next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.charger(); },
-        error: () => this.toast.add({ severity: 'error', summary: this.t.commun.suppressionImpossible }),
-      }),
+      accept: () => this._crud.supprimer(m.id),
     });
   }
 }

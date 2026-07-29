@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, effect } from '@angular/core';
+import { Component, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -16,6 +16,7 @@ import { ScenarioDto } from '../../../core/models/api.models';
 import { MontantPipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { RepartitionPeriodesComponent } from '../repartition-periodes/repartition-periodes.component';
+import { arrondirSommeRepartition, sommeRepartitionValide as estSommeRepartitionValide } from '../../../core/utils/repartition.util';
 
 @Component({
   selector: 'app-scenarios-liste',
@@ -26,7 +27,7 @@ import { RepartitionPeriodesComponent } from '../repartition-periodes/repartitio
     ConfirmDialogModule, MontantPipe, RepartitionPeriodesComponent],
   templateUrl: './scenarios-liste.component.html',
 })
-export class ScenariosListeComponent implements OnInit {
+export class ScenariosListeComponent {
   private readonly i18n = inject(I18nService);
   readonly t = this.i18n.translations();
   contexte = inject(ContexteService);
@@ -53,8 +54,6 @@ export class ScenariosListeComponent implements OnInit {
   private readonly _chargerEffect = effect(() => {
     if (this.contexte.foyerId()) this.charger();
   });
-
-  ngOnInit(): void {}
 
   charger(): void {
     const foyerId = this.contexte.foyerId();
@@ -116,12 +115,12 @@ export class ScenariosListeComponent implements OnInit {
   calculerSomme(): void {
     const total = Object.values(this.repsMap).reduce((s, v) => s + (v || 0), 0);
     // Neutralise les résidus binaires (ex. 33.33+33.33+33.34 = 100.00000000000001).
-    this.sommeRep = Math.round(total * 100) / 100;
+    this.sommeRep = arrondirSommeRepartition(total);
   }
 
   /** Tolérance flottante : évite qu'une somme visuellement à 100% (ex. 99.999999) soit refusée à tort. */
   get sommeRepValide(): boolean {
-    return Math.abs(this.sommeRep - 100) < 0.01;
+    return estSommeRepartitionValide(this.sommeRep);
   }
 
   enregistrer(): void {

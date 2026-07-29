@@ -57,9 +57,14 @@
 </p-dialog>
 
 <!-- Dialog suppression avec migration optionnelle -->
-<p-dialog [(visible)]="suppressionDialogVisible"
-          [header]="t.referentiels.categorie.dialogSuppressionTitre"
-          [modal]="true" class="w-full max-w-lg">
+<app-dialog-suppression
+    [visible]="suppressionDialogVisible"
+    (visibleChange)="suppressionDialogVisible = $event"
+    [titre]="t.referentiels.categorie.dialogSuppressionTitre"
+    [libelleAnnuler]="t.commun.annuler"
+    [libelleSupprimer]="t.commun.supprimer"
+    [enCours]="suppressionEnCours()"
+    (confirmer)="confirmerSuppression()">
   @if (categorieASupprimer) {
     <div class="flex flex-col gap-4 pt-2">
       <p-message severity="warn" class="w-full">
@@ -80,8 +85,4 @@
       </div>
     </div>
   }
-  <ng-template #footer>
-    <p-button [label]="t.commun.annuler" severity="secondary" (click)="suppressionDialogVisible = false" />
-    <p-button [label]="t.commun.supprimer" severity="danger" [loading]="suppressionEnCours()" (click)="confirmerSuppression()" />
-  </ng-template>
-</p-dialog>
+</app-dialog-suppression>

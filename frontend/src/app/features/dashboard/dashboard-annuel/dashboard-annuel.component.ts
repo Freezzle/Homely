@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit, effect } from '@angular/core';
+import { Component, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SelectModule } from 'primeng/select';
@@ -31,7 +31,7 @@ import { CarteBilanComponent, LigneDecomposition } from '../../../shared/compone
             SkeletonModule, CardModule, TagModule, ButtonModule, MontantPipe, CarteBilanComponent],
   templateUrl: './dashboard-annuel.component.html',
 })
-export class DashboardAnnuelComponent implements OnInit {
+export class DashboardAnnuelComponent {
   private readonly i18n = inject(I18nService);
   readonly t = this.i18n.translations();
   private contexte     = inject(ContexteService);
@@ -524,8 +524,6 @@ export class DashboardAnnuelComponent implements OnInit {
       if (this.vue() !== 'MEMBRE') this.vue.set('MEMBRE');
     }
   });
-
-  ngOnInit(): void {}
 
   /**
    * Somme 12 ventilations mensuelles (`VentilationsDto`) en un agrégat annuel de même

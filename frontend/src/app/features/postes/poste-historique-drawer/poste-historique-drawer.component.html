@@ -1,0 +1,50 @@
+<p-drawer [visible]="visible()" (visibleChange)="visibleChange.emit($event)" position="right"
+          [header]="i18n.instant('poste.historiqueTitre', { description: posteDescription() })"
+          styleClass="w-full sm:w-96">
+    @if (evolutionGlobale(); as evolution) {
+        <div class="mb-4 px-3 py-2 rounded-lg bg-surface-100 dark:bg-surface-800 text-sm font-medium text-center"
+             [class.text-green-600]="evolution.signe === '+'"
+             [class.text-red-500]="evolution.signe !== '+'">
+            {{ i18n.instant('poste.historiqueEvolutionGlobale', { signe: evolution.signe, pct: evolution.pct }) }}
+        </div>
+    }
+
+    <div class="flex flex-col">
+        @for (m of maillons(); track m.posteId; let first = $first; let last = $last) {
+            @if (!first) {
+                <div class="flex justify-center -my-0.5">
+                    <div class="w-px h-3" [class.bg-primary]="last" [class.bg-surface-300]="!last" [class.dark:bg-surface-600]="!last"></div>
+                </div>
+            }
+            <button type="button"
+                    class="text-left rounded-lg border px-3 py-2.5 transition-colors duration-150 cursor-pointer"
+                    [class.border-primary]="last"
+                    [class.bg-primary-50]="last"
+                    [class.dark:bg-primary-950]="last"
+                    [class.border-surface-200]="!last"
+                    [class.dark:border-surface-700]="!last"
+                    [class.hover:border-primary-400]="!last"
+                    (click)="navigerVersPoste.emit(m.posteId)">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-xs text-surface-500 dark:text-surface-400">
+                        {{ m.periode }}
+                    </span>
+                </div>
+                <div class="font-semibold mt-1" [class.text-surface-900]="last" [class.dark:text-surface-100]="last"
+                     [class.text-surface-600]="!last" [class.dark:text-surface-300]="!last">
+                    {{ m.montant | montant:m.devise }}
+                </div>
+                <div class="text-xs mt-0.5"
+                     [class.text-green-600]="m.ecartPositif === true"
+                     [class.text-red-500]="m.ecartPositif === false"
+                     [class.text-surface-400]="m.ecartPositif === null">
+                    @if (m.ecartLabel === null) {
+                        {{ t().poste.historiqueMontantOrigine }}
+                    } @else {
+                        {{ m.ecartLabel }}
+                    }
+                </div>
+            </button>
+        }
+    </div>
+</p-drawer>

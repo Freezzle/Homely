@@ -12,6 +12,29 @@ import {
 
 /** T9.3 — Services HTTP référentiels scopés par foyer. */
 
+/**
+ * Base commune aux services REST référentiels dont le CRUD suit exactement le patron
+ * `GET/POST/PUT/DELETE /api/foyers/{foyerId}/<ressource>[/{id}]` (ex. membres, comptes,
+ * actifs). Mutualise ce squelette identique, auparavant recopié dans chaque service ;
+ * les services aux besoins spécifiques (paramètres de requête, upsert...) restent
+ * autonomes (voir `CategorieService`, `TauxChangeService`).
+ */
+abstract class RestCrudService<T, TReq> {
+  protected constructor(
+    private readonly http: HttpClient,
+    private readonly ressourcePath: string,
+  ) {}
+
+  private urlListe(foyerId: string): string {
+    return `/api/foyers/${foyerId}/${this.ressourcePath}`;
+  }
+
+  lister(foyerId: string) { return this.http.get<T[]>(this.urlListe(foyerId)); }
+  creer(foyerId: string, req: TReq) { return this.http.post<T>(this.urlListe(foyerId), req); }
+  modifier(foyerId: string, id: string, req: TReq) { return this.http.put<T>(`${this.urlListe(foyerId)}/${id}`, req); }
+  supprimer(foyerId: string, id: string) { return this.http.delete<void>(`${this.urlListe(foyerId)}/${id}`); }
+}
+
 @Injectable({ providedIn: 'root' })
 export class FoyerService {
   constructor(private http: HttpClient) {}
@@ -27,21 +50,18 @@ export class FoyerService {
 }
 
 @Injectable({ providedIn: 'root' })
-export class MembreService {
-  constructor(private http: HttpClient) {}
-  lister(foyerId: string) { return this.http.get<MembreDto[]>(`/api/foyers/${foyerId}/membres`); }
-  creer(foyerId: string, req: MembreRequest) { return this.http.post<MembreDto>(`/api/foyers/${foyerId}/membres`, req); }
-  modifier(foyerId: string, id: string, req: MembreRequest) { return this.http.put<MembreDto>(`/api/foyers/${foyerId}/membres/${id}`, req); }
-  supprimer(foyerId: string, id: string) { return this.http.delete<void>(`/api/foyers/${foyerId}/membres/${id}`); }
+export class MembreService extends RestCrudService<MembreDto, MembreRequest> {
+  constructor(http: HttpClient) { super(http, 'membres'); }
 }
 
 @Injectable({ providedIn: 'root' })
-export class CompteService {
-  constructor(private http: HttpClient) {}
-  lister(foyerId: string) { return this.http.get<CompteDto[]>(`/api/foyers/${foyerId}/comptes`); }
-  creer(foyerId: string, req: CompteRequest) { return this.http.post<CompteDto>(`/api/foyers/${foyerId}/comptes`, req); }
-  modifier(foyerId: string, id: string, req: CompteRequest) { return this.http.put<CompteDto>(`/api/foyers/${foyerId}/comptes/${id}`, req); }
-  supprimer(foyerId: string, id: string) { return this.http.delete<void>(`/api/foyers/${foyerId}/comptes/${id}`); }
+export class CompteService extends RestCrudService<CompteDto, CompteRequest> {
+  constructor(http: HttpClient) { super(http, 'comptes'); }
+}
+
+@Injectable({ providedIn: 'root' })
+export class ActifService extends RestCrudService<ActifDto, ActifRequest> {
+  constructor(http: HttpClient) { super(http, 'actifs'); }
 }
 
 @Injectable({ providedIn: 'root' })
@@ -59,15 +79,6 @@ export class CategorieService {
     if (migrerVersCategorieId) params = params.set('migrerVersCategorieId', migrerVersCategorieId);
     return this.http.delete<void>(`/api/foyers/${foyerId}/categories/${id}`, { params });
   }
-}
-
-@Injectable({ providedIn: 'root' })
-export class ActifService {
-  constructor(private http: HttpClient) {}
-  lister(foyerId: string) { return this.http.get<ActifDto[]>(`/api/foyers/${foyerId}/actifs`); }
-  creer(foyerId: string, req: ActifRequest) { return this.http.post<ActifDto>(`/api/foyers/${foyerId}/actifs`, req); }
-  modifier(foyerId: string, id: string, req: ActifRequest) { return this.http.put<ActifDto>(`/api/foyers/${foyerId}/actifs/${id}`, req); }
-  supprimer(foyerId: string, id: string) { return this.http.delete<void>(`/api/foyers/${foyerId}/actifs/${id}`); }
 }
 
 @Injectable({ providedIn: 'root' })

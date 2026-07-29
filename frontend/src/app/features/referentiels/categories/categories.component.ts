@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, effect } from '@angular/core';
+import { Component, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {FormBuilder, Validators, ReactiveFormsModule, FormsModule} from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -14,6 +14,7 @@ import { ContexteService } from '../../../core/services/contexte.service';
 import { CategorieService } from '../../../core/services/referentiel.service';
 import { CategorieDto, TypeCategorie } from '../../../core/models/api.models';
 import { I18nService } from '../../../core/i18n/i18n.service';
+import { DialogSuppressionComponent } from '../../../shared/components/dialog-suppression/dialog-suppression.component';
 
 /** T10.2 — CRUD Catégories */
 @Component({
@@ -22,11 +23,12 @@ import { I18nService } from '../../../core/i18n/i18n.service';
              imports: [
                CommonModule, ReactiveFormsModule,
                TableModule, ButtonModule, DialogModule, TagModule, MessageModule,
-               InputTextModule, InputNumberModule, SelectModule, FormsModule
+               InputTextModule, InputNumberModule, SelectModule, FormsModule,
+               DialogSuppressionComponent,
              ],
   templateUrl: './categories.component.html',
 })
-export class CategoriesComponent implements OnInit {
+export class CategoriesComponent {
   private readonly i18n = inject(I18nService);
   readonly t = this.i18n.translations();
   contexte = inject(ContexteService);
@@ -65,8 +67,6 @@ export class CategoriesComponent implements OnInit {
     libelle: ['', Validators.required],
     typePoste: ['REVENU' as TypeCategorie, Validators.required],
   });
-
-  ngOnInit(): void {}
 
   charger(): void {
     const foyerId = this.contexte.foyerId();

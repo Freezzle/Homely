@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, effect } from '@angular/core';
+import { Component, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -18,7 +18,8 @@ import { CompteDto, MembreDto } from '../../../core/models/api.models';
 import { MontantPipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { TagComponent } from '../../../shared/components/tag/tag.component';
-import { buildConfiguredCurrencyOptions } from '../../../core/constants/devises.constants';
+import { creerDevisesDisponibles } from '../../../core/utils/devise-options.util';
+import { creerCrudReferentiel } from '../../../core/utils/crud-referentiel.util';
 
 /** T10.2 — CRUD Comptes avec rattachement membres */
 @Component({
@@ -33,7 +34,7 @@ import { buildConfiguredCurrencyOptions } from '../../../core/constants/devises.
   ],
   templateUrl: './comptes.component.html',
 })
-export class ComptesComponent implements OnInit {
+export class ComptesComponent {
   private readonly i18n = inject(I18nService);
   readonly t = this.i18n.translations();
   contexte = inject(ContexteService);
@@ -44,13 +45,17 @@ export class ComptesComponent implements OnInit {
   private confirm    = inject(ConfirmationService);
   private fb         = inject(FormBuilder);
 
-  comptes       = signal<CompteDto[]>([]);
+  private readonly _crud = creerCrudReferentiel(this.contexte, this.compteSvc, this.toast, {
+    succes: this.t.commun.succes,
+    erreur: this.t.commun.erreur,
+    suppressionImpossible: this.t.commun.suppressionImpossible,
+  });
+
+  comptes       = this._crud.items;
   membresActifs = signal<MembreDto[]>([]);
-  chargement    = signal(false);
+  chargement    = this._crud.chargement;
   dialogVisible = false;
   compteEnEdition: CompteDto | null = null;
-
-  private readonly _devises = signal<string[]>([this.contexte.deviseBase()]);
 
   form = this.fb.group({
     libelle:      ['', Validators.required],
@@ -59,46 +64,7 @@ export class ComptesComponent implements OnInit {
     devise:       [this.contexte.deviseBase()],
   });
 
-  private readonly _chargerDevisesEffect = effect(() => {
-    const foyerId = this.contexte.foyerId();
-    const deviseBase = this.contexte.deviseBase();
-    const controleDevise = this.form.get('devise');
-
-    this._devises.set([deviseBase]);
-    if (!controleDevise?.value) {
-      controleDevise?.setValue(deviseBase, { emitEvent: false });
-    }
-
-    if (!foyerId) {
-      return;
-    }
-
-    this.tauxChangeSvc.lister(foyerId).subscribe({
-      next: taux => {
-        if (this.contexte.foyerId() !== foyerId) {
-          return;
-        }
-
-        const devisesDisponibles = buildConfiguredCurrencyOptions(
-          deviseBase,
-          taux.map(item => item.devise),
-        );
-
-        this._devises.set(devisesDisponibles);
-        if (!devisesDisponibles.includes((controleDevise?.value as string | null) ?? '')) {
-          controleDevise?.setValue(deviseBase, { emitEvent: false });
-        }
-      },
-      error: () => {
-        if (this.contexte.foyerId() !== foyerId) {
-          return;
-        }
-
-        this._devises.set([deviseBase]);
-        controleDevise?.setValue(deviseBase, { emitEvent: false });
-      },
-    });
-  });
+  private readonly _devises = creerDevisesDisponibles(this.contexte, this.tauxChangeSvc, this.form.get('devise'));
 
   devisesOptions(): string[] {
     return this._devises();
@@ -113,24 +79,9 @@ export class ComptesComponent implements OnInit {
     return this.membresActifs().find(m => m.id === id);
   }
 
-  private readonly _chargerEffect = effect(() => {
-    if (this.contexte.foyerId()) {
-      this.charger();
-      this.chargerMembres();
-    }
+  private readonly _chargerMembresEffect = effect(() => {
+    if (this.contexte.foyerId()) this.chargerMembres();
   });
-
-  ngOnInit(): void {}
-
-  charger(): void {
-    const foyerId = this.contexte.foyerId();
-    if (!foyerId) return;
-    this.chargement.set(true);
-    this.compteSvc.lister(foyerId).subscribe({
-      next: c => { this.comptes.set(c); this.chargement.set(false); },
-      error: () => this.chargement.set(false),
-    });
-  }
 
   chargerMembres(): void {
     const foyerId = this.contexte.foyerId();
@@ -161,7 +112,6 @@ export class ComptesComponent implements OnInit {
 
   enregistrer(): void {
     if (!this.membreIdsNonVides()) return;
-    const foyerId = this.contexte.foyerId()!;
     const v = this.form.value;
     const req = {
       libelle: v.libelle!,
@@ -169,22 +119,13 @@ export class ComptesComponent implements OnInit {
       soldeInitial: v.soldeInitial ?? 0,
       devise: v.devise ?? undefined,
     };
-    const obs = this.compteEnEdition
-      ? this.compteSvc.modifier(foyerId, this.compteEnEdition.id, req)
-      : this.compteSvc.creer(foyerId, req);
-    obs.subscribe({
-      next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.dialogVisible = false; this.charger(); },
-      error: (e) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: e?.error?.message }),
-    });
+    this._crud.enregistrer(this.compteEnEdition?.id ?? null, req, () => { this.dialogVisible = false; });
   }
 
   supprimer(c: CompteDto): void {
     this.confirm.confirm({
       message: this.t.commun.confirmerSuppression,
-      accept: () => this.compteSvc.supprimer(this.contexte.foyerId()!, c.id).subscribe({
-        next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.charger(); },
-        error: () => this.toast.add({ severity: 'error', summary: this.t.commun.suppressionImpossible }),
-      }),
+      accept: () => this._crud.supprimer(c.id),
     });
   }
 }

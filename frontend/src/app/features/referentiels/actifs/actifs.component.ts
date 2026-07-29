@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, effect } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -15,7 +15,8 @@ import { ActifService, TauxChangeService } from '../../../core/services/referent
 import { ActifDto, TypeActif } from '../../../core/models/api.models';
 import { MontantPipe, PctPipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
-import { buildConfiguredCurrencyOptions } from '../../../core/constants/devises.constants';
+import { creerDevisesDisponibles } from '../../../core/utils/devise-options.util';
+import { creerCrudReferentiel } from '../../../core/utils/crud-referentiel.util';
 
 /** T10.2 — CRUD Actifs patrimoniaux */
 @Component({
@@ -30,7 +31,7 @@ import { buildConfiguredCurrencyOptions } from '../../../core/constants/devises.
   ],
   templateUrl: './actifs.component.html',
 })
-export class ActifsComponent implements OnInit {
+export class ActifsComponent {
   private readonly i18n = inject(I18nService);
   readonly t = this.i18n.translations();
   contexte = inject(ContexteService);
@@ -40,14 +41,16 @@ export class ActifsComponent implements OnInit {
   private confirm = inject(ConfirmationService);
   private fb = inject(FormBuilder);
 
-  actifs = signal<ActifDto[]>([]);
-  chargement = signal(false);
+  private readonly _crud = creerCrudReferentiel(this.contexte, this.actifSvc, this.toast, {
+    succes: this.t.commun.succes,
+    erreur: this.t.commun.erreur,
+    suppressionImpossible: this.t.commun.suppressionImpossible,
+  });
+
+  actifs = this._crud.items;
+  chargement = this._crud.chargement;
   dialogVisible = false;
   actifEnEdition: ActifDto | null = null;
-
-  private readonly _chargerEffect = effect(() => {
-    if (this.contexte.foyerId()) this.charger();
-  });
 
   typeOptions: { label: string; value: TypeActif }[] = [
     { label: this.t.referentiels.actif.types.COMPTE_EPARGNE,   value: 'COMPTE_EPARGNE' },
@@ -58,8 +61,6 @@ export class ActifsComponent implements OnInit {
     { label: this.t.referentiels.actif.types.VEHICULE,         value: 'VEHICULE' },
     { label: this.t.referentiels.actif.types.AUTRE,            value: 'AUTRE' },
   ];
-  private readonly _devises = signal<string[]>([this.contexte.deviseBase()]);
-
   form = this.fb.group({
     libelle: ['', Validators.required],
     typeActif: ['AUTRE' as TypeActif, Validators.required],
@@ -68,46 +69,7 @@ export class ActifsComponent implements OnInit {
     tauxCroissanceAnnuel: [0],
   });
 
-  private readonly _chargerDevisesEffect = effect(() => {
-    const foyerId = this.contexte.foyerId();
-    const deviseBase = this.contexte.deviseBase();
-    const controleDevise = this.form.get('devise');
-
-    this._devises.set([deviseBase]);
-    if (!controleDevise?.value) {
-      controleDevise?.setValue(deviseBase, { emitEvent: false });
-    }
-
-    if (!foyerId) {
-      return;
-    }
-
-    this.tauxChangeSvc.lister(foyerId).subscribe({
-      next: taux => {
-        if (this.contexte.foyerId() !== foyerId) {
-          return;
-        }
-
-        const devisesDisponibles = buildConfiguredCurrencyOptions(
-          deviseBase,
-          taux.map(item => item.devise),
-        );
-
-        this._devises.set(devisesDisponibles);
-        if (!devisesDisponibles.includes((controleDevise?.value as string | null) ?? '')) {
-          controleDevise?.setValue(deviseBase, { emitEvent: false });
-        }
-      },
-      error: () => {
-        if (this.contexte.foyerId() !== foyerId) {
-          return;
-        }
-
-        this._devises.set([deviseBase]);
-        controleDevise?.setValue(deviseBase, { emitEvent: false });
-      },
-    });
-  });
+  private readonly _devises = creerDevisesDisponibles(this.contexte, this.tauxChangeSvc, this.form.get('devise'));
 
   devisesOptions(): string[] {
     return this._devises();
@@ -115,18 +77,6 @@ export class ActifsComponent implements OnInit {
 
   typeActifLabel(type: TypeActif): string {
     return this.t.referentiels.actif.types[type] ?? type;
-  }
-
-  ngOnInit(): void {}
-
-  charger(): void {
-    const foyerId = this.contexte.foyerId();
-    if (!foyerId) return;
-    this.chargement.set(true);
-    this.actifSvc.lister(foyerId).subscribe({
-      next: a => { this.actifs.set(a); this.chargement.set(false); },
-      error: () => this.chargement.set(false),
-    });
   }
 
   ouvrirCreation(): void {
@@ -142,7 +92,6 @@ export class ActifsComponent implements OnInit {
   }
 
   enregistrer(): void {
-    const foyerId = this.contexte.foyerId()!;
     const v = this.form.value;
     const req = {
       libelle: v.libelle!, typeActif: v.typeActif as TypeActif,
@@ -150,23 +99,13 @@ export class ActifsComponent implements OnInit {
       devise: v.devise ?? undefined,
       tauxCroissanceAnnuel: (v.tauxCroissanceAnnuel ?? 0) / 100,
     };
-    const obs = this.actifEnEdition
-      ? this.actifSvc.modifier(foyerId, this.actifEnEdition.id, req)
-      : this.actifSvc.creer(foyerId, req);
-    obs.subscribe({
-      next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.dialogVisible = false; this.charger(); },
-      error: (e) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: e?.error?.message }),
-    });
+    this._crud.enregistrer(this.actifEnEdition?.id ?? null, req, () => { this.dialogVisible = false; });
   }
 
   supprimer(a: ActifDto): void {
     this.confirm.confirm({
       message: this.t.commun.confirmerSuppression,
-      accept: () => this.actifSvc.supprimer(this.contexte.foyerId()!, a.id).subscribe({
-        next: () => { this.toast.add({ severity: 'success', summary: this.t.commun.succes }); this.charger(); },
-        error: () => this.toast.add({ severity: 'error', summary: this.t.commun.suppressionImpossible }),
-      }),
+      accept: () => this._crud.supprimer(a.id),
     });
   }
 }
-

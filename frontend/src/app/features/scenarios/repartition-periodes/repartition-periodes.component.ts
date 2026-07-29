@@ -1,4 +1,4 @@
-import { Component, inject, input, signal, OnInit } from '@angular/core';
+import { Component, inject, input, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormArray, Validators } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -36,7 +36,7 @@ import { toIsoDateLocal, parseIsoDateLocal } from '../../../core/utils/date.util
     ConfirmDialogModule, TooltipModule, PctPipe, TagComponent],
   templateUrl: './repartition-periodes.component.html',
 })
-export class RepartitionPeriodesComponent implements OnInit {
+export class RepartitionPeriodesComponent {
   private readonly i18n = inject(I18nService);
   readonly t = this.i18n.translations();
   protected readonly Math = Math;
@@ -63,8 +63,6 @@ export class RepartitionPeriodesComponent implements OnInit {
   });
 
   get partsArray() { return this.form.get('parts') as FormArray; }
-
-  ngOnInit(): void {}
 
   ouvrirDialog(): void {
     this.dialogVisible = true;
