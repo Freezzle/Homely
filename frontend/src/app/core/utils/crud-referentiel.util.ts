@@ -9,7 +9,7 @@ import { notifierSucces, notifierErreur } from './toast.util';
 /**
  * Contrat minimal attendu d'un service HTTP référentiel pour être mutualisé par
  * `creerCrudReferentiel` (voir `RestCrudService` dans `referentiel.service.ts`, dont
- * `MembreService`/`CompteService`/`ActifService` héritent).
+ * `MembreService`/`CompteService` héritent).
  */
 export interface ServiceCrudReferentiel<T, TReq> {
   lister(foyerId: string): Observable<T[]>;
@@ -40,7 +40,7 @@ export interface CrudReferentiel<T, TReq> {
 
 /**
  * Mutualise la plomberie commune aux écrans CRUD référentiels (categories, comptes,
- * membres, taux, actifs, ...) : chargement réactif sur le foyer courant, création/
+ * membres, taux, ...) : chargement réactif sur le foyer courant, création/
  * modification, suppression, toasts de succès/erreur. Chaque composant garde son
  * propre `FormGroup` et son propre template — seule la logique de liste/mutation est
  * mutualisée ici.

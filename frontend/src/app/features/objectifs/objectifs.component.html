@@ -29,7 +29,6 @@
             <span class="text-xs">
               @if (o.echeance) { {{ t.objectif.echeance }} {{ o.echeance | dateFr }} · }
               @if (o.compteLibelle) { {{ o.compteLibelle }} · }
-              @if (o.actifLibelle) { {{ o.actifLibelle }} · }
               {{ o.categorieLibelle }}
             </span>
           </ng-template>
@@ -135,18 +134,13 @@
         <p-datepicker appendTo="body" formControlName="echeance" dateFormat="dd/mm/yy" [showButtonBar]="true" class="w-full" />
       </div>
     </div>
-    <!-- Compte ou actif (XOR obligatoire) -->
+    <!-- Compte (obligatoire) -->
     <div class="flex flex-col gap-1">
-      <label class="text-sm font-medium">{{ t.objectif.compte }}</label>
+      <label class="text-sm font-medium">{{ t.objectif.compte }} *</label>
       <p-select appendTo="body" formControlName="compteId" [options]="comptes()" optionLabel="libelle" optionValue="id"
-                [showClear]="true" class="w-full" (onChange)="onCompteChange($event)" />
+                class="w-full" />
     </div>
-    <div class="flex flex-col gap-1">
-      <label class="text-sm font-medium">{{ t.objectif.actif }}</label>
-      <p-select appendTo="body" formControlName="actifId" [options]="actifs()" optionLabel="libelle" optionValue="id"
-                [showClear]="true" class="w-full" (onChange)="onActifChange($event)" />
-    </div>
-    @if (form.errors?.['supportXor'] && (form.get('compteId')?.touched || form.get('actifId')?.touched)) {
+    @if (form.get('compteId')?.invalid && form.get('compteId')?.touched) {
       <p-message severity="warn">{{ t.objectif.supportRequis }}</p-message>
     }
   </form>

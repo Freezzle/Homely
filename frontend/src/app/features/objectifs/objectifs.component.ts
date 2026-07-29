@@ -1,6 +1,6 @@
 import { Component, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
+import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -20,7 +20,7 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { forkJoin } from 'rxjs';
 import { ContexteService } from '../../core/services/contexte.service';
 import { ObjectifService } from '../../core/services/scenario-poste.service';
-import { CompteService, ActifService, CategorieService } from '../../core/services/referentiel.service';
+import { CompteService, CategorieService } from '../../core/services/referentiel.service';
 import { ObjectifDto } from '../../core/models/api.models';
 import { MontantPipe, DateFrPipe } from '../../core/pipes/format.pipes';
 import { I18nService } from '../../core/i18n/i18n.service';
@@ -51,7 +51,6 @@ export class ObjectifsComponent {
   contexte = inject(ContexteService);
   private objectifSvc = inject(ObjectifService);
   private compteSvc = inject(CompteService);
-  private actifSvc = inject(ActifService);
   private categorieSvc = inject(CategorieService);
   private toast = inject(MessageService);
   private confirm = inject(ConfirmationService);
@@ -70,32 +69,20 @@ export class ObjectifsComponent {
 
   readonly membres = this.contexte.membres;
 
-  /**
-   * Un objectif doit être rattaché à exactement un support : un compte OU un actif
-   * (jamais les deux, jamais aucun) — docs/02 §4 "compte_id XOR actif_id".
-   */
-  private static readonly supportXorValidator = (group: AbstractControl): ValidationErrors | null => {
-    const compteId = group.get('compteId')?.value;
-    const actifId = group.get('actifId')?.value;
-    return (!!compteId) !== (!!actifId) ? null : { supportXor: true };
-  };
-
   form = this.fb.group({
     libelle: ['', Validators.required],
     montantCible: [0, [Validators.required, Validators.min(0.01)]],
     echeance: [null as Date | null],
-    compteId: [null as string | null],
-    actifId: [null as string | null],
-  }, { validators: ObjectifsComponent.supportXorValidator });
+    compteId: [null as string | null, Validators.required],
+  });
 
-  /** Comptes/actifs/catégories du foyer courant, utilisés pour rattacher un objectif à un support. */
+  /** Comptes/catégories du foyer courant, utilisés pour rattacher un objectif à un compte. */
   private readonly _refData = creerChargementReactif(this.contexte.foyerId, foyerId =>
-    forkJoin([this.compteSvc.lister(foyerId), this.actifSvc.lister(foyerId), this.categorieSvc.lister(foyerId)]),
+    forkJoin([this.compteSvc.lister(foyerId), this.categorieSvc.lister(foyerId)]),
   );
 
   comptes = computed(() => this._refData.donnees()?.[0] ?? []);
-  actifs = computed(() => this._refData.donnees()?.[1] ?? []);
-  categories = computed(() => this._refData.donnees()?.[2] ?? []);
+  categories = computed(() => this._refData.donnees()?.[1] ?? []);
 
   charger(): void {
     this._crud.charger();
@@ -114,7 +101,6 @@ export class ObjectifsComponent {
   /** Cartes objectifs enrichies : statut, libellés, membres attachés (via le compte lié). */
   objectifsData = computed(() => {
     const cptes = this.comptes();
-    const actifsList = this.actifs();
     const cats = this.categories();
     const mems = this.membres();
     return this.objectifs().map(o => {
@@ -126,7 +112,6 @@ export class ObjectifsComponent {
         ...o,
         statut: this.statut(o),
         compteLibelle: compte?.libelle,
-        actifLibelle: o.actifId ? actifsList.find(a => a.id === o.actifId)?.libelle : undefined,
         categorieLibelle: o.categorieProjetId ? cats.find(c => c.id === o.categorieProjetId)?.libelle ?? '' : '',
         membresAttaches,
       };
@@ -135,7 +120,7 @@ export class ObjectifsComponent {
 
   ouvrirCreation(): void {
     this.objectifEnEdition = null;
-    this.form.reset({ libelle: '', montantCible: 0, echeance: null, compteId: null, actifId: null });
+    this.form.reset({ libelle: '', montantCible: 0, echeance: null, compteId: null });
     this.dialogVisible = true;
   }
 
@@ -146,21 +131,8 @@ export class ObjectifsComponent {
       montantCible: o.montantCible,
       echeance: o.echeance ? parseIsoDateLocal(o.echeance) : null,
       compteId: o.compteId ?? null,
-      actifId: o.actifId ?? null,
     });
     this.dialogVisible = true;
-  }
-
-  onCompteChange(event: any): void {
-    if (event.value) this.form.get('actifId')?.setValue(null);
-    this.form.get('compteId')?.markAsTouched();
-    this.form.get('actifId')?.markAsTouched();
-  }
-
-  onActifChange(event: any): void {
-    if (event.value) this.form.get('compteId')?.setValue(null);
-    this.form.get('compteId')?.markAsTouched();
-    this.form.get('actifId')?.markAsTouched();
   }
 
   enregistrer(): void {
@@ -169,8 +141,7 @@ export class ObjectifsComponent {
       libelle: v.libelle!,
       montantCible: v.montantCible!,
       echeance: v.echeance ? toIsoDateLocal(v.echeance as Date) : undefined,
-      compteId: v.compteId ?? undefined,
-      actifId: v.actifId ?? undefined,
+      compteId: v.compteId!,
     };
     this._crud.enregistrer(this.objectifEnEdition?.id ?? null, req, () => { this.dialogVisible = false; });
   }

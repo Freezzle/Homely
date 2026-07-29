@@ -1,7 +1,5 @@
 package ch.homely.projection;
 
-import ch.homely.actif.Actif;
-import ch.homely.actif.ActifRepository;
 import ch.homely.compte.Compte;
 import ch.homely.compte.CompteRepository;
 import ch.homely.moteur.*;
@@ -41,18 +39,15 @@ public class ProjectionService {
     private final PosteRepository          posteRepo;
     private final TauxChangeRepository     tauxRepo;
     private final CompteRepository         compteRepo;
-    private final ActifRepository          actifRepo;
     private final RepartitionPeriodeRepository periodeRepo;
 
     public ProjectionService(ScenarioRepository scenarioRepo, PosteRepository posteRepo,
                              TauxChangeRepository tauxRepo, CompteRepository compteRepo,
-                             ActifRepository actifRepo,
                              RepartitionPeriodeRepository periodeRepo) {
         this.scenarioRepo = scenarioRepo;
         this.posteRepo    = posteRepo;
         this.tauxRepo     = tauxRepo;
         this.compteRepo   = compteRepo;
-        this.actifRepo    = actifRepo;
         this.periodeRepo  = periodeRepo;
     }
 

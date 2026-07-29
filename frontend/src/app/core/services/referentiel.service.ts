@@ -6,7 +6,6 @@ import {
   MembreDto, MembreRequest,
   CompteDto, CompteRequest,
   CategorieDto, CategorieRequest, TypeCategorie,
-  ActifDto, ActifRequest,
   TauxChangeDto, TauxChangeRequest,
 } from '../models/api.models';
 
@@ -14,8 +13,8 @@ import {
 
 /**
  * Base commune aux services REST référentiels dont le CRUD suit exactement le patron
- * `GET/POST/PUT/DELETE /api/foyers/{foyerId}/<ressource>[/{id}]` (ex. membres, comptes,
- * actifs). Mutualise ce squelette identique, auparavant recopié dans chaque service ;
+ * `GET/POST/PUT/DELETE /api/foyers/{foyerId}/<ressource>[/{id}]` (ex. membres, comptes).
+ * Mutualise ce squelette identique, auparavant recopié dans chaque service ;
  * les services aux besoins spécifiques (paramètres de requête, upsert...) restent
  * autonomes (voir `CategorieService`, `TauxChangeService`).
  */
@@ -57,11 +56,6 @@ export class MembreService extends RestCrudService<MembreDto, MembreRequest> {
 @Injectable({ providedIn: 'root' })
 export class CompteService extends RestCrudService<CompteDto, CompteRequest> {
   constructor(http: HttpClient) { super(http, 'comptes'); }
-}
-
-@Injectable({ providedIn: 'root' })
-export class ActifService extends RestCrudService<ActifDto, ActifRequest> {
-  constructor(http: HttpClient) { super(http, 'actifs'); }
 }
 
 @Injectable({ providedIn: 'root' })

@@ -11,7 +11,5 @@ public record ObjectifRequest(
         UUID categorieProjetId,
         @NotNull @DecimalMin("0.0") BigDecimal montantCible,
         LocalDate echeance,
-        /** exactement un des deux doit être renseigné */
-        UUID compteId,
-        UUID actifId
+        @NotNull UUID compteId
 ) {}

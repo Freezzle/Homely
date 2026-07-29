@@ -17,7 +17,7 @@
   - Revenus · Charges · Réserves
   - Scénarios
   - Objectifs
-  - Référentiels (Membres, Comptes, Catégories, Actifs, Taux de change)
+  - Référentiels (Membres, Comptes, Catégories, Taux de change)
   - Paramètres du foyer / Accès
   > ⚠️ Pas d'entrée « Patrimoine » ni « Comparaison de scénarios » dans le menu réel : ces
   > deux fonctionnalités ne sont pas implémentées côté frontend (voir §3.5 et docs/06
@@ -65,7 +65,7 @@ réactifs dans tous les composants abonnés.
   ├── /revenus | /charges | /reserves
   ├── /scenarios
   ├── /objectifs
-  ├── /referentiels/(membres|comptes|categories|actifs|taux)
+  ├── /referentiels/(membres|comptes|categories|taux)
   ├── /parametres
   └── /acces                            (indépendant de /parametres)
 ```
@@ -253,10 +253,9 @@ Composant unique `PostesListeComponent` paramétré par `type` via `input<TypePo
 ### 3.5 Patrimoine (net worth) — ⚠️ NON IMPLÉMENTÉ (spécification cible)
 
 > **État réel (2026) : cet écran n'existe pas** (pas de route `/patrimoine`, pas de
-> composant). Les `Actif` sont uniquement gérés en CRUD référentiel (§3.7). Ce qui suit
-> reste la **spécification cible**, dépendante de l'endpoint backend `projection/patrimoine`
-> lui-même non implémenté (voir [doc 04 §9.4](04-api-spec.md)) — voir backlog `docs/06`
-> tâche T8.4.
+> composant). Ce qui suit reste la **spécification cible**, dépendante de l'endpoint
+> backend `projection/patrimoine` lui-même non implémenté (voir
+> [doc 04 §9.4](04-api-spec.md)) — voir backlog `docs/06` tâche T8.4.
 
 **Endpoint cible** : `GET .../projection/patrimoine`
 
@@ -264,23 +263,21 @@ Composant unique `PostesListeComponent` paramétré par `type` via `input<TypePo
   - Ligne **Patrimoine net** (violet, `fill: true`).
   - Barres empilées par **compte** (palette de couleurs cyclique, `stack: 'comptes'`).
   - Axe Y formaté en compact.
-- **Cartes résumé** (3 cartes, dernière année) : Patrimoine net · Total comptes · Total
-  actifs.
+- **Cartes résumé** (2 cartes, dernière année) : Patrimoine net · Total comptes.
 - **Tableau évolution annuelle** (`p-table` scrollable) : colonnes Année · Patrimoine net
-  puis une colonne par compte puis une colonne par actif.
+  puis une colonne par compte.
 
 ### 3.6 Objectifs
 
-**Endpoints** : `GET/POST/PUT/DELETE .../objectifs`, `GET .../comptes`, `GET .../actifs`
+**Endpoints** : `GET/POST/PUT/DELETE .../objectifs`, `GET .../comptes`
 
 - Grille de **cartes** `p-card` (1 col mobile / 2 cols tablette / 3 cols desktop).
 - Chaque carte : libellé · échéance (`DateFrPipe`) · barre de progression `p-progressbar`
   (`valeur = progression × 100`) · pourcentage (`PctPipe`) · épargne requise/mois ·
-  tag compte ou actif lié (`p-tag`).
+  tag compte lié (`p-tag`).
 - **Formulaire** (dialog) :
   - Libellé (obligatoire) · Montant cible · Échéance (`p-datepicker`).
-  - **Compte lié** (`p-select`, `showClear`) et **Actif lié** (`p-select`, `showClear`)
-    en XOR : sélectionner l'un efface automatiquement l'autre (via `(onChange)` handlers).
+  - **Compte lié** (`p-select`, obligatoire).
 
 ### 3.7 Référentiels
 
@@ -305,14 +302,6 @@ Composant unique `PostesListeComponent` paramétré par `type` via `input<TypePo
 - Table : Libellé · Type de poste (filtrable) · Actif. *(tri automatique par type +
   libellé)*
 - Formulaire : libellé · type.
-
-**Actifs** :
-- Table : Libellé · Type · Valeur initiale · Taux croissance/an. *(tri automatique par
-  libellé)*
-- Types (enum `TypeActif`) : Compte épargne · 3ᵉ pilier · Investissement · Crypto ·
-  Immobilier · Véhicule · Autre.
-- Formulaire : libellé · type (défaut = Autre) · devise · valeur initiale · taux de
-  croissance (%/an, saisi en % et divisé par 100 à l'envoi).
 
 **Taux de change** :
 - Table : Devise · Taux vers devise de base.
@@ -395,7 +384,7 @@ Composant unique `PostesListeComponent` paramétré par `type` via `input<TypePo
 | Paramètres | Référentiels + Paramètres foyer + hypothèses de scénario |
 | Moteur | *(non exposé : calcul serveur)* — visible via projections/graphiques |
 | *(listes projets)* | Objectifs |
-| *(listes types actifs)* | ⚠️ Patrimoine — **non implémenté**, actifs en CRUD référentiel seulement (§3.5) |
+| *(listes types actifs)* | ⚠️ Patrimoine — **non implémenté** (§3.5) |
 
 ## 6. Tests frontend — état réel
 

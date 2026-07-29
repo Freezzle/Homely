@@ -1,6 +1,5 @@
 package ch.homely.foyer;
 
-import ch.homely.actif.ActifRepository;
 import ch.homely.commun.CodesErreur;
 import ch.homely.commun.ConflitException;
 import ch.homely.commun.RegleMetierException;
@@ -51,7 +50,6 @@ public class FoyerService {
     private final MultiTenantService multiTenant;
     private final CategorieRepository categorieRepo;
     private final CompteRepository compteRepo;
-    private final ActifRepository actifRepo;
     private final TauxChangeRepository tauxChangeRepo;
     private final ProjectionService projectionService;
 
@@ -63,7 +61,6 @@ public class FoyerService {
                         MultiTenantService multiTenant,
                         CategorieRepository categorieRepo,
                         CompteRepository compteRepo,
-                        ActifRepository actifRepo,
                         TauxChangeRepository tauxChangeRepo,
                         ProjectionService projectionService) {
         this.foyerRepo       = foyerRepo;
@@ -74,7 +71,6 @@ public class FoyerService {
         this.multiTenant     = multiTenant;
         this.categorieRepo   = categorieRepo;
         this.compteRepo      = compteRepo;
-        this.actifRepo       = actifRepo;
         this.tauxChangeRepo  = tauxChangeRepo;
         this.projectionService = projectionService;
     }
@@ -253,7 +249,6 @@ public class FoyerService {
         categorieRepo.deleteAllByFoyerId(foyerId);
         compteRepo.deleteAllByFoyerId(foyerId);
         membreRepo.deleteAllByFoyerId(foyerId);
-        actifRepo.deleteAllByFoyerId(foyerId);
         tauxChangeRepo.deleteAllByFoyerId(foyerId);
         accesRepo.deleteAllByFoyerId(foyerId);
 

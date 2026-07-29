@@ -40,7 +40,6 @@ ch.homely
 ├── membre/            # Membre
 ├── compte/            # Compte
 ├── categorie/         # Categorie
-├── actif/             # Actif
 ├── taux/              # TauxChange
 ├── scenario/          # Scenario, RepartitionPeriode (+RepartitionDefaut legacy), duplication
 ├── poste/             # Poste, RepartitionPoste, VentilationCompte, NaturePoste, révisions
@@ -158,16 +157,15 @@ src/app/
 └── features/
     ├── auth/            # login, register
     ├── foyer/           # foyer-creation (onboarding), foyer-liste
-    ├── referentiels/    # membres, comptes, categories, actifs, taux
+    ├── referentiels/    # membres, comptes, categories, taux
     ├── scenarios/       # scenarios-liste, repartition-periodes
     ├── postes/          # postes-liste (revenus/charges/réserves, même composant réutilisé)
     ├── dashboard/        # dashboard-annuel, dashboard-mensuel
     ├── objectifs/        # objectifs (cartes + progression)
     └── parametres/       # paramètres foyer, acces (gestion des invitations, OWNER)
 ```
-> ⚠️ Il n'existe **pas** de feature `patrimoine/` dédiée : les `Actif` sont gérés en CRUD
-> référentiel uniquement (`referentiels/actifs`), sans dashboard de patrimoine net
-> agrégé ni courbe net worth (voir docs/06 T8.4). Il n'existe pas non plus d'écran de
+> ⚠️ Il n'existe **pas** de feature `patrimoine/` dédiée : aucun dashboard de patrimoine
+> net agrégé ni courbe net worth (voir docs/06 T8.4). Il n'existe pas non plus d'écran de
 > comparaison de scénarios (voir docs/06 T8.5).
 
 ### 6.1 Couplage PrimeNG + Tailwind CSS v4 (intégration officielle)

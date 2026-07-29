@@ -101,7 +101,7 @@ Format des tâches : `T<epic>.<n>`.
 ## Jalon 3 — CRUD référentiels & scénarios
 
 ### E6 · Référentiels
-- [x] **T6.1** CRUD Membres, Comptes, Catégories, Actifs, TauxChange (scopés foyer).
+- [x] **T6.1** CRUD Membres, Comptes, Catégories, TauxChange (scopés foyer).
   *Accept.* : cohérence multi-tenant vérifiée ; suppression d'un membre référencé refusée.
 - [~] **T6.2** Seed `V2__seed_demo.sql` (foyer Charmillot complet, [doc 02 §7](02-domain-and-data-model.md)).
   *Accept.* : après seed, la projection annuelle 2026 = vecteurs T2 (**critère fort**).
@@ -115,8 +115,11 @@ Format des tâches : `T<epic>.<n>`.
   `:definir-reference`. *Accept.* : le duplicata est indépendant de l'original.
   *Vérifié dans le code* : `ScenarioService.dupliquer()` / `.definirReference()`,
   endpoints `POST .../scenarios/{id}:dupliquer` et `:definir-reference`.
-- [x] **T7.4** CRUD Objectif (support compte XOR actif) + calculs [doc 01 §10](01-business-rules-engine.md).
+- [x] **T7.4** CRUD Objectif (compte obligatoire) + calculs [doc 01 §10](01-business-rules-engine.md).
   *Accept.* : progression/épargne requise/date prévue correctes sur un cas de test.
+  **⚠️ Mis à jour** : la notion d'actif patrimonial (support XOR compte/actif) a été
+  **supprimée** (migration `V15__suppression_actif.sql`) ; un objectif référence
+  désormais obligatoirement un compte.
 - [x] **T7.5** Nature de poste (`EFFECTIF`/`ESTIMATION`) + migration `V5__poste_nature.sql`.
   *Accept.* : valeur par défaut `EFFECTIF`, modifiable en création/édition de poste.
 - [x] **T7.6** Pourcentage d'estimation (`estimPourcentage`) + migration `V10__poste_estim_pourcentage.sql`.
@@ -162,8 +165,7 @@ Format des tâches : `T<epic>.<n>`.
 - [ ] **T8.4** `projection/patrimoine` (net worth, [doc 01 §9](01-business-rules-engine.md)). *Accept.* : sur un
   cas jouet, soldes projetés = calcul manuel (transfert réserve source→destination géré).
   **⚠️ Corrigé par cette cartographie : aucun endpoint, service ni DTO de ce nom n'existe
-  dans le code actuel (`ch.homely.projection`) ; seuls les `Actif` sont gérés en CRUD
-  référentiel. Repassé de `[x]` à `[ ]`.** Pas d'écran frontend associé non plus (voir
+  dans le code actuel (`ch.homely.projection`). Repassé de `[x]` à `[ ]`.** Pas d'écran frontend associé non plus (voir
   T10.6).
 - [ ] **T8.5** `projection/comparaison` multi-scénarios. *Accept.* : séries alignées par
   année pour 2+ scénarios.
@@ -200,11 +202,11 @@ Format des tâches : `T<epic>.<n>`.
   synthèse par membre, suppression des visuels peu pertinents).
 - [x] **T10.10** UX dialog poste (nature, affichage conditionnel mode/moment,
   organisation des champs et icônes de mode en liste).
-- [ ] **T10.6** **Patrimoine** : courbe net worth + répartition + tableau comptes/actifs.
+- [ ] **T10.6** **Patrimoine** : courbe net worth + répartition + tableau comptes.
   **⚠️ Corrigé par cette cartographie : aucun écran/route/composant « patrimoine »
   n'existe dans le frontend actuel** (dépend de l'endpoint backend T8.4, lui-même non
-  implémenté). Les `Actif` sont uniquement gérés en CRUD référentiel
-  (`referentiels/actifs`). Repassé de `[x]` à `[ ]`.
+  implémenté). La notion d'actif patrimonial a été **supprimée** (voir T7.4) ; ce module
+  ne portera donc que sur les comptes. Repassé de `[x]` à `[ ]`.
 - [x] **T10.7** **Objectifs** : cartes + barres de progression + formulaire.
 
 ---

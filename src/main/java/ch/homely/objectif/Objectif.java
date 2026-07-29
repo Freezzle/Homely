@@ -1,6 +1,5 @@
 package ch.homely.objectif;
 
-import ch.homely.actif.Actif;
 import ch.homely.categorie.Categorie;
 import ch.homely.compte.Compte;
 import ch.homely.scenario.Scenario;
@@ -44,14 +43,10 @@ public class Objectif {
     @Column
     private LocalDate echeance;
 
-    /** Support de l'objectif : exactement un de compteId/actifId doit être renseigné. */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "compte_id")
+    /** Support de l'objectif. */
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "compte_id", nullable = false)
     private Compte compte;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "actif_id")
-    private Actif actif;
 
     @CreatedDate
     @Column(name = "date_creation", nullable = false, updatable = false)

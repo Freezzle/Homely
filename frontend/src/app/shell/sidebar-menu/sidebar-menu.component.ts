@@ -69,7 +69,6 @@ export class SidebarMenuComponent {
               { label: this.t.nav.membres,    icon: 'pi pi-users',       route: `${base}/referentiels/membres` },
               { label: this.t.nav.comptes,    icon: 'pi pi-credit-card', route: `${base}/referentiels/comptes` },
               { label: this.t.nav.categories, icon: 'pi pi-tags',        route: `${base}/referentiels/categories` },
-              { label: this.t.nav.actifs,     icon: 'pi pi-chart-line',  route: `${base}/referentiels/actifs` },
               { label: this.t.nav.taux,       icon: 'pi pi-dollar',      route: `${base}/referentiels/taux` },
             ],
           },

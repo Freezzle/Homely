@@ -52,10 +52,6 @@ export type TypeCategorie = 'REVENU' | 'CHARGE' | 'RESERVE' | 'PROJET';
 export interface CategorieDto { id: string; libelle: string; typePoste: TypeCategorie; actif: boolean; }
 export interface CategorieRequest { libelle: string; typePoste: TypeCategorie; }
 
-export type TypeActif = 'COMPTE_EPARGNE' | 'TROISIEME_PILIER' | 'INVESTISSEMENT' | 'CRYPTO' | 'IMMOBILIER' | 'VEHICULE' | 'AUTRE';
-export interface ActifDto { id: string; libelle: string; typeActif: TypeActif; soldeInitial: number; devise: string; tauxCroissanceAnnuel: number; actif: boolean; }
-export interface ActifRequest { libelle: string; typeActif: TypeActif; soldeInitial: number; devise?: string; tauxCroissanceAnnuel: number; }
-
 export interface TauxChangeDto { id: string; devise: string; tauxVersBase: number; }
 export interface TauxChangeRequest { devise: string; tauxVersBase: number; }
 
@@ -134,13 +130,13 @@ export interface PosteDecalerDateEffetResponse {
 export interface ObjectifDto {
   id: string; libelle: string; categorieProjetId?: string;
   montantCible: number; echeance?: string;
-  compteId?: string; actifId?: string;
+  compteId?: string;
   soldeActuel: number; progression: number; epargneRequise: number;
 }
 export interface ObjectifRequest {
   libelle: string; categorieProjetId?: string;
   montantCible: number; echeance?: string;
-  compteId?: string; actifId?: string;
+  compteId: string;
 }
 
 // ── Projection ────────────────────────────────────────────────────────────────

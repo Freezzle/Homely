@@ -1,11 +1,7 @@
 package ch.homely.objectif;
 
-import ch.homely.actif.Actif;
-import ch.homely.actif.ActifRepository;
 import ch.homely.categorie.Categorie;
 import ch.homely.categorie.CategorieRepository;
-import ch.homely.commun.CodesErreur;
-import ch.homely.commun.RegleMetierException;
 import ch.homely.commun.RessourceIntrouvableException;
 import ch.homely.compte.Compte;
 import ch.homely.compte.CompteRepository;
@@ -26,7 +22,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * T7.4 — CRUD Objectif (support compte XOR actif) + calculs doc 01 §10.
+ * T7.4 — CRUD Objectif (support compte) + calculs doc 01 §10.
  * Calculs : progression, épargne requise, date prévue.
  */
 @Service
@@ -36,17 +32,15 @@ public class ObjectifService {
     private final ObjectifRepository objectifRepo;
     private final ScenarioRepository scenarioRepo;
     private final CompteRepository compteRepo;
-    private final ActifRepository actifRepo;
     private final CategorieRepository categorieRepo;
     private final MultiTenantService multiTenant;
 
     public ObjectifService(ObjectifRepository objectifRepo, ScenarioRepository scenarioRepo,
-                           CompteRepository compteRepo, ActifRepository actifRepo,
+                           CompteRepository compteRepo,
                            CategorieRepository categorieRepo, MultiTenantService multiTenant) {
         this.objectifRepo  = objectifRepo;
         this.scenarioRepo  = scenarioRepo;
         this.compteRepo    = compteRepo;
-        this.actifRepo     = actifRepo;
         this.categorieRepo = categorieRepo;
         this.multiTenant   = multiTenant;
     }
@@ -69,7 +63,6 @@ public class ObjectifService {
     public ObjectifDto creer(UUID foyerId, UUID scenarioId, ObjectifRequest req) {
         multiTenant.verifierAcces(foyerId, RoleFoyer.EDITOR);
         Scenario scenario = verifierScenario(foyerId, scenarioId);
-        validerSupport(req);
 
         Objectif o = new Objectif();
         o.setScenario(scenario);
@@ -81,7 +74,6 @@ public class ObjectifService {
                                 ObjectifRequest req) {
         multiTenant.verifierAcces(foyerId, RoleFoyer.EDITOR);
         verifierScenario(foyerId, scenarioId);
-        validerSupport(req);
         Objectif o = trouver(scenarioId, objectifId);
         appliquer(o, req, foyerId);
         return toDto(objectifRepo.save(o));
@@ -109,29 +101,10 @@ public class ObjectifService {
             o.setCategorieProjet(null);
         }
 
-        if (req.compteId() != null) {
-            Compte c = compteRepo.findByIdAndFoyerId(req.compteId(), foyerId)
-                    .orElseThrow(() -> new RessourceIntrouvableException(
-                            "Compte introuvable : " + req.compteId()));
-            o.setCompte(c);
-            o.setActif(null);
-        } else {
-            Actif a = actifRepo.findByIdAndFoyerId(req.actifId(), foyerId)
-                    .orElseThrow(() -> new RessourceIntrouvableException(
-                            "Actif introuvable : " + req.actifId()));
-            o.setActif(a);
-            o.setCompte(null);
-        }
-    }
-
-    /** Exactement un de compteId / actifId doit être renseigné. */
-    private void validerSupport(ObjectifRequest req) {
-        boolean aCompte = req.compteId() != null;
-        boolean aActif  = req.actifId()  != null;
-        if (aCompte == aActif) { // les deux nuls ou les deux présents
-            throw new RegleMetierException(CodesErreur.SUPPORT_OBJECTIF_INVALIDE,
-                    "Un objectif doit référencer exactement un compte OU un actif.");
-        }
+        Compte c = compteRepo.findByIdAndFoyerId(req.compteId(), foyerId)
+                .orElseThrow(() -> new RessourceIntrouvableException(
+                        "Compte introuvable : " + req.compteId()));
+        o.setCompte(c);
     }
 
     private Scenario verifierScenario(UUID foyerId, UUID scenarioId) {
@@ -148,21 +121,17 @@ public class ObjectifService {
 
     /**
      * Calcule et retourne le DTO avec les champs dérivés (doc 01 §10).
-     * soldeActuel = soldeInitial du compte/actif (valeur de référence du seed).
+     * soldeActuel = soldeInitial du compte (valeur de référence du seed).
      * progression = min(1, soldeActuel / montantCible).
      * epargneRequise = (montantCible - soldeActuel) / moisRestants  (0 si dépassé).
      */
     private ObjectifDto toDto(Objectif o) {
         BigDecimal soldeActuel = BigDecimal.ZERO;
         UUID compteId = null;
-        UUID actifId  = null;
 
         if (o.getCompte() != null) {
             compteId    = o.getCompte().getId();
             soldeActuel = o.getCompte().getSoldeInitial();
-        } else if (o.getActif() != null) {
-            actifId     = o.getActif().getId();
-            soldeActuel = o.getActif().getSoldeInitial();
         }
 
         BigDecimal cible = o.getMontantCible();
@@ -185,7 +154,7 @@ public class ObjectifService {
                 o.getId(), o.getLibelle(),
                 o.getCategorieProjet() != null ? o.getCategorieProjet().getId() : null,
                 cible, o.getEcheance(),
-                compteId, actifId,
+                compteId,
                 soldeActuel.setScale(2, RoundingMode.HALF_UP),
                 progression.setScale(4, RoundingMode.HALF_UP),
                 epargneRequise

@@ -77,10 +77,6 @@ export const routes: Routes = [
             loadComponent: () => import('./features/referentiels/categories/categories.component').then(m => m.CategoriesComponent),
           },
           {
-            path: 'referentiels/actifs',
-            loadComponent: () => import('./features/referentiels/actifs/actifs.component').then(m => m.ActifsComponent),
-          },
-          {
             path: 'referentiels/taux',
             loadComponent: () => import('./features/referentiels/taux/taux.component').then(m => m.TauxComponent),
           },

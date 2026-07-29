@@ -41,11 +41,9 @@ test dérivés des vraies données** y figurent : le moteur DOIT les reproduire 
   (imputations non lissées au mois d'échéance).
 
 ### Modules fonctionnels de la V1
-- **Patrimoine / net worth** : comptes et actifs (3ᵉ pilier, investissements, crypto,
-  immobilier, véhicule…), soldes initiaux, projection de leur évolution.
 - **Multi-scénarios (what-if)** : chaque scénario est un jeu complet d'hypothèses + de
   postes ; duplication et comparaison côte à côte.
-- **Objectifs / projets d'épargne** : montant cible, échéance, compte/actif rattaché,
+- **Objectifs / projets d'épargne** : montant cible, échéance, compte rattaché,
   suivi de progression.
 
 ## 3. Stack technique
@@ -167,7 +165,6 @@ Utiliser **ces termes** (FR) de façon cohérente dans le code, les entités et 
 | **Type de poste** | REVENU \| CHARGE \| RESERVE | `TypePoste` |
 | **Catégorie** | Classification d'un poste (ex. Logement, Salaire, 3ᵉ pilier) | `Categorie` |
 | **Compte** | Compte bancaire du foyer (courant, épargne, en commun…) | `Compte` |
-| **Actif** | Élément de patrimoine hors compte courant (3ᵉ pilier, crypto, immobilier…) | `Actif` |
 | **Périodicité** | Longueur du cycle en **mois** (1 = mensuel, 3 = trimestriel, 12 = annuel…) | `periodiciteMois` |
 | **Mode** | `MENSUALISE` (lissé) \| `PERIODIQUE` (montant plein sur un mois du cycle) | `ModeComptabilisation` |
 | **Réception/Paiement** | Pour un poste périodique : `DEBUT_PERIODE` \| `FIN_PERIODE` | `MomentPeriode` |
@@ -180,7 +177,7 @@ Utiliser **ces termes** (FR) de façon cohérente dans le code, les entités et 
 | **Contribution** | Montant d'un poste imputé à un mois donné (après moteur) | `contribution` |
 | **Solde disponible** | `Revenus − Charges − Réserves` pour un mois/une année | `soldeDisponible` |
 | **Trésorerie chaînée** | Solde de trésorerie de début d'année = tréso initiale + cumul des soldes annuels précédents | `tresorerieDebutAnnee` |
-| **Objectif** | Cible d'épargne (montant, échéance, compte/actif rattaché) | `Objectif` |
+| **Objectif** | Cible d'épargne (montant, échéance, compte rattaché) | `Objectif` |
 
 ## 6. Données d'origine (contexte)
 

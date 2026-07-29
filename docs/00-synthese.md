@@ -21,14 +21,14 @@ gestion du réalisé/import bancaire. Détails : [`README.md`](README.md) §1-2.
 |---|---|---|
 | **Authentification** (inscription, connexion, JWT, rôles) | ✅ Complet | Access 15 min + refresh 7 j (cookie httpOnly), BCrypt |
 | **Foyers & accès multi-utilisateurs** | ✅ Complet | Rôles OWNER/EDITOR/VIEWER, onboarding (membres + scénario de référence auto-créés) |
-| **Référentiels** (Membres, Comptes, Catégories, Actifs, Taux de change) | ✅ Complet | Comptes ↔ Membres en N-N (`compte_membre`) ; tri désormais automatique (colonnes `ordre` supprimées en V13) |
+| **Référentiels** (Membres, Comptes, Catégories, Taux de change) | ✅ Complet | Comptes ↔ Membres en N-N (`compte_membre`) ; tri désormais automatique (colonnes `ordre` supprimées en V13) |
 | **Scénarios (what-if)** | ✅ Complet | CRUD, duplication profonde (`:dupliquer`), définition de référence (`:definir-reference`) |
 | **Périodes de répartition** (prorata variable dans le temps) | ✅ Complet | `RepartitionPeriode`/`RepartitionPeriodePart`, classification `AUTO`/`REVERSE_AUTO`/`CUSTOM` par poste |
 | **Postes budgétaires** (revenus/charges/réserves) | ✅ Complet | CRUD + cycle de vie avancé : révision de montant chaînée (`posteOrigineId`), annulation, décalage de fenêtre, clôture/réactivation |
-| **Objectifs d'épargne** | ✅ Complet | Compte XOR actif, progression/épargne requise calculées |
+| **Objectifs d'épargne** | ✅ Complet | Compte obligatoire, progression/épargne requise calculées |
 | **Moteur de calcul** (lissage, périodicité, fenêtres, prorata N membres, multi-devises, trésorerie chaînée) | ✅ Complet | Module `moteur` pur (aucune dépendance Spring/JPA/horloge), fidèle à [doc 01](01-business-rules-engine.md) |
 | **Projections** (annuelle, mensuelle, trésorerie, aperçu poste) | ✅ Complet | Endpoints réels : `annuelle`, `annuelle-complete`, `tresorerie`, `mensuelle`, `postes/{id}/apercu` |
-| **Patrimoine / net worth** | ❌ **Non implémenté** | Actifs gérés en CRUD référentiel uniquement ; aucun endpoint/service de calcul de patrimoine net, aucun écran dédié |
+| **Patrimoine / net worth** | ❌ **Non implémenté** | Aucune notion d'actif patrimonial (supprimée) ; aucun endpoint/service de calcul de patrimoine net, aucun écran dédié |
 | **Comparaison de scénarios** | ❌ **Non implémenté** | Aucun endpoint ni écran côte-à-côte multi-scénarios |
 | **Pagination/tri des listes API** | ❌ **Non implémenté** | Toutes les listes renvoient un tableau JSON brut |
 | **CI/CD (GitHub Actions)** | ❌ **Non implémenté** | Pas de `.github/workflows/*.yml` |
@@ -48,13 +48,12 @@ ch.homely
 ├── membre/         Membre + CRUD
 ├── compte/         Compte + compte_membre (N-N) + CRUD
 ├── categorie/      Categorie + CRUD (typePoste)
-├── actif/          Actif (typeActif) + CRUD — PAS de projection patrimoniale
 ├── taux/           TauxChange + CRUD
 ├── scenario/       Scenario, RepartitionPeriode/Part, RepartitionDefaut (legacy),
 │                   ScenarioService (dupliquer/definirReference), RepartitionPeriodeController
 ├── poste/          Poste (+ posteOrigineId), RepartitionPoste, VentilationCompte,
 │                   PosteValidator, PosteService (reviser/annuler/decaler/cloturer/reactiver)
-├── objectif/       Objectif (compte XOR actif) + calculs progression/épargne requise
+├── objectif/       Objectif (compte obligatoire) + calculs progression/épargne requise
 ├── moteur/         ★ MoteurCalcul (pur, records immuables) — cœur du calcul budgétaire
 └── projection/     ProjectionService (cache Caffeine) + ProjectionController +
                     ProjectionExtraController (comparaison/aperçu — comparaison NON implémentée)
@@ -77,6 +76,8 @@ ch.homely
 | V11 | `poste.categorie_id` en `ON DELETE SET NULL` |
 | V12 | `poste.poste_origine_id` (chaînage des révisions) |
 | V13 | Suppression de la colonne `ordre` sur membre/compte/categorie/actif |
+| V14 | Suppression de la table legacy `repartition_defaut` |
+| V15 | Suppression de la notion d'actif patrimonial (table `actif`, `objectif.actif_id`) ; `objectif.compte_id` devient obligatoire |
 
 Détails endpoints : [doc 04](04-api-spec.md). Détails schéma : [doc 02](02-domain-and-data-model.md).
 
@@ -91,7 +92,7 @@ frontend/src/app
 └── features/
     ├── auth/            login, register
     ├── foyer/           foyer-creation (onboarding), foyer-liste
-    ├── referentiels/     membres, comptes, categories, actifs, taux
+    ├── referentiels/     membres, comptes, categories, taux
     ├── scenarios/        scenarios-liste, repartition-periodes
     ├── postes/           postes-liste (revenus/charges/réserves — composant unique paramétré)
     ├── dashboard/         dashboard-annuel, dashboard-mensuel

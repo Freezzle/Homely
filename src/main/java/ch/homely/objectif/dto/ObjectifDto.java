@@ -11,8 +11,7 @@ public record ObjectifDto(
         BigDecimal montantCible,
         LocalDate echeance,
         UUID compteId,
-        UUID actifId,
-        /** Solde actuel du compte ou actif (projeté à la date courante). */
+        /** Solde actuel du compte (projeté à la date courante). */
         BigDecimal soldeActuel,
         /** Progression en pourcentage [0..1]. */
         BigDecimal progression,

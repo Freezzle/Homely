@@ -24,7 +24,6 @@
     "referentiels": "Référentiels",
     "comptes": "Comptes",
     "categories": "Catégories",
-    "actifs": "Actifs",
     "taux": "Taux de change",
     "membres": "Membres",
     "parametres": "Paramètres",
@@ -405,23 +404,6 @@
         "PROJET": "Projet"
       }
     },
-    "actif": {
-      "titre": "Actifs patrimoniaux",
-      "libelle": "Libellé",
-      "typeActif": "Type",
-      "soldeInitial": "Valeur initiale",
-      "devise": "Devise",
-      "tauxCroissance": "Taux croissance/an (%)",
-      "types": {
-        "COMPTE_EPARGNE": "Compte épargne",
-        "TROISIEME_PILIER": "3ᵉ pilier",
-        "INVESTISSEMENT": "Investissement",
-        "CRYPTO": "Crypto",
-        "IMMOBILIER": "Immobilier",
-        "VEHICULE": "Véhicule",
-        "AUTRE": "Autre"
-      }
-    },
     "taux": {
       "titre": "Taux de change",
       "devise": "Devise",
@@ -459,7 +441,6 @@
     "montantCible": "Montant cible",
     "echeance": "Échéance",
     "compte": "Compte lié",
-    "actif": "Actif lié",
     "progression": "Progression",
     "epargneRequise": "Épargne requise/mois",
     "soldeActuel": "Solde actuel",
@@ -475,7 +456,7 @@
     "parMois": "/mois",
     "termine": "Terminé",
     "jalon": "Jalon",
-    "supportRequis": "Sélectionnez exactement un compte OU un actif lié (pas les deux, pas aucun).",
+    "supportRequis": "Sélectionnez un compte lié.",
     "actions": {
       "recalibrer": "Recalibrer",
       "verserExtra": "Verser un extra",

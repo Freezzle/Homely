@@ -255,10 +255,9 @@ montantCompteMembre(compte, m, T) =
 ## 9. Extension patrimoine (net worth) — sémantique à respecter
 
 Module **nouveau** (absent de l'Excel). Le principe reprend la trésorerie chaînée mais
-**par compte/actif** :
+**par compte** :
 
-- Chaque **compte** et **actif** a un `soldeInitial` (au 1ᵉʳ janvier de `Y0`) et un
-  `tauxCroissanceAnnuel` optionnel (appréciation, ex. investissements/3ᵉ pilier).
+- Chaque **compte** a un `soldeInitial` (au 1ᵉʳ janvier de `Y0`).
 - **Flux mensuel imputé à un compte** dérivé des postes :
   - REVENU → `+ partMembre` sur le compte du membre.
   - CHARGE → `− partMembre` sur le compte du membre.
@@ -267,8 +266,8 @@ Module **nouveau** (absent de l'Excel). Le principe reprend la trésorerie chaî
     Le compte de débit n'est plus configurable au niveau du poste ; il est entièrement
     porté par la ventilation du membre.
 - **Solde projeté** d'un compte au mois `t` = `soldeInitial` + cumul des flux imputés
-  jusqu'à `t` + appréciation prorata temporis.
-- **Net worth** au mois `t` = Σ (soldes projetés de tous les comptes + actifs).
+  jusqu'à `t`.
+- **Net worth** au mois `t` = Σ (soldes projetés de tous les comptes).
 
 > ⚠️ **Écart assumé vs Excel** : l'Excel ne modélisait que le *décaissement* des
 > réserves (elles réduisent le solde disponible) sans créditer le compte d'épargne. Le
@@ -279,10 +278,10 @@ Module **nouveau** (absent de l'Excel). Le principe reprend la trésorerie chaî
 
 ## 10. Objectifs / projets d'épargne — calculs
 
-Un objectif = `{montantCible, echeance, compteOuActifRattache, membre(s)}`.
+Un objectif = `{montantCible, echeance, compteRattache, membre(s)}`.
 
 ```
-soldeCourantObjectif = solde projeté (§9) du compte/actif rattaché à la date du jour
+soldeCourantObjectif = solde projeté (§9) du compte rattaché à la date du jour
 progressionPct       = min(100, soldeCourantObjectif / montantCible × 100)
 moisRestants         = nb de mois entre aujourd'hui et echeance
 epargneMensuelleRequise = max(0, (montantCible - soldeCourantObjectif) / moisRestants)

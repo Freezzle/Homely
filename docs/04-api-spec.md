@@ -38,7 +38,7 @@
 }
 ```
 Codes métier au moins : `REPARTITION_INVALIDE`, `SCENARIO_REFERENCE_UNIQUE`,
-`SUPPORT_OBJECTIF_INVALIDE`, `MEMBRE_REFERENCE_SUPPRESSION`, `DEVISE_INCONNUE`,
+`MEMBRE_REFERENCE_SUPPRESSION`, `DEVISE_INCONNUE`,
 `ACCES_FOYER_REFUSE`, `RESSOURCE_INTROUVABLE`, `FOYER_MEMBRES_INVALIDES`,
 `COMPTE_SANS_MEMBRE` (création/modification d'un compte sans membre actif → 422),
 `VENTILATION_COMPTE_NON_RATTACHE` (un membre tente de ventiler vers un compte qui ne lui est pas rattaché → 422),
@@ -107,7 +107,7 @@ sont accessibles via les endpoints référentiels et scénarios classiques.
 
 ## 5. Référentiels (niveau foyer)
 
-CRUD standard pour **Membres**, **Comptes**, **Catégories**, **Actifs**, **TauxChange**.
+CRUD standard pour **Membres**, **Comptes**, **Catégories**, **TauxChange**.
 Motif d'URL : `/api/foyers/{foyerId}/{ressource}` (+ `/{id}` pour détail/modif/suppr).
 
 - `GET /api/foyers/{foyerId}/membres` → `[{id, nom, couleur, ordre, actif}]`
@@ -115,8 +115,6 @@ Motif d'URL : `/api/foyers/{foyerId}/{ressource}` (+ `/{id}` pour détail/modif/
 - `POST /api/foyers/{foyerId}/comptes` → corps : `{libelle, soldeInitial, devise?, ordre, membreIds:[uuid]}` — **au moins un membreId actif requis** ; sinon 422 `COMPTE_SANS_MEMBRE`
 - `PUT /api/foyers/{foyerId}/comptes/{id}` → même corps ; les membres inactifs déjà rattachés sont **conservés** côté serveur indépendamment du payload
 - `GET /api/foyers/{foyerId}/categories?typePoste=CHARGE` → filtrable par type
-- `GET /api/foyers/{foyerId}/actifs` → `[{id, libelle, typeActif, soldeInitial, devise, tauxCroissanceAnnuel, ordre, actif}]`
-  - `typeActif` ∈ `COMPTE_EPARGNE | TROISIEME_PILIER | INVESTISSEMENT | CRYPTO | IMMOBILIER | VEHICULE | AUTRE`
 - `GET /api/foyers/{foyerId}/taux-change` → `[{id, devise, tauxVersBase}]`
 
 ## 6. Scénarios
@@ -297,13 +295,13 @@ comprendre le lissage mensualisé vs le périodique) :
 ## 8. Objectifs (niveau scénario)
 
 `/api/foyers/{foyerId}/scenarios/{scenarioId}/objectifs` — CRUD.
-Corps : `{libelle, categorieProjetId?, montantCible, echeance?, compteId?, actifId?}`
-(exactement un support). Réponse enrichie du calcul (doc 1 §10) :
+Corps : `{libelle, categorieProjetId?, montantCible, echeance?, compteId}`
+(compte obligatoire). Réponse enrichie du calcul (doc 1 §10) :
 
 ```json
 {
   "id": "…", "libelle": "Vacances 2027", "montantCible": 8000, "echeance": "2027-06-30",
-  "compteId": "…", "actifId": null,
+  "compteId": "…",
   "soldeActuel": 3200.00,
   "progression": 0.40,
   "epargneRequise": 480.00
@@ -311,7 +309,7 @@ Corps : `{libelle, categorieProjetId?, montantCible, echeance?, compteId?, actif
 ```
 
 Champs calculés :
-- `soldeActuel` : solde courant du compte ou de l'actif lié.
+- `soldeActuel` : solde courant du compte lié.
 - `progression` : `soldeActuel / montantCible` ∈ [0, 1].
 - `epargneRequise` : épargne mensuelle nécessaire pour atteindre `montantCible` avant
   `echeance` (0 si déjà atteint ou si `echeance` est null).
@@ -414,10 +412,9 @@ horizontal dans le dashboard mensuel).
 
 ### 9.4 Patrimoine / net worth — ⚠️ NON IMPLÉMENTÉ (spécification cible)
 
-> **État réel (2026) : cet endpoint n'existe pas dans le code.** Les `Actif` sont bien
-> gérés en CRUD référentiel (§5), mais aucun service/contrôleur ne calcule ni n'expose de
-> patrimoine net agrégé (comptes + actifs projetés). Ce qui suit reste la **spécification
-> cible** à implémenter (voir backlog `docs/06`, tâche T8.4).
+> **État réel (2026) : cet endpoint n'existe pas dans le code.** Aucun service/contrôleur
+> ne calcule ni n'expose de patrimoine net agrégé (comptes projetés). Ce qui suit reste
+> la **spécification cible** à implémenter (voir backlog `docs/06`, tâche T8.4).
 
 `GET …/scenarios/{scenarioId}/projection/patrimoine` (cible) :
 ```json
@@ -429,10 +426,6 @@ horizontal dans le dashboard mensuel).
       "soldesComptes": {
         "{compteId}": 12500.00,
         "{compteId}": 8000.00
-      },
-      "soldesActifs": {
-        "{actifId}": 95000.00,
-        "{actifId}": 29500.00
       }
     },
     "…"
@@ -440,8 +433,7 @@ horizontal dans le dashboard mensuel).
 }
 ```
 
-`patrimoineNet` = somme des `soldesComptes` + somme des `soldesActifs`. Les actifs sont
-projetés en appliquant `tauxCroissanceAnnuel` capitalisé année par année.
+`patrimoineNet` = somme des `soldesComptes`.
 
 ### 9.5 Comparaison de scénarios (what-if) — ⚠️ NON IMPLÉMENTÉ (spécification cible)
 

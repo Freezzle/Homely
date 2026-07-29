@@ -14,7 +14,7 @@ Utilisateur ──< AccesFoyer >── Foyer
                                  │
       ┌──────────────┬───────────┼────────────┬───────────────┐
       │              │           │            │               │
-   Membre        Compte      Categorie      Actif        TauxChange
+   Membre        Compte      Categorie      TauxChange
       │
       └──── compte_membre (N-N)
               │
@@ -29,7 +29,7 @@ Utilisateur ──< AccesFoyer >── Foyer
 ```
 
 **Niveau Foyer (référentiels partagés entre scénarios)** : Membre, Compte, Categorie,
-Actif, TauxChange, deviseBase.
+TauxChange, deviseBase.
 **Niveau Scénario (hypothèses variables)** : année de départ, trésorerie initiale,
 horizon, périodes de répartition, Postes, Objectifs.
 
@@ -91,12 +91,6 @@ CHARGE | RESERVE | PROJET), `actif`. Les catégories `PROJET` servent aux object
 Depuis V11, `poste.categorieId` référence `Categorie` en `ON DELETE SET NULL` : supprimer
 une catégorie ne bloque plus et ne supprime pas les postes qui l'utilisaient (ils sont
 simplement dissociés).
-
-### Actif
-Élément de patrimoine hors compte courant. Champs : `id`, `foyerId`, `libelle`,
-`typeActif` (voir enum), `soldeInitial`, `devise`, `tauxCroissanceAnnuel` (décimal, ex.
-0,03 pour +3 %/an ; défaut 0), `actif`. *(la colonne `ordre` a été supprimée en V13 ; tri
-automatique par libellé.)*
 
 ### TauxChange
 Taux de conversion prévisionnel vers la devise de base. Champs : `id`, `foyerId`,
@@ -176,8 +170,7 @@ Le membre ne peut sélectionner que les comptes auxquels il est rattaché
 ### Objectif
 Cible d'épargne. Champs : `id`, `scenarioId`, `libelle`, `categorieProjetId` (FK
 Categorie type PROJET, null), `montantCible` (décimal), `echeance` (date), `compteId`
-(null), `actifId` (null), `dateCreation`. Exactement un de `compteId` / `actifId`
-renseigné (le support de l'objectif).
+(obligatoire, le support de l'objectif), `dateCreation`.
 
 ## 3. Énumérations
 
@@ -189,15 +182,13 @@ MomentPeriode        = DEBUT_PERIODE | FIN_PERIODE
 NaturePoste          = EFFECTIF | ESTIMATION
 TypeRepartition      = AUTO | REVERSE_AUTO | CUSTOM
 RoleFoyer            = OWNER | EDITOR | VIEWER
-TypeActif            = COMPTE_EPARGNE | TROISIEME_PILIER | INVESTISSEMENT | CRYPTO
-                     | IMMOBILIER | VEHICULE | AUTRE
 ```
 
 Correspondance des libellés Excel → enums (à respecter dans le seed) :
 - Mode : `mensualisé` → `MENSUALISE`, `périodique` → `PERIODIQUE`.
 - Moment : `début périodicité` → `DEBUT_PERIODE`, `fin périodicité` → `FIN_PERIODE`.
 
-## 4. Schéma SQL (PostgreSQL) — état consolidé après V1→V13
+## 4. Schéma SQL (PostgreSQL) — état consolidé après V1→V15
 
 > Conventions : `snake_case`, PK `uuid` (`gen_random_uuid()`), montants `NUMERIC(15,2)`,
 > taux `NUMERIC(10,6)`, `TIMESTAMPTZ` pour les dates système, `DATE` pour les dates métier.
@@ -290,24 +281,6 @@ CREATE TABLE categorie (
   actif      BOOLEAN      NOT NULL DEFAULT TRUE
 );
 CREATE INDEX idx_categorie_foyer ON categorie (foyer_id, type_poste);
-
--- ── Actifs patrimoniaux ──────────────────────────────────────────────────────
--- Note : la colonne `ordre` a été supprimée en V13 (tri auto par libellé).
-CREATE TABLE actif (
-  id                     UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
-  foyer_id               UUID          NOT NULL REFERENCES foyer(id) ON DELETE CASCADE,
-  libelle                VARCHAR(120)  NOT NULL,
-  type_actif             VARCHAR(24)   NOT NULL DEFAULT 'AUTRE'
-                         CHECK (type_actif IN (
-                           'COMPTE_EPARGNE','TROISIEME_PILIER','INVESTISSEMENT',
-                           'CRYPTO','IMMOBILIER','VEHICULE','AUTRE'
-                         )),
-  solde_initial          NUMERIC(15,2) NOT NULL DEFAULT 0,
-  devise                 VARCHAR(3),
-  taux_croissance_annuel NUMERIC(10,6) NOT NULL DEFAULT 0,
-  actif                  BOOLEAN       NOT NULL DEFAULT TRUE
-);
-CREATE INDEX idx_actif_foyer ON actif (foyer_id);
 
 -- ── Taux de change prévisionnels ─────────────────────────────────────────────
 CREATE TABLE taux_change (
@@ -427,13 +400,8 @@ CREATE TABLE objectif (
   categorie_projet_id UUID          REFERENCES categorie(id),
   montant_cible       NUMERIC(15,2) NOT NULL,
   echeance            DATE,
-  compte_id           UUID          REFERENCES compte(id),
-  actif_id            UUID          REFERENCES actif(id),
-  date_creation       TIMESTAMPTZ   NOT NULL DEFAULT now(),
-  -- Exactement un des deux supports obligatoire :
-  CONSTRAINT chk_support_objectif CHECK (
-    (compte_id IS NOT NULL)::int + (actif_id IS NOT NULL)::int = 1
-  )
+  compte_id           UUID          NOT NULL REFERENCES compte(id),
+  date_creation       TIMESTAMPTZ   NOT NULL DEFAULT now()
 );
 CREATE INDEX idx_objectif_scenario ON objectif (scenario_id);
 ```
@@ -447,7 +415,10 @@ CREATE INDEX idx_objectif_scenario ON objectif (scenario_id);
 > suppression d'une catégorie) → **V12** (poste.poste_origine_id — chaînage des
 > révisions de montant planifiées, `ON DELETE SET NULL`) → **V13** (suppression de la
 > colonne `ordre` sur membre/compte/categorie/actif — tri désormais automatique côté
-> application, par libellé/nom).
+> application, par libellé/nom) → **V14** (suppression de la table legacy
+> `repartition_defaut`) → **V15** (suppression de la notion d'actif patrimonial : table
+> `actif` supprimée, `objectif.actif_id` retiré, `objectif.compte_id` devient
+> obligatoire).
 >
 > Migration V10 : postes existants avec `nature='ESTIMATION'` reçoivent automatiquement
 > `estim_pourcentage = 10.0` (valeur par défaut). Postes `EFFECTIF` conservent `NULL`.
@@ -473,10 +444,10 @@ CREATE INDEX idx_objectif_scenario ON objectif (scenario_id);
 2. **Un seul scénario de référence** par foyer (index partiel + validation service).
 3. Un `Poste`, une `Categorie`, un `Compte` référencés doivent appartenir au **même
    foyer/scénario** que l'entité qui les porte (validation de cohérence multi-tenant).
-4. `Objectif` : exactement un support (`compte_id` XOR `actif_id`).
+4. `Objectif` : `compte_id` obligatoire.
 5. Suppression d'un `Membre` référencé par des répartitions → **refuser** si des postes
    CUSTOM ou des périodes le référencent (message `MEMBRE_REFERENCE_SUPPRESSION`).
-6. `devise` d'un poste/compte/actif non nulle doit exister dans `taux_change` du foyer
+6. `devise` d'un poste/compte non nulle doit exister dans `taux_change` du foyer
    (ou == deviseBase) — sinon avertissement + taux 1 par défaut (ne pas bloquer).
 7. `periodiciteMois` est validé à **>= 0** côté API ; 0 signifie one-shot (le moteur
    utilise la date `debut` comme unique mois d'imputation).
@@ -509,8 +480,6 @@ Compte bébé, Compte privé, Compte annexe.
   Investissement, Autre, Revenu passif, Dividendes.
 - RESERVE : Epargne, Argent mis de côté, 3ᵉ pilier, Investissement.
 - PROJET : Vacances, Achat, Travaux, Réserve d'urgence, Cadeau, Santé, Auto, Autre.
-**Actifs** : types issus de l'enum `TypeActif`
-(COMPTE_EPARGNE, TROISIEME_PILIER, INVESTISSEMENT, CRYPTO, IMMOBILIER, VEHICULE, AUTRE).
 **Postes** : reprendre les lignes du classeur (Salaire net 6300/4700, 13ᵉ salaire,
 Allocation familiale, Manguiers…, Loyer 1500, Électricité 360 trimestriel, Internet 43,
 Assurance ménage 630/an, Redevance 335/an, Taxes poubelles 111/an, Place de parc 100,

@@ -24,7 +24,6 @@
     "referentiels": "Reference data",
     "comptes": "Accounts",
     "categories": "Categories",
-    "actifs": "Assets",
     "taux": "Exchange rates",
     "membres": "Members",
     "parametres": "Settings",
@@ -405,23 +404,6 @@
         "PROJET": "Project"
       }
     },
-    "actif": {
-      "titre": "Assets",
-      "libelle": "Label",
-      "typeActif": "Type",
-      "soldeInitial": "Initial value",
-      "devise": "Currency",
-      "tauxCroissance": "Annual growth rate (%)",
-      "types": {
-        "COMPTE_EPARGNE": "Savings account",
-        "TROISIEME_PILIER": "3rd pillar",
-        "INVESTISSEMENT": "Investment",
-        "CRYPTO": "Crypto",
-        "IMMOBILIER": "Real estate",
-        "VEHICULE": "Vehicle",
-        "AUTRE": "Other"
-      }
-    },
     "taux": {
       "titre": "Exchange rates",
       "devise": "Currency",
@@ -459,7 +441,6 @@
     "montantCible": "Target amount",
     "echeance": "Deadline",
     "compte": "Linked account",
-    "actif": "Linked asset",
     "progression": "Progress",
     "epargneRequise": "Required savings/month",
     "soldeActuel": "Current balance",
@@ -475,7 +456,7 @@
     "parMois": "/month",
     "termine": "Completed",
     "jalon": "Milestone",
-    "supportRequis": "Select exactly one linked account OR asset (not both, not neither).",
+    "supportRequis": "Select a linked account.",
     "actions": {
       "recalibrer": "Recalibrate",
       "verserExtra": "Add an extra contribution",
