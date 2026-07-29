@@ -21,8 +21,7 @@ export interface VentilationLike {
 /**
  * Construit les décompositions (catégorie / type de poste / compte / cascade
  * perso-partagé) utilisées par les cartes « bilan » membre + foyer, mensuelles et
- * annuelles. Logique portée depuis `dashboard-mensuel` pour être partagée avec
- * `dashboard-annuel` sans duplication.
+ * annuelles. Consommé par `DashboardComponent` (vues année/mois unifiées).
  */
 @Injectable({ providedIn: 'root' })
 export class DecompositionService {

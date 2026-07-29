@@ -1,0 +1,25 @@
+<div class="metric-ring-wrap">
+  <div
+    class="metric-ring"
+    [style.--ring-size.px]="size()"
+    [style.background]="'conic-gradient(' + gradient() + ')'"
+  >
+    <div class="metric-ring-center">
+      <div class="metric-ring-value">{{ centerValue() }}</div>
+      @if (centerLabel()) {
+        <div class="metric-ring-label">{{ centerLabel() }}</div>
+      }
+    </div>
+  </div>
+
+  @if (showLegend() && legendSegments().length > 0) {
+    <div class="metric-ring-legend">
+      @for (segment of legendSegments(); track segment.label) {
+        <div class="legend-item">
+          <span class="legend-dot" [style.background]="segment.color"></span>
+          <span class="legend-label">{{ segment.label }}</span>
+        </div>
+      }
+    </div>
+  }
+</div>

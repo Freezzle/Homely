@@ -326,11 +326,11 @@ export class FoyerCreationComponent implements OnInit {
           next: membres => {
             this.contexte.setMembres(membres);
             this.contexte.notifierRefresh();
-            this.router.navigate(['/f', res.foyer.id, 'dashboard-mensuel']);
+            this.router.navigate(['/f', res.foyer.id, 'dashboard']);
           },
           error: () => {
             this.contexte.notifierRefresh();
-            this.router.navigate(['/f', res.foyer.id, 'dashboard-mensuel']);
+            this.router.navigate(['/f', res.foyer.id, 'dashboard']);
           },
         });
       },

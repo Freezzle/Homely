@@ -1,0 +1,37 @@
+@for (row of rows(); track row.label) {
+  <div class="cbar-row">
+    <div class="cbar-label">
+      {{ row.label }}
+      @if (row.unit) {
+        <span class="cbar-unit">{{ row.unit }}</span>
+      }
+    </div>
+
+    <div class="cbar-vals">
+      <span [style.color]="winner(row) === 'a' ? colorA() : 'var(--p-text-muted-color)'">
+        {{ format(row, row.a) }}{{ winner(row) === 'a' ? ' ✓' : '' }}
+      </span>
+      <span [style.color]="winner(row) === 'b' ? colorB() : 'var(--p-text-muted-color)'">
+        {{ winner(row) === 'b' ? '✓ ' : '' }}{{ format(row, row.b) }}
+      </span>
+    </div>
+
+    <div class="cbar-track">
+      <div class="cbar-half left">
+        <div
+          class="cbar-fill"
+          [style.width.%]="widthFor(row, 'a')"
+          [style.background]="winner(row) === 'a' ? colorA() : 'var(--p-surface-300)'"
+        ></div>
+      </div>
+      <div class="cbar-mid"></div>
+      <div class="cbar-half">
+        <div
+          class="cbar-fill"
+          [style.width.%]="widthFor(row, 'b')"
+          [style.background]="winner(row) === 'b' ? colorB() : 'var(--p-surface-300)'"
+        ></div>
+      </div>
+    </div>
+  </div>
+}

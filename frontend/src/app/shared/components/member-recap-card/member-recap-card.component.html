@@ -1,0 +1,45 @@
+<div class="member-card">
+  <div class="mc-head">
+    <div class="mc-identite">
+      <p-avatar
+        [label]="initiales()"
+        [style]="{ 'background-color': couleur(), color: 'white' }"
+        shape="circle"
+      />
+      <div>
+        <div class="mc-name">{{ nom() }}</div>
+        <div class="mc-sub">{{ sousTitre() }}</div>
+      </div>
+    </div>
+
+    <div class="mc-rav">
+      <div class="mc-l">{{ t.dashboard.resteAVivre }}</div>
+      <div class="mc-v" [class.text-red-500]="rav() < 0" [class.text-emerald-600]="rav() >= 0">
+        {{ rav() | montant : devise() }}
+      </div>
+    </div>
+  </div>
+
+  <div class="mc-lines">
+    @for (ligne of lignes(); track ligne.id) {
+      <div class="mc-line">
+        <span class="mc-lib">
+          <span class="truncate">{{ ligne.libelle }}</span>
+          @if (ligne.tags?.length) {
+            <span class="mc-tags">
+              @for (tag of ligne.tags; track tag.membreId) {
+                <span class="mc-tag" [style.background]="tag.couleur" [style.color]="tag.couleurTexte">
+                  {{ tag.label }}
+                </span>
+              }
+            </span>
+          }
+        </span>
+
+        <span class="mc-m" [class.text-red-500]="ligne.signe < 0" [class.text-emerald-600]="ligne.signe > 0">
+          {{ ligne.signe > 0 ? '+' : '−' }} {{ ligne.montantAbs | montant : devise() }}
+        </span>
+      </div>
+    }
+  </div>
+</div>

@@ -1,0 +1,65 @@
+.cbar-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.cbar-row + .cbar-row {
+  margin-top: 1rem;
+}
+
+.cbar-label {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  color: var(--p-text-color);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.cbar-unit {
+  color: var(--p-text-muted-color);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.cbar-vals {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.cbar-track {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.cbar-half {
+  flex: 1;
+  display: flex;
+  height: 8px;
+  background: var(--p-surface-100);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.cbar-half.left {
+  justify-content: flex-end;
+}
+
+.cbar-fill {
+  height: 100%;
+  border-radius: 99px;
+}
+
+.cbar-mid {
+  width: 2px;
+  height: 12px;
+  background: var(--p-surface-300);
+  border-radius: 99px;
+  flex-shrink: 0;
+}

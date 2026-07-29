@@ -1,0 +1,305 @@
+<div class="dashboard-layout">
+  @if (viewport.estCompact()) {
+    <app-page-nav
+      [annee]="annee()"
+      [months]="moisSummary()"
+      [(selection)]="pageNavSelectionForBinding" />
+  }
+
+  <main class="dashboard-content">
+    <div class="page-head">
+      <div class="min-w-0">
+        <div class="eyebrow">{{ vue() === 'mois' ? t.dashboard.vueMensuelle : t.dashboard.vueAnnuelle }}</div>
+        <h1>{{ t.nav.dashboard }}</h1>
+        <p class="page-subtitle">{{ periodeLabel() }}</p>
+      </div>
+      <div class="ctx-tools">
+        <p-button
+          icon="pi pi-chevron-left"
+          [text]="true"
+          [rounded]="true"
+          [disabled]="!peutReculer()"
+          [ariaLabel]="vue() === 'mois' ? t.projection.moisPrecedent : t.projection.anneePrecedente"
+          (onClick)="reculer()" />
+        <p-button
+          icon="pi pi-chevron-right"
+          [text]="true"
+          [rounded]="true"
+          [disabled]="!peutAvancer()"
+          [ariaLabel]="vue() === 'mois' ? t.projection.moisSuivant : t.projection.anneeSuivante"
+          (onClick)="avancer()" />
+      </div>
+    </div>
+
+    @if (chargement()) {
+      @if (vue() === 'annee') {
+        <p-skeleton height="220px" borderRadius="12px" />
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          @for (i of [1, 2, 3, 4]; track i) {
+            <p-skeleton height="110px" borderRadius="12px" />
+          }
+        </div>
+        <p-skeleton height="340px" borderRadius="12px" />
+        <p-skeleton height="480px" borderRadius="12px" />
+      } @else {
+        <p-skeleton height="220px" borderRadius="12px" />
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          @for (i of [1, 2]; track i) {
+            <p-skeleton height="110px" borderRadius="12px" />
+          }
+        </div>
+        <p-skeleton height="420px" borderRadius="12px" />
+      }
+    } @else if (vue() === 'annee' && projectionAnnuelle() && ventilationAnnuelle()) {
+      <p-card>
+        <div class="hero">
+          <app-metric-ring
+            [segments]="ringSegmentsAnnee()"
+            [centerValue]="ringCenterAnnee()"
+            [centerLabel]="t.dashboard.moisPosVsNeg" />
+          <div class="hero-txt">
+            <app-stat-grid [statusTag]="statusAnnee()" [stats]="statsAnnee()" />
+          </div>
+        </div>
+      </p-card>
+
+      <app-kpi-chip-row [items]="annualKpis()" />
+
+      <p-card>
+        <div class="section-stack">
+          <div class="section-title">{{ t.projection.resteAVivreDeAnnee }}</div>
+          <div class="toggle-wrap">
+            @if (afficherParMembre()) {
+              <p-selectbutton
+                [options]="vueOptions"
+                [ngModel]="vueRecap()"
+                (ngModelChange)="vueRecap.set($event)"
+                optionLabel="label"
+                optionValue="value"
+                [allowEmpty]="false" />
+            }
+            <p-selectbutton
+              [options]="vueDecompositionOptions"
+              [ngModel]="vueDecomposition()"
+              (ngModelChange)="vueDecomposition.set($event)"
+              optionLabel="label"
+              optionValue="value"
+              [allowEmpty]="false" />
+          </div>
+
+          @if (vueEffective() !== 'MEMBRE') {
+            <app-carte-bilan
+              variante="foyer"
+              [nom]="t.projection.foyer"
+              [sousTitre]="foyerSousTitreAnnuel()"
+              [initiales]="foyerInitiales()"
+              [montantPrincipal]="ventilationAnnuelle()!.agregat.soldeDisponible"
+              [devise]="deviseBase()"
+              [lignes]="foyerLignesActuellesAnnuel()"
+              [tauxEffort]="tauxEffortAnnuel()" />
+          }
+
+          @if (afficherParMembre() && vueEffective() !== 'FOYER') {
+            <div class="member-grid">
+              @for (mc of membresDataAnnuel(); track mc.id) {
+                <app-carte-bilan
+                  variante="membre"
+                  [nom]="mc.nom"
+                  [sousTitre]="mc.sousTitre"
+                  [couleur]="mc.couleur"
+                  [initiales]="mc.initiales"
+                  [montantPrincipal]="mc.agregat.soldeDisponible"
+                  [devise]="deviseBase()"
+                  [lignes]="lignesMembreAnnuel(mc)"
+                  [tauxEffort]="mc.tauxEffort" />
+              }
+            </div>
+          }
+        </div>
+      </p-card>
+
+      <app-tab-group [value]="ongletAnnee()" (valueChange)="onAnneeTabChange($event)">
+        <app-tab-panel value="flux" [label]="t.dashboard.fluxMensuel">
+          <div class="chart-shell">
+            <p-chart type="bar" [data]="$any(mixedChartData())" [options]="$any(mixedChartOptions)" class="w-full block" />
+          </div>
+          <p class="footnote">{{ t.dashboard.cliquezBarre }}</p>
+
+          @if (afficherParMembre() && vueEffective() !== 'FOYER') {
+            <div class="inner-section">
+              <div class="section-title">{{ t.projection.contributionParMembre }}</div>
+              <div class="member-grid">
+                @for (mc of membreChartsData(); track mc.membreId) {
+                  <p-card>
+                    <div class="member-chart-head">
+                      <span class="member-dot" [style.background-color]="mc.couleur"></span>
+                      <span class="font-semibold">{{ mc.nom }}</span>
+                    </div>
+                    <div class="chart-shell small">
+                      <p-chart type="bar" [data]="$any(mc.data)" [options]="$any(mixedChartOptions)" class="w-full block" />
+                    </div>
+                  </p-card>
+                }
+              </div>
+            </div>
+          }
+
+        </app-tab-panel>
+
+        <app-tab-panel value="tresorerie" [label]="t.dashboard.tresorerieCumulee">
+          @defer (on viewport) {
+            <p class="footnote">{{ t.dashboard.tresoCumuleeDescription }}</p>
+            <div class="chart-shell">
+              <p-chart type="line" [data]="$any(tresorerieCumuleeData())" [options]="$any(tresorerieCumuleeOptions)" class="w-full block" />
+            </div>
+          } @placeholder {
+            <p-skeleton height="240px" />
+          }
+        </app-tab-panel>
+
+        <app-tab-panel value="events" [label]="t.dashboard.ceQuiChange">
+          @if (evenementsAnnee().length) {
+            <app-timeline [items]="evenementsAnnee()" [showMarkerIcon]="false" (select)="ouvrirMoisDepuisTimeline($event)" />
+          } @else {
+            <p class="empty-copy">{{ t.dashboard.aucunEvenement }}</p>
+          }
+        </app-tab-panel>
+
+        <app-tab-panel value="objectifs" [label]="t.dashboard.objectifs">
+          @if (objectifsRendus().length) {
+            <div class="objective-list">
+              @for (objectif of objectifsRendus(); track objectif.id) {
+                <app-objective-progress
+                  emoji="🎯"
+                  [name]="objectif.nom"
+                  [status]="objectif.statusLabel"
+                  [severity]="objectif.severity"
+                  [pct]="objectif.pct"
+                  [meta]="objectif.meta" />
+              }
+            </div>
+          } @else {
+            <p class="empty-copy">{{ t.commun.aucunResultat }}</p>
+          }
+        </app-tab-panel>
+      </app-tab-group>
+    } @else if (vue() === 'mois' && ventilations()) {
+      <p-card>
+        <div class="hero">
+          <app-metric-ring
+            [segments]="ringSegmentsMois()"
+            [centerValue]="ringCenterMois()"
+            [centerLabel]="t.dashboard.resteAVivre" />
+          <div class="hero-txt">
+            <app-stat-grid [statusTag]="statusMois()" [stats]="statsMois()" />
+          </div>
+        </div>
+      </p-card>
+
+      <app-kpi-chip-row [items]="kpiMois()" />
+
+      <app-tab-group [value]="ongletMois()" (valueChange)="onMoisTabChange($event)">
+        <app-tab-panel value="recap" [label]="t.dashboard.recapitulatif">
+          <div class="section-stack">
+            <div class="toggle-wrap">
+              @if (afficherParMembre()) {
+                <p-selectbutton
+                  [options]="vueOptions"
+                  [ngModel]="vueRecap()"
+                  (ngModelChange)="vueRecap.set($event)"
+                  optionLabel="label"
+                  optionValue="value"
+                  [allowEmpty]="false" />
+              }
+              <p-selectbutton
+                [options]="vueDecompositionOptions"
+                [ngModel]="vueDecomposition()"
+                (ngModelChange)="vueDecomposition.set($event)"
+                optionLabel="label"
+                optionValue="value"
+                [allowEmpty]="false" />
+            </div>
+
+            @if (vueEffective() !== 'MEMBRE') {
+              <app-carte-bilan
+                variante="foyer"
+                [nom]="t.projection.foyer"
+                [sousTitre]="foyerSousTitre()"
+                [initiales]="foyerInitiales()"
+                [montantPrincipal]="ventilations()!.agregat.soldeDisponible"
+                [devise]="deviseBase()"
+                [lignes]="foyerLignesActuelles()"
+                [tauxEffort]="tauxEffort()" />
+            }
+
+            @if (afficherParMembre() && vueEffective() !== 'FOYER') {
+              <div class="member-grid">
+                @for (mc of membresData(); track mc.id) {
+                  <app-member-recap-card
+                    [nom]="mc.nom"
+                    [sousTitre]="mc.sousTitre"
+                    [couleur]="mc.couleur"
+                    [initiales]="mc.initiales"
+                    [rav]="mc.rav"
+                    [devise]="deviseBase()"
+                    [lignes]="lignesMembre(mc)" />
+                }
+              </div>
+            }
+          </div>
+        </app-tab-panel>
+
+        <app-tab-panel value="echeances" [label]="t.dashboard.echeances">
+          @if (echeancesMois().length) {
+            <div class="objective-list">
+              @for (objectif of echeancesMois(); track objectif.id) {
+                <app-objective-progress
+                  emoji="🎯"
+                  [name]="objectif.nom"
+                  [status]="objectif.statusLabel"
+                  [severity]="objectif.severity"
+                  [pct]="objectif.pct"
+                  [meta]="objectif.meta" />
+              }
+            </div>
+          } @else {
+            <p class="empty-copy">{{ t.dashboard.aucuneEcheance }}</p>
+          }
+        </app-tab-panel>
+
+        <app-tab-panel value="event" [label]="t.dashboard.evenement">
+          @if (evenementsMois().length) {
+            <app-timeline [items]="evenementsMois()" [showMarkerIcon]="false" (select)="ouvrirMoisDepuisTimeline($event)" />
+          } @else {
+            <p class="empty-copy">{{ t.dashboard.aucunEvenement }}</p>
+          }
+        </app-tab-panel>
+
+        <app-tab-panel value="objectifs" [label]="t.dashboard.objectifs">
+          @if (objectifsRendus().length) {
+            <div class="objective-list">
+              @for (objectif of objectifsRendus(); track objectif.id) {
+                <app-objective-progress
+                  emoji="🎯"
+                  [name]="objectif.nom"
+                  [status]="objectif.statusLabel"
+                  [severity]="objectif.severity"
+                  [pct]="objectif.pct"
+                  [meta]="objectif.meta" />
+              }
+            </div>
+          } @else {
+            <p class="empty-copy">{{ t.commun.aucunResultat }}</p>
+          }
+        </app-tab-panel>
+      </app-tab-group>
+    }
+  </main>
+
+  @if (!viewport.estCompact()) {
+    <app-page-nav
+      [annee]="annee()"
+      [months]="moisSummary()"
+      [(selection)]="pageNavSelectionForBinding" />
+  }
+</div>

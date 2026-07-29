@@ -20,7 +20,7 @@ export interface LigneDecomposition {
 /**
  * Carte « bilan » réutilisable (membre ou foyer) : montant principal (reste à vivre du
  * mois / solde disponible de l'année), décomposition détaillée et taux d'effort optionnel.
- * Utilisée par `dashboard-mensuel` et `dashboard-annuel`.
+ * Utilisée par `DashboardComponent` (vues année/mois unifiées).
  */
 @Component({
   selector: 'app-carte-bilan',

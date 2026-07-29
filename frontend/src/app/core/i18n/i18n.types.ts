@@ -7,7 +7,7 @@ import type frTranslations from '../../../assets/i18n/fr.json';
 /**
  * Type de l'arbre de traductions chargé par ngx-translate, dérivé de
  * `assets/i18n/fr.json`. Donne l'autocomplétion/typage exact de
- * `I18nService.translations()` (ex. `t.nav.dashboardAnnuel`), sans dupliquer
+ * `I18nService.translations()` (ex. `t.nav.dashboard`), sans dupliquer
  * la structure à la main comme le faisait l'ancien `type I18n = typeof FR`.
  */
 export type AppTranslations = typeof frTranslations;

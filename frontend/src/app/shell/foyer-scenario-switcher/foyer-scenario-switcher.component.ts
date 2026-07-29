@@ -111,7 +111,7 @@ export class FoyerScenarioSwitcherComponent implements OnInit {
     }
     this.contexte.setFoyer(foyer);
     // chargerScenarios est déclenché automatiquement par l'effect _syncFoyer
-    this.router.navigate(['/f', foyer.id, 'dashboard-mensuel']);
+    this.router.navigate(['/f', foyer.id, 'dashboard']);
     this.visible.set(false);
   }
 

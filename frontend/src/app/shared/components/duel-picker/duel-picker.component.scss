@@ -1,0 +1,42 @@
+.duel-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.duel-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--p-content-border-color);
+  background: var(--p-surface-50);
+  font-weight: 700;
+  color: var(--p-text-color);
+}
+
+.duel-vs {
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--p-text-muted-color);
+}
+
+.duel-select {
+  min-width: 14rem;
+}
+
+.duel-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 999px;
+  flex-shrink: 0;
+}

@@ -1,0 +1,66 @@
+.metric-ring-wrap {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.metric-ring {
+  --ring-size: 168px;
+  position: relative;
+  width: var(--ring-size);
+  height: var(--ring-size);
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.metric-ring-center {
+  width: calc(var(--ring-size) * 0.66);
+  height: calc(var(--ring-size) * 0.66);
+  border-radius: 999px;
+  background: var(--p-content-background);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 0.75rem;
+}
+
+.metric-ring-value {
+  font-size: clamp(1rem, 0.6rem + 0.8vw, 1.4rem);
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--p-text-color);
+}
+
+.metric-ring-label {
+  margin-top: 0.2rem;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  color: var(--p-text-muted-color);
+}
+
+.metric-ring-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.9rem;
+  justify-content: center;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--p-text-muted-color);
+  font-size: 0.8rem;
+}
+
+.legend-dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 999px;
+  flex-shrink: 0;
+}

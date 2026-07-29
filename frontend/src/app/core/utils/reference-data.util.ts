@@ -1,13 +1,14 @@
-import { Signal, signal } from '@angular/core';
-import { toObservable, takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Observable, combineLatest, of } from 'rxjs';
-import { switchMap, catchError } from 'rxjs/operators';
+import { Signal, computed } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { Observable } from 'rxjs';
 
 export interface ChargementReactif<T> {
   /** Dernière valeur chargée (ou `null` tant qu'aucune donnée n'a encore été reçue, ou si la clé est devenue nulle). */
   donnees: Signal<T | null>;
-  /** Vrai pendant le chargement. */
+  /** Vrai pendant le chargement (premier chargement ou rechargement). */
   chargement: Signal<boolean>;
+  /** Dernière erreur rencontrée (`undefined` si aucune, ou si un chargement ultérieur a réussi). */
+  erreur: Signal<Error | undefined>;
   /** Force un rechargement avec la clé courante (ex. après une mutation ailleurs dans l'app). */
   recharger(): void;
 }
@@ -17,47 +18,40 @@ export interface ChargementReactif<T> {
  * (ex. `{ foyerId, scenarioId }`) — utilisé pour les données de référence auxiliaires
  * (catégories/comptes/postes/objectifs) rechargées à chaque changement de foyer ou de
  * scénario, auparavant dupliquées quasi à l'identique (bloc `forkJoin` + `effect`) dans
- * `DashboardMensuelComponent`, `DashboardAnnuelComponent`, `ObjectifsComponent`.
+ * `DashboardComponent`, `ObjectifsComponent`, `TauxComponent`.
+ *
+ * Implémenté avec l'API native Angular `rxResource()` (stable depuis Angular 22) : chaque
+ * changement de `cleSignal` annule automatiquement la requête en vol et relance le
+ * `chargeur` avec la nouvelle clé — même garde-fou anti-fuite inter-foyers qu'avant
+ * (ex. changement rapide de foyer), mais sans réimplémenter `switchMap`/`combineLatest` à
+ * la main. `isLoading`/`error` sont également gérés nativement par la resource.
  *
  * `cleSignal` doit être un signal (souvent `computed`) qui retourne `null` tant que les
- * prérequis (foyerId, scénario...) ne sont pas réunis, et une valeur non nulle sinon.
- * `chargeur` reçoit cette clé non nulle et renvoie l'observable des données (ex. un
- * `forkJoin` de plusieurs listes). Implémenté avec `switchMap` : toute requête en vol est
- * annulée dès que la clé change, pour éviter qu'une réponse tardive n'écrase des données
- * devenues obsolètes (ex. changement rapide de foyer) — même garde-fou anti-fuite
- * inter-foyers que `creerCrudReferentiel`.
+ * prérequis (foyerId, scénario...) ne sont pas réunis : dans ce cas la resource reste à
+ * l'état `idle` et `chargeur` n'est pas appelé. `chargeur` reçoit la clé non nulle et
+ * renvoie l'observable des données (ex. un `forkJoin` de plusieurs listes).
  *
  * ⚠️ À appeler uniquement depuis un contexte d'injection (ex. initialiseur de champ d'un
- * composant) : cette fonction utilise `toObservable`/`takeUntilDestroyed` en interne.
+ * composant) : `rxResource` utilise `inject()` en interne.
  */
 export function creerChargementReactif<K, T>(
   cleSignal: Signal<K | null>,
   chargeur: (cle: K) => Observable<T>,
 ): ChargementReactif<T> {
-  const donnees = signal<T | null>(null);
-  const chargement = signal(false);
-  const _refreshTrigger = signal(0);
-
-  combineLatest([toObservable(cleSignal), toObservable(_refreshTrigger)])
-    .pipe(
-      switchMap(([cle]) => {
-        if (cle === null || cle === undefined) {
-          donnees.set(null);
-          return of(null);
-        }
-        chargement.set(true);
-        return chargeur(cle).pipe(catchError(() => of(null)));
-      }),
-      takeUntilDestroyed(),
-    )
-    .subscribe(v => {
-      chargement.set(false);
-      if (v !== null) donnees.set(v);
-    });
+  const ressource = rxResource<T, K | undefined>({
+    // `undefined` (et non `null`) fait passer la resource à l'état `idle` sans appeler `chargeur`.
+    params: () => cleSignal() ?? undefined,
+    stream: ({ params }) => chargeur(params as K),
+  });
 
   function recharger(): void {
-    _refreshTrigger.update(v => v + 1);
+    ressource.reload();
   }
 
-  return { donnees: donnees.asReadonly(), chargement: chargement.asReadonly(), recharger };
+  return {
+    donnees: computed(() => ressource.value() ?? null),
+    chargement: ressource.isLoading,
+    erreur: ressource.error,
+    recharger,
+  };
 }

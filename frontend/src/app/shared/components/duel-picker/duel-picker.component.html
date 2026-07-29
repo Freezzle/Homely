@@ -1,0 +1,34 @@
+<div class="duel-row">
+  <div class="duel-chip">
+    <span class="dot" [style.background]="couleurScenario(left())"></span>
+    {{ left().nom }}
+  </div>
+
+  <span class="duel-vs">VS</span>
+
+  <p-select
+    appendTo="body"
+    [options]="rightOptions()"
+    [ngModel]="right()"
+    optionLabel="nom"
+    dataKey="id"
+    class="duel-select"
+    (onChange)="rightChange.emit($event.value)"
+  >
+    <ng-template #selectedItem let-s>
+      @if (s) {
+        <div class="duel-option">
+          <span class="dot" [style.background]="couleurScenario(s)"></span>
+          <span>{{ s.nom }}</span>
+        </div>
+      }
+    </ng-template>
+
+    <ng-template #item let-s>
+      <div class="duel-option">
+        <span class="dot" [style.background]="couleurScenario(s)"></span>
+        <span>{{ s.nom }}</span>
+      </div>
+    </ng-template>
+  </p-select>
+</div>

@@ -1,0 +1,188 @@
+import { Component, OnInit, inject, input, model } from '@angular/core';
+import { MontantPipe } from '../../../core/pipes/format.pipes';
+import { I18nService } from '../../../core/i18n/i18n.service';
+import { ViewportService } from '../../../core/services/viewport.service';
+
+export interface PageNavMonthSummary {
+  mois: number;
+  label: string;
+  solde: number;
+}
+
+export interface PageNavSelection {
+  mode: 'annee' | 'mois';
+  mois?: number;
+}
+
+@Component({
+  selector: 'app-page-nav',
+  standalone: true,
+  imports: [MontantPipe],
+  template: `
+    @if (viewport.estCompact()) {
+      <div class="pn-chip-bar">
+        <button
+          type="button"
+          class="pn-chip"
+          [class.cur]="selection().mode === 'annee'"
+          (click)="selectAnnee()">
+          🗓️ {{ t.dashboard.vueDensemble }}
+        </button>
+        @for (m of months(); track m.mois) {
+          <button
+            type="button"
+            class="pn-chip"
+            [class.cur]="selection().mode === 'mois' && selection().mois === m.mois"
+            (click)="selectMois(m.mois)">
+            {{ m.label }}
+          </button>
+        }
+      </div>
+    } @else {
+      <aside class="pn-aside">
+        <div class="pn-label">{{ t.dashboard.periode }}</div>
+        <button
+          type="button"
+          class="pn-item"
+          [class.cur]="selection().mode === 'annee'"
+          (click)="selectAnnee()">
+          <span>🗓️ {{ t.dashboard.vueDensemble }}</span>
+          <span class="pn-s pn-s-pos">{{ annee() }}</span>
+        </button>
+        @for (m of months(); track m.mois) {
+          <button
+            type="button"
+            class="pn-item"
+            [class.cur]="selection().mode === 'mois' && selection().mois === m.mois"
+            (click)="selectMois(m.mois)">
+            <span>{{ m.label }}</span>
+            <span class="pn-s" [class.pn-s-pos]="m.solde >= 0" [class.pn-s-neg]="m.solde < 0">
+              {{ m.solde >= 0 ? '+' : '' }}{{ m.solde | montant }}
+            </span>
+          </button>
+        }
+      </aside>
+    }
+  `,
+  styles: [`
+    .pn-aside {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 16px 12px;
+      background: var(--p-content-background);
+      border-left: 1px solid var(--p-content-border-color);
+      height: 100%;
+      overflow-y: auto;
+    }
+
+    .pn-label {
+      margin-bottom: 6px;
+      color: var(--p-text-muted-color);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .pn-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      color: var(--p-text-muted-color);
+      font-size: 12px;
+      font-weight: 600;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      width: 100%;
+      text-align: left;
+      font-family: inherit;
+    }
+
+    .pn-item:hover {
+      background: var(--p-surface-100);
+      color: var(--p-text-color);
+    }
+
+    .pn-item.cur {
+      background: var(--p-primary-50);
+      color: var(--p-text-color);
+      font-weight: 700;
+      box-shadow: inset 2.5px 0 0 var(--p-primary-color);
+    }
+
+    .pn-s {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 10px;
+    }
+
+    .pn-s-pos {
+      color: var(--p-emerald-600);
+    }
+
+    .pn-s-neg {
+      color: var(--p-red-600);
+    }
+
+    .pn-chip-bar {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 10px 20px;
+      background: var(--p-content-background);
+      border-bottom: 1px solid var(--p-content-border-color);
+      scrollbar-width: none;
+    }
+
+    .pn-chip-bar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .pn-chip {
+      flex-shrink: 0;
+      border: 1.5px solid var(--p-content-border-color);
+      background: var(--p-content-background);
+      border-radius: 99px;
+      padding: 6px 13px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--p-text-muted-color);
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .pn-chip.cur {
+      border-color: var(--p-primary-color);
+      background: var(--p-primary-50);
+      color: var(--p-text-color);
+    }
+  `],
+})
+export class PageNavComponent implements OnInit {
+  private readonly i18n = inject(I18nService);
+  protected readonly viewport = inject(ViewportService);
+  readonly t = this.i18n.translations();
+
+  readonly annee = input.required<number>();
+  readonly months = input.required<PageNavMonthSummary[]>();
+  readonly selection = model.required<PageNavSelection>();
+
+  ngOnInit(): void {
+    if (this.months().length !== 12) {
+      console.warn(`[PageNavComponent] Expected 12 months, received ${this.months().length}.`);
+    }
+  }
+
+  protected selectAnnee(): void {
+    this.selection.set({ mode: 'annee' });
+  }
+
+  protected selectMois(mois: number): void {
+    this.selection.set({ mode: 'mois', mois });
+  }
+}

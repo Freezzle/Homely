@@ -57,7 +57,7 @@ export const roleGuard = (roleMinimum: 'OWNER' | 'EDITOR' | 'VIEWER'): CanActiva
     const foyerId = route.paramMap.get('foyerId') ?? route.parent?.paramMap.get('foyerId');
     if (!foyerId) return true; // pas de foyer dans l'URL : rien à vérifier ici
 
-    const acces = router.createUrlTree(['/f', foyerId, 'dashboard-mensuel']);
+    const acces = router.createUrlTree(['/f', foyerId, 'dashboard']);
 
     if (contexte.foyerId() === foyerId) {
       return satisfaitRole(contexte.monRole(), roleMinimum) ? true : acces;

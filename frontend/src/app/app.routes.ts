@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard, roleGuard } from './core/guards/auth.guard';
+import { redirectToCurrentYearGuard } from './features/dashboard/redirect-current-year.guard';
 
 export const routes: Routes = [
   // ── Public ─────────────────────────────────────────────────────────────────
@@ -32,14 +33,19 @@ export const routes: Routes = [
       {
         path: 'f/:foyerId',
         children: [
-          { path: '', redirectTo: 'dashboard-mensuel', pathMatch: 'full' },
+          { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
           {
-            path: 'dashboard-annuel',
-            loadComponent: () => import('./features/dashboard/dashboard-annuel/dashboard-annuel.component').then(m => m.DashboardAnnuelComponent),
+            path: 'dashboard',
+            canActivate: [redirectToCurrentYearGuard],
+            children: [],
           },
           {
-            path: 'dashboard-mensuel',
-            loadComponent: () => import('./features/dashboard/dashboard-mensuel/dashboard-mensuel.component').then(m => m.DashboardMensuelComponent),
+            path: 'dashboard/:annee',
+            loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
+          },
+          {
+            path: 'dashboard/:annee/:mois',
+            loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
           },
           {
             path: 'revenus',

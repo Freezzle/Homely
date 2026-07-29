@@ -1,0 +1,85 @@
+:host {
+  display: block;
+}
+
+.tl-when {
+  color: var(--p-text-muted-color);
+  font-size: 0.8rem;
+  line-height: 1.2;
+  padding-top: 0.2rem;
+}
+
+.tl-marker {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  border: 2px solid var(--p-primary-200);
+  background: var(--p-primary-50);
+  color: var(--p-text-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.tl-marker-dot {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 999px;
+  background: var(--p-primary-color);
+  display: inline-block;
+}
+
+.tl-card {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--p-content-border-color);
+  background: var(--p-content-background);
+  border-radius: var(--p-content-border-radius);
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  cursor: pointer;
+}
+
+.tl-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--p-text-color);
+}
+
+.tl-impact,
+.tl-meta {
+  font-size: 0.8rem;
+}
+
+.tl-impact.pos {
+  color: var(--p-emerald-600);
+}
+
+.tl-impact.neg {
+  color: var(--p-red-500);
+}
+
+.tl-meta {
+  color: var(--p-text-muted-color);
+}
+
+.tl-card-group {
+  gap: 0.65rem;
+}
+
+.tl-subitem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px dashed var(--p-content-border-color);
+}
+
+.tl-subitem:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
