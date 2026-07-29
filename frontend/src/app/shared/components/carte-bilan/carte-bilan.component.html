@@ -1,26 +1,29 @@
 <p-card [style.border-top]="'4px solid ' + couleurEffective()" class="overflow-hidden">
     <ng-template #title>
-        <div class="flex items-center gap-3">
-            @if (variante() === 'foyer') {
-                <p-avatar [label]="initiales()" shape="circle" size="normal"
-                          class="bg-primary text-primary-contrast font-semibold shrink-0"/>
-            } @else {
-                <p-avatar [label]="initiales()" shape="circle" size="normal"
-                          [style.background-color]="couleur()" class="text-white font-semibold shrink-0"/>
-            }
-            <span class="font-bold text-base">{{ nom() }}</span>
+        <div class="flex justify-between">
+            <div class="flex  items-center gap-3">
+                @if (variante() === 'foyer') {
+                    <p-avatar shape="circle"
+                              class="secondary text-secondary-contrast font-semibold shrink-0"/>
+                } @else {
+                    <p-avatar shape="circle"
+                              [style.background-color]="couleur()" class="text-white font-semibold shrink-0"/>
+                }
+                <span class="font-bold text-base">{{ nom() }}</span>
+            </div>
+            <div class="flex items-baseline justify-end gap-1.5 mt-1">
+                <span class="text-sm text-surface-400">{{ devise() }}</span>
+                <span class="text-2xl font-extrabold tabular-nums"
+                      [class.text-emerald-600]="montantPrincipal() >= 0"
+                      [class.text-red-500]="montantPrincipal() < 0">
+        {{ formatMontantSansDevise(montantPrincipal()) }}
+      </span>
+            </div>
         </div>
     </ng-template>
 
     <div class="mb-3">
-        <div class="flex items-baseline justify-end gap-1.5 mt-1">
-            <span class="text-sm text-surface-400">{{ devise() }}</span>
-            <span class="text-2xl font-extrabold tabular-nums"
-                  [class.text-emerald-600]="montantPrincipal() >= 0"
-                  [class.text-red-500]="montantPrincipal() < 0">
-        {{ formatMontantSansDevise(montantPrincipal()) }}
-      </span>
-        </div>
+
     </div>
 
     <p-divider class="my-2"/>

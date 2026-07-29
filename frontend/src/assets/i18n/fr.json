@@ -236,7 +236,7 @@
     "revisionMontantActuel": "Montant actuel",
     "revisionNouveauMontant": "Nouveau montant",
     "revisionMontantIdentique": "Le nouveau montant doit être différent du montant actuel",
-    "revisionDateEffet": "Date d'effet",
+    "revisionDateEffet": "Effet dès le",
     "revisionResume": "{{avant}} → {{apres}} ({{signe}}{{pct}}%), dès {{date}}",
     "revisionHistoriqueTooltip": "Historique ({{count}} versions)",
     "revisionTag": "Muté",

@@ -37,7 +37,7 @@ export class CarteBilanComponent {
   readonly nom = input.required<string>();
   readonly sousTitre = input.required<string>();
   /** Couleur du membre (hex) — ignorée quand `variante` = 'foyer'. */
-  readonly couleur = input<string>('#64748b');
+  readonly couleur = input<string>('var(--p-secondary-color)');
   readonly initiales = input.required<string>();
   readonly montantPrincipal = input.required<number>();
   readonly devise = input.required<string>();
@@ -46,7 +46,7 @@ export class CarteBilanComponent {
   readonly tauxEffort = input<number | undefined>(undefined);
 
   readonly couleurEffective = computed(() =>
-    this.variante() === 'foyer' ? 'var(--p-primary-color)' : this.couleur()
+    this.variante() === 'foyer' ? 'var(--p-secondary-color)' : this.couleur()
   );
 
   /** Montant sans le symbole de devise — utilisé pour le chiffre principal des cartes. */
