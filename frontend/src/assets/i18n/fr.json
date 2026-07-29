@@ -335,8 +335,6 @@
     "aucuneChargeCompte": "Aucune charge ventilée sur un compte pour ce membre."
   },
   "dashboard": {
-    "vueMensuelle": "Vue mensuelle",
-    "vueAnnuelle": "Vue annuelle",
     "vueDensemble": "Vue d'ensemble",
     "periode": "Période",
     "moisPosVsNeg": "mois pos. vs nég.",

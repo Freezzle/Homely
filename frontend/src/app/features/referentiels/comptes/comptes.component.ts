@@ -17,7 +17,7 @@ import { CompteService, MembreService, TauxChangeService } from '../../../core/s
 import { CompteDto, MembreDto } from '../../../core/models/api.models';
 import { MontantPipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
-import { TagComponent } from '../../../shared/components/tag/tag.component';
+import { MembresTagsComponent } from '../../../shared/components/membres-tags/membres-tags.component';
 import { creerDevisesDisponibles } from '../../../core/utils/devise-options.util';
 import { creerCrudReferentiel } from '../../../core/utils/crud-referentiel.util';
 
@@ -30,7 +30,7 @@ import { creerCrudReferentiel } from '../../../core/utils/crud-referentiel.util'
       CommonModule, ReactiveFormsModule,
       TableModule, ButtonModule, DialogModule, TagModule, MessageModule,
       InputTextModule, InputNumberModule, SelectModule, MultiSelectModule,
-      ConfirmDialogModule, MontantPipe, TagComponent,
+      ConfirmDialogModule, MontantPipe, MembresTagsComponent,
   ],
   templateUrl: './comptes.component.html',
 })
@@ -77,6 +77,11 @@ export class ComptesComponent {
 
   membreParId(id: string): MembreDto | undefined {
     return this.membresActifs().find(m => m.id === id);
+  }
+
+  /** Membres rattachés à un compte (pour l'affichage des tags). */
+  membresForCompte(c: CompteDto): MembreDto[] {
+    return c.membreIds.map(id => this.membreParId(id)).filter((m): m is MembreDto => !!m);
   }
 
   private readonly _chargerMembresEffect = effect(() => {

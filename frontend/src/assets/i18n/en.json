@@ -335,8 +335,6 @@
     "aucuneChargeCompte": "No expense is assigned to an account for this member."
   },
   "dashboard": {
-    "vueMensuelle": "Monthly view",
-    "vueAnnuelle": "Annual view",
     "vueDensemble": "Overview",
     "periode": "Period",
     "moisPosVsNeg": "pos. vs neg. months",

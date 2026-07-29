@@ -37,6 +37,7 @@
   background: var(--p-content-background);
   border-radius: var(--p-content-border-radius);
   padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -44,14 +45,25 @@
 }
 
 .tl-title {
-  font-size: 0.95rem;
-  font-weight: 700;
+  font-size: 0.8rem;
   color: var(--p-text-color);
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
-.tl-impact,
-.tl-meta {
+.tl-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  column-gap: 0.75rem;
+  row-gap: 0.15rem;
+}
+
+.tl-impact {
   font-size: 0.8rem;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .tl-impact.pos {
@@ -60,10 +72,6 @@
 
 .tl-impact.neg {
   color: var(--p-red-500);
-}
-
-.tl-meta {
-  color: var(--p-text-muted-color);
 }
 
 .tl-card-group {

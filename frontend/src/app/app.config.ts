@@ -30,11 +30,36 @@ const semantic = Theme.semantic ?? {};
 const colorScheme = semantic.colorScheme ?? {};
 const light = colorScheme.light ?? {};
 const dark = colorScheme.dark ?? {};
+const components = Theme.components ?? {};
+const sidebarTokens = components.sidebar ?? {};
+const sidebarMain = sidebarTokens.main ?? {};
+const overlay = semantic.overlay ?? {};
+
+// Palier « surface élevée » (cartes/panels/overlays) vs « canvas » (fond de page/
+// sidebar) : sans ceci, `content.background` et le fond de page pointent vers le même
+// palier de gris en mode sombre (#1f1f1f = #1f1f1f) et sont très proches en mode clair
+// (#f7f7f7 vs #ffffff), ce qui aplatit visuellement toute la hiérarchie de l'UI.
+const CANVAS_BG = 'light-dark({surface.100}, {surface.950})';
+const ELEVATED_BG = 'light-dark({surface.0}, {surface.800})';
 
 const SohoPreset = {
   ...Theme,
   semantic: {
     ...semantic,
+    // Fond des cartes/panels/contenu (p-card, p-panel, panneau de navigation…) :
+    // plus clair que le canvas en mode sombre → effet de surface élevée.
+    content: {
+      ...(semantic.content ?? {}),
+      background: ELEVATED_BG,
+    },
+    // Fond des overlays (dropdowns, popovers, dialogues) : même palier que les cartes
+    // pour une élévation visuelle cohérente.
+    overlay: {
+      ...overlay,
+      select: { ...(overlay.select ?? {}), background: ELEVATED_BG },
+      popover: { ...(overlay.popover ?? {}), background: ELEVATED_BG },
+      modal: { ...(overlay.modal ?? {}), background: ELEVATED_BG },
+    },
     colorScheme: {
       ...colorScheme,
       // Surface Soho (gris neutres) pour rester cohérent avec les utilitaires bg-surface-*.
@@ -71,6 +96,19 @@ const SohoPreset = {
           900: '#1f1f1f',
           950: '#141414',
         },
+      },
+    },
+  },
+  components: {
+    ...components,
+    // Fond du canvas principal (zone derrière la topbar + router-outlet) : un cran plus
+    // sombre/marqué que le fond « surface.50/900 » par défaut, pour se démarquer du
+    // fond des cartes (cf. semantic.content.background ci-dessus).
+    sidebar: {
+      ...sidebarTokens,
+      main: {
+        ...sidebarMain,
+        background: CANVAS_BG,
       },
     },
   },

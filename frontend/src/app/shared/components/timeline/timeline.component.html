@@ -9,8 +9,7 @@
                     type="button"
                     class="tl-marker"
                     [attr.aria-label]="group.items[0].title"
-                    (click)="onSelect(group)"
-            >
+                    (click)="onSelect(group)">
                 <span>{{ group.emoji }}</span>
             </button>
         </ng-template>
@@ -19,31 +18,29 @@
     <ng-template #content let-group>
         @if (group.items.length === 1) {
             <button type="button" class="tl-card" (click)="onSelect(group)">
-                <div class="tl-title">{{ group.items[0].title }}</div>
-                @if (impactLabel(group.items[0].impact); as impact) {
-                    <div class="tl-impact" [class.pos]="group.items[0].impact! > 0"
-                         [class.neg]="group.items[0].impact! < 0">
-                        {{ impact }}
-                    </div>
-                }
-                @if (group.items[0].meta) {
-                    <div class="tl-meta">{{ group.items[0].meta }}</div>
-                }
+                <div class="tl-row">
+                    <div class="tl-title">{{ group.items[0].title }}</div>
+                    @if (impactLabel(group.items[0].impact); as impact) {
+                        <div class="tl-impact" [class.pos]="group.items[0].impact! > 0"
+                             [class.neg]="group.items[0].impact! < 0">
+                            {{ impact }}
+                        </div>
+                    }
+                </div>
             </button>
         } @else {
             <button type="button" class="tl-card tl-card-group" (click)="onSelect(group)">
                 @for (item of group.items; track $index) {
-                    <div class="tl-subitem">
-                        <div class="tl-title">{{ item.title }}</div>
-                        @if (impactLabel(item.impact); as impact) {
-                            <div class="tl-impact" [class.pos]="item.impact! > 0" [class.neg]="item.impact! < 0">
-                                {{ impact }}
+                    @if (impactLabel(item.impact); as impact) {
+                        <div class="tl-subitem">
+                            <div class="tl-row">
+                                <div class="tl-title">{{ item.title }}</div>
+                                <div class="tl-impact" [class.pos]="item.impact! > 0" [class.neg]="item.impact! < 0">
+                                    {{ impact }}
+                                </div>
                             </div>
-                        }
-                        @if (item.meta) {
-                            <div class="tl-meta">{{ item.meta }}</div>
-                        }
-                    </div>
+                        </div>
+                    }
                 }
             </button>
         }

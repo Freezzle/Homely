@@ -30,7 +30,7 @@ import { MontantPipe, PeriodicitePipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { localeDeLangue } from '../../../core/i18n/locale.util';
 import { creerDevisesDisponibles } from '../../../core/utils/devise-options.util';
-import { TagComponent } from '../../../shared/components/tag/tag.component';
+import { MembresTagsComponent } from '../../../shared/components/membres-tags/membres-tags.component';
 import { toIsoDateLocal, parseIsoDateLocal } from '../../../core/utils/date.util';
 import { arrondirSommeRepartition, sommeRepartitionValide as estSommeRepartitionValide } from '../../../core/utils/repartition.util';
 import { formatPeriodeMois, formaterMontantSimple } from '../../../core/utils/format-affichage.util';
@@ -78,7 +78,7 @@ interface PosteAffiche extends PosteDto {
             InputTextModule, InputNumberModule, SelectModule, MultiSelectModule, DatePickerModule,
             TagModule, TooltipModule, CardModule, MessageModule, ConfirmDialogModule, SkeletonModule, DrawerModule, CheckboxModule,
             MenuModule, SelectButtonModule,
-            MontantPipe, PeriodicitePipe, TagComponent, PosteApercuDialogComponent, PosteHistoriqueDrawerComponent, PosteRevisionDialogComponent, PosteClotureDialogComponent, PosteDecalageDialogComponent],
+            MontantPipe, PeriodicitePipe, MembresTagsComponent, PosteApercuDialogComponent, PosteHistoriqueDrawerComponent, PosteRevisionDialogComponent, PosteClotureDialogComponent, PosteDecalageDialogComponent],
   templateUrl: './postes-liste.component.html',
 })
 export class PostesListeComponent {

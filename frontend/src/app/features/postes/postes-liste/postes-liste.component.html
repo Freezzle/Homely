@@ -91,9 +91,7 @@
                 <ng-template #item let-compte>
                     <div class="flex items-center gap-2 flex-wrap">
                         <span>{{ compte.libelle }}</span>
-                        @for (m of membresForCompte(compte); track m.id) {
-                            <app-tag [couleur]="m.couleur" [texte]="m.nom"/>
-                        }
+                        <app-membres-tags [membres]="membresForCompte(compte)"/>
                     </div>
                 </ng-template>
             </p-multiselect>
@@ -458,18 +456,14 @@
                                         @if (compte) {
                                             <div class="flex items-center gap-1.5 flex-wrap">
                                                 <span>{{ compte.libelle }}</span>
-                                                @for (m of membresForCompte(compte); track m.id) {
-                                                    <app-tag [couleur]="m.couleur" [texte]="m.nom"/>
-                                                }
+                                                <app-membres-tags [membres]="membresForCompte(compte)"/>
                                             </div>
                                         }
                                     </ng-template>
                                     <ng-template #item let-compte>
                                         <div class="flex items-center gap-1.5 flex-wrap">
                                             <span>{{ compte.libelle }}</span>
-                                            @for (m of membresForCompte(compte); track m.id) {
-                                                <app-tag [couleur]="m.couleur" [texte]="m.nom"/>
-                                            }
+                                            <app-membres-tags [membres]="membresForCompte(compte)"/>
                                         </div>
                                     </ng-template>
                                 </p-select>
@@ -497,18 +491,14 @@
                                         @if (compte) {
                                             <div class="flex items-center gap-1.5 flex-wrap">
                                                 <span>{{ compte.libelle }}</span>
-                                                @for (m of membresForCompte(compte); track m.id) {
-                                                    <app-tag [couleur]="m.couleur" [texte]="m.nom"/>
-                                                }
+                                                <app-membres-tags [membres]="membresForCompte(compte)"/>
                                             </div>
                                         }
                                     </ng-template>
                                     <ng-template #item let-compte>
                                         <div class="flex items-center gap-1.5 flex-wrap">
                                             <span>{{ compte.libelle }}</span>
-                                            @for (m of membresForCompte(compte); track m.id) {
-                                                <app-tag [couleur]="m.couleur" [texte]="m.nom"/>
-                                            }
+                                            <app-membres-tags [membres]="membresForCompte(compte)"/>
                                         </div>
                                     </ng-template>
                                 </p-select>
@@ -535,18 +525,14 @@
                                         @if (compte) {
                                             <div class="flex items-center gap-1.5 flex-wrap">
                                                 <span>{{ compte.libelle }}</span>
-                                                @for (m of membresForCompte(compte); track m.id) {
-                                                    <app-tag [couleur]="m.couleur" [texte]="m.nom"/>
-                                                }
+                                                <app-membres-tags [membres]="membresForCompte(compte)"/>
                                             </div>
                                         }
                                     </ng-template>
                                     <ng-template #item let-compte>
                                         <div class="flex items-center gap-1.5 flex-wrap">
                                             <span>{{ compte.libelle }}</span>
-                                            @for (m of membresForCompte(compte); track m.id) {
-                                                <app-tag [couleur]="m.couleur" [texte]="m.nom"/>
-                                            }
+                                            <app-membres-tags [membres]="membresForCompte(compte)"/>
                                         </div>
                                     </ng-template>
                                 </p-select>

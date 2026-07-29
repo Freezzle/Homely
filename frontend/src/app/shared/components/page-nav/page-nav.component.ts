@@ -26,7 +26,7 @@ export interface PageNavSelection {
           class="pn-chip"
           [class.cur]="selection().mode === 'annee'"
           (click)="selectAnnee()">
-          🗓️ {{ t.dashboard.vueDensemble }}
+          {{ t.dashboard.vueDensemble }}
         </button>
         @for (m of months(); track m.mois) {
           <button
@@ -46,7 +46,7 @@ export interface PageNavSelection {
           class="pn-item"
           [class.cur]="selection().mode === 'annee'"
           (click)="selectAnnee()">
-          <span>🗓️ {{ t.dashboard.vueDensemble }}</span>
+          <span>{{ t.dashboard.vueDensemble }}</span>
           <span class="pn-s pn-s-pos">{{ annee() }}</span>
         </button>
         @for (m of months(); track m.mois) {
@@ -118,7 +118,7 @@ export interface PageNavSelection {
     .pn-s {
       font-family: var(--font-mono);
       font-variant-numeric: tabular-nums;
-      font-size: 10px;
+      font-size: 12px;
     }
 
     .pn-s-pos {

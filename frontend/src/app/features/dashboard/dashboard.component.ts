@@ -271,8 +271,8 @@ export class DashboardComponent {
     return this.decomp.formatPct(v);
   }
 
-  private formatMoisCourt(mois: number): string {
-    return this.t.mois[mois - 1].slice(0, 3);
+  private formatMois(mois: number): string {
+    return this.t.mois[mois - 1];
   }
 
   private formatMoisAnnee(iso: string): string {
@@ -315,12 +315,6 @@ export class DashboardComponent {
 
   private categorieMontantParMembreAnnuel(categorieId: string, membreId: string): number {
     return (this.ventilationAnnuelle()?.parCategorieMembre ?? {})[categorieId]?.[membreId] ?? 0;
-  }
-
-  private categorieDepuisPoste(poste: PosteDto): string {
-    return poste.categorieId
-      ? this.categories().find((categorie) => categorie.id === poste.categorieId)?.libelle ?? ''
-      : '';
   }
 
   readonly foyerInitiales = computed(() => this.initiales(this.contexte.foyerCourant()?.nom ?? this.t.projection.foyer));
@@ -742,7 +736,7 @@ export class DashboardComponent {
       {
         label: this.t.dashboard.moisNegatifs,
         value: `${negatifs.length} / 12`,
-        hint: negatifs.length ? negatifs.map((item) => this.formatMoisCourt(item.numero)).join(', ') : this.t.dashboard.statutExcedentaire,
+        hint: negatifs.length ? negatifs.map((item) => this.formatMois(item.numero)).join(', ') : this.t.dashboard.statutExcedentaire,
         color: negatifs.length ? 'var(--p-red-500)' : 'var(--p-emerald-600)',
       },
       {
@@ -752,7 +746,7 @@ export class DashboardComponent {
       },
       {
         label: this.t.dashboard.plusGrosMois,
-        value: plusGrosMois ? `${this.formatMoisCourt(plusGrosMois.mois)} · ${this.formatMontant(plusGrosMois.montant)}` : '-',
+        value: plusGrosMois ? `${this.formatMontant(plusGrosMois.montant)}` : '-',
         hint: plusGrosMois ? this.t.mois[plusGrosMois.mois - 1] : undefined,
       },
       {
@@ -985,9 +979,17 @@ export class DashboardComponent {
       });
   });
 
-  private posteImpactMensuel(poste: PosteDto): number {
-    const montant = Math.abs(poste.montantMensualise ?? poste.montant);
-    return poste.type === 'REVENU' ? montant : -montant;
+  /**
+   * Montant "plein" d'un poste pour l'affichage des événements : les postes ne sont pas tous
+   * lissés (mensualisés) — pour un poste PERIODIQUE, le montant réellement versé/prélevé lors de
+   * l'occurrence est `montant`, pas la moyenne mensuelle `montantMensualise`.
+   */
+  private montantPleinPoste(poste: PosteDto): number {
+    return Math.abs(poste.montant);
+  }
+
+  private signePoste(poste: PosteDto, magnitude: number): number {
+    return poste.type === 'REVENU' ? magnitude : -magnitude;
   }
 
   /**
@@ -997,16 +999,32 @@ export class DashboardComponent {
    * charge ou réserve = négatif/rouge).
    */
   private posteImpactDebut(poste: PosteDto): number {
-    const montantNouveau = Math.abs(poste.montantMensualise ?? poste.montant);
+    const montantNouveau = this.montantPleinPoste(poste);
     let magnitude = montantNouveau;
     if (poste.posteOrigineId) {
       const origine = this.postes().find((p) => p.id === poste.posteOrigineId);
       if (origine) {
-        const montantOrigine = Math.abs(origine.montantMensualise ?? origine.montant);
-        magnitude = Math.abs(montantNouveau - montantOrigine);
+        magnitude = Math.abs(montantNouveau - this.montantPleinPoste(origine));
       }
     }
-    return poste.type === 'REVENU' ? magnitude : -magnitude;
+    return this.signePoste(poste, magnitude);
+  }
+
+  /**
+   * Impact affiché pour l'événement "fin" d'un poste. Si le poste est intermédiaire (remplacé par
+   * une révision, `posteSuivantId` présent), aucun montant n'est affiché : ce n'est pas une
+   * véritable fin, juste un changement de montant déjà reflété par l'événement "début" du poste
+   * suivant. Seul un poste qui se termine réellement (pas de `posteSuivantId`) affiche son montant.
+   */
+  private posteImpactFin(poste: PosteDto): number | undefined {
+    if (poste.posteSuivantId) {
+      return undefined;
+    }
+    return -this.signePoste(poste, this.montantPleinPoste(poste));
+  }
+
+  private aUnMontantValide(impact: number | undefined): impact is number {
+    return impact != null && impact !== 0 && !Number.isNaN(impact);
   }
 
   readonly evenementsAnnee = computed<DashboardTimelineItem[]>(() => {
@@ -1021,7 +1039,6 @@ export class DashboardComponent {
             emoji: '▶️',
             title: poste.description,
             impact: this.posteImpactDebut(poste),
-            meta: this.categorieDepuisPoste(poste),
             mois: debut.getMonth() + 1,
           });
         }
@@ -1031,13 +1048,13 @@ export class DashboardComponent {
             when: this.t.mois[fin.getMonth()],
             emoji: '⏹️',
             title: poste.description,
-            impact: -this.posteImpactMensuel(poste),
-            meta: this.categorieDepuisPoste(poste),
+            impact: this.posteImpactFin(poste),
             mois: fin.getMonth() + 1,
           });
         }
         return items;
       })
+      .filter((item) => this.aUnMontantValide(item.impact))
       .sort((a, b) => a.mois - b.mois || a.title.localeCompare(b.title));
   });
 
@@ -1170,7 +1187,7 @@ export class DashboardComponent {
     }
     return projection.mois.map((mois) => ({
       mois: mois.numero,
-      label: this.formatMoisCourt(mois.numero),
+      label: this.formatMois(mois.numero),
       solde: mois.agregat.soldeDisponible,
     }));
   });

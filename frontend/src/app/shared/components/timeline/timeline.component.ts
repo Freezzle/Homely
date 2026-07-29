@@ -7,7 +7,6 @@ export interface TimelineItem {
   emoji: string;
   title: string;
   impact?: number;
-  meta?: string;
   /** Clé de regroupement : les items consécutifs (déjà triés) partageant la même clé sont
    *  fusionnés en un seul point de la timeline. Par défaut, `when` est utilisé comme clé. */
   groupKey?: string | number;
@@ -31,17 +30,23 @@ export class TimelineComponent {
   readonly showMarkerIcon = input<boolean>(true);
   readonly select = output<TimelineItem>();
 
-  protected readonly groups = computed<TimelineGroup[]>(() => this.regrouperConsecutifs(this.items()));
+  protected readonly groups = computed<TimelineGroup[]>(() =>
+    this.regrouperConsecutifs(this.items().filter((item) => this.aUnMontantValide(item.impact)))
+  );
 
   protected impactLabel(impact?: number): string | null {
-    if (impact == null || impact === 0) {
+    if (!this.aUnMontantValide(impact)) {
       return null;
     }
 
-    return `${impact > 0 ? '+' : '−'}${new Intl.NumberFormat('fr-CH', {
+    return `${impact! > 0 ? '+' : '−'}${new Intl.NumberFormat('fr-CH', {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(Math.abs(impact))} CHF/mois`;
+    }).format(Math.abs(impact!))} CHF/mois`;
+  }
+
+  private aUnMontantValide(impact?: number): boolean {
+    return impact != null && impact !== 0 && !Number.isNaN(impact);
   }
 
   protected onSelect(group: TimelineGroup): void {

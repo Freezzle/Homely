@@ -21,12 +21,7 @@
         <td>
           <div class="flex items-center gap-2 flex-wrap">
             <span class="font-medium">{{ c.libelle }}</span>
-            @for (mid of c.membreIds; track mid) {
-              @let m = membreParId(mid);
-              @if (m) {
-                <app-tag [couleur]="m.couleur" [texte]="m.nom" />
-              }
-            }
+            <app-membres-tags [membres]="membresForCompte(c)" />
           </div>
         </td>
         <td class="text-right">{{ c.soldeInitial | montant:c.devise }}</td>

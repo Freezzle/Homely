@@ -1,0 +1,5 @@
+<div class="flex items-center gap-1.5 flex-wrap">
+  @for (m of membres(); track m.id) {
+    <app-tag [couleur]="m.couleur" [texte]="m.nom" />
+  }
+</div>
