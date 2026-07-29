@@ -235,14 +235,17 @@
             @if (afficherParMembre() && vueEffective() !== 'FOYER') {
               <div class="member-grid">
                 @for (mc of membresData(); track mc.id) {
-                  <app-member-recap-card
+                  <app-carte-bilan
+                    variante="membre"
                     [nom]="mc.nom"
                     [sousTitre]="mc.sousTitre"
                     [couleur]="mc.couleur"
                     [initiales]="mc.initiales"
-                    [rav]="mc.rav"
+                    [montantPrincipal]="mc.rav"
                     [devise]="deviseBase()"
-                    [lignes]="lignesMembre(mc)" />
+                    [lignes]="lignesMembre(mc)"
+                    [tauxEffort]="mc.tauxEffort"
+                    [prorataPct]="mc.prorataPct" />
                 }
               </div>
             }

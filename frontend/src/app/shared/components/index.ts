@@ -7,6 +7,5 @@ export * from './kpi-chip-row/kpi-chip-row.component';
 export * from './stat-grid/stat-grid.component';
 export * from './comparison-bar/comparison-bar.component';
 export * from './objective-progress/objective-progress.component';
-export * from './member-recap-card/member-recap-card.component';
 export * from './timeline/timeline.component';
 export * from './duel-picker/duel-picker.component';

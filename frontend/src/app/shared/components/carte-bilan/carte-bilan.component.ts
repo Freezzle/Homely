@@ -14,6 +14,8 @@ export interface MembreTagInfo { membreId: string; label: string; couleur: strin
 /** Une ligne de décomposition (revenu/charge/réserve, catégorie, type de poste ou compte). */
 export interface LigneDecomposition {
   id: string; libelle: string; montantAbs: number; signe: 1 | -1;
+  /** Type de poste d'origine — permet un style dédié (ex. réserve affichée en bleu). */
+  type?: 'REVENU' | 'CHARGE' | 'RESERVE';
   tags?: MembreTagInfo[];
 }
 
@@ -44,10 +46,21 @@ export class CarteBilanComponent {
   readonly lignes = input.required<LigneDecomposition[]>();
   /** Taux d'effort (0-100) — footer masqué si non fourni. */
   readonly tauxEffort = input<number | undefined>(undefined);
+  /** Prorata / quote-part attribué (0-100) pour la période affichée — barre neutre en footer. */
+  readonly prorataPct = input<number | undefined>(undefined);
 
   readonly couleurEffective = computed(() =>
     this.variante() === 'foyer' ? 'var(--p-secondary-color)' : this.couleur()
   );
+
+  /** Couleur de la barre de taux d'effort : primaire (<60), avertissement (60-85), danger (>=85). */
+  readonly couleurTauxEffort = computed(() => {
+    const taux = this.tauxEffort();
+    if (taux === undefined) return 'var(--p-primary-color)';
+    if (taux >= 85) return 'var(--p-red-500)';
+    if (taux >= 75) return 'var(--p-orange-500)';
+    return 'var(--p-primary-color)';
+  });
 
   /** Montant sans le symbole de devise — utilisé pour le chiffre principal des cartes. */
   formatMontantSansDevise(v: number): string {

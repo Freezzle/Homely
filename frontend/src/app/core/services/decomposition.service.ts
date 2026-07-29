@@ -91,9 +91,9 @@ export class DecompositionService {
     reserves: { id: string; libelle: string; montant: number }[];
   }, objectifs: ObjectifDto[]): LigneDecomposition[] {
     return [
-      ...detail.revenus.map(r => ({ id: r.id, libelle: r.libelle, montantAbs: r.montant, signe: 1 as const })),
-      ...detail.charges.map(r => ({ id: r.id, libelle: r.libelle, montantAbs: r.montant, signe: -1 as const })),
-      ...detail.reserves.map(r => ({ id: r.id, libelle: this.libelleCategorie(r, objectifs), montantAbs: r.montant, signe: -1 as const })),
+      ...detail.revenus.map(r => ({ id: r.id, libelle: r.libelle, montantAbs: r.montant, signe: 1 as const, type: 'REVENU' as const })),
+      ...detail.charges.map(r => ({ id: r.id, libelle: r.libelle, montantAbs: r.montant, signe: -1 as const, type: 'CHARGE' as const })),
+      ...detail.reserves.map(r => ({ id: r.id, libelle: this.libelleCategorie(r, objectifs), montantAbs: r.montant, signe: -1 as const, type: 'RESERVE' as const })),
     ];
   }
 
@@ -117,16 +117,16 @@ export class DecompositionService {
    */
   cascadeDecompositionDepuisSplit(split: VentilationSplitDto): LigneDecomposition[] {
     const rows: LigneDecomposition[] = [];
-    const push = (id: string, libelle: string, montant: number, signe: 1 | -1) => {
-      if (Math.abs(montant) >= 0.005) rows.push({ id, libelle, montantAbs: montant, signe });
+    const push = (id: string, libelle: string, montant: number, signe: 1 | -1, type: 'REVENU' | 'CHARGE' | 'RESERVE') => {
+      if (Math.abs(montant) >= 0.005) rows.push({ id, libelle, montantAbs: montant, signe, type });
     };
 
-    push('rev-perso',   this.t.projection.revenusPersonnels,    split.revenusPerso,     1);
-    push('rev-partage', this.t.projection.revenusPartages,      split.revenusPartage,   1);
-    push('chg-perso',   this.t.projection.chargesPersonnelles,  split.chargesPerso,     -1);
-    push('chg-partage', this.t.projection.chargesPartagees,     split.chargesPartage,   -1);
-    push('res-perso',   this.t.projection.reservesPersonnelles, split.reservesPerso,    -1);
-    push('res-partage', this.t.projection.reservesPartagees,    split.reservesPartage,  -1);
+    push('rev-perso',   this.t.projection.revenusPersonnels,    split.revenusPerso,     1, 'REVENU');
+    push('rev-partage', this.t.projection.revenusPartages,      split.revenusPartage,   1, 'REVENU');
+    push('chg-perso',   this.t.projection.chargesPersonnelles,  split.chargesPerso,     -1, 'CHARGE');
+    push('chg-partage', this.t.projection.chargesPartagees,     split.chargesPartage,   -1, 'CHARGE');
+    push('res-perso',   this.t.projection.reservesPersonnelles, split.reservesPerso,    -1, 'RESERVE');
+    push('res-partage', this.t.projection.reservesPartagees,    split.reservesPartage,  -1, 'RESERVE');
 
     return rows;
   }
@@ -134,9 +134,9 @@ export class DecompositionService {
   /** Décomposition « cascade » foyer/membre en mode mono-membre : 3 lignes agrégées. */
   cascadeDecompositionTotal(ag: VentilationAggregatDto): LigneDecomposition[] {
     return [
-      { id: 'revenus',  libelle: this.t.projection.revenus,  montantAbs: ag.revenus,  signe: 1 },
-      { id: 'charges',  libelle: this.t.projection.charges,  montantAbs: ag.charges,  signe: -1 },
-      { id: 'reserves', libelle: this.t.projection.reserves, montantAbs: ag.reserves, signe: -1 },
+      { id: 'revenus',  libelle: this.t.projection.revenus,  montantAbs: ag.revenus,  signe: 1, type: 'REVENU' },
+      { id: 'charges',  libelle: this.t.projection.charges,  montantAbs: ag.charges,  signe: -1, type: 'CHARGE' },
+      { id: 'reserves', libelle: this.t.projection.reserves, montantAbs: ag.reserves, signe: -1, type: 'RESERVE' },
     ];
   }
 

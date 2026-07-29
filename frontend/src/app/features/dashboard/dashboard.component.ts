@@ -34,7 +34,6 @@ import { parseIsoDateLocal } from '../../core/utils/date.util';
 import { CarteBilanComponent, LigneDecomposition, MembreTagInfo } from '../../shared/components/carte-bilan/carte-bilan.component';
 import { KpiChipRowComponent } from '../../shared/components/kpi-chip-row/kpi-chip-row.component';
 import { KpiChip } from '../../shared/components/kpi-chip/kpi-chip.component';
-import { MemberRecapCardComponent } from '../../shared/components/member-recap-card/member-recap-card.component';
 import { MetricRingComponent, MetricRingSegment } from '../../shared/components/metric-ring/metric-ring.component';
 import { ObjectiveProgressComponent, ObjectiveProgressSeverity } from '../../shared/components/objective-progress/objective-progress.component';
 import { PageNavComponent, PageNavMonthSummary, PageNavSelection } from '../../shared/components/page-nav/page-nav.component';
@@ -59,7 +58,7 @@ type DashboardTimelineItem = TimelineItem & { mois: number };
     SkeletonModule,
     CarteBilanComponent,
     KpiChipRowComponent,
-    MemberRecapCardComponent,
+
     MetricRingComponent,
     ObjectiveProgressComponent,
     PageNavComponent,
@@ -456,6 +455,7 @@ export class DashboardComponent {
         rav: agregat.soldeDisponible,
         agregat,
         tauxEffort,
+        prorataPct: this.decomp.periodeEtQuotePart(this.contexte.scenarioCourant(), membre.id, this.annee(), this.moisSelectionne() ?? 1).quotePart,
         effortSeverity: this.severityEffort(tauxEffort),
         decomposition: this.construireDecomposition(detail),
         cascadeDecomposition: this.decomp.construireCascadeDecomposition(membre.id, agregat, ventilations, nbMembres),
