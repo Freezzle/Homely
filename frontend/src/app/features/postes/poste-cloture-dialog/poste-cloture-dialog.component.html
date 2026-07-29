@@ -1,0 +1,28 @@
+<p-dialog [visible]="visible()" (visibleChange)="visibleChange.emit($event)"
+          [header]="i18n.instant('poste.clotureTitre', { description: poste()?.description ?? '' })"
+          [modal]="true" class="w-full max-w-md">
+    @if (poste(); as p) {
+        <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
+            <p-selectbutton [options]="options()" formControlName="option"
+                             optionLabel="label" optionValue="value"
+                             styleClass="flex flex-col items-stretch gap-1"/>
+
+            @if (form.value.option === 'PERSONNALISEE') {
+                <div class="flex flex-col gap-1">
+                    <label class="text-sm font-medium">{{ t.poste.clotureDateLabel }} *</label>
+                    <p-datepicker appendTo="body" formControlName="datePersonnalisee" view="month" dateFormat="mm/yy"
+                                  [showButtonBar]="true" class="w-full"></p-datepicker>
+                </div>
+            }
+
+            <div class="text-sm rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-primary-700 dark:text-primary-300">
+                {{ resume() }}
+            </div>
+        </form>
+    }
+    <ng-template #footer>
+        <p-button [label]="t.commun.annuler" severity="secondary" (click)="fermer()"/>
+        <p-button [label]="t.poste.clotureValider" (click)="enregistrer()"
+                  [disabled]="!valide() || enregistrementEnCours" [loading]="enregistrementEnCours"/>
+    </ng-template>
+</p-dialog>

@@ -36,6 +36,9 @@ import { arrondirSommeRepartition, sommeRepartitionValide as estSommeRepartition
 import { formatPeriodeMois, formaterMontantSimple } from '../../../core/utils/format-affichage.util';
 import { PosteApercuDialogComponent } from '../poste-apercu-dialog/poste-apercu-dialog.component';
 import { PosteHistoriqueDrawerComponent, MaillonHistorique } from '../poste-historique-drawer/poste-historique-drawer.component';
+import { PosteRevisionDialogComponent } from '../poste-revision-dialog/poste-revision-dialog.component';
+import { PosteClotureDialogComponent } from '../poste-cloture-dialog/poste-cloture-dialog.component';
+import { PosteDecalageDialogComponent } from '../poste-decalage-dialog/poste-decalage-dialog.component';
 
 /**
  * Validateur de groupe : la date de fin (si renseignée) ne peut pas être
@@ -65,8 +68,6 @@ interface PosteAffiche extends PosteDto {
   _labelSeparateur?: string;
 }
 
-/** Options de l'action rapide « Terminer » (clôture d'un poste). */
-type OptionCloture = 'MOIS_COURANT' | 'PROCHAIN_PERIODIQUE' | 'PERSONNALISEE';
 
 @Component({
   selector: 'app-postes-liste',
@@ -76,7 +77,7 @@ type OptionCloture = 'MOIS_COURANT' | 'PROCHAIN_PERIODIQUE' | 'PERSONNALISEE';
             InputTextModule, InputNumberModule, SelectModule, MultiSelectModule, DatePickerModule,
             TagModule, TooltipModule, CardModule, MessageModule, ConfirmDialogModule, SkeletonModule, DrawerModule, CheckboxModule,
             MenuModule, SelectButtonModule,
-            MontantPipe, PeriodicitePipe, TagComponent, PosteApercuDialogComponent, PosteHistoriqueDrawerComponent],
+            MontantPipe, PeriodicitePipe, TagComponent, PosteApercuDialogComponent, PosteHistoriqueDrawerComponent, PosteRevisionDialogComponent, PosteClotureDialogComponent, PosteDecalageDialogComponent],
   templateUrl: './postes-liste.component.html',
 })
 export class PostesListeComponent {
@@ -113,121 +114,10 @@ export class PostesListeComponent {
   // ── Révision de montant planifiée ─────────────────────────
   revisionDialogVisible = false;
   posteEnRevision: PosteDto | null = null;
-  revisionForm = this.fb.group({
-    nouveauMontant: [0, [Validators.required, Validators.min(0.01)]],
-    dateEffet:      [null as Date | null, Validators.required],
-  });
-
-  private readonly _revisionMontantValue = toSignal(
-    this.revisionForm.get('nouveauMontant')!.valueChanges.pipe(
-      startWith(this.revisionForm.get('nouveauMontant')!.value)
-    ),
-    { initialValue: 0 }
-  );
-  private readonly _revisionDateValue = toSignal(
-    this.revisionForm.get('dateEffet')!.valueChanges.pipe(
-      startWith(this.revisionForm.get('dateEffet')!.value)
-    ),
-    { initialValue: null as Date | null }
-  );
-
-  /** Borne basse exclusive du datepicker : 1er jour du mois qui suit le début du poste. */
-  revisionDateMin(): Date | null {
-    const p = this.posteEnRevision;
-    if (!p?.debut) return null;
-    const [year, month] = p.debut.split('-').map(Number);
-    return new Date(year, month, 1); // month (0-based) = mois suivant le début
-  }
-
-  /** Borne haute inclusive du datepicker : dernier jour du mois de fin du poste, s'il y en a une. */
-  revisionDateMax(): Date | null {
-    const p = this.posteEnRevision;
-    if (!p?.fin) return null;
-    return parseIsoDateLocal(p.fin);
-  }
-
-  /** Résumé live « 1'800 → 1'950 CHF (+8.3 %), dès janvier 2027 ». */
-  resumeRevision = computed(() => {
-    const p = this.posteEnRevision;
-    if (!p) return '';
-    const avant = p.montant;
-    const apres = this._revisionMontantValue() ?? 0;
-    const date = this._revisionDateValue();
-    const pct = avant > 0 ? ((apres - avant) / avant) * 100 : 0;
-    const signe = pct >= 0 ? '+' : '';
-    return this.i18n.instant('poste.revisionResume', {
-      avant: this.formaterMontant(avant, p.devise),
-      apres: this.formaterMontant(apres, p.devise),
-      signe,
-      pct: pct.toFixed(1),
-      date: date ? this.formatPeriode(this.toIso(date)) : '–',
-    });
-  });
 
   // ── Clôture rapide (action « Terminer ») ──────────────────
   clotureDialogVisible = false;
   posteEnCloture = signal<PosteDto | null>(null);
-  clotureForm = this.fb.group({
-    option: ['MOIS_COURANT' as OptionCloture],
-    datePersonnalisee: [null as Date | null],
-  });
-
-  private readonly _clotureOptionValue = toSignal(
-    this.clotureForm.get('option')!.valueChanges.pipe(
-      startWith(this.clotureForm.get('option')!.value as OptionCloture)
-    ),
-    { initialValue: 'MOIS_COURANT' as OptionCloture }
-  );
-  private readonly _clotureDatePersonnaliseeValue = toSignal(
-    this.clotureForm.get('datePersonnalisee')!.valueChanges.pipe(
-      startWith(this.clotureForm.get('datePersonnalisee')!.value)
-    ),
-    { initialValue: null as Date | null }
-  );
-
-  /** Options proposées : « prochain mois périodique » uniquement si cycle > 2 mois. */
-  clotureOptions = computed(() => {
-    const p = this.posteEnCloture();
-    const labelMoisCourant = p && this.posteDebuteApresMoisCourant(p)
-      ? this.i18n.instant('poste.clotureOptionMoisDebut', { periode: this.formatPeriode(this.toIso(this.moisEffectifCloture(p))) })
-      : this.t.poste.clotureOptionMoisCourant;
-    const options: { label: string; value: OptionCloture }[] = [
-      { label: labelMoisCourant, value: 'MOIS_COURANT' },
-    ];
-    if (p && p.periodiciteMois > 2) {
-      options.push({ label: this.t.poste.clotureOptionProchainPeriodique, value: 'PROCHAIN_PERIODIQUE' });
-    }
-    options.push({ label: this.t.poste.clotureOptionPersonnalisee, value: 'PERSONNALISEE' });
-    return options;
-  });
-
-  /** Date de fin calculée selon l'option choisie (toujours le dernier jour du mois retenu). */
-  finCloture = computed<Date | null>(() => {
-    const p = this.posteEnCloture();
-    if (!p) return null;
-    const option = this._clotureOptionValue();
-    if (option === 'MOIS_COURANT') return this.finDeMois(this.moisEffectifCloture(p));
-    if (option === 'PROCHAIN_PERIODIQUE') return this.finDeMois(this.prochainMoisPeriodique(p));
-    const date = this._clotureDatePersonnaliseeValue();
-    return date ? this.finDeMois(date) : null;
-  });
-
-  /** Résumé live « Le poste sera actif jusqu'en septembre 2026 ». */
-  resumeCloture = computed(() => {
-    const fin = this.finCloture();
-    if (!fin) return '';
-    return this.i18n.instant('poste.clotureResume', { periode: this.formatPeriode(this.toIso(fin)) });
-  });
-
-  /** Bouton de validation activé seulement si une date de fin cohérente est déterminée. */
-  clotureValide = computed(() => {
-    const p = this.posteEnCloture();
-    const fin = this.finCloture();
-    if (!p || !fin) return false;
-    const iso = this.toIso(fin);
-    if (p.debut && iso < p.debut) return false;
-    return true;
-  });
 
   // ── Historique de la chaîne de révisions (lecture seule) ──
   historiqueDrawerVisible = signal(false);
@@ -237,40 +127,9 @@ export class PostesListeComponent {
   /** Poste temporairement mis en surbrillance après navigation depuis le drawer d'historique. */
   posteEnSurbrillanceId = signal<string | null>(null);
 
-  /** Vrai si le nouveau montant saisi est strictement identique au montant actuel du poste. */
-  montantRevisionIdentique = computed(() => {
-    const p = this.posteEnRevision;
-    const montant = this._revisionMontantValue();
-    if (!p || montant == null) return false;
-    return montant === p.montant;
-  });
-
-  /** Bouton de validation activé seulement si montant > 0, différent du montant actuel, et date d'effet cohérente. */
-  revisionValide = computed(() => {
-    const p = this.posteEnRevision;
-    const montant = this._revisionMontantValue();
-    const date = this._revisionDateValue();
-    if (!p || !date || !(montant! > 0)) return false;
-    if (montant === p.montant) return false;
-    const iso = this.toIso(date);
-    if (p.debut && iso <= p.debut) return false;
-    if (p.fin && iso > p.fin) return false;
-    return true;
-  });
-
   // ── Décaler la date d'effet (frontière entre un maillon et son prédécesseur) ──
   decalerDialogVisible = false;
   posteEnDecalage: PosteDto | null = null;
-  decalerForm = this.fb.group({
-    nouvelleDateEffet: [null as Date | null, Validators.required],
-  });
-
-  private readonly _decalerDateValue = toSignal(
-    this.decalerForm.get('nouvelleDateEffet')!.valueChanges.pipe(
-      startWith(this.decalerForm.get('nouvelleDateEffet')!.value)
-    ),
-    { initialValue: null as Date | null }
-  );
 
   /** Prédécesseur immédiat du maillon en cours de décalage. */
   precedentEnDecalage = computed(() => {
@@ -280,64 +139,10 @@ export class PostesListeComponent {
   });
 
   /** Successeur éventuel (maillon suivant), qui fige la borne haute s'il existe. */
-  private successeurEnDecalage = computed(() => {
+  successeurEnDecalage = computed(() => {
     const p = this.posteEnDecalage;
     if (!p) return null;
     return this.postes().find(x => x.posteOrigineId === p.id) ?? null;
-  });
-
-  /** Borne basse exclusive : 1er jour du mois qui suit le début du prédécesseur. */
-  borneDecalageMin = computed<Date | null>(() => {
-    const precedent = this.precedentEnDecalage();
-    if (!precedent?.debut) return null;
-    const [year, month] = precedent.debut.split('-').map(Number);
-    return new Date(year, month, 1); // month (0-based index de month) = mois suivant
-  });
-
-  /** Borne haute exclusive : 1er jour du mois de fin déjà figé par un successeur, s'il y en a un. */
-  borneDecalageMax = computed<Date | null>(() => {
-    const p = this.posteEnDecalage;
-    const successeur = this.successeurEnDecalage();
-    if (!p || !successeur || !p.fin) return null;
-    const [year, month] = p.fin.split('-').map(Number);
-    return new Date(year, month - 1, 1);
-  });
-
-  /** Vrai si l'intervalle de mois valides est vide (deux maillons collés sur un seul mois d'écart). */
-  intervalleDecalageVide = computed(() => {
-    const min = this.borneDecalageMin();
-    const max = this.borneDecalageMax();
-    if (!min || !max) return false;
-    return min.getTime() > max.getTime();
-  });
-
-  /** Résumé live du nouveau découpage résultant. */
-  resumeDecalage = computed(() => {
-    const p = this.posteEnDecalage;
-    const precedent = this.precedentEnDecalage();
-    const date = this._decalerDateValue();
-    if (!p || !precedent || !date) return '';
-    const iso = this.toIso(date);
-    const finPrecedente = new Date(date.getFullYear(), date.getMonth(), 0);
-    return this.i18n.instant('poste.decalerDateEffetResume', {
-      descriptionPrecedente: precedent.description,
-      montantPrecedent: this.formaterMontant(precedent.montant, precedent.devise),
-      finPrecedente: this.formatPeriode(this.toIso(finPrecedente)),
-      montantActuel: this.formaterMontant(p.montant, p.devise),
-      debutActuel: this.formatPeriode(iso),
-    });
-  });
-
-  /** Bouton de validation activé seulement si une date est choisie et respecte l'intervalle autorisé. */
-  decalageValide = computed(() => {
-    if (this.intervalleDecalageVide()) return false;
-    const date = this._decalerDateValue();
-    if (!date) return false;
-    const min = this.borneDecalageMin();
-    const max = this.borneDecalageMax();
-    if (min && date.getTime() < min.getTime()) return false;
-    if (max && date.getTime() > max.getTime()) return false;
-    return true;
   });
 
   modeOptions = [
@@ -1300,76 +1105,15 @@ export class PostesListeComponent {
     return new Intl.DateTimeFormat(this.localeCourante(), { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d);
   }
 
-  /** Dernier jour du mois contenant la date donnée. */
-  private finDeMois(d: Date): Date {
-    return new Date(d.getFullYear(), d.getMonth() + 1, 0);
-  }
-
-  /** Vrai si le poste ne débute qu'à partir d'un mois strictement postérieur au mois courant. */
-  private posteDebuteApresMoisCourant(p: PosteDto): boolean {
-    if (!p.debut) return false;
-    const debut = parseIsoDateLocal(p.debut);
-    const now = new Date();
-    return debut.getFullYear() * 12 + debut.getMonth() > now.getFullYear() * 12 + now.getMonth();
-  }
-
-  /**
-   * Mois retenu par l'option « Terminer ce mois-ci » : le mois courant, sauf si le poste
-   * ne débute que plus tard, auquel cas on retient son mois de début (impossible de
-   * clôturer un poste avant même qu'il ait commencé).
-   */
-  private moisEffectifCloture(p: PosteDto): Date {
-    const now = new Date();
-    if (!p.debut) return now;
-    const debut = parseIsoDateLocal(p.debut);
-    return debut.getFullYear() * 12 + debut.getMonth() > now.getFullYear() * 12 + now.getMonth() ? debut : now;
-  }
-
-  /**
-   * Reproduit l'ancre de périodicité du moteur (doc 01 §3.4) : trouve, en index de mois
-   * global (année*12+mois), le premier mois strictement après le mois courant qui tombe
-   * sur le cycle du poste (ancré sur son mois de début), c-à-d le prochain mois où le
-   * poste aurait normalement généré une contribution.
-   */
-  private prochainMoisPeriodique(p: PosteDto): Date {
-    const d = p.periodiciteMois;
-    const now = new Date();
-    const debut = p.debut ? parseIsoDateLocal(p.debut) : now;
-    const ancreGlobal = debut.getFullYear() * 12 + debut.getMonth();
-    let candidat = now.getFullYear() * 12 + now.getMonth() + 1;
-    while (((candidat - ancreGlobal) % d + d) % d !== 0) {
-      candidat++;
-    }
-    return new Date(Math.floor(candidat / 12), (candidat % 12) -1, 1);
-  }
-
   ouvrirCloture(p: PosteDto): void {
     this.posteEnCloture.set(p);
-    this.clotureForm.reset({ option: 'MOIS_COURANT', datePersonnalisee: this.moisEffectifCloture(p) });
     this.clotureDialogVisible = true;
   }
 
-  fermerDialogCloture(): void {
-    this.clotureDialogVisible = false;
-    this.posteEnCloture.set(null);
-  }
-
-  enregistrerCloture(): void {
-    const p = this.posteEnCloture();
-    const fin = this.finCloture();
-    if (!p || !fin || !this.clotureValide()) return;
-
-    const foyerId = this.contexte.foyerId()!;
-    const scenarioId = this.contexte.scenarioId()!;
-    this.posteSvc.cloturer(foyerId, scenarioId, p.id, { fin: this.toIso(fin) }).subscribe({
-      next: () => {
-        this.toast.add({ severity: 'success', summary: this.t.commun.succes });
-        this.clotureDialogVisible = false;
-        this.posteEnCloture.set(null);
-        this.charger();
-      },
-      error: (err) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message }),
-    });
+  /** Suit la fermeture (par la croix ou l'overlay) du dialog clôture, en plus du bouton Annuler. */
+  onClotureVisibleChange(visible: boolean): void {
+    this.clotureDialogVisible = visible;
+    if (!visible) this.posteEnCloture.set(null);
   }
 
   /** Réactive un poste terminé : retire sa fin directement, sans popin. */
@@ -1390,11 +1134,6 @@ export class PostesListeComponent {
 
   ouvrirRevision(p: PosteDto): void {
     this.posteEnRevision = p;
-    const debut = p.debut ? parseIsoDateLocal(p.debut) : new Date();
-    this.revisionForm.reset({
-      nouveauMontant: null,
-      dateEffet: new Date(debut.getFullYear(), debut.getMonth() + 1, 1),
-    });
     this.revisionDialogVisible = true;
   }
 
@@ -1403,64 +1142,26 @@ export class PostesListeComponent {
     this.posteEnRevision = null;
   }
 
-  enregistrerRevision(): void {
-    const p = this.posteEnRevision;
-    if (!p || !this.revisionValide()) return;
+  /** Suit la fermeture (par la croix ou l'overlay) du dialog révision, en plus du bouton Annuler. */
+  onRevisionVisibleChange(visible: boolean): void {
+    this.revisionDialogVisible = visible;
+    if (!visible) this.posteEnRevision = null;
+  }
 
-    const foyerId = this.contexte.foyerId()!;
-    const scenarioId = this.contexte.scenarioId()!;
-    const v = this.revisionForm.value;
-    const req = {
-      nouveauMontant: v.nouveauMontant!,
-      dateEffet: this.toIso(v.dateEffet!),
-    };
-
-    this.posteSvc.reviser(foyerId, scenarioId, p.id, req).subscribe({
-      next: () => {
-        this.toast.add({ severity: 'success', summary: this.t.commun.succes });
-        this.revisionDialogVisible = false;
-        this.posteEnRevision = null;
-        this.charger();
-      },
-      error: (err) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message }),
-    });
+  /** Rafraîchit la liste après une action réussie effectuée par un dialog enfant autonome (révision/clôture/décalage). */
+  onDialogEnregistre(): void {
+    this.charger();
   }
 
   ouvrirDecalage(p: PosteDto): void {
     this.posteEnDecalage = p;
-    this.decalerForm.reset({
-      nouvelleDateEffet: p.debut ? parseIsoDateLocal(p.debut) : null,
-    });
     this.decalerDialogVisible = true;
   }
 
-  fermerDialogDecalage(): void {
-    this.decalerDialogVisible = false;
-    this.posteEnDecalage = null;
-  }
-
-  /**
-   * Enregistre le décalage de la date d'effet. En cas d'échec côté serveur (situation de
-   * concurrence non anticipée côté front), le dialog reste ouvert avec un message d'erreur.
-   */
-  enregistrerDecalage(): void {
-    const p = this.posteEnDecalage;
-    if (!p || !this.decalageValide()) return;
-
-    const foyerId = this.contexte.foyerId()!;
-    const scenarioId = this.contexte.scenarioId()!;
-    const v = this.decalerForm.value;
-    const req = { nouvelleDateEffet: this.toIso(v.nouvelleDateEffet!) };
-
-    this.posteSvc.decalerDateEffet(foyerId, scenarioId, p.id, req).subscribe({
-      next: () => {
-        this.toast.add({ severity: 'success', summary: this.t.commun.succes });
-        this.decalerDialogVisible = false;
-        this.posteEnDecalage = null;
-        this.charger();
-      },
-      error: (err) => this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message }),
-    });
+  /** Suit la fermeture (par la croix ou l'overlay) du dialog décalage, en plus du bouton Annuler. */
+  onDecalageVisibleChange(visible: boolean): void {
+    this.decalerDialogVisible = visible;
+    if (!visible) this.posteEnDecalage = null;
   }
 
   /**

@@ -586,102 +586,17 @@
 </p-dialog>
 
 <!-- Dialog mini-formulaire : révision de montant planifiée -->
-<p-dialog [(visible)]="revisionDialogVisible"
-          [header]="i18n.instant('poste.revisionTitre', { description: posteEnRevision?.description ?? '' })"
-          [modal]="true" class="w-full max-w-md">
-    @if (posteEnRevision) {
-        <form [formGroup]="revisionForm" class="flex flex-col gap-4 pt-2">
-            <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium text-surface-500">{{ t.poste.revisionMontantActuel }}</label>
-                <span class="text-sm">{{ posteEnRevision.montant | montant:posteEnRevision.devise }}</span>
-            </div>
-
-            <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium">{{ t.poste.revisionNouveauMontant }} *</label>
-                <p-inputnumber formControlName="nouveauMontant" mode="decimal" [minFractionDigits]="2"
-                               class="w-full"/>
-                @if (montantRevisionIdentique()) {
-                    <span class="text-xs text-red-600 dark:text-red-400">{{ t.poste.revisionMontantIdentique }}</span>
-                }
-            </div>
-
-            <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium">{{ t.poste.revisionDateEffet }} *</label>
-                <p-datepicker appendTo="body" formControlName="dateEffet" view="month" dateFormat="mm/yy"
-                              [minDate]="revisionDateMin()" [maxDate]="revisionDateMax()"
-                              [showButtonBar]="true" class="w-full"></p-datepicker>
-            </div>
-
-            <div class="text-sm rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-primary-700 dark:text-primary-300">
-                {{ resumeRevision() }}
-            </div>
-        </form>
-    }
-    <ng-template #footer>
-        <p-button [label]="t.commun.annuler" severity="secondary" (click)="fermerDialogRevision()"/>
-        <p-button [label]="t.commun.enregistrer" (click)="enregistrerRevision()"
-                  [disabled]="!revisionValide()"/>
-    </ng-template>
-</p-dialog>
+<app-poste-revision-dialog [poste]="posteEnRevision" [visible]="revisionDialogVisible"
+    (visibleChange)="onRevisionVisibleChange($event)"
+    (enregistre)="onDialogEnregistre()" />
 
 <!-- Dialog mini-formulaire : décaler la date d'effet entre un maillon et son prédécesseur -->
-<p-dialog [(visible)]="decalerDialogVisible"
-          [header]="i18n.instant('poste.decalerDateEffetTitre', { description: posteEnDecalage?.description ?? '' })"
-          [modal]="true" class="w-full max-w-md">
-    @if (posteEnDecalage && precedentEnDecalage(); as precedent) {
-        <form [formGroup]="decalerForm" class="flex flex-col gap-4 pt-2">
-            @if (intervalleDecalageVide()) {
-                <p class="text-sm text-red-600 dark:text-red-400">{{ t.poste.decalerDateEffetAucunMoisDisponible }}</p>
-            } @else {
-                <div class="flex flex-col gap-1">
-                    <label class="text-sm font-medium">{{ t.poste.decalerDateEffetLabel }} *</label>
-                    <p-datepicker appendTo="body" formControlName="nouvelleDateEffet" view="month" dateFormat="mm/yy"
-                                  [minDate]="borneDecalageMin()" [maxDate]="borneDecalageMax()"
-                                  [showButtonBar]="true" class="w-full"></p-datepicker>
-                </div>
-
-                <div class="text-sm rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-primary-700 dark:text-primary-300">
-                    {{ resumeDecalage() }}
-                </div>
-            }
-        </form>
-    }
-    <ng-template #footer>
-        <p-button [label]="t.commun.annuler" severity="secondary" (click)="fermerDialogDecalage()"/>
-        <p-button [label]="t.commun.enregistrer" (click)="enregistrerDecalage()"
-                  [disabled]="!decalageValide()"/>
-    </ng-template>
-</p-dialog>
+<app-poste-decalage-dialog [poste]="posteEnDecalage" [precedent]="precedentEnDecalage()" [successeur]="successeurEnDecalage()"
+    [visible]="decalerDialogVisible" (visibleChange)="onDecalageVisibleChange($event)" (enregistre)="onDialogEnregistre()" />
 
 <!-- Dialog mini-formulaire : clôture rapide d'un poste (action « Terminer ») -->
-<p-dialog [(visible)]="clotureDialogVisible"
-          [header]="i18n.instant('poste.clotureTitre', { description: posteEnCloture()?.description ?? '' })"
-          [modal]="true" class="w-full max-w-md">
-    @if (posteEnCloture(); as p) {
-        <form [formGroup]="clotureForm" class="flex flex-col gap-4 pt-2">
-            <p-selectbutton [options]="clotureOptions()" formControlName="option"
-                             optionLabel="label" optionValue="value"
-                             styleClass="flex flex-col items-stretch gap-1"/>
-
-            @if (clotureForm.value.option === 'PERSONNALISEE') {
-                <div class="flex flex-col gap-1">
-                    <label class="text-sm font-medium">{{ t.poste.clotureDateLabel }} *</label>
-                    <p-datepicker appendTo="body" formControlName="datePersonnalisee" view="month" dateFormat="mm/yy"
-                                  [showButtonBar]="true" class="w-full"></p-datepicker>
-                </div>
-            }
-
-            <div class="text-sm rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-primary-700 dark:text-primary-300">
-                {{ resumeCloture() }}
-            </div>
-        </form>
-    }
-    <ng-template #footer>
-        <p-button [label]="t.commun.annuler" severity="secondary" (click)="fermerDialogCloture()"/>
-        <p-button [label]="t.poste.clotureValider" (click)="enregistrerCloture()"
-                  [disabled]="!clotureValide()"/>
-    </ng-template>
-</p-dialog>
+<app-poste-cloture-dialog [poste]="posteEnCloture()" [visible]="clotureDialogVisible"
+    (visibleChange)="onClotureVisibleChange($event)" (enregistre)="onDialogEnregistre()" />
 
 <!-- Dialog aperçu mensuel -->
 <app-poste-apercu-dialog [t]="t" [visible]="apercuVisible" (visibleChange)="apercuVisible = $event" [data]="apercuData()" />

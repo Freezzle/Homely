@@ -25,6 +25,6 @@ export function formaterMontantSimple(montant: number, locale: string, devise?: 
 }
 
 /** Locale actif dérivé de la langue de l'app, pour les fonctions de formatage ci-dessus. */
-export function localeCouranteDeLangue(langue: string): string {
+export function localeCouranteDeLangue(langue: string | null | undefined): string {
   return localeDeLangue(langue);
 }
