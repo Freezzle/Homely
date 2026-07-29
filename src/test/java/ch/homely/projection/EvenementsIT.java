@@ -94,7 +94,7 @@ class EvenementsIT {
         String foyerId = creerFoyer(token, "Foyer Événements Occurrence");
         String scenarioId = creerScenario(token, foyerId);
         String catId = creerCategorie(token, foyerId, "Assurance", "CHARGE");
-        creerPoste(token, foyerId, scenarioId, catId, "CHARGE", "2025-01-01", null, 300, 3);
+        creerPoste(token, foyerId, scenarioId, catId, "CHARGE", "2025-01-01", null, 300, 3, "PERIODIQUE");
 
         List<JsonNode> evts = evenements(token, foyerId, scenarioId, 2026);
 

@@ -151,6 +151,12 @@ public class MoteurCalcul {
      * partout ailleurs dans les projections, une alerte sur son "échéance réelle" serait
      * trompeuse (l'utilisateur ne perçoit jamais ce montant tel quel).</p>
      *
+     * <p>Plus largement, un poste périodique {@code MENSUALISE} (périodicité &gt; 1) n'émet
+     * ni {@code DEBUT} ni {@code FIN} : son impact est déjà lissé mois par mois et n'est pas
+     * perçu comme un changement ponctuel par l'utilisateur. Seul un {@code REVISION} (poste
+     * issu d'une mutation, via {@code posteOrigineId}) reste émis pour un tel poste, car il
+     * s'agit alors d'un véritable changement de montant.</p>
+     *
      * @param postes postes du scénario (chargés indépendamment de leur propre année de début)
      * @param annee  année pour laquelle détecter les événements
      * @return événements triés par mois croissant, puis par priorité de type
@@ -174,6 +180,11 @@ public class MoteurCalcul {
         for (PosteCalcul poste : postes) {
             if (poste.montant() <= 0) continue;
             int signe = poste.type() == TypePoste.REVENU ? 1 : -1;
+            // Un poste périodique mensualisé est lissé partout ailleurs : son début/fin brut
+            // n'est pas perçu comme un changement par l'utilisateur, sauf s'il résulte d'une
+            // mutation (révision) — auquel cas l'événement REVISION reste toujours émis.
+            boolean periodiqueMensualise = poste.periodiciteMois() > 1
+                    && poste.mode() == ModeComptabilisation.MENSUALISE;
 
             if (poste.debut() != null && poste.debut().getYear() == annee) {
                 int mois = poste.debut().getMonthValue();
@@ -184,16 +195,18 @@ public class MoteurCalcul {
                     resultat.add(new EvenementCalcul(mois, TypeEvenement.REVISION, poste.id(),
                             poste.description(), poste.categorieId(), poste.type(), poste.nature(),
                             poste.devise(), deltaMensualise, deltaEcheance));
-                } else {
+                    moisDejaCouverts.computeIfAbsent(poste.id(), k -> new java.util.HashSet<>()).add(mois);
+                } else if (!periodiqueMensualise) {
                     resultat.add(new EvenementCalcul(mois, TypeEvenement.DEBUT, poste.id(),
                             poste.description(), poste.categorieId(), poste.type(), poste.nature(),
                             poste.devise(), signe * montantMensualise(poste), signe * poste.montant()));
+                    moisDejaCouverts.computeIfAbsent(poste.id(), k -> new java.util.HashSet<>()).add(mois);
                 }
-                moisDejaCouverts.computeIfAbsent(poste.id(), k -> new java.util.HashSet<>()).add(mois);
             }
 
             if (poste.fin() != null && poste.fin().getYear() == annee
-                    && !successeurParOrigine.containsKey(poste.id())) {
+                    && !successeurParOrigine.containsKey(poste.id())
+                    && !periodiqueMensualise) {
                 int mois = poste.fin().getMonthValue();
                 resultat.add(new EvenementCalcul(mois, TypeEvenement.FIN, poste.id(),
                         poste.description(), poste.categorieId(), poste.type(), poste.nature(),

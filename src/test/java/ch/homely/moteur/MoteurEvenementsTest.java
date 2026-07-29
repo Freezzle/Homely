@@ -70,6 +70,30 @@ class MoteurEvenementsTest {
                     MENSUALISE, DEBUT_PERIODE, null, "Salaire");
             assertThat(MoteurCalcul.evenements(List.of(p), 2026)).isEmpty();
         }
+
+        @Test
+        void posteTrimestrielMensualiseSansOrigineNEmetPasDeDebut() {
+            // Périodique + lissé + pas de mutation : aucun DEBUT (impact déjà lissé, non perçu)
+            PosteCalcul p = poste(UUID.randomUUID(), CHARGE, 300, 3, LocalDate.of(2026, 4, 1), null,
+                    MENSUALISE, DEBUT_PERIODE, null, "Assurance lissée");
+            assertThat(MoteurCalcul.evenements(List.of(p), 2026)).isEmpty();
+        }
+
+        @Test
+        void posteTrimestrielMensualiseIssuDUneRevisionEmetTOujoursLeDebut() {
+            // Périodique + lissé mais issu d'une mutation (posteOrigineId) : REVISION reste émis
+            UUID origineId = UUID.randomUUID();
+            PosteCalcul origine = poste(origineId, CHARGE, 300, 3, null, LocalDate.of(2026, 5, 31),
+                    MENSUALISE, DEBUT_PERIODE, null, "Assurance lissée");
+            PosteCalcul successeur = poste(UUID.randomUUID(), CHARGE, 340, 3,
+                    LocalDate.of(2026, 6, 1), null, MENSUALISE, DEBUT_PERIODE, origineId, "Assurance lissée");
+
+            List<EvenementCalcul> evts = MoteurCalcul.evenements(List.of(origine, successeur), 2026);
+
+            assertThat(evts).hasSize(1);
+            assertThat(evts.get(0).type()).isEqualTo(TypeEvenement.REVISION);
+            assertThat(evts.get(0).mois()).isEqualTo(6);
+        }
     }
 
     @Nested
@@ -102,6 +126,14 @@ class MoteurEvenementsTest {
 
             assertThat(evts).hasSize(1);
             assertThat(evts.get(0).type()).isEqualTo(TypeEvenement.REVISION);
+        }
+
+        @Test
+        void posteTrimestrielMensualiseSansSuccesseurNEmetPasDeFin() {
+            // Périodique + lissé qui se termine sans mutation : aucune FIN (impact déjà lissé)
+            PosteCalcul p = poste(UUID.randomUUID(), CHARGE, 300, 3, null, LocalDate.of(2026, 9, 30),
+                    MENSUALISE, DEBUT_PERIODE, null, "Assurance lissée");
+            assertThat(MoteurCalcul.evenements(List.of(p), 2026)).isEmpty();
         }
     }
 
