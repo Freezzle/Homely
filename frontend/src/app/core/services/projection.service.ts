@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import {
-  ProjectionAnnuelleDto, VentilationsDto,
+  ProjectionAnnuelleDto, VentilationsDto, EvenementDto,
 } from '../models/api.models';
 
 /** T9.3 — Service HTTP projection scopé par foyer/scénario. */
@@ -22,6 +22,12 @@ export class ProjectionService {
   mensuelle(foyerId: string, scenarioId: string, annee: number, mois: number) {
     return this.http.get<VentilationsDto>(
       `${this.base(foyerId, scenarioId)}/mensuelle`, { params: { annee, mois } }
+    );
+  }
+
+  evenements(foyerId: string, scenarioId: string, annee: number) {
+    return this.http.get<EvenementDto[]>(
+      `${this.base(foyerId, scenarioId)}/evenements`, { params: { annee } }
     );
   }
 }

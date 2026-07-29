@@ -58,4 +58,13 @@ public class ProjectionController {
         multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
         return projectionService.ventilations(foyerId, scenarioId, annee, mois);
     }
+
+    /** Événements budgétaires ("ce qui change") pour une année : début, fin, révision, occurrence */
+    @GetMapping("/evenements")
+    public List<EvenementDto> evenements(@PathVariable UUID foyerId,
+                                          @PathVariable UUID scenarioId,
+                                          @RequestParam int annee) {
+        multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
+        return projectionService.evenements(foyerId, scenarioId, annee);
+    }
 }

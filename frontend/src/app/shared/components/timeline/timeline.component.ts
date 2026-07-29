@@ -7,6 +7,9 @@ export interface TimelineItem {
   emoji: string;
   title: string;
   impact?: number;
+  /** Nature du montant affiché : 'mensuel' (delta récurrent lissé, défaut) ou
+   *  'echeance' (montant réel d'une échéance ponctuelle/périodique, pas un delta mensuel). */
+  unite?: 'mensuel' | 'echeance';
   /** Clé de regroupement : les items consécutifs (déjà triés) partageant la même clé sont
    *  fusionnés en un seul point de la timeline. Par défaut, `when` est utilisé comme clé. */
   groupKey?: string | number;
@@ -28,21 +31,27 @@ export interface TimelineGroup {
 export class TimelineComponent {
   readonly items = input.required<TimelineItem[]>();
   readonly showMarkerIcon = input<boolean>(true);
+  /** Devise utilisée pour l'affichage des montants (défaut CHF). */
+  readonly devise = input<string>('CHF');
+  /** Suffixe pour un impact mensualisé récurrent (ex. "/mois"). */
+  readonly suffixeMensuel = input<string>('/mois');
+  /** Suffixe pour le montant réel d'une échéance ponctuelle (ex. "/échéance"). */
+  readonly suffixeEcheance = input<string>('');
   readonly select = output<TimelineItem>();
 
   protected readonly groups = computed<TimelineGroup[]>(() =>
     this.regrouperConsecutifs(this.items().filter((item) => this.aUnMontantValide(item.impact)))
   );
 
-  protected impactLabel(impact?: number): string | null {
-    if (!this.aUnMontantValide(impact)) {
+  protected impactLabel(item: TimelineItem): string | null {
+    if (!this.aUnMontantValide(item.impact)) {
       return null;
     }
-
-    return `${impact! > 0 ? '+' : '−'}${new Intl.NumberFormat('fr-CH', {
+    const suffixe = item.unite === 'echeance' ? this.suffixeEcheance() : this.suffixeMensuel();
+    return `${item.impact! > 0 ? '+' : '−'}${new Intl.NumberFormat('fr-CH', {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(Math.abs(impact!))} CHF/mois`;
+    }).format(Math.abs(item.impact!))} ${this.devise()}${suffixe}`;
   }
 
   private aUnMontantValide(impact?: number): boolean {

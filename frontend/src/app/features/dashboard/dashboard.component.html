@@ -158,7 +158,13 @@
 
         <app-tab-panel value="events" [label]="t.dashboard.ceQuiChange">
           @if (evenementsAnnee().length) {
-            <app-timeline [items]="evenementsAnnee()" [showMarkerIcon]="false" (select)="ouvrirMoisDepuisTimeline($event)" />
+            <app-timeline
+              [items]="evenementsAnnee()"
+              [showMarkerIcon]="false"
+              [devise]="deviseBase()"
+              [suffixeMensuel]="t.dashboard.parMois"
+              [suffixeEcheance]="t.dashboard.parEcheance"
+              (select)="ouvrirMoisDepuisTimeline($event)" />
           } @else {
             <p class="empty-copy">{{ t.dashboard.aucunEvenement }}</p>
           }
@@ -271,7 +277,13 @@
 
         <app-tab-panel value="event" [label]="t.dashboard.evenement">
           @if (evenementsMois().length) {
-            <app-timeline [items]="evenementsMois()" [showMarkerIcon]="false" (select)="ouvrirMoisDepuisTimeline($event)" />
+            <app-timeline
+              [items]="evenementsMois()"
+              [showMarkerIcon]="false"
+              [devise]="deviseBase()"
+              [suffixeMensuel]="t.dashboard.parMois"
+              [suffixeEcheance]="t.dashboard.parEcheance"
+              (select)="ouvrirMoisDepuisTimeline($event)" />
           } @else {
             <p class="empty-copy">{{ t.dashboard.aucunEvenement }}</p>
           }

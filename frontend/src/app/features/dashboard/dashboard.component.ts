@@ -17,6 +17,7 @@ import {
   AggregatDto,
   CategorieDto,
   CompteDto,
+  EvenementDto,
   ObjectifDto,
   PosteDto,
   ProjectionAnnuelleDto,
@@ -162,6 +163,12 @@ export class DashboardComponent {
   );
 
   readonly projectionAnnuelle = computed(() => this._projectionAnnuelle.donnees());
+
+  private readonly _evenements = creerChargementReactif(this._projectionAnnuelleCle, ({ foyerId, scenarioId, annee }) =>
+    this.projSvc.evenements(foyerId, scenarioId, annee),
+  );
+
+  readonly evenementsDto = computed<EvenementDto[]>(() => this._evenements.donnees() ?? []);
 
   private readonly _ventilationsMoisCle = computed<{ foyerId: string; scenarioId: string; annee: number; mois: number } | null>(() => {
     const ref = this._refCle();
@@ -979,93 +986,39 @@ export class DashboardComponent {
       });
   });
 
-  /**
-   * Montant "plein" d'un poste pour l'affichage des événements : les postes ne sont pas tous
-   * lissés (mensualisés) — pour un poste PERIODIQUE, le montant réellement versé/prélevé lors de
-   * l'occurrence est `montant`, pas la moyenne mensuelle `montantMensualise`.
-   */
-  private montantPleinPoste(poste: PosteDto): number {
-    return Math.abs(poste.montant);
-  }
-
-  private signePoste(poste: PosteDto, magnitude: number): number {
-    return poste.type === 'REVENU' ? magnitude : -magnitude;
-  }
-
-  /**
-   * Impact affiché pour l'événement "début" d'un poste. Si le poste est issu d'une révision
-   * (`posteOrigineId`), affiche l'écart entre l'ancien et le nouveau montant plutôt que le
-   * montant brut, avec la même convention de signe/couleur selon le type (revenu = positif/vert,
-   * charge ou réserve = négatif/rouge).
-   */
-  private posteImpactDebut(poste: PosteDto): number {
-    const montantNouveau = this.montantPleinPoste(poste);
-    let magnitude = montantNouveau;
-    if (poste.posteOrigineId) {
-      const origine = this.postes().find((p) => p.id === poste.posteOrigineId);
-      if (origine) {
-        magnitude = Math.abs(montantNouveau - this.montantPleinPoste(origine));
-      }
+  /** Emoji représentatif d'un type d'événement (voir doc backend `TypeEvenement`). */
+  private emojiEvenement(evt: EvenementDto): string {
+    switch (evt.type) {
+      case 'DEBUT': return '▶️';
+      case 'FIN': return '⏹️';
+      case 'REVISION': return evt.montantMensualiseDelta >= 0 ? '📈' : '📉';
+      case 'OCCURRENCE': return '🔁';
     }
-    return this.signePoste(poste, magnitude);
   }
 
-  /**
-   * Impact affiché pour l'événement "fin" d'un poste. Si le poste est intermédiaire (remplacé par
-   * une révision, `posteSuivantId` présent), aucun montant n'est affiché : ce n'est pas une
-   * véritable fin, juste un changement de montant déjà reflété par l'événement "début" du poste
-   * suivant. Seul un poste qui se termine réellement (pas de `posteSuivantId`) affiche son montant.
-   */
-  private posteImpactFin(poste: PosteDto): number | undefined {
-    if (poste.posteSuivantId) {
-      return undefined;
-    }
-    return -this.signePoste(poste, this.montantPleinPoste(poste));
-  }
-
-  private aUnMontantValide(impact: number | undefined): impact is number {
-    return impact != null && impact !== 0 && !Number.isNaN(impact);
-  }
-
-  readonly evenementsAnnee = computed<DashboardTimelineItem[]>(() => {
-    const annee = this.annee();
-    return this.postes()
-      .flatMap((poste) => {
-        const items: DashboardTimelineItem[] = [];
-        if (poste.debut && this.dateDansAnnee(poste.debut, annee)) {
-          const debut = parseIsoDateLocal(poste.debut);
-          items.push({
-            when: this.t.mois[debut.getMonth()],
-            emoji: '▶️',
-            title: poste.description,
-            impact: this.posteImpactDebut(poste),
-            mois: debut.getMonth() + 1,
-          });
-        }
-        if (poste.fin && this.dateDansAnnee(poste.fin, annee)) {
-          const fin = parseIsoDateLocal(poste.fin);
-          items.push({
-            when: this.t.mois[fin.getMonth()],
-            emoji: '⏹️',
-            title: poste.description,
-            impact: this.posteImpactFin(poste),
-            mois: fin.getMonth() + 1,
-          });
-        }
-        return items;
+  readonly evenementsAnnee = computed<DashboardTimelineItem[]>(() =>
+    this.evenementsDto()
+      .map((evt) => {
+        // Le delta mensualisé est l'impact récurrent lissé (pertinent pour DEBUT/FIN/REVISION) ;
+        // pour OCCURRENCE il est toujours nul, on retombe alors sur le montant réel de l'échéance.
+        const utiliseEcheance = evt.montantMensualiseDelta === 0 && evt.montantEcheance !== 0;
+        return {
+          when: this.t.mois[evt.mois - 1],
+          emoji: this.emojiEvenement(evt),
+          title: evt.description,
+          impact: utiliseEcheance ? evt.montantEcheance : evt.montantMensualiseDelta,
+          unite: (utiliseEcheance ? 'echeance' : 'mensuel') as 'mensuel' | 'echeance',
+          mois: evt.mois,
+        };
       })
-      .filter((item) => this.aUnMontantValide(item.impact))
-      .sort((a, b) => a.mois - b.mois || a.title.localeCompare(b.title));
-  });
+      .sort((a, b) => a.mois - b.mois || a.title.localeCompare(b.title))
+  );
 
   readonly evenementsMois = computed(() => {
     const mois = this.moisSelectionne();
     return mois === undefined ? [] : this.evenementsAnnee().filter((item) => item.mois === mois);
   });
 
-  private dateDansAnnee(iso: string, annee: number): boolean {
-    return parseIsoDateLocal(iso).getFullYear() === annee;
-  }
 
   private dateDansMois(iso: string, annee: number, mois: number): boolean {
     const date = parseIsoDateLocal(iso);

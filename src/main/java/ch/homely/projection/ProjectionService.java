@@ -156,6 +156,25 @@ public class ProjectionService {
         return new ApercuPosteDto(annee, contributions);
     }
 
+    // ── Événements budgétaires ("ce qui change") ────────────────────────────
+
+    @Cacheable(value = "projections",
+               key = "#scenarioId + '-evt-' + #annee + '-' + T(ch.homely.projection.ProjectionService).versionKey(#foyerId, #scenarioId, @scenarioRepository)")
+    public List<EvenementDto> evenements(UUID foyerId, UUID scenarioId, int annee) {
+        ParametresScenario params = chargerParametres(foyerId, scenarioId);
+        List<EvenementCalcul> evenements = MoteurCalcul.evenements(params.postes(), annee);
+        return evenements.stream().map(e -> toEvenementDto(e, params)).toList();
+    }
+
+    private EvenementDto toEvenementDto(EvenementCalcul e, ParametresScenario params) {
+        double taux = MoteurCalcul.tauxConversion(e.devise(), params.deviseBase(), params.taux());
+        return new EvenementDto(
+                e.mois(), e.type(), e.posteId(), e.description(), e.categorieId(),
+                e.typePoste(), e.nature(),
+                bd(e.montantMensualiseDelta() * taux),
+                bd(e.montantEcheance() * taux));
+    }
+
     /** Invalide tout le cache (appelé après toute modification). */
     @CacheEvict(value = "projections", allEntries = true)
     public void invaliderCache(UUID scenarioId) {
@@ -233,7 +252,8 @@ public class ProjectionService {
                 p.getNature(),
                 p.getTypeRepartition(),
                 repartitions, ventilations,
-                p.getCategorie() != null ? p.getCategorie().getId() : null);
+                p.getCategorie() != null ? p.getCategorie().getId() : null,
+                p.getPosteOrigineId(), p.getDescription());
     }
 
     // ── mappers ───────────────────────────────────────────────────────────────

@@ -2,6 +2,7 @@ package ch.homely.moteur;
 
 import ch.homely.poste.ModeComptabilisation;
 import ch.homely.poste.MomentPeriode;
+import ch.homely.poste.TypePoste;
 import ch.homely.poste.TypeRepartition;
 
 import java.time.LocalDate;
@@ -130,6 +131,106 @@ public class MoteurCalcul {
         if (d == 0) return poste.montant();  // One-shot : montant complet
         int dSafe = d;
         return poste.montant() / dSafe;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Événements budgétaires — détection des changements par poste, mois par mois
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Détecte les événements budgétaires ("ce qui change") pour une liste de postes sur
+     * une année donnée : début de poste, fin de poste (sans successeur), révision de
+     * montant (chaîne {@code posteOrigineId}), et occurrence réelle d'un poste périodique
+     * non mensuel (échéance qui ne tombe pas chaque mois).
+     *
+     * <p>Zéro dépendance Spring/JPA — les montants restent dans la devise d'origine du
+     * poste ; la conversion vers la devise du foyer est faite en couche service.</p>
+     *
+     * <p>Les {@code OCCURRENCE} ne sont émises que pour les postes explicitement
+     * {@link ModeComptabilisation#PERIODIQUE} : un poste {@code MENSUALISE} est lissé
+     * partout ailleurs dans les projections, une alerte sur son "échéance réelle" serait
+     * trompeuse (l'utilisateur ne perçoit jamais ce montant tel quel).</p>
+     *
+     * @param postes postes du scénario (chargés indépendamment de leur propre année de début)
+     * @param annee  année pour laquelle détecter les événements
+     * @return événements triés par mois croissant, puis par priorité de type
+     *         (FIN &gt; REVISION &gt; DEBUT &gt; OCCURRENCE), puis par description
+     */
+    public static List<EvenementCalcul> evenements(List<PosteCalcul> postes, int annee) {
+        if (postes == null || postes.isEmpty()) return List.of();
+
+        Map<UUID, PosteCalcul> parId = new HashMap<>();
+        Map<UUID, PosteCalcul> successeurParOrigine = new HashMap<>();
+        for (PosteCalcul p : postes) {
+            parId.put(p.id(), p);
+            if (p.posteOrigineId() != null) {
+                successeurParOrigine.put(p.posteOrigineId(), p);
+            }
+        }
+
+        List<EvenementCalcul> resultat = new ArrayList<>();
+        Map<UUID, Set<Integer>> moisDejaCouverts = new HashMap<>();
+
+        for (PosteCalcul poste : postes) {
+            if (poste.montant() <= 0) continue;
+            int signe = poste.type() == TypePoste.REVENU ? 1 : -1;
+
+            if (poste.debut() != null && poste.debut().getYear() == annee) {
+                int mois = poste.debut().getMonthValue();
+                PosteCalcul origine = poste.posteOrigineId() != null ? parId.get(poste.posteOrigineId()) : null;
+                if (origine != null) {
+                    double deltaMensualise = signe * (montantMensualise(poste) - montantMensualise(origine));
+                    double deltaEcheance = signe * (poste.montant() - origine.montant());
+                    resultat.add(new EvenementCalcul(mois, TypeEvenement.REVISION, poste.id(),
+                            poste.description(), poste.categorieId(), poste.type(), poste.nature(),
+                            poste.devise(), deltaMensualise, deltaEcheance));
+                } else {
+                    resultat.add(new EvenementCalcul(mois, TypeEvenement.DEBUT, poste.id(),
+                            poste.description(), poste.categorieId(), poste.type(), poste.nature(),
+                            poste.devise(), signe * montantMensualise(poste), signe * poste.montant()));
+                }
+                moisDejaCouverts.computeIfAbsent(poste.id(), k -> new java.util.HashSet<>()).add(mois);
+            }
+
+            if (poste.fin() != null && poste.fin().getYear() == annee
+                    && !successeurParOrigine.containsKey(poste.id())) {
+                int mois = poste.fin().getMonthValue();
+                resultat.add(new EvenementCalcul(mois, TypeEvenement.FIN, poste.id(),
+                        poste.description(), poste.categorieId(), poste.type(), poste.nature(),
+                        poste.devise(), -signe * montantMensualise(poste), -signe * poste.montant()));
+                moisDejaCouverts.computeIfAbsent(poste.id(), k -> new java.util.HashSet<>()).add(mois);
+            }
+
+            int d = poste.periodiciteMois();
+            // Les postes MENSUALISE sont lissés partout ailleurs dans les projections : on
+            // n'alerte sur une "échéance réelle" que pour les postes explicitement PERIODIQUE
+            // (non lissés), sinon l'utilisateur verrait une fausse alerte sur un montant qu'il
+            // ne perçoit jamais tel quel.
+            if (d > 1 && poste.mode() == ModeComptabilisation.PERIODIQUE) {
+                Set<Integer> couverts = moisDejaCouverts.getOrDefault(poste.id(), Set.of());
+                for (int mois = 1; mois <= 12; mois++) {
+                    if (couverts.contains(mois)) continue;
+                    double reel = contributionReelle(poste, annee, mois);
+                    if (reel != 0.0) {
+                        resultat.add(new EvenementCalcul(mois, TypeEvenement.OCCURRENCE, poste.id(),
+                                poste.description(), poste.categorieId(), poste.type(), poste.nature(),
+                                poste.devise(), 0.0, signe * reel));
+                    }
+                }
+            }
+        }
+
+        Comparator<EvenementCalcul> parPriorite = Comparator.comparingInt(e -> switch (e.type()) {
+            case FIN -> 0;
+            case REVISION -> 1;
+            case DEBUT -> 2;
+            case OCCURRENCE -> 3;
+        });
+        return resultat.stream()
+                .sorted(Comparator.comparingInt(EvenementCalcul::mois)
+                        .thenComparing(parPriorite)
+                        .thenComparing(e -> e.description() == null ? "" : e.description()))
+                .toList();
     }
 
     // ─────────────────────────────────────────────────────────────────────────

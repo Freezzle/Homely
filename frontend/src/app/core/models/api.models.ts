@@ -126,6 +126,20 @@ export interface PosteDecalerDateEffetResponse {
   posteEdite: PosteDto;
 }
 
+// ── Événements budgétaires ("ce qui change") ───────────────────────────────
+export type TypeEvenement = 'DEBUT' | 'FIN' | 'REVISION' | 'OCCURRENCE';
+export interface EvenementDto {
+  mois: number;
+  type: TypeEvenement;
+  posteId: string;
+  description: string;
+  categorieId?: string;
+  typePoste: TypePoste;
+  nature: NaturePoste;
+  montantMensualiseDelta: number;
+  montantEcheance: number;
+}
+
 // ── Objectifs ─────────────────────────────────────────────────────────────────
 export interface ObjectifDto {
   id: string; libelle: string; categorieProjetId?: string;

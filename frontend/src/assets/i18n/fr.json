@@ -366,7 +366,9 @@
     "statutDeficitaire": "Déficitaire",
     "statutEquilibre": "Équilibré",
     "aucuneEcheance": "Aucune échéance ce mois-ci.",
-    "aucunEvenement": "Aucun changement structurel ce mois-ci."
+    "aucunEvenement": "Aucun changement structurel ce mois-ci.",
+    "parMois": "/mois",
+    "parEcheance": "/échéance"
   },
   "commun": {
     "actions": "Actions",

@@ -366,7 +366,9 @@
     "statutDeficitaire": "Deficit",
     "statutEquilibre": "Balanced",
     "aucuneEcheance": "No due dates this month.",
-    "aucunEvenement": "No structural change this month."
+    "aucunEvenement": "No structural change this month.",
+    "parMois": "/mo",
+    "parEcheance": "/due date"
   },
   "commun": {
     "actions": "Actions",

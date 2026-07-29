@@ -28,6 +28,11 @@ import java.util.UUID;
  * @param repartitions    quotes-parts par membre (utilisé uniquement si typeRepartition=CUSTOM)
  * @param ventilations    compte cible par membre
  * @param categorieId     id de la catégorie (pour les ventilations par catégorie)
+ * @param posteOrigineId  id du poste dont ce poste est issu par révision de montant planifiée
+ *                        (null si ce poste n'appartient pas à une chaîne de révisions).
+ *                        Transporté uniquement pour {@link #evenements(List, int)} — n'altère
+ *                        aucun autre calcul.
+ * @param description     libellé du poste (descriptif uniquement, pour {@link #evenements(List, int)})
  */
 public record PosteCalcul(
         UUID id,
@@ -43,11 +48,27 @@ public record PosteCalcul(
         TypeRepartition typeRepartition,
         List<RepartitionCalcul> repartitions,
         List<VentilationCalcul> ventilations,
-        UUID categorieId
+        UUID categorieId,
+        UUID posteOrigineId,
+        String description
 ) {
     /** Compact constructor : defaults {@code nature} → EFFECTIF, {@code typeRepartition} → AUTO. */
     public PosteCalcul {
         if (nature == null) nature = NaturePoste.EFFECTIF;
         if (typeRepartition == null) typeRepartition = TypeRepartition.AUTO;
+    }
+
+    /**
+     * Constructeur de compatibilité (sans {@code posteOrigineId}/{@code description}) —
+     * conservé pour ne pas casser les tests existants qui construisent un {@code PosteCalcul}
+     * sans ces 2 champs descriptifs.
+     */
+    public PosteCalcul(UUID id, TypePoste type, double montant, String devise, int periodiciteMois,
+                        LocalDate debut, LocalDate fin, ModeComptabilisation mode, MomentPeriode moment,
+                        NaturePoste nature, TypeRepartition typeRepartition,
+                        List<RepartitionCalcul> repartitions, List<VentilationCalcul> ventilations,
+                        UUID categorieId) {
+        this(id, type, montant, devise, periodiciteMois, debut, fin, mode, moment, nature,
+                typeRepartition, repartitions, ventilations, categorieId, null, null);
     }
 }
