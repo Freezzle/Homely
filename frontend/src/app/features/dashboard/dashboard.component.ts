@@ -18,11 +18,13 @@ import {
   CategorieDto,
   CompteDto,
   EvenementDto,
+  ModeComptabilisation,
   ObjectifDto,
   PosteDto,
   ProjectionAnnuelleDto,
   ScenarioDto,
   TypeCategorie,
+  TypePoste,
   VentilationAggregatDto,
   VentilationSplitDto,
   VentilationsDto,
@@ -986,28 +988,113 @@ export class DashboardComponent {
       });
   });
 
-  /** Emoji représentatif d'un type d'événement (voir doc backend `TypeEvenement`). */
-  private emojiEvenement(evt: EvenementDto): string {
+  /** Icône + variante de couleur PrimeNG représentative d'un type d'événement. */
+  private iconEvenement(evt: EvenementDto): { icon: string; variant: 'success' | 'danger' | 'secondary' } {
     switch (evt.type) {
-      case 'DEBUT': return '▶️';
-      case 'FIN': return '⏹️';
-      case 'REVISION': return evt.montantMensualiseDelta >= 0 ? '📈' : '📉';
-      case 'OCCURRENCE': return '🔁';
+      case 'DEBUT': return { icon: 'calendar-plus', variant: 'success' };
+      case 'FIN': return { icon: 'calendar-minus', variant: 'danger' };
+      case 'REVISION': return { icon: 'calendar-clock', variant: 'secondary' };
     }
+  }
+
+  /** Formate un montant signé en devise du foyer, sans décimales (cohérent avec la timeline). */
+  private formatMontantEntier(valeur: number): string {
+    return new Intl.NumberFormat('fr-CH', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+      .format(Math.abs(valeur));
+  }
+
+  /** Construit "1200 CHF/mois" à partir d'un montant brut déjà orienté et d'un suffixe. */
+  private formatMontantAvecSuffixe(montantBrut: number, suffixe: string): string {
+    return `${this.formatMontantEntier(montantBrut)} ${this.deviseBase()}${suffixe}`;
+  }
+
+  /**
+   * Calcule le montant affiché (brut, lissé si MENSUALISE), son suffixe de périodicité et
+   * un éventuel texte secondaire (montant plein + périodicité réelle), à partir d'un montant
+   * signé selon la convention du moteur (+ REVENU, − CHARGE/RESERVE).
+   */
+  private formatterMontantPoste(montantSigne: number, periodiciteMois: number,
+                                 mode: ModeComptabilisation, typePoste: TypePoste):
+      { montantBrut: number; montantPlein: number; suffixe: string; secondaire?: string } {
+    const signeTypePoste = typePoste === 'REVENU' ? 1 : -1;
+    const brutPlein = montantSigne * signeTypePoste;
+
+    if (periodiciteMois === 0) {
+      return { montantBrut: brutPlein, montantPlein: brutPlein, suffixe: this.t.dashboard.parPonctuel };
+    }
+    if (mode === 'MENSUALISE') {
+      const montantBrut = brutPlein / periodiciteMois;
+      const secondaire = periodiciteMois > 1
+        ? this.i18n.instant('dashboard.montantSecondaireModele', {
+            montant: `${this.formatMontantEntier(brutPlein)} ${this.deviseBase()}`,
+            periodicite: periodiciteMois,
+          })
+        : undefined;
+      return { montantBrut, montantPlein: brutPlein, suffixe: this.t.dashboard.parMois, secondaire };
+    }
+    // PERIODIQUE : montant plein affiché tel quel
+    const suffixe = periodiciteMois === 1
+      ? this.t.dashboard.parMois
+      : this.i18n.instant('dashboard.parPeriodicite', { n: periodiciteMois });
+    return { montantBrut: brutPlein, montantPlein: brutPlein, suffixe };
   }
 
   readonly evenementsAnnee = computed<DashboardTimelineItem[]>(() =>
     this.evenementsDto()
       .map((evt) => {
-        // Le delta mensualisé est l'impact récurrent lissé (pertinent pour DEBUT/FIN/REVISION) ;
-        // pour OCCURRENCE il est toujours nul, on retombe alors sur le montant réel de l'échéance.
-        const utiliseEcheance = evt.montantMensualiseDelta === 0 && evt.montantEcheance !== 0;
+        const { icon, variant } = this.iconEvenement(evt);
+        // evt.montant est l'impact budgétaire signé (+ = gain de trésorerie, − = perte),
+        // toujours favorable si positif quel que soit le type de poste.
+        const favorable = evt.montant > 0;
+
+        if (evt.type === 'REVISION' && evt.montantOrigine !== undefined) {
+          // Affichage "avant → après" : plus de delta affiché, chaque côté formaté selon
+          // son propre mode/périodicité (le poste peut, en théorie, changer de périodicité
+          // lors d'une révision).
+          const avant = this.formatterMontantPoste(
+            evt.montantOrigine, evt.periodiciteMoisOrigine ?? evt.periodiciteMois,
+            evt.modeOrigine ?? evt.mode, evt.typePoste);
+          const apres = this.formatterMontantPoste(
+            evt.montantOrigine + evt.montant, evt.periodiciteMois, evt.mode, evt.typePoste);
+
+          let montantSecondaire: string | undefined;
+          if (avant.secondaire && apres.secondaire) {
+            montantSecondaire = evt.periodiciteMoisOrigine === evt.periodiciteMois
+              ? this.i18n.instant('dashboard.montantSecondaireRevisionModele', {
+                  montantAvant: `${this.formatMontantEntier(avant.montantPlein)} ${this.deviseBase()}`,
+                  montantApres: `${this.formatMontantEntier(apres.montantPlein)} ${this.deviseBase()}`,
+                  periodicite: evt.periodiciteMois,
+                })
+              : `${avant.secondaire} → ${apres.secondaire}`;
+          } else {
+            montantSecondaire = apres.secondaire ?? avant.secondaire;
+          }
+
+          return {
+            when: this.t.mois[evt.mois - 1],
+            icon,
+            iconVariant: variant,
+            title: evt.description,
+            favorable,
+            montantAvantLabel: this.formatMontantAvecSuffixe(avant.montantBrut, avant.suffixe),
+            montantApresLabel: this.formatMontantAvecSuffixe(apres.montantBrut, apres.suffixe),
+            montantSecondaire,
+            mois: evt.mois,
+          };
+        }
+
+        const { montantBrut, suffixe, secondaire } = this.formatterMontantPoste(
+          evt.montant, evt.periodiciteMois, evt.mode, evt.typePoste);
+
         return {
           when: this.t.mois[evt.mois - 1],
-          emoji: this.emojiEvenement(evt),
+          icon,
+          iconVariant: variant,
           title: evt.description,
-          impact: utiliseEcheance ? evt.montantEcheance : evt.montantMensualiseDelta,
-          unite: (utiliseEcheance ? 'echeance' : 'mensuel') as 'mensuel' | 'echeance',
+          impact: montantBrut,
+          favorable,
+          suffixe,
+          montantSecondaire: secondaire,
           mois: evt.mois,
         };
       })

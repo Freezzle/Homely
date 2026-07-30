@@ -162,8 +162,6 @@
               [items]="evenementsAnnee()"
               [showMarkerIcon]="false"
               [devise]="deviseBase()"
-              [suffixeMensuel]="t.dashboard.parMois"
-              [suffixeEcheance]="t.dashboard.parEcheance"
               (select)="ouvrirMoisDepuisTimeline($event)" />
           } @else {
             <p class="empty-copy">{{ t.dashboard.aucunEvenement }}</p>
@@ -281,8 +279,6 @@
               [items]="evenementsMois()"
               [showMarkerIcon]="false"
               [devise]="deviseBase()"
-              [suffixeMensuel]="t.dashboard.parMois"
-              [suffixeEcheance]="t.dashboard.parEcheance"
               (select)="ouvrirMoisDepuisTimeline($event)" />
           } @else {
             <p class="empty-copy">{{ t.dashboard.aucunEvenement }}</p>

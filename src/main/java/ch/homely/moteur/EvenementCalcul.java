@@ -1,29 +1,35 @@
 package ch.homely.moteur;
 
+import ch.homely.poste.ModeComptabilisation;
 import ch.homely.poste.NaturePoste;
 import ch.homely.poste.TypePoste;
 
 import java.util.UUID;
 
 /**
- * Un événement budgétaire détecté pour un poste à un mois donné (doc 01 — voir
+ * Un événement budgétaire ("ce qui change") détecté pour un poste (doc 01 — voir
  * {@link MoteurCalcul#evenements(java.util.List, int)}).
  *
- * @param mois                     mois 1..12 auquel l'événement est daté
- * @param type                     type d'événement
- * @param posteId                  id du poste concerné (le nouveau maillon pour REVISION)
- * @param description              libellé du poste
- * @param categorieId              id de catégorie du poste (nullable)
- * @param typePoste                REVENU | CHARGE | RESERVE
- * @param nature                   EFFECTIF | ESTIMATION
- * @param devise                   devise d'origine du poste (avant conversion FX, faite en couche service)
- * @param montantMensualiseDelta   variation du montant mensualisé, signée (+ REVENU, − CHARGE/RESERVE) ;
- *                                 pour REVISION = delta (après − avant) déjà signé ; pour DEBUT/FIN = plein
- *                                 montant mensualisé signé ; {@code 0.0} pour OCCURRENCE.
- * @param montantEcheance          montant réel de l'échéance/occurrence, signé ; utilisé pour
- *                                 DEBUT/FIN/OCCURRENCE et pour l'après-révision (REVISION) ; {@code 0.0}
- *                                 si sans objet (ex. poste MENSUALISE en DEBUT/FIN — dans ce cas seul
- *                                 montantMensualiseDelta est pertinent).
+ * <p>Le montant est transporté <b>brut</b> (non mensualisé) : c'est à la couche
+ * d'affichage (voir {@code periodiciteMois}/{@code mode}) de le formater — le moteur ne
+ * fait aucun formatage de texte.</p>
+ *
+ * @param mois            mois 1..12 auquel l'événement est daté
+ * @param type             type d'événement (DEBUT, FIN, REVISION)
+ * @param posteId          id du poste concerné (le nouveau maillon pour REVISION)
+ * @param description      libellé du poste
+ * @param categorieId      id de catégorie du poste (nullable)
+ * @param typePoste        REVENU | CHARGE | RESERVE
+ * @param nature           EFFECTIF | ESTIMATION
+ * @param devise           devise d'origine du poste (avant conversion FX, faite en couche service)
+ * @param montant              montant signé (+ REVENU, − CHARGE/RESERVE) ; plein montant du poste pour
+ *                             DEBUT/FIN, delta (après − avant) pour REVISION — toujours brut, non mensualisé
+ * @param periodiciteMois      périodicité du poste concerné (successeur pour REVISION), pour l'affichage
+ * @param mode                 MENSUALISE | PERIODIQUE du poste concerné, pour l'affichage
+ * @param montantOrigine       uniquement pour REVISION (origine résolue) : montant signé du poste
+ *                             d'origine (même convention que {@code montant}) ; {@code null} sinon
+ * @param periodiciteMoisOrigine uniquement pour REVISION : périodicité du poste d'origine ; {@code null} sinon
+ * @param modeOrigine          uniquement pour REVISION : mode du poste d'origine ; {@code null} sinon
  */
 public record EvenementCalcul(
         int mois,
@@ -34,7 +40,11 @@ public record EvenementCalcul(
         TypePoste typePoste,
         NaturePoste nature,
         String devise,
-        double montantMensualiseDelta,
-        double montantEcheance
+        double montant,
+        int periodiciteMois,
+        ModeComptabilisation mode,
+        Double montantOrigine,
+        Integer periodiciteMoisOrigine,
+        ModeComptabilisation modeOrigine
 ) {
 }

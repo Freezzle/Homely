@@ -168,11 +168,13 @@ public class ProjectionService {
 
     private EvenementDto toEvenementDto(EvenementCalcul e, ParametresScenario params) {
         double taux = MoteurCalcul.tauxConversion(e.devise(), params.deviseBase(), params.taux());
+        BigDecimal montantOrigine = e.montantOrigine() != null ? bd(e.montantOrigine() * taux) : null;
         return new EvenementDto(
                 e.mois(), e.type(), e.posteId(), e.description(), e.categorieId(),
                 e.typePoste(), e.nature(),
-                bd(e.montantMensualiseDelta() * taux),
-                bd(e.montantEcheance() * taux));
+                bd(e.montant() * taux),
+                e.periodiciteMois(), e.mode(),
+                montantOrigine, e.periodiciteMoisOrigine(), e.modeOrigine());
     }
 
     /** Invalide tout le cache (appelé après toute modification). */

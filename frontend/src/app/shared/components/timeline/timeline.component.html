@@ -10,7 +10,7 @@
                     class="tl-marker"
                     [attr.aria-label]="group.items[0].title"
                     (click)="onSelect(group)">
-                <span>{{ group.emoji }}</span>
+                <i class="pi" [ngClass]="['pi-' + (group.icon ?? 'circle'), 'tl-icon-' + (group.iconVariant ?? 'info')]"></i>
             </button>
         </ng-template>
 
@@ -19,26 +19,54 @@
         @if (group.items.length === 1) {
             <button type="button" class="tl-card" (click)="onSelect(group)">
                 <div class="tl-row">
-                    <div class="tl-title">{{ group.items[0].title }}</div>
-                    @if (impactLabel(group.items[0]); as impact) {
-                        <div class="tl-impact" [class.pos]="group.items[0].impact! > 0"
-                             [class.neg]="group.items[0].impact! < 0">
+                    <div class="tl-title">
+                        <i class="pi tl-row-icon" [ngClass]="['pi-' + (group.items[0].icon ?? 'circle'), 'tl-icon-' + (group.items[0].iconVariant ?? 'info')]"></i>
+                        {{ group.items[0].title }}
+                    </div>
+                    @if (group.items[0].montantApresLabel) {
+                        <div class="tl-impact-revision">
+                            <span class="tl-impact-avant">{{ group.items[0].montantAvantLabel }}</span>
+                            <i class="pi pi-arrow-right"></i>
+                            <span class="tl-impact" [class.pos]="group.items[0].favorable === true"
+                                  [class.neg]="group.items[0].favorable === false">{{ group.items[0].montantApresLabel }}</span>
+                        </div>
+                    } @else if (impactLabel(group.items[0]); as impact) {
+                        <div class="tl-impact" [class.pos]="group.items[0].favorable === true"
+                             [class.neg]="group.items[0].favorable === false">
                             {{ impact }}
                         </div>
                     }
                 </div>
+                @if (group.items[0].montantSecondaire) {
+                    <div class="tl-impact-secondaire">{{ group.items[0].montantSecondaire }}</div>
+                }
             </button>
         } @else {
             <button type="button" class="tl-card tl-card-group" (click)="onSelect(group)">
                 @for (item of group.items; track $index) {
-                    @if (impactLabel(item); as impact) {
+                    @if (impactLabel(item) || item.montantApresLabel; as impact) {
                         <div class="tl-subitem">
                             <div class="tl-row">
-                                <div class="tl-title">{{ item.title }}</div>
-                                <div class="tl-impact" [class.pos]="item.impact! > 0" [class.neg]="item.impact! < 0">
-                                    {{ impact }}
+                                <div class="tl-title">
+                                    <i class="pi tl-row-icon" [ngClass]="['pi-' + (item.icon ?? 'circle'), 'tl-icon-' + (item.iconVariant ?? 'info')]"></i>
+                                    {{ item.title }}
                                 </div>
+                                @if (item.montantApresLabel) {
+                                    <div class="tl-impact-revision">
+                                        <span class="tl-impact-avant">{{ item.montantAvantLabel }}</span>
+                                        <i class="pi pi-arrow-right"></i>
+                                        <span class="tl-impact" [class.pos]="item.favorable === true"
+                                              [class.neg]="item.favorable === false">{{ item.montantApresLabel }}</span>
+                                    </div>
+                                } @else {
+                                    <div class="tl-impact" [class.pos]="item.favorable === true" [class.neg]="item.favorable === false">
+                                        {{ impactLabel(item) }}
+                                    </div>
+                                }
                             </div>
+                            @if (item.montantSecondaire) {
+                                <div class="tl-impact-secondaire">{{ item.montantSecondaire }}</div>
+                            }
                         </div>
                     }
                 }

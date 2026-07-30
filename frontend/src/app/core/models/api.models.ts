@@ -127,7 +127,7 @@ export interface PosteDecalerDateEffetResponse {
 }
 
 // ── Événements budgétaires ("ce qui change") ───────────────────────────────
-export type TypeEvenement = 'DEBUT' | 'FIN' | 'REVISION' | 'OCCURRENCE';
+export type TypeEvenement = 'DEBUT' | 'FIN' | 'REVISION';
 export interface EvenementDto {
   mois: number;
   type: TypeEvenement;
@@ -136,8 +136,15 @@ export interface EvenementDto {
   categorieId?: string;
   typePoste: TypePoste;
   nature: NaturePoste;
-  montantMensualiseDelta: number;
-  montantEcheance: number;
+  /** Montant signé brut (plein pour DEBUT/FIN, delta pour REVISION) — non mensualisé. */
+  montant: number;
+  periodiciteMois: number;
+  mode: ModeComptabilisation;
+  /** Uniquement pour REVISION (origine résolue) : valeurs du poste avant révision, pour
+   *  un affichage "avant → après". Absent pour DEBUT/FIN. */
+  montantOrigine?: number;
+  periodiciteMoisOrigine?: number;
+  modeOrigine?: ModeComptabilisation;
 }
 
 // ── Objectifs ─────────────────────────────────────────────────────────────────

@@ -22,6 +22,18 @@
   cursor: pointer;
 }
 
+.tl-icon-success {
+  color: var(--p-green-500);
+}
+
+.tl-icon-danger {
+  color: var(--p-red-500);
+}
+
+.tl-icon-info {
+  color: var(--p-blue-500);
+}
+
 .tl-marker-dot {
   width: 0.65rem;
   height: 0.65rem;
@@ -49,6 +61,14 @@
   color: var(--p-text-color);
   flex: 1 1 auto;
   min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.tl-row-icon {
+  font-size: 0.85rem;
+  flex: 0 0 auto;
 }
 
 .tl-row {
@@ -72,6 +92,29 @@
 
 .tl-impact.neg {
   color: var(--p-red-500);
+}
+
+.tl-impact-revision {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  flex: 0 0 auto;
+  white-space: nowrap;
+
+  .pi-arrow-right {
+    font-size: 0.7rem;
+    color: var(--p-text-muted-color);
+  }
+}
+
+.tl-impact-avant {
+  color: var(--p-text-muted-color);
+}
+
+.tl-impact-secondaire {
+  font-size: 0.72rem;
+  color: var(--p-text-muted-color);
 }
 
 .tl-card-group {

@@ -368,7 +368,10 @@
     "aucuneEcheance": "Aucune échéance ce mois-ci.",
     "aucunEvenement": "Aucun changement structurel ce mois-ci.",
     "parMois": "/mois",
-    "parEcheance": "/échéance"
+    "parPeriodicite": "/{{n}} mois",
+    "parPonctuel": "/ponctuel",
+    "montantSecondaireModele": "{{montant}} tous les {{periodicite}} mois",
+    "montantSecondaireRevisionModele": "{{montantAvant}} → {{montantApres}} tous les {{periodicite}} mois"
   },
   "commun": {
     "actions": "Actions",

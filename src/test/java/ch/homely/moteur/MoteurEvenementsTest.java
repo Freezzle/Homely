@@ -18,8 +18,9 @@ import static ch.homely.poste.TypePoste.*;
 import static org.assertj.core.api.Assertions.*;
 
 /**
- * Tests purs (test-first) de {@link MoteurCalcul#evenements(List, int)} — voir le plan
- * "Liste d'événements budgétaires" : détection de début/fin/révision/occurrence de poste.
+ * Tests purs (test-first) de {@link MoteurCalcul#evenements(List, int)} — détecte
+ * uniquement les <b>changements</b> (début, fin, révision), plus aucune échéance
+ * récurrente (OCCURRENCE n'existe plus).
  */
 class MoteurEvenementsTest {
 
@@ -48,8 +49,12 @@ class MoteurEvenementsTest {
             EvenementCalcul e = evts.get(0);
             assertThat(e.mois()).isEqualTo(3);
             assertThat(e.type()).isEqualTo(TypeEvenement.DEBUT);
-            assertThat(e.montantMensualiseDelta()).isCloseTo(1000.0, within(TOL));
-            assertThat(e.montantEcheance()).isCloseTo(1000.0, within(TOL));
+            assertThat(e.montant()).isCloseTo(1000.0, within(TOL));
+            assertThat(e.periodiciteMois()).isEqualTo(1);
+            assertThat(e.mode()).isEqualTo(MENSUALISE);
+            assertThat(e.montantOrigine()).isNull();
+            assertThat(e.periodiciteMoisOrigine()).isNull();
+            assertThat(e.modeOrigine()).isNull();
         }
 
         @Test
@@ -60,8 +65,7 @@ class MoteurEvenementsTest {
             List<EvenementCalcul> evts = MoteurCalcul.evenements(List.of(p), 2026);
 
             assertThat(evts).hasSize(1);
-            assertThat(evts.get(0).montantMensualiseDelta()).isCloseTo(-500.0, within(TOL));
-            assertThat(evts.get(0).montantEcheance()).isCloseTo(-500.0, within(TOL));
+            assertThat(evts.get(0).montant()).isCloseTo(-500.0, within(TOL));
         }
 
         @Test
@@ -72,16 +76,38 @@ class MoteurEvenementsTest {
         }
 
         @Test
-        void posteTrimestrielMensualiseSansOrigineNEmetPasDeDebut() {
-            // Périodique + lissé + pas de mutation : aucun DEBUT (impact déjà lissé, non perçu)
+        void posteTrimestrielMensualiseSansOrigineEmetToujoursLeDebut() {
+            // Plus d'exception "lissé" : le montant affiché reste le montant PLEIN (brut),
+            // c'est à la couche d'affichage de le mensualiser via periodiciteMois/mode.
             PosteCalcul p = poste(UUID.randomUUID(), CHARGE, 300, 3, LocalDate.of(2026, 4, 1), null,
                     MENSUALISE, DEBUT_PERIODE, null, "Assurance lissée");
-            assertThat(MoteurCalcul.evenements(List.of(p), 2026)).isEmpty();
+
+            List<EvenementCalcul> evts = MoteurCalcul.evenements(List.of(p), 2026);
+
+            assertThat(evts).hasSize(1);
+            EvenementCalcul e = evts.get(0);
+            assertThat(e.type()).isEqualTo(TypeEvenement.DEBUT);
+            assertThat(e.mois()).isEqualTo(4);
+            assertThat(e.montant()).isCloseTo(-300.0, within(TOL));
+            assertThat(e.periodiciteMois()).isEqualTo(3);
+            assertThat(e.mode()).isEqualTo(MENSUALISE);
         }
 
         @Test
-        void posteTrimestrielMensualiseIssuDUneRevisionEmetTOujoursLeDebut() {
-            // Périodique + lissé mais issu d'une mutation (posteOrigineId) : REVISION reste émis
+        void posteTrimestrielPeriodiqueSansOrigineEmetLeDebut() {
+            PosteCalcul p = poste(UUID.randomUUID(), CHARGE, 300, 3, LocalDate.of(2026, 4, 1), null,
+                    PERIODIQUE, DEBUT_PERIODE, null, "Assurance");
+
+            List<EvenementCalcul> evts = MoteurCalcul.evenements(List.of(p), 2026);
+
+            assertThat(evts).hasSize(1);
+            assertThat(evts.get(0).mode()).isEqualTo(PERIODIQUE);
+            assertThat(evts.get(0).periodiciteMois()).isEqualTo(3);
+            assertThat(evts.get(0).montant()).isCloseTo(-300.0, within(TOL));
+        }
+
+        @Test
+        void posteTrimestrielMensualiseIssuDUneRevisionEmetLaRevision() {
             UUID origineId = UUID.randomUUID();
             PosteCalcul origine = poste(origineId, CHARGE, 300, 3, null, LocalDate.of(2026, 5, 31),
                     MENSUALISE, DEBUT_PERIODE, null, "Assurance lissée");
@@ -91,8 +117,17 @@ class MoteurEvenementsTest {
             List<EvenementCalcul> evts = MoteurCalcul.evenements(List.of(origine, successeur), 2026);
 
             assertThat(evts).hasSize(1);
-            assertThat(evts.get(0).type()).isEqualTo(TypeEvenement.REVISION);
-            assertThat(evts.get(0).mois()).isEqualTo(6);
+            EvenementCalcul e = evts.get(0);
+            assertThat(e.type()).isEqualTo(TypeEvenement.REVISION);
+            assertThat(e.mois()).isEqualTo(6);
+            // Delta brut (non mensualisé) : signe(-1) * (340 - 300)
+            assertThat(e.montant()).isCloseTo(-40.0, within(TOL));
+            assertThat(e.periodiciteMois()).isEqualTo(3);
+            assertThat(e.mode()).isEqualTo(MENSUALISE);
+            // Valeurs du poste d'origine (pour affichage "avant → après")
+            assertThat(e.montantOrigine()).isCloseTo(-300.0, within(TOL));
+            assertThat(e.periodiciteMoisOrigine()).isEqualTo(3);
+            assertThat(e.modeOrigine()).isEqualTo(MENSUALISE);
         }
     }
 
@@ -100,7 +135,7 @@ class MoteurEvenementsTest {
     @DisplayName("FIN")
     class Fin {
         @Test
-        void finSansSuccesseur() {
+        void finSansSuccesseurEstDecaleeAuMoisSuivant() {
             PosteCalcul p = poste(UUID.randomUUID(), CHARGE, 300, 1, null, LocalDate.of(2026, 9, 30),
                     MENSUALISE, DEBUT_PERIODE, null, "Abonnement");
 
@@ -108,14 +143,15 @@ class MoteurEvenementsTest {
 
             assertThat(evts).hasSize(1);
             EvenementCalcul e = evts.get(0);
-            assertThat(e.mois()).isEqualTo(9);
+            // Fin le 30.09 -> événement le mois suivant (octobre), pas en septembre
+            assertThat(e.mois()).isEqualTo(10);
             assertThat(e.type()).isEqualTo(TypeEvenement.FIN);
-            assertThat(e.montantMensualiseDelta()).isCloseTo(300.0, within(TOL)); // perte de charge = delta positif (soulagement)
-            assertThat(e.montantEcheance()).isCloseTo(300.0, within(TOL));
+            assertThat(e.montant()).isCloseTo(300.0, within(TOL)); // soulagement = delta positif
+            assertThat(e.montantOrigine()).isNull();
         }
 
         @Test
-        void finAvecSuccesseurNEmetPasDEvenement() {
+        void finAvecSuccesseurNEmetPasDEvenementFin() {
             UUID origineId = UUID.randomUUID();
             PosteCalcul origine = poste(origineId, CHARGE, 300, 1, null, LocalDate.of(2026, 6, 30),
                     MENSUALISE, DEBUT_PERIODE, null, "Loyer");
@@ -129,11 +165,31 @@ class MoteurEvenementsTest {
         }
 
         @Test
-        void posteTrimestrielMensualiseSansSuccesseurNEmetPasDeFin() {
-            // Périodique + lissé qui se termine sans mutation : aucune FIN (impact déjà lissé)
+        void posteTrimestrielMensualiseSansSuccesseurEmetToujoursLaFin() {
             PosteCalcul p = poste(UUID.randomUUID(), CHARGE, 300, 3, null, LocalDate.of(2026, 9, 30),
                     MENSUALISE, DEBUT_PERIODE, null, "Assurance lissée");
+
+            List<EvenementCalcul> evts = MoteurCalcul.evenements(List.of(p), 2026);
+
+            assertThat(evts).hasSize(1);
+            EvenementCalcul e = evts.get(0);
+            assertThat(e.type()).isEqualTo(TypeEvenement.FIN);
+            assertThat(e.mois()).isEqualTo(10);
+            assertThat(e.montant()).isCloseTo(300.0, within(TOL));
+        }
+
+        @Test
+        void finEnDecembreEstAbsenteDeLAnneeCouranteEtApparaitLAnneeSuivante() {
+            PosteCalcul p = poste(UUID.randomUUID(), CHARGE, 300, 1, null, LocalDate.of(2026, 12, 31),
+                    MENSUALISE, DEBUT_PERIODE, null, "Abonnement");
+
             assertThat(MoteurCalcul.evenements(List.of(p), 2026)).isEmpty();
+
+            List<EvenementCalcul> evts2027 = MoteurCalcul.evenements(List.of(p), 2027);
+            assertThat(evts2027).hasSize(1);
+            EvenementCalcul e = evts2027.get(0);
+            assertThat(e.type()).isEqualTo(TypeEvenement.FIN);
+            assertThat(e.mois()).isEqualTo(1);
         }
     }
 
@@ -155,8 +211,10 @@ class MoteurEvenementsTest {
             assertThat(e.mois()).isEqualTo(7);
             assertThat(e.type()).isEqualTo(TypeEvenement.REVISION);
             // charge augmente de 50 -> impact négatif supplémentaire de 50
-            assertThat(e.montantMensualiseDelta()).isCloseTo(-50.0, within(TOL));
-            assertThat(e.montantEcheance()).isCloseTo(-50.0, within(TOL));
+            assertThat(e.montant()).isCloseTo(-50.0, within(TOL));
+            assertThat(e.montantOrigine()).isCloseTo(-300.0, within(TOL));
+            assertThat(e.periodiciteMoisOrigine()).isEqualTo(1);
+            assertThat(e.modeOrigine()).isEqualTo(MENSUALISE);
         }
 
         @Test
@@ -173,7 +231,10 @@ class MoteurEvenementsTest {
             EvenementCalcul e = evts.get(0);
             assertThat(e.mois()).isEqualTo(4);
             assertThat(e.type()).isEqualTo(TypeEvenement.REVISION);
-            assertThat(e.montantMensualiseDelta()).isCloseTo(-200.0, within(TOL));
+            assertThat(e.montant()).isCloseTo(-200.0, within(TOL));
+            assertThat(e.montantOrigine()).isCloseTo(1000.0, within(TOL));
+            assertThat(e.periodiciteMoisOrigine()).isEqualTo(1);
+            assertThat(e.modeOrigine()).isEqualTo(MENSUALISE);
         }
 
         @Test
@@ -189,56 +250,45 @@ class MoteurEvenementsTest {
 
             List<EvenementCalcul> evts = MoteurCalcul.evenements(List.of(m1, m2, m3), 2026);
 
-            // DEBUT pour m1 (pas d'origine) + REVISION pour m2 et m3 ; aucune FIN
+            // DEBUT pour m1 (pas d'origine) + REVISION pour m2 et m3 ; aucune FIN (chaque
+            // maillon intermédiaire a un successeur)
             assertThat(evts).hasSize(3);
             assertThat(evts).extracting(EvenementCalcul::type)
                     .containsExactly(TypeEvenement.DEBUT, TypeEvenement.REVISION, TypeEvenement.REVISION);
+            assertThat(evts).extracting(EvenementCalcul::montant)
+                    .containsExactly(-300.0, -20.0, -20.0);
         }
     }
 
     @Nested
-    @DisplayName("OCCURRENCE")
-    class Occurrence {
+    @DisplayName("Postes périodiques — plus d'échéances intermédiaires")
+    class PlusDEcheancesIntermediaires {
         @Test
-        void posteTrimestrielPeriodiqueHorsMoisAncrage() {
+        void posteTrimestrielPeriodiqueNeGenereQueSonDebut() {
             PosteCalcul p = poste(UUID.randomUUID(), CHARGE, 300, 3, LocalDate.of(2025, 1, 1), null,
                     PERIODIQUE, DEBUT_PERIODE, null, "Assurance");
 
-            List<EvenementCalcul> evts = MoteurCalcul.evenements(List.of(p), 2026);
-
-            // ancre = janvier -> échéances en janvier, avril, juillet, octobre
-            assertThat(evts).extracting(EvenementCalcul::mois).containsExactly(1, 4, 7, 10);
-            assertThat(evts).allMatch(e -> e.type() == TypeEvenement.OCCURRENCE);
-            assertThat(evts.get(0).montantEcheance()).isCloseTo(-300.0, within(TOL));
-            assertThat(evts.get(0).montantMensualiseDelta()).isCloseTo(0.0, within(TOL));
+            // Début en 2025 : hors année évaluée -> plus aucune échéance visible en 2026
+            // (l'ancien mécanisme OCCURRENCE aurait généré 4 événements ; il n'existe plus)
+            assertThat(MoteurCalcul.evenements(List.of(p), 2026)).isEmpty();
         }
 
         @Test
-        void posteTrimestrielMensualiseNeGenerePasDOccurrence() {
-            PosteCalcul p = poste(UUID.randomUUID(), CHARGE, 300, 3, LocalDate.of(2025, 1, 1), null,
-                    MENSUALISE, DEBUT_PERIODE, null, "Assurance lissée");
-
-            List<EvenementCalcul> evts = MoteurCalcul.evenements(List.of(p), 2026);
-
-            // Poste lissé (MENSUALISE) : aucune alerte d'échéance, même périodique
-            assertThat(evts).isEmpty();
-        }
-
-        @Test
-        void posteAnnuelAvecDebutDansAnneeExclutOccurrenceDuMoisDeDebut() {
+        void posteAnnuelAvecDebutDansAnneeNEmetQueLeDebut() {
             PosteCalcul p = poste(UUID.randomUUID(), CHARGE, 1200, 12, LocalDate.of(2026, 5, 1), null,
                     PERIODIQUE, DEBUT_PERIODE, null, "Assurance annuelle");
 
             List<EvenementCalcul> evts = MoteurCalcul.evenements(List.of(p), 2026);
 
-            // Un seul événement : le DEBUT en mai (pas de doublon OCCURRENCE le même mois)
             assertThat(evts).hasSize(1);
             assertThat(evts.get(0).type()).isEqualTo(TypeEvenement.DEBUT);
             assertThat(evts.get(0).mois()).isEqualTo(5);
+            assertThat(evts.get(0).montant()).isCloseTo(-1200.0, within(TOL));
+            assertThat(evts.get(0).periodiciteMois()).isEqualTo(12);
         }
 
         @Test
-        void oneShotNeGenerePasDOccurrence() {
+        void oneShotNeGenereQueSonDebut() {
             PosteCalcul p = poste(UUID.randomUUID(), CHARGE, 2000, 0, LocalDate.of(2026, 6, 15), null,
                     MENSUALISE, DEBUT_PERIODE, null, "Achat exceptionnel");
 
@@ -246,6 +296,8 @@ class MoteurEvenementsTest {
 
             assertThat(evts).hasSize(1);
             assertThat(evts.get(0).type()).isEqualTo(TypeEvenement.DEBUT);
+            assertThat(evts.get(0).montant()).isCloseTo(-2000.0, within(TOL));
+            assertThat(evts.get(0).periodiciteMois()).isEqualTo(0);
         }
     }
 

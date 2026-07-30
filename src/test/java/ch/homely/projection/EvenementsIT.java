@@ -62,7 +62,7 @@ class EvenementsIT {
         assertThat(evts).anySatisfy(e -> {
             assertThat(e.get("type").asText()).isEqualTo("DEBUT");
             assertThat(e.get("mois").asInt()).isEqualTo(3);
-            assertThat(e.get("montantMensualiseDelta").asDouble()).isEqualTo(1000.0);
+            assertThat(e.get("montant").asDouble()).isEqualTo(1000.0);
         });
     }
 
@@ -81,27 +81,49 @@ class EvenementsIT {
         assertThat(evts).anySatisfy(e -> {
             assertThat(e.get("type").asText()).isEqualTo("REVISION");
             assertThat(e.get("mois").asInt()).isEqualTo(7);
-            assertThat(e.get("montantMensualiseDelta").asDouble()).isEqualTo(-150.0);
+            assertThat(e.get("montant").asDouble()).isEqualTo(-150.0);
+            assertThat(e.get("montantOrigine").asDouble()).isEqualTo(-1500.0);
+            assertThat(e.get("periodiciteMoisOrigine").asInt()).isEqualTo(1);
+            assertThat(e.get("modeOrigine").asText()).isEqualTo("MENSUALISE");
         });
         // pas de FIN pour l'ancien maillon (remplacé par la révision)
         assertThat(evts).noneMatch(e -> e.get("type").asText().equals("FIN"));
     }
 
     @Test
-    @DisplayName("Un poste périodique non mensuel génère des événements OCCURRENCE hors DEBUT")
-    void posteTrimestrielGenereOccurrences() throws Exception {
+    @DisplayName("Un poste périodique non mensuel ne génère plus d'échéances intermédiaires")
+    void posteTrimestrielNeGenerePlusDEcheancesIntermediaires() throws Exception {
         String token = creerEtLogin("evt_occurrence@test.ch");
         String foyerId = creerFoyer(token, "Foyer Événements Occurrence");
         String scenarioId = creerScenario(token, foyerId);
         String catId = creerCategorie(token, foyerId, "Assurance", "CHARGE");
         creerPoste(token, foyerId, scenarioId, catId, "CHARGE", "2025-01-01", null, 300, 3, "PERIODIQUE");
 
+        // Début en 2025 : hors année évaluée -> aucun événement en 2026 (l'ancien
+        // mécanisme OCCURRENCE aurait généré 4 échéances en janvier/avril/juillet/octobre ;
+        // il n'existe plus).
+        List<JsonNode> evts = evenements(token, foyerId, scenarioId, 2026);
+        assertThat(evts).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Un poste sans successeur qui se termine génère un FIN le mois suivant")
+    void posteQuiSeTermineGenereFinLeMoisSuivant() throws Exception {
+        String token = creerEtLogin("evt_fin@test.ch");
+        String foyerId = creerFoyer(token, "Foyer Événements Fin");
+        String scenarioId = creerScenario(token, foyerId);
+        String catId = creerCategorie(token, foyerId, "Abonnement", "CHARGE");
+        creerPoste(token, foyerId, scenarioId, catId, "CHARGE", "2025-01-01", "2026-09-30", 300, 1);
+
         List<JsonNode> evts = evenements(token, foyerId, scenarioId, 2026);
 
-        List<JsonNode> occurrences = evts.stream()
-                .filter(e -> e.get("type").asText().equals("OCCURRENCE")).toList();
-        assertThat(occurrences).extracting(e -> e.get("mois").asInt())
-                .containsExactly(1, 4, 7, 10);
+        assertThat(evts).anySatisfy(e -> {
+            assertThat(e.get("type").asText()).isEqualTo("FIN");
+            assertThat(e.get("mois").asInt()).isEqualTo(10);
+            assertThat(e.get("montant").asDouble()).isEqualTo(300.0);
+        });
+        // pas d'événement en septembre (mois de la date de fin elle-même)
+        assertThat(evts).noneMatch(e -> e.get("type").asText().equals("FIN") && e.get("mois").asInt() == 9);
     }
 
     @Test

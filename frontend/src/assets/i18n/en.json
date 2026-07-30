@@ -368,7 +368,10 @@
     "aucuneEcheance": "No due dates this month.",
     "aucunEvenement": "No structural change this month.",
     "parMois": "/mo",
-    "parEcheance": "/due date"
+    "parPeriodicite": "/{{n}} mo",
+    "parPonctuel": "/one-off",
+    "montantSecondaireModele": "{{montant}} every {{periodicite}} months",
+    "montantSecondaireRevisionModele": "{{montantAvant}} → {{montantApres}} every {{periodicite}} months"
   },
   "commun": {
     "actions": "Actions",
