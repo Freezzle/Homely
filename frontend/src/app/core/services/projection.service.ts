@@ -25,9 +25,13 @@ export class ProjectionService {
     );
   }
 
-  evenements(foyerId: string, scenarioId: string, annee: number) {
+  /** Si membreId est fourni, le backend ne renvoie que les événements où sa quote-part
+   *  effective est > 0 ce mois-là, avec les montants déjà proratisés. */
+  evenements(foyerId: string, scenarioId: string, annee: number, membreId?: string) {
+    const params: Record<string, string | number> = { annee };
+    if (membreId) { params['membreId'] = membreId; }
     return this.http.get<EvenementDto[]>(
-      `${this.base(foyerId, scenarioId)}/evenements`, { params: { annee } }
+      `${this.base(foyerId, scenarioId)}/evenements`, { params }
     );
   }
 }

@@ -15,6 +15,7 @@
   },
   "nav": {
     "dashboard": "Dashboard",
+    "dashboardFoyer": "Household",
     "revenus": "Income",
     "charges": "Expenses",
     "reserves": "Savings",

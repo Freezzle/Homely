@@ -145,6 +145,9 @@ export interface EvenementDto {
   montantOrigine?: number;
   periodiciteMoisOrigine?: number;
   modeOrigine?: ModeComptabilisation;
+  /** Quote-part effective du membre demandé (1 par défaut en vue foyer). Les montants
+   *  ci-dessus sont déjà proratisés en conséquence par le backend. */
+  quotePart?: number;
 }
 
 // ── Objectifs ─────────────────────────────────────────────────────────────────

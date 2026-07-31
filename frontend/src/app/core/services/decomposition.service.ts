@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { I18nService } from '../i18n/i18n.service';
 import { localeDeLangue } from '../i18n/locale.util';
 import {
-  CategorieDto, CompteDto, MembreDto, ObjectifDto, ScenarioDto, TypeCategorie,
+  CategorieDto, CompteDto, MembreDto, ObjectifDto, PosteDto, ScenarioDto, TypeCategorie,
   VentilationAggregatDto, VentilationSplitDto,
 } from '../models/api.models';
 import { LigneDecomposition, MembreTagInfo } from '../../shared/components/carte-bilan/carte-bilan.component';
@@ -195,6 +195,50 @@ export class DecompositionService {
     if (!scenario) return '';
     const defaut = scenario.repartitions.find(r => r.membreId === membreId);
     return `${this.t.projection.quotePart} ${this.formatPct((defaut?.quotePart ?? 0) * 100)} %`;
+  }
+
+  /**
+   * Quote-part effective (∈[0,1]) d'un membre sur un poste donné, pour un mois donné.
+   * Reproduit fidèlement `MoteurCalcul.quotePartEffective` côté backend :
+   * - mono-membre (`nbMembres <= 1`) → toujours 1.
+   * - `CUSTOM` → quote-part stockée sur le poste (0 si absente).
+   * - `AUTO` → quote-part de la période active du scénario (0 si absente/aucune période).
+   * - `REVERSE_AUTO` → complément normalisé `(1 − pᵢ) / (N − 1)` (1 si N ≤ 1).
+   */
+  quotePartEffectivePoste(
+    poste: Pick<PosteDto, 'typeRepartition' | 'repartitions'>,
+    membreId: string,
+    scenario: ScenarioDto | null,
+    annee: number,
+    mois: number,
+    nbMembres: number,
+  ): number {
+    if (nbMembres <= 1) return 1;
+
+    if (poste.typeRepartition === 'CUSTOM') {
+      const r = poste.repartitions?.find(x => x.membreId === membreId);
+      return r?.quotePart ?? 0;
+    }
+
+    // AUTO / REVERSE_AUTO : résoudre la période active du scénario pour ce mois.
+    const debutMois = new Date(Date.UTC(annee, mois - 1, 1));
+    const periode = scenario?.periodes.find(p => {
+      const apresDebut = !p.debut || new Date(p.debut) <= debutMois;
+      const avantFin = !p.fin || new Date(p.fin) >= debutMois;
+      return apresDebut && avantFin;
+    });
+    const parts = periode?.parts ?? [];
+
+    if (poste.typeRepartition === 'AUTO' || !poste.typeRepartition) {
+      const part = parts.find(p => p.membreId === membreId);
+      return part?.quotePart ?? 0;
+    }
+
+    // REVERSE_AUTO
+    const N = parts.length;
+    if (N <= 1) return 1;
+    const pi = parts.find(p => p.membreId === membreId)?.quotePart ?? 0;
+    return (1 - pi) / (N - 1);
   }
 
   private formatMoisAnnee(iso: string): string {

@@ -19,6 +19,12 @@ import java.util.UUID;
  * {@code modeOrigine} portent les valeurs du poste d'origine (avant révision), permettant
  * à la couche d'affichage de construire un rendu "avant → après" ; {@code null} pour
  * DEBUT/FIN.</p>
+ *
+ * <p>{@code quotePart} : quote-part effective (∈]0,1]) du membre demandé (voir
+ * {@code ?membreId=} sur l'endpoint), déjà appliquée à {@code montant}/{@code montantOrigine}
+ * — calculée côté backend via {@link ch.homely.moteur.MoteurCalcul#quotePartEffective}
+ * (jamais recalculée côté frontend). Vaut {@code 1} quand aucun membre n'est demandé
+ * (vue foyer).</p>
  */
 public record EvenementDto(
         int mois,
@@ -33,5 +39,6 @@ public record EvenementDto(
         ModeComptabilisation mode,
         BigDecimal montantOrigine,
         Integer periodiciteMoisOrigine,
-        ModeComptabilisation modeOrigine
+        ModeComptabilisation modeOrigine,
+        BigDecimal quotePart
 ) {}

@@ -59,12 +59,15 @@ public class ProjectionController {
         return projectionService.ventilations(foyerId, scenarioId, annee, mois);
     }
 
-    /** Événements budgétaires ("ce qui change") pour une année : début, fin, révision, occurrence */
+    /** Événements budgétaires ("ce qui change") pour une année : début, fin, révision, occurrence.
+     *  Si {@code membreId} est fourni, ne renvoie que les événements où sa quote-part effective
+     *  est &gt; 0 ce mois-là, avec les montants déjà proratisés (voir {@link EvenementDto#quotePart()}). */
     @GetMapping("/evenements")
     public List<EvenementDto> evenements(@PathVariable UUID foyerId,
                                           @PathVariable UUID scenarioId,
-                                          @RequestParam int annee) {
+                                          @RequestParam int annee,
+                                          @RequestParam(required = false) UUID membreId) {
         multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
-        return projectionService.evenements(foyerId, scenarioId, annee);
+        return projectionService.evenements(foyerId, scenarioId, annee, membreId);
     }
 }

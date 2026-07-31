@@ -159,22 +159,41 @@ public class ProjectionService {
     // ── Événements budgétaires ("ce qui change") ────────────────────────────
 
     @Cacheable(value = "projections",
-               key = "#scenarioId + '-evt-' + #annee + '-' + T(ch.homely.projection.ProjectionService).versionKey(#foyerId, #scenarioId, @scenarioRepository)")
-    public List<EvenementDto> evenements(UUID foyerId, UUID scenarioId, int annee) {
+               key = "#scenarioId + '-evt-' + #annee + '-' + #membreId + '-' + T(ch.homely.projection.ProjectionService).versionKey(#foyerId, #scenarioId, @scenarioRepository)")
+    public List<EvenementDto> evenements(UUID foyerId, UUID scenarioId, int annee, UUID membreId) {
         ParametresScenario params = chargerParametres(foyerId, scenarioId);
         List<EvenementCalcul> evenements = MoteurCalcul.evenements(params.postes(), annee);
-        return evenements.stream().map(e -> toEvenementDto(e, params)).toList();
+        Map<UUID, PosteCalcul> postesParId = params.postes().stream()
+                .collect(Collectors.toMap(PosteCalcul::id, p -> p, (a, b) -> a));
+
+        return evenements.stream()
+                .map(e -> {
+                    double quotePart = 1.0;
+                    if (membreId != null) {
+                        PosteCalcul poste = postesParId.get(e.posteId());
+                        // Poste introuvable (défensif) : on l'exclut plutôt que de l'attribuer à tort au foyer.
+                        if (poste == null) return null;
+                        quotePart = MoteurCalcul.quotePartEffective(
+                                poste, membreId, annee, e.mois(), params.periodesDefaut(), params.membres().size());
+                        if (quotePart <= 0) return null;
+                    }
+                    return toEvenementDto(e, params, quotePart);
+                })
+                .filter(Objects::nonNull)
+                .toList();
     }
 
-    private EvenementDto toEvenementDto(EvenementCalcul e, ParametresScenario params) {
+    private EvenementDto toEvenementDto(EvenementCalcul e, ParametresScenario params, double quotePart) {
         double taux = MoteurCalcul.tauxConversion(e.devise(), params.deviseBase(), params.taux());
-        BigDecimal montantOrigine = e.montantOrigine() != null ? bd(e.montantOrigine() * taux) : null;
+        double facteur = taux * quotePart;
+        BigDecimal montantOrigine = e.montantOrigine() != null ? bd(e.montantOrigine() * facteur) : null;
         return new EvenementDto(
                 e.mois(), e.type(), e.posteId(), e.description(), e.categorieId(),
                 e.typePoste(), e.nature(),
-                bd(e.montant() * taux),
+                bd(e.montant() * facteur),
                 e.periodiciteMois(), e.mode(),
-                montantOrigine, e.periodiciteMoisOrigine(), e.modeOrigine());
+                montantOrigine, e.periodiciteMoisOrigine(), e.modeOrigine(),
+                bd(quotePart));
     }
 
     /** Invalide tout le cache (appelé après toute modification). */

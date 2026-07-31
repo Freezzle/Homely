@@ -69,6 +69,36 @@ Chaque feature : `controller` (REST) → `service` (métier/validation) → `rep
   est un compteur/`updatedAt` invalidé à chaque modification de poste ou d'hypothèse.
 - Éviter de recalculer 12×N à chaque affichage de graphique.
 
+### 2.3 Logique métier : toujours côté backend, jamais dupliquée côté frontend
+- **Règle** : tout calcul dérivé des règles métier (quote-part effective, proratisation,
+  filtrage "ce poste concerne-t-il ce membre", agrégats, conversions de devises, etc.)
+  doit être calculé **une seule fois, dans le backend** (idéalement dans `moteur`, ou
+  dans `projection`/le service concerné en réutilisant une fonction déjà testée de
+  `moteur`) et exposé tel quel via DTO. Le frontend ne fait qu'**afficher** des valeurs
+  déjà calculées ; il ne doit pas ré-implémenter une formule métier en TypeScript.
+- **Pourquoi** : toute logique dupliquée en Angular (ex. répartition CUSTOM/AUTO/
+  REVERSE_AUTO, `periodeActive`) doit rester en synchronisation manuelle avec
+  `MoteurCalcul` — source d'incohérences silencieuses et de bugs difficiles à détecter
+  (deux implémentations qui divergent discrètement).
+- **Exemple vécu (à ne pas reproduire)** : lors de l'ajout du tableau de bord par membre,
+  la quote-part effective d'un événement budgétaire (`/evenements`) avait d'abord été
+  recalculée côté Angular (`DecompositionService.quotePartEffectivePoste`, copie de
+  `MoteurCalcul.quotePartEffective`). Corrigé en ajoutant un paramètre `membreId` à
+  `GET .../projection/evenements` : le backend filtre désormais les événements
+  non pertinents (quote-part ≤ 0) et renvoie des montants déjà proratisés + le champ
+  `EvenementDto.quotePart` (uniquement pour l'affichage, ex. "part 33 %"). Le frontend
+  ne fait plus qu'utiliser ces valeurs.
+- **Dette connue / exception assumée** : le calcul des segments "reste à vivre" de
+  l'anneau du dashboard (`chargesSuresMois`/`margeVariableMois`, filtrage + quote-part
+  par poste et par membre) reste dupliqué côté frontend
+  (`DecompositionService.quotePartEffectivePoste`), car une vraie migration
+  nécessiterait une nouvelle agrégation au niveau du moteur (avec vecteurs golden
+  test-first, règle d'or §1) qui n'a pas encore été spécifiée/validée. À migrer dès
+  qu'une évolution du moteur touchant cette zone sera entreprise.
+- **Avant d'écrire une formule métier dans un composant/service Angular**, vérifiez
+  d'abord si un endpoint existant peut la porter, ou si l'endpoint peut être étendu
+  (nouveau paramètre + champ DTO) plutôt que de la reproduire côté client.
+
 ## 3. Sécurité & authentification
 
 - **JWT** : `access token` (15 min, signature HMAC-SHA256) + `refresh token` opaque

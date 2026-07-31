@@ -41,12 +41,31 @@ export class SidebarMenuComponent {
     const foyerId = this.contexte.foyerId();
     if (!foyerId) return [];
     const base = `/f/${foyerId}`;
+    const membres = this.contexte.membres();
+    const dashboardBase = `${base}/dashboard`;
+
+    // Cas mono-membre : garder l'ancien item plat "Dashboard" pour la simplicité UI.
+    const dashboardItem: NavItem = membres.length > 1
+      ? {
+          label: this.t.nav.dashboard,
+          icon: 'pi pi-chart-line',
+          defaultOpen: true,
+          children: [
+            { label: this.t.nav.dashboardFoyer, icon: 'pi pi-home', route: `${dashboardBase}/foyer` },
+            ...membres.map<NavItem>((membre) => ({
+              label: membre.nom,
+              icon: 'pi pi-user',
+              route: `${dashboardBase}/${membre.id}`,
+            })),
+          ],
+        }
+      : { label: this.t.nav.dashboard, icon: 'pi pi-chart-line', route: `${dashboardBase}/foyer` };
 
     const sections: NavSection[] = [
       {
         label: this.t.nav.sections.pilotage,
         items: [
-          { label: this.t.nav.dashboard,  icon: 'pi pi-chart-line', route: `${base}/dashboard` },
+          dashboardItem,
           { label: this.t.nav.scenarios,  icon: 'pi pi-sitemap',    route: `${base}/scenarios` },
         ],
       },

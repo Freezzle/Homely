@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard, roleGuard } from './core/guards/auth.guard';
-import { redirectToCurrentYearGuard } from './features/dashboard/redirect-current-year.guard';
+import { redirectToCurrentYearGuard, dashboardLegacyRedirectGuard } from './features/dashboard/redirect-current-year.guard';
 
 export const routes: Routes = [
   // ── Public ─────────────────────────────────────────────────────────────────
@@ -40,11 +40,18 @@ export const routes: Routes = [
             children: [],
           },
           {
-            path: 'dashboard/:annee',
+            path: 'dashboard/:sujetId',
+            canActivate: [redirectToCurrentYearGuard],
+            children: [],
+          },
+          {
+            path: 'dashboard/:sujetId/:annee',
+            canActivate: [dashboardLegacyRedirectGuard],
             loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
           },
           {
-            path: 'dashboard/:annee/:mois',
+            path: 'dashboard/:sujetId/:annee/:mois',
+            canActivate: [dashboardLegacyRedirectGuard],
             loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
           },
           {

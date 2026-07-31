@@ -15,6 +15,7 @@
   },
   "nav": {
     "dashboard": "Tableau de bord",
+    "dashboardFoyer": "Foyer",
     "revenus": "Revenus",
     "charges": "Charges",
     "reserves": "Réserves",
