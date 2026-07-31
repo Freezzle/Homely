@@ -64,60 +64,59 @@
 
       <app-kpi-chip-row [items]="annualKpis()" />
 
-      <p-card>
-        <div class="section-stack">
-          <div class="section-title">{{ t.projection.resteAVivreDeAnnee }}</div>
-          <div class="toggle-wrap">
-            @if (afficherParMembre()) {
+      <app-tab-group [value]="ongletAnnee()" (valueChange)="onAnneeTabChange($event)">
+        <app-tab-panel value="recap" [label]="t.dashboard.recapitulatifs">
+          <div class="section-stack">
+            <div class="toggle-wrap">
+              @if (afficherParMembre()) {
+                <p-selectbutton
+                  [options]="vueOptions"
+                  [ngModel]="vueRecap()"
+                  (ngModelChange)="vueRecap.set($event)"
+                  optionLabel="label"
+                  optionValue="value"
+                  [allowEmpty]="false" />
+              }
               <p-selectbutton
-                [options]="vueOptions"
-                [ngModel]="vueRecap()"
-                (ngModelChange)="vueRecap.set($event)"
+                [options]="vueDecompositionOptions"
+                [ngModel]="vueDecomposition()"
+                (ngModelChange)="vueDecomposition.set($event)"
                 optionLabel="label"
                 optionValue="value"
                 [allowEmpty]="false" />
-            }
-            <p-selectbutton
-              [options]="vueDecompositionOptions"
-              [ngModel]="vueDecomposition()"
-              (ngModelChange)="vueDecomposition.set($event)"
-              optionLabel="label"
-              optionValue="value"
-              [allowEmpty]="false" />
-          </div>
-
-          @if (vueEffective() !== 'MEMBRE') {
-            <app-carte-bilan
-              variante="foyer"
-              [nom]="t.projection.foyer"
-              [sousTitre]="foyerSousTitreAnnuel()"
-              [initiales]="foyerInitiales()"
-              [montantPrincipal]="ventilationAnnuelle()!.agregat.soldeDisponible"
-              [devise]="deviseBase()"
-              [lignes]="foyerLignesActuellesAnnuel()"
-              [tauxEffort]="tauxEffortAnnuel()" />
-          }
-
-          @if (afficherParMembre() && vueEffective() !== 'FOYER') {
-            <div class="member-grid">
-              @for (mc of membresDataAnnuel(); track mc.id) {
-                <app-carte-bilan
-                  variante="membre"
-                  [nom]="mc.nom"
-                  [sousTitre]="mc.sousTitre"
-                  [couleur]="mc.couleur"
-                  [initiales]="mc.initiales"
-                  [montantPrincipal]="mc.agregat.soldeDisponible"
-                  [devise]="deviseBase()"
-                  [lignes]="lignesMembreAnnuel(mc)"
-                  [tauxEffort]="mc.tauxEffort" />
-              }
             </div>
-          }
-        </div>
-      </p-card>
 
-      <app-tab-group [value]="ongletAnnee()" (valueChange)="onAnneeTabChange($event)">
+            @if (vueEffective() !== 'MEMBRE') {
+              <app-carte-bilan
+                variante="foyer"
+                [nom]="t.projection.foyer"
+                [sousTitre]="foyerSousTitreAnnuel()"
+                [initiales]="foyerInitiales()"
+                [montantPrincipal]="ventilationAnnuelle()!.agregat.soldeDisponible"
+                [devise]="deviseBase()"
+                [lignes]="foyerLignesActuellesAnnuel()"
+                [tauxEffort]="tauxEffortAnnuel()" />
+            }
+
+            @if (afficherParMembre() && vueEffective() !== 'FOYER') {
+              <div class="member-grid">
+                @for (mc of membresDataAnnuel(); track mc.id) {
+                  <app-carte-bilan
+                    variante="membre"
+                    [nom]="mc.nom"
+                    [sousTitre]="mc.sousTitre"
+                    [couleur]="mc.couleur"
+                    [initiales]="mc.initiales"
+                    [montantPrincipal]="mc.agregat.soldeDisponible"
+                    [devise]="deviseBase()"
+                    [lignes]="lignesMembreAnnuel(mc)"
+                    [tauxEffort]="mc.tauxEffort" />
+                }
+              </div>
+            }
+          </div>
+        </app-tab-panel>
+
         <app-tab-panel value="flux" [label]="t.dashboard.fluxMensuel">
           <div class="chart-shell">
             <p-chart type="bar" [data]="$any(mixedChartData())" [options]="$any(mixedChartOptions)" class="w-full block" />
@@ -126,7 +125,6 @@
 
           @if (afficherParMembre() && vueEffective() !== 'FOYER') {
             <div class="inner-section">
-              <div class="section-title">{{ t.projection.contributionParMembre }}</div>
               <div class="member-grid">
                 @for (mc of membreChartsData(); track mc.membreId) {
                   <p-card>

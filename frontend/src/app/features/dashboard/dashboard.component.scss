@@ -104,8 +104,16 @@
   }
 }
 
+// `display: flex` force l'enfant (p-chart, qui ne fixe pas sa propre hauteur) à
+// s'étirer sur la hauteur définie ici (cross-axis stretch par défaut), ce qui évite
+// la boucle de croissance du canvas Chart.js lorsqu'il est initialisé dans un onglet
+// masqué (`[hidden]`) puis affiché ensuite (ex. onglet "Flux mensuel").
 .chart-shell {
+  position: relative;
+  display: flex;
   height: 280px;
+  width: 100%;
+  overflow: hidden;
 
   &.small {
     height: 220px;

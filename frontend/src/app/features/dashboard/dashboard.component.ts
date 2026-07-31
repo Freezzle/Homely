@@ -100,7 +100,7 @@ export class DashboardComponent {
   });
 
   readonly vue = computed<'annee' | 'mois'>(() => this.moisSelectionne() !== undefined ? 'mois' : 'annee');
-  readonly ongletAnnee = signal('flux');
+  readonly ongletAnnee = signal('recap');
   readonly ongletMois = signal('recap');
   readonly vueRecap = signal<'FOYER' | 'MEMBRE' | 'TOUT'>('MEMBRE');
   readonly vueDecomposition = signal<'CATEGORIE' | 'TYPE_POSTE' | 'COMPTE'>('TYPE_POSTE');
