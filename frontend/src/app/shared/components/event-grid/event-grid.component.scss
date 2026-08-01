@@ -1,0 +1,167 @@
+:host {
+  display: block;
+}
+
+.eg-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-bottom: 1.25rem;
+}
+
+.eg-section:last-child {
+  margin-bottom: 0;
+}
+
+.eg-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.eg-when {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--p-text-muted-color);
+  white-space: nowrap;
+}
+
+.eg-header-rule {
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--p-content-border-color);
+}
+
+.eg-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: var(--p-content-background);
+  border: 1px solid var(--p-content-border-color);
+  font-size: 0.7rem;
+  color: var(--p-text-muted-color);
+}
+
+.eg-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .eg-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .eg-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.eg-card {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--p-content-border-color);
+  background: var(--p-content-background);
+  border-radius: var(--p-content-border-radius);
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  cursor: pointer;
+  transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+}
+
+.eg-card:hover {
+  border-color: var(--p-primary-300);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.eg-card:focus-visible {
+  outline: 2px solid var(--p-primary-color);
+  outline-offset: 2px;
+}
+
+.eg-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.eg-card-icon {
+  font-size: 0.9rem;
+  flex: 0 0 auto;
+}
+
+.eg-card-title {
+  font-size: 0.85rem;
+  color: var(--p-text-color);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1 1 auto;
+}
+
+.eg-icon-success {
+  color: var(--p-green-500);
+}
+
+.eg-icon-danger {
+  color: var(--p-red-500);
+}
+
+.eg-icon-info {
+  color: var(--p-blue-500);
+}
+
+.eg-icon-secondary {
+  color: var(--p-text-muted-color);
+}
+
+.eg-card-amount {
+  font-size: 0.85rem;
+  line-height: 1.2;
+}
+
+.eg-impact {
+  white-space: nowrap;
+}
+
+.eg-impact.pos {
+  color: var(--p-emerald-600);
+}
+
+.eg-impact.neg {
+  color: var(--p-red-500);
+}
+
+.eg-revision {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  white-space: nowrap;
+
+  .pi-arrow-right {
+    font-size: 0.7rem;
+    color: var(--p-text-muted-color);
+  }
+}
+
+.eg-avant {
+  color: var(--p-text-muted-color);
+}
+
+.eg-secondaire {
+  font-size: 0.72rem;
+  color: var(--p-text-muted-color);
+}

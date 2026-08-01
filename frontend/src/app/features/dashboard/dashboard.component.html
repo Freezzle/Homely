@@ -110,9 +110,8 @@
 
         <app-tab-panel value="events" [label]="t.dashboard.ceQuiChange">
           @if (evenementsAnnee().length) {
-            <app-timeline
+            <app-event-grid
               [items]="evenementsAnnee()"
-              [showMarkerIcon]="false"
               [devise]="deviseBase()"
               (select)="ouvrirMoisDepuisTimeline($event)" />
           } @else {
@@ -200,9 +199,8 @@
 
         <app-tab-panel value="event" [label]="t.dashboard.evenement">
           @if (evenementsMois().length) {
-            <app-timeline
+            <app-event-grid
               [items]="evenementsMois()"
-              [showMarkerIcon]="false"
               [devise]="deviseBase()"
               (select)="ouvrirMoisDepuisTimeline($event)" />
           } @else {

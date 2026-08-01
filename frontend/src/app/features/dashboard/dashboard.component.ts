@@ -44,7 +44,8 @@ import { PageNavComponent, PageNavMonthSummary, PageNavSelection } from '../../s
 import { StatGridComponent, StatGridStatusTag, StatItem } from '../../shared/components/stat-grid/stat-grid.component';
 import { TabGroupComponent } from '../../shared/components/tab-group/tab-group.component';
 import { TabPanelComponent } from '../../shared/components/tab-group/tab-panel.component';
-import { TimelineComponent, TimelineItem } from '../../shared/components/timeline/timeline.component';
+import { TimelineItem } from '../../shared/components/timeline/timeline.component';
+import { EventGridComponent } from '../../shared/components/event-grid/event-grid.component';
 
 type StatutObjectif = 'DANS_LES_TEMPS' | 'EN_RETARD' | 'ATTEINT';
 type DashboardTimelineItem = TimelineItem & { mois: number };
@@ -75,7 +76,7 @@ const ZERO_AGREGAT: { revenus: number; charges: number; reserves: number; soldeD
     StatGridComponent,
     TabGroupComponent,
     TabPanelComponent,
-    TimelineComponent,
+    EventGridComponent,
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
