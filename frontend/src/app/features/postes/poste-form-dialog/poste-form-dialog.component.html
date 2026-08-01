@@ -29,7 +29,7 @@
                 <!-- ═══════════════════ Étape 1 — Le poste ═══════════════════ -->
                 <p-step-panel [value]="0">
                     <ng-template #content>
-                        <div class="flex flex-col gap-4 py-3 min-h-[22rem] max-h-[22rem] overflow-y-auto pr-1">
+                        <div class="flex flex-col gap-4 py-3 min-h-[22rem] max-h-[22rem] overflow-y-auto pl-2 pr-2">
                             <div class="flex flex-col gap-1">
                                 <label class="text-sm font-medium">{{ t.poste.questionnaire.nomTitre }} *</label>
                                 <input #descriptionInput pInputText formControlName="description" class="w-full"
@@ -93,7 +93,7 @@
                 <!-- ═══════════════════ Étape 2 — Le rythme ═══════════════════ -->
                 <p-step-panel [value]="1">
                     <ng-template #content>
-                        <div class="flex flex-col gap-4 py-3 min-h-[22rem] max-h-[22rem] overflow-y-auto pr-1">
+                        <div class="flex flex-col gap-4 py-3 min-h-[22rem] max-h-[22rem] overflow-y-auto pl-2 pr-2">
                             <div class="flex flex-col gap-2 w-full">
                                 <label class="text-sm font-medium">{{ t.poste.questionnaire.freqTitre }}</label>
                                 <p-selectbutton [options]="frequenceOptions" optionLabel="label" optionValue="value"
@@ -171,7 +171,7 @@
                 <!-- ═══════════════════ Étape 3 — Répartition / Compte ═══════════════════ -->
                 <p-step-panel [value]="2">
                     <ng-template #content>
-                        <div class="flex flex-col gap-4 py-3 min-h-[22rem] max-h-[22rem] overflow-y-auto pr-1"
+                        <div class="flex flex-col gap-4 py-3 min-h-[22rem] max-h-[22rem] overflow-y-auto pl-2 pr-2"
                              formArrayName="repartitions">
                             @if (estMonoMembre()) {
                                 <!-- Foyer mono-membre : une seule ligne, pas de notion de répartition -->
@@ -327,7 +327,7 @@
                 <!-- ═══════════════════ Étape 4 — Récapitulatif ═══════════════════ -->
                 <p-step-panel [value]="3">
                     <ng-template #content>
-                        <div class="flex flex-col gap-5 py-3 min-h-[22rem] max-h-[22rem] overflow-y-auto pr-1">
+                        <div class="flex flex-col gap-5 py-3 min-h-[22rem] max-h-[22rem] overflow-y-auto pl-2 pr-2">
                             <!-- Bloc 1 : Le poste -->
                             <div class="flex flex-col gap-2">
                                 <div class="flex items-center justify-between">
