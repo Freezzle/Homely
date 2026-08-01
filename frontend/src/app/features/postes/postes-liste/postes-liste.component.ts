@@ -1,38 +1,27 @@
-import { Component, inject, signal, computed, input, effect, ViewChild, ElementRef } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { Component, inject, signal, computed, input, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, Validators, ReactiveFormsModule, FormArray, FormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
-import { startWith } from 'rxjs';
+import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
-import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { MultiSelectModule } from 'primeng/multiselect';
-import { DatePickerModule } from 'primeng/datepicker';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
-import { CardModule } from 'primeng/card';
-import { MessageModule } from 'primeng/message';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { SkeletonModule } from 'primeng/skeleton';
-import { DrawerModule } from 'primeng/drawer';
 import { CheckboxModule } from 'primeng/checkbox';
 import { MenuModule } from 'primeng/menu';
-import { SelectButtonModule } from 'primeng/selectbutton';
 import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
 import { ContexteService } from '../../../core/services/contexte.service';
 import { PosteService } from '../../../core/services/scenario-poste.service';
-import { CategorieService, CompteService, TauxChangeService } from '../../../core/services/referentiel.service';
-import { PosteDto, CategorieDto, CompteDto, MembreDto, VentilationCompteDto, TypePoste, TypeRepartition } from '../../../core/models/api.models';
+import { CategorieService, CompteService } from '../../../core/services/referentiel.service';
+import { PosteDto, CategorieDto, CompteDto, MembreDto, VentilationCompteDto, TypePoste } from '../../../core/models/api.models';
 import { MontantPipe, PeriodicitePipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { localeDeLangue } from '../../../core/i18n/locale.util';
-import { creerDevisesDisponibles } from '../../../core/utils/devise-options.util';
 import { MembresTagsComponent } from '../../../shared/components/membres-tags/membres-tags.component';
-import { toIsoDateLocal, parseIsoDateLocal } from '../../../core/utils/date.util';
-import { arrondirSommeRepartition, sommeRepartitionValide as estSommeRepartitionValide } from '../../../core/utils/repartition.util';
+import { toIsoDateLocal } from '../../../core/utils/date.util';
 import { formatPeriodeMois, formaterMontantSimple } from '../../../core/utils/format-affichage.util';
 import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
 import { PosteApercuDialogComponent } from '../poste-apercu-dialog/poste-apercu-dialog.component';
@@ -40,20 +29,7 @@ import { PosteHistoriqueDrawerComponent, MaillonHistorique } from '../poste-hist
 import { PosteRevisionDialogComponent } from '../poste-revision-dialog/poste-revision-dialog.component';
 import { PosteClotureDialogComponent } from '../poste-cloture-dialog/poste-cloture-dialog.component';
 import { PosteDecalageDialogComponent } from '../poste-decalage-dialog/poste-decalage-dialog.component';
-
-/**
- * Validateur de groupe : la date de fin (si renseignée) ne peut pas être
- * antérieure à la date de début. Sans ce garde-fou, le formulaire principal
- * autorisait l'enregistrement de périodes incohérentes (`fin < debut`).
- */
-function datesCoherentesValidator(group: AbstractControl): ValidationErrors | null {
-  const debut = group.get('debut')?.value as Date | null;
-  const fin = group.get('fin')?.value as Date | null;
-  if (debut && fin && fin.getTime() < debut.getTime()) {
-    return { finAvantDebut: true };
-  }
-  return null;
-}
+import { PosteFormDialogComponent } from '../poste-form-dialog/poste-form-dialog.component';
 
 /**
  * Poste enrichi de métadonnées d'affichage calculées côté front pour le regroupement
@@ -74,11 +50,11 @@ interface PosteAffiche extends PosteDto {
   selector: 'app-postes-liste',
   standalone: true,
   providers: [ConfirmationService],
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, TableModule, ButtonModule, DialogModule,
-            InputTextModule, InputNumberModule, SelectModule, MultiSelectModule, DatePickerModule,
-            TagModule, TooltipModule, CardModule, MessageModule, ConfirmDialogModule, SkeletonModule, DrawerModule, CheckboxModule,
-            MenuModule, SelectButtonModule,
-            MontantPipe, PeriodicitePipe, MembresTagsComponent, PosteApercuDialogComponent, PosteHistoriqueDrawerComponent, PosteRevisionDialogComponent, PosteClotureDialogComponent, PosteDecalageDialogComponent],
+  imports: [CommonModule, FormsModule, TableModule, ButtonModule,
+            InputTextModule, SelectModule, MultiSelectModule,
+            TagModule, TooltipModule, ConfirmDialogModule, SkeletonModule, CheckboxModule,
+            MenuModule,
+            MontantPipe, PeriodicitePipe, MembresTagsComponent, PosteApercuDialogComponent, PosteHistoriqueDrawerComponent, PosteRevisionDialogComponent, PosteClotureDialogComponent, PosteDecalageDialogComponent, PosteFormDialogComponent],
   templateUrl: './postes-liste.component.html',
 })
 export class PostesListeComponent {
@@ -90,27 +66,18 @@ export class PostesListeComponent {
   private posteSvc = inject(PosteService);
   private categorieSvc = inject(CategorieService);
   private compteSvc = inject(CompteService);
-  private tauxChangeSvc = inject(TauxChangeService);
   private toast = inject(MessageService);
   private confirm = inject(ConfirmationService);
-  private fb = inject(FormBuilder);
 
   postes = signal<PosteDto[]>([]);
   categories = signal<CategorieDto[]>([]);
   comptes = signal<CompteDto[]>([]);
   chargement = signal(false);
-  enregistrementEnCours = signal(false);
   dialogVisible = false;
   apercuVisible = false;
   posteEnEdition: PosteDto | null = null;
   apercuData = signal<{ annee: number; contributions: { mois: number; contribution: number; }[] } | null>(null);
   membres = this.contexte.membres;
-  sommeRepartition = 0;
-
-  /** Tolérance flottante : une somme visuellement à 100% ne doit jamais être refusée à tort. */
-  get sommeRepartitionValide(): boolean {
-    return estSommeRepartitionValide(this.sommeRepartition);
-  }
 
   // ── Révision de montant planifiée ─────────────────────────
   revisionDialogVisible = false;
@@ -146,200 +113,6 @@ export class PostesListeComponent {
     return this.postes().find(x => x.posteOrigineId === p.id) ?? null;
   });
 
-  modeOptions = [
-    { label: this.t.poste.modeOptions.MENSUALISE, value: 'MENSUALISE' },
-    { label: this.t.poste.modeOptions.PERIODIQUE, value: 'PERIODIQUE' },
-  ];
-
-  momentOptions = [
-    { label: this.t.poste.momentOptions.DEBUT_PERIODE, value: 'DEBUT_PERIODE' },
-    { label: this.t.poste.momentOptions.FIN_PERIODE,   value: 'FIN_PERIODE' },
-  ];
-
-  natureOptions = [
-    { label: this.t.poste.natureOptions.EFFECTIF,  value: 'EFFECTIF' },
-    { label: this.t.poste.natureOptions.ESTIMATION, value: 'ESTIMATION' },
-  ];
-
-  // ── Mini-questionnaire structurel (façade UI au-dessus du form réactif) ──
-  @ViewChild('descriptionInput') private descriptionInput?: ElementRef<HTMLInputElement>;
-
-  frequenceChoisie = signal<'PONCTUEL' | 'RECURRENT' | null>(null);
-  sousFrequence    = signal<'MENSUEL' | 'AUTRE' | null>(null);
-  /** Q « Qui est concerné » : Tous les membres, ou un seul membre en particulier. */
-  quiConcerneChoice = signal<'TOUS' | 'MEMBRE_UNIQUE' | null>(null);
-  /** Sous-question affichée quand quiConcerneChoice = TOUS : quel type de répartition. */
-  quiRepartition = signal<TypeRepartition | null>(null);
-  membreUniqueId = signal<string | null>(null);
-  private _focusDescriptionFait = false;
-
-  frequenceOptions = [
-    { label: this.t.poste.questionnaire.ponctuel,  value: 'PONCTUEL' as const },
-    { label: this.t.poste.questionnaire.recurrent, value: 'RECURRENT' as const },
-  ];
-
-  sousFrequenceOptions = [
-    { label: this.t.poste.questionnaire.chaqueMois,     value: 'MENSUEL' as const },
-    { label: this.t.poste.questionnaire.autreFrequence, value: 'AUTRE' as const },
-  ];
-
-  quiConcerneOptions = [
-    { label: this.t.poste.questionnaire.quiTous,         value: 'TOUS' as const },
-    { label: this.t.poste.questionnaire.quiMembreUnique, value: 'MEMBRE_UNIQUE' as const },
-  ];
-
-  quiRepartitionOptions = [
-    { label: this.t.poste.questionnaire.repartitionScenario,        value: 'AUTO' as TypeRepartition },
-    { label: this.t.poste.questionnaire.repartitionScenarioInverse, value: 'REVERSE_AUTO' as TypeRepartition },
-    { label: this.t.poste.questionnaire.repartitionPersonnalisee,   value: 'CUSTOM' as TypeRepartition },
-  ];
-
-  estimationOptions = [
-    { label: this.t.commun.non, value: 'EFFECTIF' as const },
-    { label: this.t.commun.oui, value: 'ESTIMATION' as const },
-  ];
-
-  /** Vrai si la liste des membres + pourcentages doit être affichée (choix « Tous » + « Personnalisé »). */
-  afficherListeRepartition = computed(() =>
-    this.quiConcerneChoice() === 'TOUS' && this.quiRepartition() === 'CUSTOM' && this.membres().length > 1
-  );
-
-  /** Vrai si le bloc « Sur quels comptes à ventiler ? » doit être affiché (choix « Tous », quel que soit le type). */
-  afficherComptesTous = computed(() =>
-    this.quiConcerneChoice() === 'TOUS' && this.quiRepartition() !== null && this.membres().length > 1
-  );
-
-  /** Vrai si les quotes-parts affichées sont éditables (uniquement pour Personnalisé). */
-  repartitionEditable = computed(() => this.quiRepartition() === 'CUSTOM');
-
-  /** Question 1 résolue : one-shot, ou récurrent avec une fréquence précisée. */
-  questionnaireFrequenceResolue = computed(() =>
-    this.frequenceChoisie() === 'PONCTUEL' ||
-    (this.frequenceChoisie() === 'RECURRENT' && this.sousFrequence() !== null)
-  );
-
-  /** Question « Qui » résolue : mono-membre (question non posée), ou un choix complet fait. */
-  private questionnaireQuiResolue = computed(() =>
-    this.membres().length <= 1 ||
-    (this.quiConcerneChoice() === 'MEMBRE_UNIQUE' && this.membreUniqueId() !== null) ||
-    (this.quiConcerneChoice() === 'TOUS' && this.quiRepartition() !== null)
-  );
-
-  /** Focus automatique sur Description une fois le questionnaire résolu (une seule fois par ouverture). */
-  private readonly _focusDescriptionApresQuestionnaire = effect(() => {
-    if (this.questionnaireFrequenceResolue() && this.questionnaireQuiResolue() &&
-        this.dialogVisible && !this._focusDescriptionFait) {
-      this._focusDescriptionFait = true;
-      setTimeout(() => this.descriptionInput?.nativeElement.focus());
-    }
-  });
-
-  choisirFrequence(f: 'PONCTUEL' | 'RECURRENT'): void {
-    this.frequenceChoisie.set(f);
-    if (f === 'PONCTUEL') {
-      this.sousFrequence.set(null);
-      this.form.get('periodiciteMois')?.setValue(0);
-    }
-  }
-
-  choisirSousFrequence(sf: 'MENSUEL' | 'AUTRE'): void {
-    this.sousFrequence.set(sf);
-    if (sf === 'MENSUEL') {
-      this.form.get('periodiciteMois')?.setValue(1);
-    } else {
-      const actuel = this.form.get('periodiciteMois')?.value ?? 0;
-      if (actuel === 0 || actuel === 1) {
-        this.form.get('periodiciteMois')?.setValue(3);
-      }
-    }
-  }
-
-  choisirQuiConcerne(choix: 'TOUS' | 'MEMBRE_UNIQUE'): void {
-    this.quiConcerneChoice.set(choix);
-    if (choix === 'MEMBRE_UNIQUE') {
-      this.quiRepartition.set(null);
-      if (this.membreUniqueId()) {
-        this.choisirMembreUnique(this.membreUniqueId()!);
-      }
-    } else {
-      this.membreUniqueId.set(null);
-      if (this.quiRepartition()) {
-        this.choisirQuiRepartition(this.quiRepartition()!);
-      }
-    }
-  }
-
-  choisirQuiRepartition(qr: TypeRepartition): void {
-    this.quiRepartition.set(qr);
-    this.form.get('typeRepartition')?.setValue(qr);
-    if (qr === 'CUSTOM') {
-      this.appliquerRepartitionEgale();
-    } else {
-      this.appliquerRepartitionAffichageScenario(qr === 'REVERSE_AUTO');
-    }
-  }
-
-  choisirMembreUnique(membreId: string): void {
-    this.membreUniqueId.set(membreId);
-    this.form.get('typeRepartition')?.setValue('CUSTOM');
-    this.appliquerRepartitionMembreUnique(membreId);
-  }
-
-  /** Nom du membre retenu par le preset « Un membre en particulier ». */
-  nomMembreUnique(): string {
-    return this.membres().find(m => m.id === this.membreUniqueId())?.nom ?? '';
-  }
-
-  /** 100% pour le membre sélectionné, 0% pour les autres (et vide leur compte). */
-  private appliquerRepartitionMembreUnique(membreId: string): void {
-    this.repartitionsArray.controls.forEach(c => {
-      const selectionne = c.get('membreId')?.value === membreId;
-      c.patchValue({
-        quotePart: selectionne ? 100 : 0,
-        compteId: selectionne ? c.get('compteId')?.value : null,
-      }, { emitEvent: false });
-    });
-    this.calculerSomme();
-  }
-
-  /** Parts égales entre tous les membres, en conservant 2 décimales pour éviter les résidus flottants. */
-  private appliquerRepartitionEgale(): void {
-    const n = this.repartitionsArray.length;
-    if (!n) return;
-    const part = Math.round((100 / n) * 100) / 100;
-    const reste = Math.round((100 - part * (n - 1)) * 100) / 100;
-    this.repartitionsArray.controls.forEach((c, i) => {
-      c.patchValue({ quotePart: i === n - 1 ? reste : part }, { emitEvent: false });
-    });
-    this.calculerSomme();
-  }
-
-  /**
-   * Affichage (lecture seule) des quotes-parts effectives AUTO/REVERSE_AUTO, dérivées de la
-   * répartition par défaut du scénario. Ces valeurs ne sont jamais envoyées à l'API pour ces
-   * deux modes (seul CUSTOM stocke une répartition sur le poste) — c'est purement informatif.
-   */
-  private appliquerRepartitionAffichageScenario(inverse: boolean): void {
-    const reps = this.contexte.scenarioCourant()?.repartitions ?? [];
-    const n = this.membres().length;
-    this.repartitionsArray.controls.forEach(c => {
-      const membreId = c.get('membreId')?.value;
-      const base = reps.find(r => r.membreId === membreId)?.quotePart ?? (n ? 1 / n : 0);
-      const effective = (inverse && n > 1) ? (1 - base) / (n - 1) : base;
-      c.patchValue({ quotePart: Math.round(effective * 10000) / 100 }, { emitEvent: false });
-    });
-    this.calculerSomme();
-  }
-
-  periodiciteOptions = [
-    { label: this.t.poste.periodiciteLabels[0], value: 0 },
-    ...this.t.poste.periodiciteLabels.slice(1).map((label, i) => ({ label, value: i + 1 }))
-  ];
-
-  /** Options de périodicité pour le choix « Autre » : sans « Une seule fois » ni « Tous les mois »,
-   *  déjà couverts par les choix rapides Ponctuel / Chaque mois. */
-  periodiciteOptionsAutre = this.periodiciteOptions.filter(o => o.value !== 0 && o.value !== 1);
-
   triActuel = signal<'DATE' | 'CATEGORIE' | 'DESCRIPTION'>('CATEGORIE');
   cacherInactifs = signal(true);
   cacherFuturs = signal(false);
@@ -359,80 +132,6 @@ export class PostesListeComponent {
     { label: this.t.poste.cacherFuturs, data: 'cacher-futurs' },
   ];
 
-  form = this.fb.group({
-    description:     ['', Validators.required],
-    categorieId:     [null as string | null],
-    montant:         [0, [Validators.required, Validators.min(0)]],
-    devise:          [this.contexte.deviseBase(), Validators.required],
-    periodiciteMois: [0, Validators.min(0)],
-    mode:            ['MENSUALISE'],
-    moment:          ['DEBUT_PERIODE'],
-    nature:          ['EFFECTIF'],
-    estimPourcentage: [null as number | null, [Validators.min(0), Validators.max(100)]],  // Obligatoire si nature=ESTIMATION
-    typeRepartition: ['AUTO' as TypeRepartition],
-    debut:           [null as Date | null],
-    fin:             [null as Date | null],
-    repartitions:    this.fb.array([] as any[]),
-  }, { validators: [datesCoherentesValidator] });
-
-  get repartitionsArray() { return this.form.get('repartitions') as FormArray; }
-
-  devisesDisponibles = creerDevisesDisponibles(this.contexte, this.tauxChangeSvc, this.form.get('devise'));
-
-  /** Signal réactif sur la valeur courante de typeRepartition (réagit aux changements du select) */
-  private typeRepartitionValue = toSignal(
-    this.form.get('typeRepartition')!.valueChanges.pipe(
-      startWith(this.form.get('typeRepartition')!.value as TypeRepartition)
-    ),
-    { initialValue: 'AUTO' as TypeRepartition }
-  );
-
-  /** Signal réactif sur la nature du poste (bascule EFFECTIF ↔ ESTIMATION) */
-  private natureValue = toSignal(
-    this.form.get('nature')!.valueChanges.pipe(
-      startWith(this.form.get('nature')!.value)
-    ),
-    { initialValue: 'EFFECTIF' }
-  );
-
-  /** Vrai si le mode de répartition courant nécessite des parts manuelles (CUSTOM multi-membres) */
-  estCustomMultiMembre = computed(() =>
-    this.typeRepartitionValue() === 'CUSTOM' && this.membres().length > 1
-  );
-
-  /** Vrai si le formulaire est valide, incluant la validation du pourcentage d'estimation. */
-  isFormValid(): boolean {
-    const isBaseValid = this.form.valid;
-    const nature = this.form.value.nature;
-    const estimPct = this.form.value.estimPourcentage;
-    // Si nature=ESTIMATION, estimPourcentage doit être non-null
-    const isEstimationValid = nature === 'ESTIMATION' ? estimPct !== null && estimPct !== undefined && estimPct > 0 : true;
-    return isBaseValid && isEstimationValid && (!this.estCustomMultiMembre() || this.sommeRepartitionValide);
-  }
-
-  /** Effet : bascule Nature EFFECTIF→ESTIMATION pré-remplit 10%, ESTIMATION→EFFECTIF vide (null) */
-  private readonly _initEstimPourcentageOnNatureChange = effect(() => {
-    const nature = this.natureValue();
-    if (nature === 'ESTIMATION') {
-      // Ne mettre 10% que si le champ est actuellement vide
-      if (this.form.get('estimPourcentage')?.value === null) {
-        this.form.get('estimPourcentage')?.setValue(10.0, { emitEvent: false });
-      }
-    } else {
-      // Vider si nature=EFFECTIF
-      this.form.get('estimPourcentage')?.setValue(null, { emitEvent: false });
-    }
-  });
-
-  /**
-   * Quand l'utilisateur bascule vers CUSTOM et que le FormArray n'est pas encore peuplé
-   * (cas d'une ouverture en création), on initialise les parts à 0.
-   */
-  private readonly _initPartsOnCustom = effect(() => {
-    if (this.typeRepartitionValue() === 'CUSTOM' && this.repartitionsArray.length === 0) {
-      this.initialiserRepartitions(undefined);
-    }
-  });
 
   // ── Helpers fenêtre de validité ──────────────────────────
   private readonly _now = new Date();
@@ -833,64 +532,18 @@ export class PostesListeComponent {
 
   ouvrirCreation(): void {
     this.posteEnEdition = null;
-    this.form.reset({ mode: 'MENSUALISE', moment: 'DEBUT_PERIODE', nature: 'EFFECTIF',
-                      periodiciteMois: 0, devise: this.contexte.deviseBase(),
-                      typeRepartition: 'AUTO', estimPourcentage: null });
-    this.initialiserRepartitions(undefined);
-    this.frequenceChoisie.set(null);
-    this.sousFrequence.set(null);
-    this.quiConcerneChoice.set(null);
-    this.quiRepartition.set(null);
-    this.membreUniqueId.set(null);
-    this._focusDescriptionFait = false;
     this.dialogVisible = true;
   }
 
   ouvrirEdition(p: PosteDto): void {
     this.posteEnEdition = p;
-    this.form.patchValue({
-      description: p.description, categorieId: p.categorieId,
-      montant: p.montant, devise: p.devise ?? this.contexte.deviseBase(), periodiciteMois: p.periodiciteMois ?? 0,
-      mode: p.mode, moment: p.moment, nature: p.nature ?? 'EFFECTIF',
-      estimPourcentage: p.estimPourcentage ?? null,
-      typeRepartition: p.typeRepartition ?? 'AUTO',
-      debut: p.debut ? parseIsoDateLocal(p.debut) : null,
-      fin: p.fin ? parseIsoDateLocal(p.fin) : null,
-    });
-    // Initialiser les parts seulement pour CUSTOM
-    if (p.typeRepartition === 'CUSTOM') {
-      this.initialiserRepartitions(p.repartitions, p.ventilations);
-    } else {
-      this.initialiserRepartitions(undefined, p.ventilations);
-    }
-
-    // Déduction des réponses du mini-questionnaire à partir du poste existant, sans
-    // rien changer aux valeurs réelles du formulaire.
-    const periodicite = p.periodiciteMois ?? 0;
-    this.frequenceChoisie.set(periodicite === 0 ? 'PONCTUEL' : 'RECURRENT');
-    this.sousFrequence.set(
-      periodicite === 0 ? null :
-      periodicite === 1 ? 'MENSUEL' : 'AUTRE'
-    );
-    this.membreUniqueId.set(null);
-    if (p.typeRepartition === 'CUSTOM') {
-      const nonZero = this.repartitionsArray.controls.filter(c => (c.get('quotePart')?.value ?? 0) > 0);
-      if (nonZero.length === 1) {
-        this.quiConcerneChoice.set('MEMBRE_UNIQUE');
-        this.quiRepartition.set(null);
-        this.membreUniqueId.set(nonZero[0].get('membreId')?.value ?? null);
-      } else {
-        this.quiConcerneChoice.set('TOUS');
-        this.quiRepartition.set('CUSTOM');
-      }
-    } else {
-      const tr = (p.typeRepartition ?? 'AUTO') as TypeRepartition;
-      this.quiConcerneChoice.set('TOUS');
-      this.quiRepartition.set(tr);
-      this.appliquerRepartitionAffichageScenario(tr === 'REVERSE_AUTO');
-    }
-    this._focusDescriptionFait = true; // pas d'autofocus surprise en édition, le formulaire est déjà rempli
     this.dialogVisible = true;
+  }
+
+  /** Intercepte la fermeture du dialog poste-form-dialog (confirmation gérée par le composant lui-même). */
+  onDialogPosteVisibleChange(v: boolean): void {
+    this.dialogVisible = v;
+    if (!v) this.posteEnEdition = null;
   }
 
   ouvrirApercu(p: PosteDto): void {
@@ -899,164 +552,6 @@ export class PostesListeComponent {
     const sc = this.contexte.scenarioCourant();
     this.posteSvc.apercu(foyerId, scenarioId, p.id, sc?.anneeDepart ?? new Date().getFullYear())
       .subscribe(a => { this.apercuData.set(a); this.apercuVisible = true; });
-  }
-
-  private defaultCompteId(): string | null {
-    const comptes = this.comptes();
-    return comptes[0]?.id ?? null;
-  }
-
-  /** Comptes accessibles pour un membre donné (filtre sur membreIds). */
-  comptesForMembre(membreId: string | undefined): CompteDto[] {
-    if (!membreId) return this.comptes();
-    return this.comptes().filter(c => c.membreIds?.includes(membreId));
-  }
-
-  /** Compte par défaut pour un membre : premier compte qui lui est rattaché. */
-  private defaultCompteIdForMembre(membreId: string | undefined): string | null {
-    if (!membreId) return this.defaultCompteId();
-    const rattaches = this.comptesForMembre(membreId);
-    return rattaches[0]?.id ?? this.defaultCompteId();
-  }
-
-  private initialiserRepartitions(
-    existantes?: { membreId: string; quotePart: number; nomMembre: string }[],
-    ventilationsExistantes?: VentilationCompteDto[],
-  ): void {
-    const membres = this.membres();
-
-    // Supprimer les contrôles en surplus (ex : changement de foyer)
-    while (this.repartitionsArray.length > membres.length) {
-      this.repartitionsArray.removeAt(this.repartitionsArray.length - 1);
-    }
-
-    membres.forEach((m, i) => {
-      const rep       = existantes?.find(r => r.membreId === m.id);
-      const vent      = ventilationsExistantes?.find(v => v.membreId === m.id);
-      const quotePart = rep ? Math.round(rep.quotePart * 10000) / 100 : 0;
-      const compteId  = vent?.compteId ?? this.defaultCompteIdForMembre(m.id);
-
-      if (i < this.repartitionsArray.length) {
-        // Mettre à jour en place : le même FormGroup est conservé,
-        // les directives Angular gardent leurs liaisons → les valeurs s'affichent bien.
-        this.repartitionsArray.at(i).patchValue({ membreId: m.id, quotePart, compteId });
-      } else {
-        this.repartitionsArray.push(this.fb.group({
-          membreId:  [m.id],
-          quotePart: [quotePart],
-          compteId:  [compteId],
-        }));
-      }
-    });
-
-    this.calculerSomme();
-  }
-
-
-  fermerDialogPoste(): void {
-    this.dialogVisible = false;
-    this.posteEnEdition = null;
-  }
-
-  calculerSomme(): void {
-    const total = this.repartitionsArray.controls
-      .reduce((s, c) => s + (c.get('quotePart')?.value ?? 0), 0);
-    // Neutralise les résidus binaires (ex. 33.33+33.33+33.34 = 100.00000000000001).
-    this.sommeRepartition = arrondirSommeRepartition(total);
-  }
-
-  /**
-   * Appelé à chaque modification de quotePart dans le bloc CUSTOM.
-   * Si le membre passe à 0%, on vide automatiquement son compte sélectionné.
-   */
-  onQuotePartChange(index: number): void {
-    const ctrl = this.repartitionsArray.at(index);
-    if ((ctrl.get('quotePart')?.value ?? 0) === 0) {
-      ctrl.get('compteId')?.setValue(null, { emitEvent: false });
-    }
-    this.calculerSomme();
-  }
-
-  enregistrer(): void {
-    if (this.enregistrementEnCours()) return;
-    if (this.form.hasError('finAvantDebut')) {
-      this.toast.add({ severity: 'warn', summary: this.t.commun.erreur, detail: this.t.poste.finAvantDebut });
-      return;
-    }
-    const foyerId = this.contexte.foyerId()!;
-    const scenarioId = this.contexte.scenarioId()!;
-    const v = this.form.value;
-    const periodicite = v.periodiciteMois ?? 0;
-    const estOneShot = periodicite === 0;
-
-    if (estOneShot && !v.debut) {
-      this.toast.add({
-        severity: 'warn',
-        summary: this.t.commun.erreur,
-        detail: this.i18n.instant('poste.debutRequisPourOneShot', { champ: this.t.poste.debut, type: this.t.poste.oneShot }),
-      });
-      return;
-    }
-
-    const typeRepartition = (v.typeRepartition ?? 'AUTO') as TypeRepartition;
-    const isCustom = typeRepartition === 'CUSTOM';
-
-    // Parts uniquement pour CUSTOM
-    const repartitions = isCustom && this.repartitionsArray.length
-      ? this.repartitionsArray.controls.map(c => ({
-          membreId: c.get('membreId')!.value,
-          quotePart: Math.round((c.get('quotePart')!.value ?? 0) * 100) / 10000,
-        })).filter(r => r.quotePart > 0)
-      : undefined;
-
-    // Validation somme seulement pour CUSTOM multi-membres
-    if (isCustom && this.membres().length > 1 && !this.sommeRepartitionValide) {
-      this.toast.add({ severity: 'warn', summary: this.t.commun.erreur, detail: this.t.commun.repartitionInvalide });
-      return;
-    }
-
-    const ventilations = this.repartitionsArray.length
-      ? this.repartitionsArray.controls
-          .filter(c => c.get('compteId')?.value)
-          .map(c => ({ membreId: c.get('membreId')!.value, compteId: c.get('compteId')!.value }))
-      : undefined;
-
-    const req = {
-      type:            this.type(),
-      description:     v.description!,
-      categorieId:     v.categorieId ?? undefined,
-      montant:         v.montant!,
-      devise:          v.devise ?? this.contexte.deviseBase(),
-      periodiciteMois: periodicite,
-      mode:            (estOneShot ? 'MENSUALISE' : v.mode) as any,
-      moment:          (estOneShot ? 'DEBUT_PERIODE' : v.moment) as any,
-      nature:          (v.nature ?? 'EFFECTIF') as any,
-      estimPourcentage: v.nature === 'ESTIMATION' ? v.estimPourcentage ?? undefined : undefined,
-      typeRepartition: typeRepartition,
-      debut:           v.debut ? this.toIso(v.debut) : undefined,
-      fin:             estOneShot ? undefined : (v.fin ? this.toIso(v.fin) : undefined),
-      ordre: 0,
-      repartitions,
-      ventilations,
-    };
-
-    const obs = this.posteEnEdition
-      ? this.posteSvc.modifier(foyerId, scenarioId, this.posteEnEdition.id, req)
-      : this.posteSvc.creer(foyerId, scenarioId, req);
-
-    this.enregistrementEnCours.set(true);
-    obs.subscribe({
-      next: () => {
-        this.enregistrementEnCours.set(false);
-        notifierSucces(this.toast, this.t.commun.succes);
-        this.dialogVisible = false;
-        this.charger();
-      },
-      error: (err) => {
-        this.enregistrementEnCours.set(false);
-        notifierErreur(this.toast, this.t.commun.erreur, err);
-      },
-    });
   }
 
   supprimer(p: PosteDto): void {

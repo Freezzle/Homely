@@ -190,6 +190,20 @@
       "comptesTitre": "Sur quels comptes à ventiler ?",
       "estimationTitre": "Le montant du poste est-il une estimation ?"
     },
+    "stepper": {
+      "etape1Titre": "Le poste",
+      "etape2Titre": "Le rythme",
+      "etape3Titre": "Répartition / Compte",
+      "etape4Titre": "Récapitulatif",
+      "datesApparaitront": "Les dates de validité pourront être précisées à l'étape suivante.",
+      "selectionnerMembres": "Sélectionnez les membres concernés par ce poste.",
+      "totalReparti": "Total réparti",
+      "totalRepartiAuto": "Réparti automatiquement selon le scénario",
+      "auto": "Automatique",
+      "membreUnique": "Membre unique",
+      "sansEcheance": "Sans échéance",
+      "aideEstimation": "Plage de variation autour du montant estimé."
+    },
     "modeOptions": {
       "MENSUALISE": "Mensualisé",
       "PERIODIQUE": "Périodique"
@@ -389,6 +403,12 @@
     "enregistrer": "Enregistrer",
     "confirmer": "Confirmer",
     "fermer": "Fermer",
+    "precedent": "Précédent",
+    "suivant": "Suivant",
+    "enregistrerEtNouveau": "Enregistrer et nouveau",
+    "confirmerAnnulationFormulaire": "Des modifications non enregistrées seront perdues. Voulez-vous vraiment fermer ce formulaire ?",
+    "aRenseigner": "À renseigner",
+    "champObligatoire": "Ce champ est obligatoire.",
     "choisirFoyerScenario": "Choisir le foyer et le scénario",
     "rechercher": "Rechercher…",
     "oui": "Oui",

@@ -190,6 +190,20 @@
       "comptesTitre": "Which accounts to split across?",
       "estimationTitre": "Is the item's amount an estimate?"
     },
+    "stepper": {
+      "etape1Titre": "The item",
+      "etape2Titre": "The rhythm",
+      "etape3Titre": "Split / Account",
+      "etape4Titre": "Summary",
+      "datesApparaitront": "Validity dates can be set in the next step.",
+      "selectionnerMembres": "Select the members involved in this item.",
+      "totalReparti": "Total split",
+      "totalRepartiAuto": "Automatically split according to the scenario",
+      "auto": "Automatic",
+      "membreUnique": "Single member",
+      "sansEcheance": "No end date",
+      "aideEstimation": "Variation range around the estimated amount."
+    },
     "modeOptions": {
       "MENSUALISE": "Monthly",
       "PERIODIQUE": "Periodic"
@@ -389,6 +403,12 @@
     "enregistrer": "Save",
     "confirmer": "Confirm",
     "fermer": "Close",
+    "precedent": "Previous",
+    "suivant": "Next",
+    "enregistrerEtNouveau": "Save and new",
+    "confirmerAnnulationFormulaire": "Unsaved changes will be lost. Do you really want to close this form?",
+    "aRenseigner": "To be filled in",
+    "champObligatoire": "This field is required.",
     "choisirFoyerScenario": "Choose the household and scenario",
     "rechercher": "Search…",
     "oui": "Yes",
