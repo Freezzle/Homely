@@ -195,7 +195,6 @@
       "etape2Titre": "Le rythme",
       "etape3Titre": "Répartition / Compte",
       "etape4Titre": "Récapitulatif",
-      "datesApparaitront": "Les dates de validité pourront être précisées à l'étape suivante.",
       "selectionnerMembres": "Sélectionnez les membres concernés par ce poste.",
       "totalReparti": "Total réparti",
       "totalRepartiAuto": "Réparti automatiquement selon le scénario",
@@ -205,8 +204,8 @@
       "aideEstimation": "Plage de variation autour du montant estimé."
     },
     "modeOptions": {
-      "MENSUALISE": "Mensualisé",
-      "PERIODIQUE": "Périodique"
+      "MENSUALISE": "Mensualiser le montant",
+      "PERIODIQUE": "Verser le montant en une fois"
     },
     "momentOptions": {
       "DEBUT_PERIODE": "Début de période",

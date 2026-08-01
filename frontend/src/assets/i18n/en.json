@@ -195,7 +195,6 @@
       "etape2Titre": "The rhythm",
       "etape3Titre": "Split / Account",
       "etape4Titre": "Summary",
-      "datesApparaitront": "Validity dates can be set in the next step.",
       "selectionnerMembres": "Select the members involved in this item.",
       "totalReparti": "Total split",
       "totalRepartiAuto": "Automatically split according to the scenario",
@@ -205,8 +204,8 @@
       "aideEstimation": "Variation range around the estimated amount."
     },
     "modeOptions": {
-      "MENSUALISE": "Monthly",
-      "PERIODIQUE": "Periodic"
+      "MENSUALISE": "Spread the amount monthly",
+      "PERIODIQUE": "Pay the full amount at once"
     },
     "momentOptions": {
       "DEBUT_PERIODE": "Start of period",
