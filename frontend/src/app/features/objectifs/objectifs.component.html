@@ -8,11 +8,11 @@
   </div>
 
   @if (chargement()) {
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-4">
       @for (i of [1,2,3,4]; track i) { <p-skeleton height="220px" /> }
     </div>
   } @else {
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-4">
       @for (o of objectifsData(); track o.id) {
         <p-card class="h-full" [class.opacity-60]="o.statut === 'ATTEINT'">
           <ng-template #title>
