@@ -18,6 +18,7 @@ import {
   CategorieDto,
   CompteDto,
   EvenementDto,
+  MembreDto,
   ModeComptabilisation,
   ObjectifDto,
   PosteDto,
@@ -47,6 +48,12 @@ import { TimelineComponent, TimelineItem } from '../../shared/components/timelin
 
 type StatutObjectif = 'DANS_LES_TEMPS' | 'EN_RETARD' | 'ATTEINT';
 type DashboardTimelineItem = TimelineItem & { mois: number };
+/** Sujet du tableau de bord affiché : le foyer entier (cumul de tous les membres) ou un
+ *  membre spécifique (données propres uniquement). Piloté par le segment `:sujetId`
+ *  de la route (`'foyer'` ou l'id du membre). */
+type SujetDashboard = { mode: 'foyer' } | { mode: 'membre'; membreId: string; membre: MembreDto };
+const ZERO_AGREGAT: { revenus: number; charges: number; reserves: number; soldeDisponible: number } =
+  { revenus: 0, charges: 0, reserves: 0, soldeDisponible: 0 };
 
 @Component({
   selector: 'app-dashboard',
@@ -93,6 +100,33 @@ export class DashboardComponent {
   readonly mois = input<number | undefined, string | undefined>(undefined, {
     transform: (v) => v !== undefined ? Number.parseInt(v, 10) : undefined,
   });
+  /** `'foyer'` ou l'id d'un membre — segment `:sujetId` de la route. */
+  readonly sujetId = input.required<string>();
+
+  /** Sujet effectif : foyer, ou membre résolu depuis `sujetId` (fallback foyer si id inconnu). */
+  readonly sujet = computed<SujetDashboard>(() => {
+    const id = this.sujetId();
+    if (id === 'foyer') return { mode: 'foyer' };
+    const membre = this.membres().find((m) => m.id === id);
+    return membre ? { mode: 'membre', membreId: id, membre } : { mode: 'foyer' };
+  });
+
+  readonly estModeMembre = computed(() => this.sujet().mode === 'membre');
+  readonly membreCourant = computed<MembreDto | null>(() => {
+    const s = this.sujet();
+    return s.mode === 'membre' ? s.membre : null;
+  });
+
+  /** Si `sujetId` ne correspond à aucun membre connu du foyer (une fois les membres
+   *  chargés), on redirige silencieusement vers la vue foyer plutôt que d'afficher une
+   *  page vide/incohérente. */
+  private readonly _redirectSiSujetInvalideEffect = effect(() => {
+    const id = this.sujetId();
+    const membres = this.membres();
+    if (id === 'foyer' || membres.length === 0) return;
+    if (membres.some((m) => m.id === id)) return;
+    untracked(() => this.naviguerVersSujet('foyer'));
+  });
 
   readonly moisSelectionne = computed(() => {
     const mois = this.mois();
@@ -102,25 +136,20 @@ export class DashboardComponent {
   readonly vue = computed<'annee' | 'mois'>(() => this.moisSelectionne() !== undefined ? 'mois' : 'annee');
   readonly ongletAnnee = signal('recap');
   readonly ongletMois = signal('recap');
-  readonly vueRecap = signal<'FOYER' | 'MEMBRE' | 'TOUT'>('MEMBRE');
   readonly vueDecomposition = signal<'CATEGORIE' | 'TYPE_POSTE' | 'COMPTE'>('TYPE_POSTE');
   readonly pageNavSelectionForBinding = signal<PageNavSelection>({ mode: 'annee' });
-  readonly afficherParMembre = computed(() => this.membres().length > 1);
-  readonly vueEffective = computed<'FOYER' | 'MEMBRE' | 'TOUT'>(() =>
-    this.afficherParMembre() ? this.vueRecap() : 'FOYER'
-  );
-
-  readonly vueOptions = [
-    { label: this.t.projection.vueFoyer, value: 'FOYER' },
-    { label: this.t.projection.vueParMembre, value: 'MEMBRE' },
-    { label: this.t.projection.vueTout, value: 'TOUT' },
-  ];
 
   readonly vueDecompositionOptions = [
     { label: this.t.projection.vueCategorie, value: 'CATEGORIE' },
     { label: this.t.projection.vueTypePoste, value: 'TYPE_POSTE' },
     { label: this.t.projection.vueCompte, value: 'COMPTE' },
   ];
+
+  /** Titre affiché en en-tête : nom du foyer ou nom du membre sélectionné. */
+  readonly titrePage = computed(() => {
+    const membre = this.membreCourant();
+    return membre ? membre.nom : (this.contexte.foyerCourant()?.nom ?? this.t.nav.dashboard);
+  });
 
   readonly annees = computed(() => {
     const scenario = this.contexte.scenarioCourant();
@@ -166,8 +195,14 @@ export class DashboardComponent {
 
   readonly projectionAnnuelle = computed(() => this._projectionAnnuelle.donnees());
 
-  private readonly _evenements = creerChargementReactif(this._projectionAnnuelleCle, ({ foyerId, scenarioId, annee }) =>
-    this.projSvc.evenements(foyerId, scenarioId, annee),
+  private readonly _evenementsCle = computed<{ foyerId: string; scenarioId: string; annee: number; membreId?: string } | null>(() => {
+    const cle = this._projectionAnnuelleCle();
+    const s = this.sujet();
+    return cle ? { ...cle, membreId: s.mode === 'membre' ? s.membreId : undefined } : null;
+  });
+
+  private readonly _evenements = creerChargementReactif(this._evenementsCle, ({ foyerId, scenarioId, annee, membreId }) =>
+    this.projSvc.evenements(foyerId, scenarioId, annee, membreId),
   );
 
   readonly evenementsDto = computed<EvenementDto[]>(() => this._evenements.donnees() ?? []);
@@ -204,25 +239,37 @@ export class DashboardComponent {
       : this._ventilationsMois.chargement())
   );
 
-  private pageNavInitialise = false;
-  private etaitMonoMembre = false;
+  // ── Scoping foyer / membre ──────────────────────────────────────────────────
+  // Le backend expose déjà les agrégats par membre (parMembre / moisParMembre côté
+  // annuel, parMembre côté mensuel) : on ne fait ici que sélectionner la bonne entrée
+  // selon le sujet courant, sans jamais recalculer de logique métier côté frontend.
 
-  private readonly _normaliserVueEffect = effect(() => {
-    const multiMembres = this.afficherParMembre();
-    if (!multiMembres) {
-      this.etaitMonoMembre = true;
-      if (this.vueRecap() !== 'FOYER') {
-        this.vueRecap.set('FOYER');
-      }
-      return;
-    }
-    if (this.etaitMonoMembre) {
-      this.etaitMonoMembre = false;
-      if (this.vueRecap() !== 'MEMBRE') {
-        this.vueRecap.set('MEMBRE');
-      }
-    }
+  /** Agrégat du mois sélectionné, scopé au sujet courant (foyer = somme de tous les membres). */
+  readonly agregatMoisCourant = computed<VentilationAggregatDto>(() => {
+    const v = this.ventilations();
+    if (!v) return ZERO_AGREGAT;
+    const s = this.sujet();
+    return s.mode === 'membre' ? (v.parMembre[s.membreId] ?? ZERO_AGREGAT) : v.agregat;
   });
+
+  /** Agrégat annuel total, scopé au sujet courant. */
+  readonly agregatAnneeCourant = computed<AggregatDto>(() => {
+    const p = this.projectionAnnuelle();
+    if (!p) return ZERO_AGREGAT;
+    const s = this.sujet();
+    return s.mode === 'membre' ? (p.parMembre[s.membreId] ?? ZERO_AGREGAT) : p.totalAnnuel;
+  });
+
+  /** Agrégats des 12 mois de l'année, scopés au sujet courant (utilisé par l'anneau,
+   *  le graphique de flux et le drawer de navigation). */
+  readonly moisAgregatsCourant = computed<AggregatDto[]>(() => {
+    const p = this.projectionAnnuelle();
+    if (!p) return [];
+    const s = this.sujet();
+    return s.mode === 'membre' ? (p.moisParMembre[s.membreId] ?? []) : p.mois.map((m) => m.agregat);
+  });
+
+  private pageNavInitialise = false;
 
   private readonly _syncPageNavDepuisRoute = effect(() => {
     const selection = this.vue() === 'mois' && this.moisSelectionne() !== undefined
@@ -288,12 +335,6 @@ export class DashboardComponent {
     return new Intl.DateTimeFormat(this.localeCourante(), { month: 'short', year: 'numeric' }).format(parseIsoDateLocal(iso));
   }
 
-  private severityEffort(taux: number): 'success' | 'warn' | 'danger' {
-    if (taux >= 75) return 'danger';
-    if (taux >= 50) return 'warn';
-    return 'success';
-  }
-
   private initiales(nom: string): string {
     return this.decomp.initiales(nom);
   }
@@ -318,12 +359,24 @@ export class DashboardComponent {
     return this.decomp.construireDecomposition(detail, this.objectifs());
   }
 
-  private categorieMontantParMembre(categorieId: string, membreId: string): number {
-    return (this.ventilations()?.parCategorieMembre ?? {})[categorieId]?.[membreId] ?? 0;
+  /** Montant d'une catégorie pour le sujet courant (mois sélectionné) : agrégat foyer
+   *  (déjà cumulé par le backend) ou montant propre au membre (`parCategorieMembre`). */
+  private categorieMontantPourSujet(categorieId: string): number {
+    const v = this.ventilations();
+    if (!v) return 0;
+    const s = this.sujet();
+    return s.mode === 'membre'
+      ? (v.parCategorieMembre ?? {})[categorieId]?.[s.membreId] ?? 0
+      : (v.parCategorie as Record<string, number>)?.[categorieId] ?? 0;
   }
 
-  private categorieMontantParMembreAnnuel(categorieId: string, membreId: string): number {
-    return (this.ventilationAnnuelle()?.parCategorieMembre ?? {})[categorieId]?.[membreId] ?? 0;
+  private categorieMontantPourSujetAnnuel(categorieId: string): number {
+    const v = this.ventilationAnnuelle();
+    if (!v) return 0;
+    const s = this.sujet();
+    return s.mode === 'membre'
+      ? (v.parCategorieMembre ?? {})[categorieId]?.[s.membreId] ?? 0
+      : (v.parCategorie as Record<string, number>)?.[categorieId] ?? 0;
   }
 
   readonly foyerInitiales = computed(() => this.initiales(this.contexte.foyerCourant()?.nom ?? this.t.projection.foyer));
@@ -336,12 +389,29 @@ export class DashboardComponent {
 
   readonly foyerSousTitreAnnuel = this.foyerSousTitre;
 
-  readonly tauxEffort = computed(() =>
-    this.decomp.tauxEffort(this.ventilations()?.agregat ?? { revenus: 0, charges: 0, reserves: 0, soldeDisponible: 0 })
-  );
+  // ── Props de la carte-bilan unique (mois), scopées au sujet courant ────────
+  readonly nomCarte = computed(() => this.membreCourant()?.nom ?? this.t.projection.foyer);
+  readonly varianteCarte = computed<'foyer' | 'membre'>(() => this.estModeMembre() ? 'membre' : 'foyer');
+  readonly couleurCarte = computed(() => this.membreCourant()?.couleur ?? 'var(--p-secondary-color)');
+  readonly initialesCarte = computed(() => {
+    const membre = this.membreCourant();
+    return membre ? this.initiales(membre.nom) : this.foyerInitiales();
+  });
+  readonly sousTitreCarte = computed(() => {
+    const s = this.sujet();
+    return s.mode === 'membre'
+      ? this.sousTitrePeriode(s.membreId)
+      : this.foyerSousTitre();
+  });
+  readonly prorataPctCarte = computed<number | undefined>(() => {
+    const s = this.sujet();
+    if (s.mode !== 'membre') return undefined;
+    return this.decomp.periodeEtQuotePart(this.contexte.scenarioCourant(), s.membreId, this.annee(), this.moisSelectionne() ?? 1).quotePart;
+  });
+
+  readonly tauxEffort = computed(() => this.decomp.tauxEffort(this.agregatMoisCourant()));
 
   readonly categoriesParType = computed(() => {
-    const ventilations = this.ventilations();
     const categories = this.categories();
     const makeList = (type: TypeCategorie) =>
       categories
@@ -349,7 +419,7 @@ export class DashboardComponent {
         .map((categorie) => ({
           id: categorie.id,
           libelle: categorie.libelle,
-          montant: (ventilations?.parCategorie as Record<string, number>)?.[categorie.id] ?? 0,
+          montant: this.categorieMontantPourSujet(categorie.id),
         }))
         .filter((row) => row.montant !== 0)
         .sort((a, b) => b.montant - a.montant);
@@ -360,37 +430,21 @@ export class DashboardComponent {
     };
   });
 
-  readonly membresParType = computed(() => {
-    const ventilations = this.ventilations();
-    const membres = this.membres();
-    const makeList = (type: keyof VentilationAggregatDto) =>
-      membres
-        .map((membre) => ({
-          id: membre.id,
-          libelle: membre.nom,
-          montant: (ventilations?.parMembre as Record<string, VentilationAggregatDto>)?.[membre.id]?.[type] ?? 0,
-        }))
-        .filter((row) => row.montant !== 0)
-        .sort((a, b) => b.montant - a.montant);
-    return {
-      revenus: makeList('revenus'),
-      charges: makeList('charges'),
-      reserves: makeList('reserves'),
-    };
-  });
-
   readonly foyerDecomposition = computed(() => this.construireDecomposition(this.categoriesParType()));
 
+  /** Décomposition « par compte » : foyer = tous comptes cumulés ; membre = uniquement
+   *  les comptes où ce membre a une charge propre. */
   readonly foyerCompteDecomposition = computed<LigneDecomposition[]>(() => {
     const ventilations = this.ventilations();
     if (!ventilations) return [];
+    const s = this.sujet();
     return Object.entries(ventilations.parCompteMembre ?? {})
       .map(([compteId, memMap]) => ({
         id: compteId,
         libelle: this.compteLibelle(compteId),
-        montantAbs: Object.values(memMap).reduce((sum, montant) => sum + montant, 0),
+        montantAbs: s.mode === 'membre' ? (memMap[s.membreId] ?? 0) : Object.values(memMap).reduce((sum, montant) => sum + montant, 0),
         signe: -1 as const,
-        tags: this.membresTagsCompte(compteId),
+        tags: s.mode === 'membre' ? this.membresTagsCompte(compteId, s.membreId) : this.membresTagsCompte(compteId),
       }))
       .filter((compte) => compte.montantAbs !== 0)
       .sort((a, b) => b.montantAbs - a.montantAbs);
@@ -398,7 +452,11 @@ export class DashboardComponent {
 
   readonly foyerCascadeDecomposition = computed(() => {
     const ventilations = this.ventilations();
-    return ventilations ? this.decomp.foyerCascadeDecomposition(ventilations, this.membres()) : [];
+    if (!ventilations) return [];
+    const s = this.sujet();
+    return s.mode === 'membre'
+      ? this.decomp.construireCascadeDecomposition(s.membreId, this.agregatMoisCourant(), ventilations, this.membres().length)
+      : this.decomp.foyerCascadeDecomposition(ventilations, this.membres());
   });
 
   readonly foyerLignesActuelles = computed(() => {
@@ -409,84 +467,28 @@ export class DashboardComponent {
     }
   });
 
-  lignesMembre(mc: {
-    decomposition: LigneDecomposition[];
-    cascadeDecomposition: LigneDecomposition[];
-    compteDecomposition: LigneDecomposition[];
-  }): LigneDecomposition[] {
-    switch (this.vueDecomposition()) {
-      case 'CATEGORIE': return mc.decomposition;
-      case 'COMPTE': return mc.compteDecomposition;
-      default: return mc.cascadeDecomposition;
-    }
-  }
+  /** Config unique consommée par `<app-carte-bilan>` (vue mensuelle). */
+  readonly carteMoisConfig = computed(() => ({
+    variante: this.varianteCarte(),
+    nom: this.nomCarte(),
+    sousTitre: this.sousTitreCarte(),
+    couleur: this.couleurCarte(),
+    initiales: this.initialesCarte(),
+    montantPrincipal: this.agregatMoisCourant().soldeDisponible,
+    lignes: this.foyerLignesActuelles(),
+    tauxEffort: this.tauxEffort(),
+    prorataPct: this.prorataPctCarte(),
+  }));
 
-  readonly membresData = computed(() => {
-    const ventilations = this.ventilations();
-    if (!ventilations) return [];
-    const zero: VentilationAggregatDto = { revenus: 0, charges: 0, reserves: 0, soldeDisponible: 0 };
-    const categories = this.categories();
-    const nbMembres = this.membres().length;
-    return this.membres().map((membre) => {
-      const agregat: VentilationAggregatDto = (ventilations.parMembre ?? {})[membre.id] ?? zero;
-      const tauxEffort = this.decomp.tauxEffort(agregat);
-      const chargesParCompte = Object.entries(ventilations.parCompteMembre ?? {})
-        .map(([compteId, memMap]) => ({
-          id: compteId,
-          libelle: this.compteLibelle(compteId),
-          montant: memMap[membre.id] ?? 0,
-        }))
-        .filter((compte) => compte.montant > 0)
-        .sort((a, b) => b.montant - a.montant);
-      const makeList = (type: TypeCategorie) =>
-        categories
-          .filter((categorie) => categorie.typePoste === type)
-          .map((categorie) => ({ id: categorie.id, libelle: categorie.libelle, montant: this.categorieMontantParMembre(categorie.id, membre.id) }))
-          .filter((row) => row.montant !== 0)
-          .sort((a, b) => b.montant - a.montant);
-      const detail = {
-        revenus: makeList('REVENU'),
-        charges: makeList('CHARGE'),
-        reserves: makeList('RESERVE'),
-      };
-      return {
-        id: membre.id,
-        nom: membre.nom,
-        couleur: membre.couleur,
-        initiales: this.initiales(membre.nom),
-        sousTitre: this.sousTitrePeriode(membre.id),
-        rav: agregat.soldeDisponible,
-        agregat,
-        tauxEffort,
-        prorataPct: this.decomp.periodeEtQuotePart(this.contexte.scenarioCourant(), membre.id, this.annee(), this.moisSelectionne() ?? 1).quotePart,
-        effortSeverity: this.severityEffort(tauxEffort),
-        decomposition: this.construireDecomposition(detail),
-        cascadeDecomposition: this.decomp.construireCascadeDecomposition(membre.id, agregat, ventilations, nbMembres),
-        compteDecomposition: chargesParCompte.map((compte) => ({
-          id: compte.id,
-          libelle: compte.libelle,
-          montantAbs: compte.montant,
-          signe: -1 as const,
-          tags: this.membresTagsCompte(compte.id, membre.id),
-        })),
-        categories: detail,
-        chargesParCompte,
-        compteChartData: this.buildCompteChartData(chargesParCompte, membre.couleur),
-        compteChartHeight: Math.max(chargesParCompte.length * 38 + 16, 160),
-      };
-    });
-  });
 
-  readonly tauxEffortAnnuel = computed(() =>
-    this.decomp.tauxEffort(this.ventilationAnnuelle()?.agregat ?? { revenus: 0, charges: 0, reserves: 0, soldeDisponible: 0 })
-  );
+  readonly tauxEffortAnnuel = computed(() => this.decomp.tauxEffort(this.agregatAnneeCourant()));
 
   readonly foyerDecompositionAnnuel = computed<LigneDecomposition[]>(() => {
     const ventilation = this.ventilationAnnuelle();
     if (!ventilation) return [];
     const categories = this.categories();
     const makeList = (type: TypeCategorie) =>
-      this.decomp.listeParCategorie(type, categories, (categorieId) => ventilation.parCategorie[categorieId] ?? 0);
+      this.decomp.listeParCategorie(type, categories, (categorieId) => this.categorieMontantPourSujetAnnuel(categorieId));
     return this.decomp.construireDecomposition({
       revenus: makeList('REVENU'),
       charges: makeList('CHARGE'),
@@ -497,13 +499,16 @@ export class DashboardComponent {
   readonly foyerCompteDecompositionAnnuel = computed<LigneDecomposition[]>(() => {
     const ventilation = this.ventilationAnnuelle();
     if (!ventilation) return [];
+    const s = this.sujet();
     return Object.entries(ventilation.parCompteMembre ?? {})
       .map(([compteId, memMap]) => ({
         id: compteId,
         libelle: this.compteLibelle(compteId),
-        montantAbs: Object.values(memMap).reduce((sum, montant) => sum + montant, 0),
+        montantAbs: s.mode === 'membre' ? (memMap[s.membreId] ?? 0) : Object.values(memMap).reduce((sum, montant) => sum + montant, 0),
         signe: -1 as const,
-        tags: this.decomp.membresTagsCompte(compteId, this.comptes(), this.membres()),
+        tags: s.mode === 'membre'
+          ? this.decomp.membresTagsCompte(compteId, this.comptes(), this.membres(), s.membreId)
+          : this.decomp.membresTagsCompte(compteId, this.comptes(), this.membres()),
       }))
       .filter((compte) => compte.montantAbs !== 0)
       .sort((a, b) => b.montantAbs - a.montantAbs);
@@ -511,7 +516,11 @@ export class DashboardComponent {
 
   readonly foyerCascadeDecompositionAnnuel = computed(() => {
     const ventilation = this.ventilationAnnuelle();
-    return ventilation ? this.decomp.foyerCascadeDecomposition(ventilation, this.membres()) : [];
+    if (!ventilation) return [];
+    const s = this.sujet();
+    return s.mode === 'membre'
+      ? this.decomp.construireCascadeDecomposition(s.membreId, this.agregatAnneeCourant(), ventilation, this.membres().length)
+      : this.decomp.foyerCascadeDecomposition(ventilation, this.membres());
   });
 
   readonly foyerLignesActuellesAnnuel = computed(() => {
@@ -522,66 +531,24 @@ export class DashboardComponent {
     }
   });
 
-  lignesMembreAnnuel(mc: {
-    decomposition: LigneDecomposition[];
-    cascadeDecomposition: LigneDecomposition[];
-    compteDecomposition: LigneDecomposition[];
-  }): LigneDecomposition[] {
-    switch (this.vueDecomposition()) {
-      case 'CATEGORIE': return mc.decomposition;
-      case 'COMPTE': return mc.compteDecomposition;
-      default: return mc.cascadeDecomposition;
-    }
-  }
-
-  readonly membresDataAnnuel = computed(() => {
-    const ventilation = this.ventilationAnnuelle();
-    if (!ventilation) return [];
-    const zero: VentilationAggregatDto = { revenus: 0, charges: 0, reserves: 0, soldeDisponible: 0 };
-    const categories = this.categories();
-    const nbMembres = this.membres().length;
-    const scenario = this.contexte.scenarioCourant();
-    return this.membres().map((membre) => {
-      const agregat: VentilationAggregatDto = (ventilation.parMembre ?? {})[membre.id] ?? zero;
-      const tauxEffort = this.decomp.tauxEffort(agregat);
-      const chargesParCompte = Object.entries(ventilation.parCompteMembre ?? {})
-        .map(([compteId, memMap]) => ({
-          id: compteId,
-          libelle: this.compteLibelle(compteId),
-          montant: memMap[membre.id] ?? 0,
-        }))
-        .filter((compte) => compte.montant > 0)
-        .sort((a, b) => b.montant - a.montant);
-      const makeList = (type: TypeCategorie) =>
-        categories
-          .filter((categorie) => categorie.typePoste === type)
-          .map((categorie) => ({ id: categorie.id, libelle: categorie.libelle, montant: this.categorieMontantParMembreAnnuel(categorie.id, membre.id) }))
-          .filter((row) => row.montant !== 0)
-          .sort((a, b) => b.montant - a.montant);
-      return {
-        id: membre.id,
-        nom: membre.nom,
-        couleur: membre.couleur,
-        initiales: this.initiales(membre.nom),
-        sousTitre: this.decomp.sousTitreQuotePartDefaut(scenario, membre.id),
-        agregat,
-        tauxEffort,
-        decomposition: this.decomp.construireDecomposition({
-          revenus: makeList('REVENU'),
-          charges: makeList('CHARGE'),
-          reserves: makeList('RESERVE'),
-        }, this.objectifs()),
-        cascadeDecomposition: this.decomp.construireCascadeDecomposition(membre.id, agregat, ventilation, nbMembres),
-        compteDecomposition: chargesParCompte.map((compte) => ({
-          id: compte.id,
-          libelle: compte.libelle,
-          montantAbs: compte.montant,
-          signe: -1 as const,
-          tags: this.decomp.membresTagsCompte(compte.id, this.comptes(), this.membres(), membre.id),
-        })),
-      };
-    });
+  readonly sousTitreCarteAnnuel = computed(() => {
+    const s = this.sujet();
+    return s.mode === 'membre'
+      ? this.decomp.sousTitreQuotePartDefaut(this.contexte.scenarioCourant(), s.membreId)
+      : this.foyerSousTitreAnnuel();
   });
+
+  /** Config unique consommée par `<app-carte-bilan>` (vue annuelle). */
+  readonly carteAnneeConfig = computed(() => ({
+    variante: this.varianteCarte(),
+    nom: this.nomCarte(),
+    sousTitre: this.sousTitreCarteAnnuel(),
+    couleur: this.couleurCarte(),
+    initiales: this.initialesCarte(),
+    montantPrincipal: this.agregatAnneeCourant().soldeDisponible,
+    lignes: this.foyerLignesActuellesAnnuel(),
+    tauxEffort: this.tauxEffortAnnuel(),
+  }));
 
   readonly mixedChartOptions = {
     responsive: true,
@@ -615,27 +582,11 @@ export class DashboardComponent {
     },
   };
 
-  mixedChartData = computed(() => this.buildFoyerChartData(this.projectionAnnuelle()?.mois));
+  /** Graphique de flux mensuel (revenus/charges/réserves), scopé au sujet courant. */
+  mixedChartData = computed(() => this.buildChartData(this.moisAgregatsCourant()));
 
-  membreChartsData = computed(() => {
-    const projection = this.projectionAnnuelle();
-    if (!projection) return [];
-    return this.membres().map((membre) => {
-      const moisData = projection.moisParMembre[membre.id];
-      return {
-        membreId: membre.id,
-        nom: membre.nom,
-        couleur: membre.couleur,
-        data: this.buildMembreChartData(moisData),
-        dataReel: this.buildMembreChartData(projection.moisParMembreReel?.[membre.id]),
-        mois: this.buildMembreMois(moisData),
-        total: this.buildMembreTotal(moisData),
-      };
-    });
-  });
-
-  private buildFoyerChartData(mois: { agregat: AggregatDto }[] | undefined): object {
-    if (!mois?.length) return {};
+  private buildChartData(mois: AggregatDto[]): object {
+    if (!mois.length) return {};
     return {
       labels: this.t.mois,
       datasets: [
@@ -643,14 +594,14 @@ export class DashboardComponent {
           type: 'bar',
           label: this.t.projection.charges,
           backgroundColor: 'rgba(239,68,68,0.75)',
-          data: mois.map((m) => m.agregat.charges),
+          data: mois.map((m) => m.charges),
           stack: 'depenses',
         },
         {
           type: 'bar',
           label: this.t.projection.reserves,
           backgroundColor: 'rgba(59,130,246,0.75)',
-          data: mois.map((m) => m.agregat.reserves),
+          data: mois.map((m) => m.reserves),
           stack: 'depenses',
         },
         {
@@ -658,86 +609,24 @@ export class DashboardComponent {
           label: this.t.projection.revenus,
           borderColor: '#22c55e',
           backgroundColor: 'rgba(34,197,94,0.08)',
-          data: mois.map((m) => m.agregat.revenus),
+          data: mois.map((m) => m.revenus),
           tension: 0.3,
           fill: false,
           pointRadius: 4,
           borderWidth: 2,
-        },
-      ],
-    };
-  }
-
-  private buildMembreChartData(moisData: AggregatDto[] | undefined): object {
-    if (!moisData?.length) return {};
-    return {
-      labels: this.t.mois,
-      datasets: [
-        {
-          type: 'bar',
-          label: this.t.projection.charges,
-          backgroundColor: 'rgba(239,68,68,0.75)',
-          data: moisData.map((agregat) => agregat.charges),
-          stack: 'depenses',
-        },
-        {
-          type: 'bar',
-          label: this.t.projection.reserves,
-          backgroundColor: 'rgba(59,130,246,0.75)',
-          data: moisData.map((agregat) => agregat.reserves),
-          stack: 'depenses',
-        },
-        {
-          type: 'line',
-          label: this.t.projection.revenus,
-          borderColor: '#22c55e',
-          backgroundColor: 'rgba(34,197,94,0.08)',
-          data: moisData.map((agregat) => agregat.revenus),
-          tension: 0.3,
-          fill: false,
-          pointRadius: 4,
-          borderWidth: 2,
-        },
-      ],
-    };
-  }
-
-  private buildMembreMois(moisData: AggregatDto[] | undefined): { numero: number; agregat: AggregatDto }[] {
-    return moisData?.map((agregat, index) => ({ numero: index + 1, agregat })) ?? [];
-  }
-
-  private buildMembreTotal(moisData: AggregatDto[] | undefined): AggregatDto {
-    const zero: AggregatDto = { revenus: 0, charges: 0, reserves: 0, soldeDisponible: 0 };
-    if (!moisData?.length) return zero;
-    return moisData.reduce((acc, agregat) => ({
-      revenus: acc.revenus + agregat.revenus,
-      charges: acc.charges + agregat.charges,
-      reserves: acc.reserves + agregat.reserves,
-      soldeDisponible: acc.soldeDisponible + agregat.soldeDisponible,
-    }), zero);
-  }
-
-  private buildCompteChartData(chargesParCompte: { id: string; libelle: string; montant: number }[], couleur: string): object {
-    return {
-      labels: chargesParCompte.map((compte) => compte.libelle),
-      datasets: [
-        {
-          label: this.t.projection.charges,
-          data: chargesParCompte.map((compte) => compte.montant),
-          backgroundColor: couleur,
-          borderRadius: 8,
-          maxBarThickness: 22,
         },
       ],
     };
   }
 
   annualKpis = computed<KpiChip[]>(() => {
-    const mois = this.projectionAnnuelle()?.mois ?? [];
-    const negatifs = mois.filter((item) => item.agregat.soldeDisponible < 0);
-    const plusGrosMois = mois.reduce<{ mois: number; montant: number } | null>((best, item) => {
-      const montant = item.agregat.charges + item.agregat.reserves;
-      return !best || montant > best.montant ? { mois: item.numero, montant } : best;
+    const mois = this.moisAgregatsCourant();
+    const negatifs = mois
+      .map((agregat, index) => ({ agregat, numero: index + 1 }))
+      .filter((item) => item.agregat.soldeDisponible < 0);
+    const plusGrosMois = mois.reduce<{ mois: number; montant: number } | null>((best, agregat, index) => {
+      const montant = agregat.charges + agregat.reserves;
+      return !best || montant > best.montant ? { mois: index + 1, montant } : best;
     }, null);
     const objectifs = this.objectifsRendus();
     const nbAtteints = objectifs.filter((objectif) => objectif.statut === 'ATTEINT').length;
@@ -785,8 +674,8 @@ export class DashboardComponent {
   });
 
   readonly ringSegmentsAnnee = computed<MetricRingSegment[]>(() => {
-    const mois = this.projectionAnnuelle()?.mois ?? [];
-    const positifs = mois.filter((item) => item.agregat.soldeDisponible >= 0).length;
+    const mois = this.moisAgregatsCourant();
+    const positifs = mois.filter((item) => item.soldeDisponible >= 0).length;
     const negatifs = Math.max(mois.length - positifs, 0);
     return [
       { value: positifs, color: 'var(--p-emerald-500)' },
@@ -795,18 +684,18 @@ export class DashboardComponent {
   });
 
   readonly ringCenterAnnee = computed(() => {
-    const mois = this.projectionAnnuelle()?.mois ?? [];
-    const positifs = mois.filter((item) => item.agregat.soldeDisponible >= 0).length;
+    const mois = this.moisAgregatsCourant();
+    const positifs = mois.filter((item) => item.soldeDisponible >= 0).length;
     const negatifs = Math.max(mois.length - positifs, 0);
     return `${positifs}-${negatifs}`;
   });
 
   readonly statsAnnee = computed<StatItem[]>(() => {
-    const total = this.projectionAnnuelle()?.totalAnnuel ?? { revenus: 0, charges: 0, reserves: 0, soldeDisponible: 0 };
-    const mois = this.projectionAnnuelle()?.mois ?? [];
+    const total = this.agregatAnneeCourant();
+    const mois = this.moisAgregatsCourant();
     const tauxReserve = total.revenus > 0 ? (total.reserves / total.revenus) * 100 : 0;
     const tauxSolde = total.revenus > 0 ? (total.soldeDisponible / total.revenus) * 100 : 0;
-    const moisSousSeuil = mois.filter((item) => item.agregat.soldeDisponible < 500).length;
+    const moisSousSeuil = mois.filter((item) => item.soldeDisponible < 500).length;
     return [
       {
         label: this.t.dashboard.soldeRestant,
@@ -824,8 +713,8 @@ export class DashboardComponent {
   });
 
   readonly statusAnnee = computed<StatGridStatusTag>(() => {
-    const total = this.projectionAnnuelle()?.totalAnnuel ?? { revenus: 0, charges: 0, reserves: 0, soldeDisponible: 0 };
-    const moisNegatifs = (this.projectionAnnuelle()?.mois ?? []).filter((item) => item.agregat.soldeDisponible < 0).length;
+    const total = this.agregatAnneeCourant();
+    const moisNegatifs = this.moisAgregatsCourant().filter((item) => item.soldeDisponible < 0).length;
     if (total.soldeDisponible < 0) {
       return { value: this.t.dashboard.statutDeficitaire, severity: 'danger' };
     }
@@ -837,40 +726,53 @@ export class DashboardComponent {
 
   readonly postesActifsMois = computed(() => {
     const mois = this.moisSelectionne();
-    return mois === undefined
-      ? []
-      : this.postes().filter((poste) => this.posteActifSurMois(poste, this.annee(), mois));
+    if (mois === undefined) return [];
+    const actifs = this.postes().filter((poste) => this.posteActifSurMois(poste, this.annee(), mois));
+    const s = this.sujet();
+    return s.mode === 'foyer' ? actifs : actifs.filter((p) => this.posteConcerneMembre(p, s.membreId, this.annee(), mois));
   });
 
-  readonly chargesSuresMois = computed(() =>
-    this.postesActifsMois()
+  readonly chargesSuresMois = computed(() => {
+    const s = this.sujet();
+    const mois = this.moisSelectionne() ?? 1;
+    return this.postesActifsMois()
       .filter((poste) => poste.type === 'CHARGE' && poste.nature === 'EFFECTIF')
-      .reduce((sum, poste) => sum + Math.abs(poste.montantMensualise ?? poste.montant), 0)
-  );
+      .reduce((sum, poste) => {
+        const montant = Math.abs(poste.montantMensualise ?? poste.montant);
+        const q = s.mode === 'membre' ? this.quotePartMembrePoste(poste, s.membreId, this.annee(), mois) : 1;
+        return sum + montant * q;
+      }, 0);
+  });
 
-  readonly margeVariableMois = computed(() =>
-    this.postesActifsMois()
+  readonly margeVariableMois = computed(() => {
+    const s = this.sujet();
+    const mois = this.moisSelectionne() ?? 1;
+    return this.postesActifsMois()
       .filter((poste) => poste.nature === 'ESTIMATION')
-      .reduce((sum, poste) => sum + Math.abs(poste.montantMensualise ?? poste.montant) * ((poste.estimPourcentage ?? 0) / 100), 0)
-  );
+      .reduce((sum, poste) => {
+        const montant = Math.abs(poste.montantMensualise ?? poste.montant) * ((poste.estimPourcentage ?? 0) / 100);
+        const q = s.mode === 'membre' ? this.quotePartMembrePoste(poste, s.membreId, this.annee(), mois) : 1;
+        return sum + montant * q;
+      }, 0);
+  });
 
   readonly ringSegmentsMois = computed<MetricRingSegment[]>(() => {
-    const rav = this.ventilations()?.agregat.soldeDisponible ?? 0;
+    const rav = this.agregatMoisCourant().soldeDisponible;
     const marge = this.margeVariableMois();
     return [
       { value: this.chargesSuresMois(), color: 'var(--p-red-400)' },
       { value: marge * 2, color: 'var(--p-amber-400)' },
-      { value: this.ventilations()?.agregat.reserves ?? 0, color: 'var(--p-blue-400)' },
+      { value: this.agregatMoisCourant().reserves, color: 'var(--p-blue-400)' },
       { value: Math.max(rav - marge, 0), color: 'var(--p-emerald-500)' },
     ];
   });
 
-  readonly ringCenterMois = computed(() => this.formatMontant(this.ventilations()?.agregat.soldeDisponible ?? 0));
+  readonly ringCenterMois = computed(() => this.formatMontant(this.agregatMoisCourant().soldeDisponible));
 
   readonly statsMois = computed<StatItem[]>(() => {
-    const rav = this.ventilations()?.agregat.soldeDisponible ?? 0;
+    const rav = this.agregatMoisCourant().soldeDisponible;
     const marge = this.margeVariableMois();
-    const reserves = this.ventilations()?.agregat.reserves ?? 0;
+    const reserves = this.agregatMoisCourant().reserves;
     return [
       { label: this.t.dashboard.chargesSures, value: this.formatMontant(this.chargesSuresMois()) },
       { label: this.t.dashboard.margeVariable, value: `± ${this.formatMontant(marge)}` },
@@ -880,7 +782,7 @@ export class DashboardComponent {
   });
 
   readonly statusMois = computed<StatGridStatusTag>(() => {
-    const rav = this.ventilations()?.agregat.soldeDisponible ?? 0;
+    const rav = this.agregatMoisCourant().soldeDisponible;
     const marge = this.margeVariableMois();
     if (rav < 0) {
       return { value: this.t.dashboard.statutDeficitaire, severity: 'danger' };
@@ -892,12 +794,19 @@ export class DashboardComponent {
   });
 
   readonly tresorerieCumuleeValeurs = computed(() => {
-    const projection = this.projectionAnnuelle();
     const scenario = this.contexte.scenarioCourant();
-    if (!projection || !scenario) return [];
-    let cumul = scenario.tresorerieInitiale;
-    return projection.mois.map((item) => {
-      cumul += item.agregat.soldeDisponible;
+    const moisAgregats = this.moisAgregatsCourant();
+    if (!scenario || !moisAgregats.length) return [];
+    const s = this.sujet();
+    // Approximation en mode membre : le backend n'a pas de notion de trésorerie initiale
+    // par membre — on prorate la trésorerie initiale du scénario par sa quote-part par
+    // défaut (répartition du scénario), à défaut d'un vrai concept produit dédié.
+    const quotePartInitiale = s.mode === 'membre'
+      ? (scenario.repartitions.find((r) => r.membreId === s.membreId)?.quotePart ?? 0)
+      : 1;
+    let cumul = scenario.tresorerieInitiale * quotePartInitiale;
+    return moisAgregats.map((agregat) => {
+      cumul += agregat.soldeDisponible;
       return cumul;
     });
   });
@@ -953,8 +862,18 @@ export class DashboardComponent {
     return morceaux.join(' · ');
   }
 
+  /** Objectifs scopés au sujet courant : en mode membre, uniquement ceux rattachés à un
+   *  compte dont ce membre est co-titulaire (le compte "porte" l'objectif — cf. modèle). */
+  readonly objectifsPourSujet = computed<ObjectifDto[]>(() => {
+    const s = this.sujet();
+    const objectifs = this.objectifs();
+    if (s.mode === 'foyer') return objectifs;
+    const comptes = this.comptes();
+    return objectifs.filter((o) => (comptes.find((c) => c.id === o.compteId)?.membreIds ?? []).includes(s.membreId));
+  });
+
   readonly objectifsRendus = computed(() =>
-    this.objectifs().map((objectif) => {
+    this.objectifsPourSujet().map((objectif) => {
       const statut = this.statutObjectif(objectif);
       return {
         id: objectif.id,
@@ -971,7 +890,7 @@ export class DashboardComponent {
   readonly echeancesMois = computed(() => {
     const mois = this.moisSelectionne();
     if (mois === undefined) return [];
-    return this.objectifs()
+    return this.objectifsPourSujet()
       .filter((objectif) => objectif.echeance && this.dateDansMois(objectif.echeance, this.annee(), mois))
       .sort((a, b) => (a.echeance ?? '').localeCompare(b.echeance ?? ''))
       .map((objectif) => {
@@ -1040,12 +959,16 @@ export class DashboardComponent {
   }
 
   readonly evenementsAnnee = computed<DashboardTimelineItem[]>(() =>
+    // Le backend a déjà filtré (quote-part > 0) et proratisé montant/montantOrigine
+    // selon le membre demandé (voir EvenementDto.quotePart) — aucun recalcul ici.
     this.evenementsDto()
       .map((evt) => {
         const { icon, variant } = this.iconEvenement(evt);
         // evt.montant est l'impact budgétaire signé (+ = gain de trésorerie, − = perte),
         // toujours favorable si positif quel que soit le type de poste.
         const favorable = evt.montant > 0;
+        const q = evt.quotePart ?? 1;
+        const labelQuotePart = q < 1 ? this.i18n.instant('dashboard.partProratisee', { pct: this.formatPct(q * 100) }) : undefined;
 
         if (evt.type === 'REVISION' && evt.montantOrigine !== undefined) {
           // Affichage "avant → après" : plus de delta affiché, chaque côté formaté selon
@@ -1069,6 +992,9 @@ export class DashboardComponent {
           } else {
             montantSecondaire = apres.secondaire ?? avant.secondaire;
           }
+          if (labelQuotePart) {
+            montantSecondaire = montantSecondaire ? `${montantSecondaire} · ${labelQuotePart}` : labelQuotePart;
+          }
 
           return {
             when: this.t.mois[evt.mois - 1],
@@ -1085,6 +1011,9 @@ export class DashboardComponent {
 
         const { montantBrut, suffixe, secondaire } = this.formatterMontantPoste(
           evt.montant, evt.periodiciteMois, evt.mode, evt.typePoste);
+        const montantSecondaire = labelQuotePart
+          ? (secondaire ? `${secondaire} · ${labelQuotePart}` : labelQuotePart)
+          : secondaire;
 
         return {
           when: this.t.mois[evt.mois - 1],
@@ -1094,7 +1023,7 @@ export class DashboardComponent {
           impact: montantBrut,
           favorable,
           suffixe,
-          montantSecondaire: secondaire,
+          montantSecondaire,
           mois: evt.mois,
         };
       })
@@ -1120,6 +1049,20 @@ export class DashboardComponent {
     const debutOk = !debut || debut <= finMois;
     const finOk = !fin || fin >= debutMois;
     return debutOk && finOk;
+  }
+
+  /** Quote-part effective (0-1) d'un membre sur un poste, pour un mois donné — miroir
+   *  fidèle de `MoteurCalcul.quotePartEffective` (backend), utilisé uniquement pour les
+   *  segments de l'anneau (`chargesSuresMois`/`margeVariableMois`) : cette agrégation
+   *  n'est pas encore exposée telle quelle par le backend (voir docs/03 §2.3 — dette
+   *  assumée en attendant une extension du moteur avec vecteurs golden). */
+  private quotePartMembrePoste(poste: PosteDto, membreId: string, annee: number, mois: number): number {
+    return this.decomp.quotePartEffectivePoste(
+      poste, membreId, this.contexte.scenarioCourant(), annee, mois, this.membres().length);
+  }
+
+  private posteConcerneMembre(poste: PosteDto, membreId: string, annee: number, mois: number): boolean {
+    return this.quotePartMembrePoste(poste, membreId, annee, mois) > 0;
   }
 
   peutReculer(): boolean {
@@ -1211,24 +1154,34 @@ export class DashboardComponent {
   private naviguerVersAnnee(annee: number): void {
     const foyerId = this.contexte.foyerId();
     if (!foyerId) return;
-    void this.router.navigate(['/f', foyerId, 'dashboard', String(annee)], { queryParamsHandling: 'preserve' });
+    void this.router.navigate(['/f', foyerId, 'dashboard', this.sujetId(), String(annee)], { queryParamsHandling: 'preserve' });
   }
 
   private naviguerVersMois(annee: number, mois: number): void {
     const foyerId = this.contexte.foyerId();
     if (!foyerId) return;
-    void this.router.navigate(['/f', foyerId, 'dashboard', String(annee), String(mois).padStart(2, '0')], { queryParamsHandling: 'preserve' });
+    void this.router.navigate(['/f', foyerId, 'dashboard', this.sujetId(), String(annee), String(mois).padStart(2, '0')], { queryParamsHandling: 'preserve' });
+  }
+
+  /** Navigue vers un autre sujet (foyer ou membre) en conservant année/mois courants. */
+  private naviguerVersSujet(sujetId: string): void {
+    const foyerId = this.contexte.foyerId();
+    if (!foyerId) return;
+    const segments = ['/f', foyerId, 'dashboard', sujetId, String(this.annee())];
+    const mois = this.moisSelectionne();
+    if (mois !== undefined) segments.push(String(mois).padStart(2, '0'));
+    void this.router.navigate(segments, { queryParamsHandling: 'preserve' });
   }
 
   readonly moisSummary = computed<PageNavMonthSummary[]>(() => {
-    const projection = this.projectionAnnuelle();
-    if (!projection) {
+    const mois = this.moisAgregatsCourant();
+    if (!mois.length) {
       return this.t.mois.map((label, index) => ({ mois: index + 1, label: label.slice(0, 3), solde: 0 }));
     }
-    return projection.mois.map((mois) => ({
-      mois: mois.numero,
-      label: this.formatMois(mois.numero),
-      solde: mois.agregat.soldeDisponible,
+    return mois.map((agregat, index) => ({
+      mois: index + 1,
+      label: this.formatMois(index + 1),
+      solde: agregat.soldeDisponible,
     }));
   });
 

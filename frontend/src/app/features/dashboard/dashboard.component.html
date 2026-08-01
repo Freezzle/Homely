@@ -9,7 +9,7 @@
   <main class="dashboard-content">
     <div class="page-head">
       <div class="min-w-0">
-        <h1>{{ t.nav.dashboard }}</h1>
+        <h1>{{ titrePage() }}</h1>
         <p class="page-subtitle">{{ periodeLabel() }}</p>
       </div>
       <div class="ctx-tools">
@@ -68,15 +68,6 @@
         <app-tab-panel value="recap" [label]="t.dashboard.recapitulatifs">
           <div class="section-stack">
             <div class="toggle-wrap">
-              @if (afficherParMembre()) {
-                <p-selectbutton
-                  [options]="vueOptions"
-                  [ngModel]="vueRecap()"
-                  (ngModelChange)="vueRecap.set($event)"
-                  optionLabel="label"
-                  optionValue="value"
-                  [allowEmpty]="false" />
-              }
               <p-selectbutton
                 [options]="vueDecompositionOptions"
                 [ngModel]="vueDecomposition()"
@@ -86,34 +77,16 @@
                 [allowEmpty]="false" />
             </div>
 
-            @if (vueEffective() !== 'MEMBRE') {
-              <app-carte-bilan
-                variante="foyer"
-                [nom]="t.projection.foyer"
-                [sousTitre]="foyerSousTitreAnnuel()"
-                [initiales]="foyerInitiales()"
-                [montantPrincipal]="ventilationAnnuelle()!.agregat.soldeDisponible"
-                [devise]="deviseBase()"
-                [lignes]="foyerLignesActuellesAnnuel()"
-                [tauxEffort]="tauxEffortAnnuel()" />
-            }
-
-            @if (afficherParMembre() && vueEffective() !== 'FOYER') {
-              <div class="member-grid">
-                @for (mc of membresDataAnnuel(); track mc.id) {
-                  <app-carte-bilan
-                    variante="membre"
-                    [nom]="mc.nom"
-                    [sousTitre]="mc.sousTitre"
-                    [couleur]="mc.couleur"
-                    [initiales]="mc.initiales"
-                    [montantPrincipal]="mc.agregat.soldeDisponible"
-                    [devise]="deviseBase()"
-                    [lignes]="lignesMembreAnnuel(mc)"
-                    [tauxEffort]="mc.tauxEffort" />
-                }
-              </div>
-            }
+            <app-carte-bilan
+              [variante]="carteAnneeConfig().variante"
+              [nom]="carteAnneeConfig().nom"
+              [sousTitre]="carteAnneeConfig().sousTitre"
+              [couleur]="carteAnneeConfig().couleur"
+              [initiales]="carteAnneeConfig().initiales"
+              [montantPrincipal]="carteAnneeConfig().montantPrincipal"
+              [devise]="deviseBase()"
+              [lignes]="carteAnneeConfig().lignes"
+              [tauxEffort]="carteAnneeConfig().tauxEffort" />
           </div>
         </app-tab-panel>
 
@@ -122,25 +95,6 @@
             <p-chart type="bar" [data]="$any(mixedChartData())" [options]="$any(mixedChartOptions)" class="w-full block" />
           </div>
           <p class="footnote">{{ t.dashboard.cliquezBarre }}</p>
-
-          @if (afficherParMembre() && vueEffective() !== 'FOYER') {
-            <div class="inner-section">
-              <div class="member-grid">
-                @for (mc of membreChartsData(); track mc.membreId) {
-                  <p-card>
-                    <div class="member-chart-head">
-                      <span class="member-dot" [style.background-color]="mc.couleur"></span>
-                      <span class="font-semibold">{{ mc.nom }}</span>
-                    </div>
-                    <div class="chart-shell small">
-                      <p-chart type="bar" [data]="$any(mc.data)" [options]="$any(mixedChartOptions)" class="w-full block" />
-                    </div>
-                  </p-card>
-                }
-              </div>
-            </div>
-          }
-
         </app-tab-panel>
 
         <app-tab-panel value="tresorerie" [label]="t.dashboard.tresorerieCumulee">
@@ -203,15 +157,6 @@
         <app-tab-panel value="recap" [label]="t.dashboard.recapitulatif">
           <div class="section-stack">
             <div class="toggle-wrap">
-              @if (afficherParMembre()) {
-                <p-selectbutton
-                  [options]="vueOptions"
-                  [ngModel]="vueRecap()"
-                  (ngModelChange)="vueRecap.set($event)"
-                  optionLabel="label"
-                  optionValue="value"
-                  [allowEmpty]="false" />
-              }
               <p-selectbutton
                 [options]="vueDecompositionOptions"
                 [ngModel]="vueDecomposition()"
@@ -221,35 +166,17 @@
                 [allowEmpty]="false" />
             </div>
 
-            @if (vueEffective() !== 'MEMBRE') {
-              <app-carte-bilan
-                variante="foyer"
-                [nom]="t.projection.foyer"
-                [sousTitre]="foyerSousTitre()"
-                [initiales]="foyerInitiales()"
-                [montantPrincipal]="ventilations()!.agregat.soldeDisponible"
-                [devise]="deviseBase()"
-                [lignes]="foyerLignesActuelles()"
-                [tauxEffort]="tauxEffort()" />
-            }
-
-            @if (afficherParMembre() && vueEffective() !== 'FOYER') {
-              <div class="member-grid">
-                @for (mc of membresData(); track mc.id) {
-                  <app-carte-bilan
-                    variante="membre"
-                    [nom]="mc.nom"
-                    [sousTitre]="mc.sousTitre"
-                    [couleur]="mc.couleur"
-                    [initiales]="mc.initiales"
-                    [montantPrincipal]="mc.rav"
-                    [devise]="deviseBase()"
-                    [lignes]="lignesMembre(mc)"
-                    [tauxEffort]="mc.tauxEffort"
-                    [prorataPct]="mc.prorataPct" />
-                }
-              </div>
-            }
+            <app-carte-bilan
+              [variante]="carteMoisConfig().variante"
+              [nom]="carteMoisConfig().nom"
+              [sousTitre]="carteMoisConfig().sousTitre"
+              [couleur]="carteMoisConfig().couleur"
+              [initiales]="carteMoisConfig().initiales"
+              [montantPrincipal]="carteMoisConfig().montantPrincipal"
+              [devise]="deviseBase()"
+              [lignes]="carteMoisConfig().lignes"
+              [tauxEffort]="carteMoisConfig().tauxEffort"
+              [prorataPct]="carteMoisConfig().prorataPct" />
           </div>
         </app-tab-panel>
 

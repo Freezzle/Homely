@@ -373,7 +373,8 @@
     "parPeriodicite": "/{{n}} mois",
     "parPonctuel": "/ponctuel",
     "montantSecondaireModele": "{{montant}} tous les {{periodicite}} mois",
-    "montantSecondaireRevisionModele": "{{montantAvant}} → {{montantApres}} tous les {{periodicite}} mois"
+    "montantSecondaireRevisionModele": "{{montantAvant}} → {{montantApres}} tous les {{periodicite}} mois",
+    "partProratisee": "part {{pct}} %"
   },
   "commun": {
     "actions": "Actions",

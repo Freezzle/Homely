@@ -373,7 +373,8 @@
     "parPeriodicite": "/{{n}} mo",
     "parPonctuel": "/one-off",
     "montantSecondaireModele": "{{montant}} every {{periodicite}} months",
-    "montantSecondaireRevisionModele": "{{montantAvant}} → {{montantApres}} every {{periodicite}} months"
+    "montantSecondaireRevisionModele": "{{montantAvant}} → {{montantApres}} every {{periodicite}} months",
+    "partProratisee": "share {{pct}} %"
   },
   "commun": {
     "actions": "Actions",
