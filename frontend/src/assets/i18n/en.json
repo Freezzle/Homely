@@ -367,6 +367,7 @@
     "tauxDeReserve": "Savings rate",
     "tauxDeSolde": "Balance rate",
     "moisSousSeuilRisque": "Months under risk threshold",
+    "differenceTresorerieAnPasse": "Cash difference vs last year",
     "chargesSures": "Fixed expenses",
     "margeVariable": "Variable margin",
     "reserves": "Savings",

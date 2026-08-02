@@ -367,6 +367,7 @@
     "tauxDeReserve": "Taux de réserve",
     "tauxDeSolde": "Taux de solde",
     "moisSousSeuilRisque": "Mois sous seuil de risque",
+    "differenceTresorerieAnPasse": "Différence de trésorerie vs l'an passé",
     "chargesSures": "Charges fixes",
     "margeVariable": "Marge variable",
     "reserves": "Réserves",

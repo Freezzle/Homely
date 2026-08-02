@@ -232,6 +232,31 @@ export class DashboardComponent {
     return donnees ? this.sommerVentilations(donnees) : null;
   });
 
+  /** Clé de chargement de la projection annuelle N-1, utilisée pour comparer la
+   *  trésorerie de fin d'année avec l'an passé. `null` si hors vue annuelle ou si
+   *  l'année précédente est antérieure au début du scénario (pas de données). */
+  private readonly _projectionAnneePrecedenteCle = computed<{ foyerId: string; scenarioId: string; annee: number } | null>(() => {
+    if (this.vue() !== 'annee') return null;
+    const ref = this._refCle();
+    const scenario = this.contexte.scenarioCourant();
+    const anneePrecedente = this.annee() - 1;
+    if (!ref || !scenario || anneePrecedente < scenario.anneeDepart) return null;
+    return { ...ref, annee: anneePrecedente };
+  });
+
+  private readonly _projectionAnneePrecedente = creerChargementReactif(this._projectionAnneePrecedenteCle, ({ foyerId, scenarioId, annee }) =>
+    this.projSvc.annuelle(foyerId, scenarioId, annee),
+  );
+
+  /** Agrégats des 12 mois de l'année précédente, scopés au sujet courant — utilisé
+   *  uniquement pour calculer la différence de trésorerie cumulée avec l'an passé. */
+  private readonly moisAgregatsAnneePrecedente = computed<AggregatDto[]>(() => {
+    const p = this._projectionAnneePrecedente.donnees();
+    if (!p) return [];
+    const s = this.sujet();
+    return s.mode === 'membre' ? (p.moisParMembre[s.membreId] ?? []) : p.mois.map((m) => m.agregat);
+  });
+
   readonly chargement = computed(() =>
     this._refData.chargement()
     || (this.vue() === 'annee'
@@ -696,18 +721,31 @@ export class DashboardComponent {
     const tauxReserve = total.revenus > 0 ? (total.reserves / total.revenus) * 100 : 0;
     const tauxSolde = total.revenus > 0 ? (total.soldeDisponible / total.revenus) * 100 : 0;
     const moisSousSeuil = mois.filter((item) => item.soldeDisponible < 500).length;
+    const diffTresorerie = this.differenceTresorerieAnnuelle();
     return [
-      {
-        label: this.t.dashboard.soldeRestant,
-        value: this.formatMontant(total.soldeDisponible),
-        color: total.soldeDisponible >= 0 ? 'var(--p-emerald-600)' : 'var(--p-red-500)',
-      },
-      { label: this.t.dashboard.tauxDeReserve, value: `${this.formatPct(tauxReserve)} %` },
-      { label: this.t.dashboard.tauxDeSolde, value: `${this.formatPct(tauxSolde)} %` },
       {
         label: this.t.dashboard.moisSousSeuilRisque,
         value: String(moisSousSeuil),
-        color: moisSousSeuil > 0 ? 'var(--p-amber-500)' : undefined,
+        color: moisSousSeuil > 0 ? 'var(--p-red-500)' : 'var(--p-emerald-500)',
+      },
+      {
+        label: this.t.dashboard.tauxDeReserve,
+        value: `${this.formatPct(tauxReserve)} %`,
+        color: tauxReserve >= 0 ? 'var(--p-emerald-500)' : 'var(--p-red-500)',
+      },
+      {
+        label: this.t.dashboard.tauxDeSolde,
+        value: `${this.formatPct(tauxSolde)} %`,
+        color: tauxSolde >= 0 ? 'var(--p-emerald-500)' : 'var(--p-red-500)',
+      },
+      {
+        label: this.t.dashboard.differenceTresorerieAnPasse,
+        value: diffTresorerie !== null
+          ? `${diffTresorerie >= 0 ? '+' : ''}${this.formatMontant(diffTresorerie)}`
+          : '-',
+        color: diffTresorerie === null
+          ? undefined
+          : diffTresorerie >= 0 ? 'var(--p-emerald-500)' : 'var(--p-red-500)',
       },
     ];
   });
@@ -774,10 +812,26 @@ export class DashboardComponent {
     const marge = this.margeVariableMois();
     const reserves = this.agregatMoisCourant().reserves;
     return [
-      { label: this.t.dashboard.chargesSures, value: this.formatMontant(this.chargesSuresMois()) },
-      { label: this.t.dashboard.margeVariable, value: `± ${this.formatMontant(marge)}` },
-      { label: this.t.dashboard.reserves, value: this.formatMontant(reserves) },
-      { label: this.t.dashboard.fourchetteDuMois, value: `${this.formatMontant(rav - marge)} - ${this.formatMontant(rav + marge)}` },
+      {
+        label: this.t.dashboard.chargesSures,
+        value: this.formatMontant(this.chargesSuresMois()),
+        color: 'var(--p-red-400)',
+      },
+      {
+        label: this.t.dashboard.margeVariable,
+        value: `± ${this.formatMontant(marge)}`,
+        color: 'var(--p-amber-400)',
+      },
+      {
+        label: this.t.dashboard.reserves,
+        value: this.formatMontant(reserves),
+        color: 'var(--p-blue-400)',
+      },
+      {
+        label: this.t.dashboard.fourchetteDuMois,
+        value: `${this.formatMontant(rav - marge)} - ${this.formatMontant(rav + marge)}`,
+        color: 'var(--p-emerald-500)',
+      },
     ];
   });
 
@@ -793,9 +847,13 @@ export class DashboardComponent {
     return { value: this.t.dashboard.statutEquilibre, severity: 'success' };
   });
 
-  readonly tresorerieCumuleeValeurs = computed(() => {
+  readonly tresorerieCumuleeValeurs = computed(() => this.calculerTresorerieCumulee(this.moisAgregatsCourant()));
+
+  /** Cumule la trésorerie mois par mois à partir de la trésorerie initiale du scénario
+   *  (prorata en mode membre), pour une série d'agrégats mensuels donnée. Factorisé pour
+   *  être réutilisé sur l'année courante et l'année précédente (comparaison N vs N-1). */
+  private calculerTresorerieCumulee(moisAgregats: AggregatDto[]): number[] {
     const scenario = this.contexte.scenarioCourant();
-    const moisAgregats = this.moisAgregatsCourant();
     if (!scenario || !moisAgregats.length) return [];
     const s = this.sujet();
     // Approximation en mode membre : le backend n'a pas de notion de trésorerie initiale
@@ -809,7 +867,7 @@ export class DashboardComponent {
       cumul += agregat.soldeDisponible;
       return cumul;
     });
-  });
+  }
 
   readonly tresorerieCumuleeData = computed(() => {
     const valeurs = this.tresorerieCumuleeValeurs();
@@ -836,6 +894,23 @@ export class DashboardComponent {
     const valeurs = this.tresorerieCumuleeValeurs();
     return valeurs.length ? valeurs[valeurs.length - 1] : this.contexte.scenarioCourant()?.tresorerieInitiale ?? 0;
   }
+
+  /** Trésorerie cumulée en fin d'année précédente (N-1), ou `null` si non disponible
+   *  (première année du scénario, ou données pas encore chargées). */
+  readonly tresorerieFinAnneePrecedente = computed<number | null>(() => {
+    if (!this._projectionAnneePrecedenteCle()) return null;
+    const valeurs = this.calculerTresorerieCumulee(this.moisAgregatsAnneePrecedente());
+    return valeurs.length ? valeurs[valeurs.length - 1] : null;
+  });
+
+  /** Différence entre la trésorerie cumulée en fin d'année courante et celle de l'an
+   *  passé — `null` si l'année précédente n'est pas disponible (première année du
+   *  scénario, ou en cours de chargement). */
+  readonly differenceTresorerieAnnuelle = computed<number | null>(() => {
+    const finPrecedente = this.tresorerieFinAnneePrecedente();
+    if (finPrecedente === null) return null;
+    return this.tresorerieCumuleeFin() - finPrecedente;
+  });
 
   private statutObjectif(objectif: ObjectifDto): StatutObjectif {
     if (objectif.progression >= 1) return 'ATTEINT';

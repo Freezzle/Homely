@@ -122,11 +122,11 @@ export interface PageNavSelection {
     }
 
     .pn-s-pos {
-      color: var(--p-emerald-600);
+      color: var(--p-emerald-500);
     }
 
     .pn-s-neg {
-      color: var(--p-red-600);
+      color: var(--p-red-500);
     }
 
     .pn-chip-bar {
