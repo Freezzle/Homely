@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, effect, untracked } from '@angular/core';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { filter, Subscription } from 'rxjs';
@@ -8,6 +8,7 @@ import { SidebarMenuComponent } from './sidebar-menu/sidebar-menu.component';
 import { ContexteService } from '../core/services/contexte.service';
 import { FoyerService, MembreService } from '../core/services/referentiel.service';
 import { ScenarioService } from '../core/services/scenario-poste.service';
+import { creerChargementReactif } from '../core/utils/reference-data.util';
 import {ViewportService} from '../core/services/viewport.service';
 
 @Component({
@@ -25,6 +26,48 @@ export class ShellComponent implements OnInit, OnDestroy {
   private router       = inject(Router);
   private sub?: Subscription;
 
+  /** Id du foyer extrait de l'URL courante (`/f/<uuid>/...`), `null` sinon. Clé unique
+   *  partagée par les 3 chargements ci-dessous : dès qu'elle change, `rxResource`
+   *  annule automatiquement les requêtes en vol pour l'ancien foyer — plus aucun
+   *  risque qu'une réponse tardive (foyer précédent) écrase les données du foyer
+   *  actuellement affiché (race auparavant possible avec des `.subscribe()` bruts). */
+  private readonly _foyerIdDepuisUrl = signal<string | null>(null);
+
+  private readonly _foyerChargement = creerChargementReactif(this._foyerIdDepuisUrl, (foyerId) =>
+    this.foyerSvc.obtenir(foyerId),
+  );
+  private readonly _membresChargement = creerChargementReactif(this._foyerIdDepuisUrl, (foyerId) =>
+    this.membreSvc.lister(foyerId),
+  );
+  private readonly _scenariosChargement = creerChargementReactif(this._foyerIdDepuisUrl, (foyerId) =>
+    this.scenarioSvc.lister(foyerId),
+  );
+
+  /** Applique dans le contexte global les résultats disponibles, dans l'ordre
+   *  foyer → membres → scénario. Idempotent et sans dépendance d'ordre d'arrivée
+   *  réseau : se ré-exécute à chaque résolution partielle, et `contexte.setFoyer()`
+   *  ne vide membres/scénario que si l'id de foyer a réellement changé. */
+  private readonly _syncContexteFoyer = effect(() => {
+    const foyerId = this._foyerIdDepuisUrl();
+    if (!foyerId) {
+      untracked(() => this.contexte.setFoyer(null));
+      return;
+    }
+    const foyer = this._foyerChargement.donnees();
+    const membres = this._membresChargement.donnees();
+    const scenarios = this._scenariosChargement.donnees();
+    untracked(() => {
+      // Garde-fou : ignore une valeur transitoirement obsolète (Resource API pouvant
+      // garder la dernière valeur résolue visible pendant le chargement de la nouvelle clé).
+      if (foyer?.id === foyerId) this.contexte.setFoyer(foyer);
+      if (membres) this.contexte.setMembres(membres);
+      if (scenarios) {
+        const reference = scenarios.find((s) => s.estReference) ?? scenarios[0];
+        if (reference) this.contexte.setScenario(reference);
+      }
+    });
+  });
+
   ngOnInit(): void {
     // ① Charger IMMÉDIATEMENT le foyer depuis l'URL courante
     //    (évite la race condition du premier rendu)
@@ -39,42 +82,13 @@ export class ShellComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void { this.sub?.unsubscribe(); }
 
   /**
-   * Extrait le foyerId de l'URL courante (/f/<uuid>/...)
-   * et charge le foyer dans le contexte si nécessaire.
+   * Extrait le foyerId de l'URL courante (/f/<uuid>/...) et met à jour la clé de
+   * chargement partagée. Le chargement effectif (foyer, membres, scénario) est
+   * entièrement délégué aux `creerChargementReactif` + l'effect ci-dessus.
    */
   private syncFoyerDepuisUrl(): void {
     const match   = this.router.url.match(/\/f\/([\w-]{36})/);
     const foyerId = match?.[1] ?? null;
-
-    if (foyerId) {
-      if (foyerId !== this.contexte.foyerId()) {
-        // Nouveau foyer dans l'URL : charger le foyer puis son contexte (membres,
-        // scénario). Ne PAS déclencher chargerContexteFoyer() en parallèle ici :
-        // setFoyer() réinitialise membres/scénario au premier chargement d'un foyer,
-        // ce qui écraserait une réponse de chargerContexteFoyer() arrivée entre-temps
-        // (race condition observée après login : menu sans sous-menu membres).
-        this.foyerSvc.obtenir(foyerId).subscribe(f => {
-          this.contexte.setFoyer(f);
-          this.chargerContexteFoyer(foyerId);
-        });
-      } else if (!this.contexte.scenarioId()) {
-        // Même foyer déjà en contexte mais scénario/membres pas encore chargés
-        // (ex. réinitialisation externe) : recharger sans re-fetcher le foyer.
-        this.chargerContexteFoyer(foyerId);
-      }
-    } else if (this.contexte.foyerId()) {
-      // Pas de foyerId dans l'URL : le contexte foyer (et tout ce qui en
-      // dépend : scénario, membres) doit rester null. Pas d'auto-sélection :
-      // la navigation vers un foyer est toujours explicite.
-      this.contexte.setFoyer(null);
-    }
-  }
-
-  private chargerContexteFoyer(foyerId: string): void {
-    this.membreSvc.lister(foyerId).subscribe(m => this.contexte.setMembres(m));
-    this.scenarioSvc.lister(foyerId).subscribe(scenarios => {
-      const ref = scenarios.find(s => s.estReference) ?? scenarios[0];
-      if (ref) this.contexte.setScenario(ref);
-    });
+    this._foyerIdDepuisUrl.set(foyerId);
   }
 }

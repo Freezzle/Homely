@@ -103,14 +103,16 @@ export class FoyerScenarioSwitcherComponent implements OnInit {
   }
 
   onFoyerChange(foyer: FoyerDto | null): void {
+    // Ne pas appeler contexte.setFoyer() ici : ShellComponent est l'unique responsable
+    // du chargement/réinitialisation du contexte foyer, déclenché par la navigation
+    // (voir syncFoyerDepuisUrl), sans risque de course avec une réponse réseau tardive.
     if (!foyer) {
-      this.contexte.setFoyer(null);
       this.router.navigate(['/foyers']);
       this.visible.set(false);
       return;
     }
-    this.contexte.setFoyer(foyer);
-    // chargerScenarios est déclenché automatiquement par l'effect _syncFoyer
+    // chargerScenarios (liste locale du switcher) est déclenché automatiquement par
+    // l'effect _syncFoyer dès que contexte.foyerCourant() sera mis à jour par ShellComponent.
     this.router.navigate(['/f', foyer.id, 'dashboard']);
     this.visible.set(false);
   }

@@ -33,7 +33,9 @@ export class FoyerListeComponent implements OnInit {
   }
 
   selectionner(foyer: FoyerDto): void {
-    this.contexte.setFoyer(foyer);
+    // Ne pas appeler contexte.setFoyer() ici : ShellComponent est l'unique responsable
+    // du chargement du contexte foyer (foyer + membres + scénario), déclenché par la
+    // navigation, sans risque de course avec une réponse réseau tardive.
     this.router.navigate(['/f', foyer.id, 'dashboard']);
   }
 
