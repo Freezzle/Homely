@@ -79,7 +79,6 @@ const ZERO_AGREGAT: { revenus: number; charges: number; reserves: number; soldeD
     EventGridComponent,
   ],
   templateUrl: './dashboard.component.html',
-  styleUrl: './dashboard.component.scss',
 })
 export class DashboardComponent {
   private readonly i18n = inject(I18nService);
@@ -141,8 +140,8 @@ export class DashboardComponent {
   readonly pageNavSelectionForBinding = signal<PageNavSelection>({ mode: 'annee' });
 
   readonly vueDecompositionOptions = [
-    { label: this.t.projection.vueCategorie, value: 'CATEGORIE' },
     { label: this.t.projection.vueTypePoste, value: 'TYPE_POSTE' },
+    { label: this.t.projection.vueCategorie, value: 'CATEGORIE' },
     { label: this.t.projection.vueCompte, value: 'COMPTE' },
   ];
 

@@ -48,14 +48,18 @@ export class ShellComponent implements OnInit, OnDestroy {
 
     if (foyerId) {
       if (foyerId !== this.contexte.foyerId()) {
-        // Nouveau foyer dans l'URL : charger depuis l'API
+        // Nouveau foyer dans l'URL : charger le foyer puis son contexte (membres,
+        // scénario). Ne PAS déclencher chargerContexteFoyer() en parallèle ici :
+        // setFoyer() réinitialise membres/scénario au premier chargement d'un foyer,
+        // ce qui écraserait une réponse de chargerContexteFoyer() arrivée entre-temps
+        // (race condition observée après login : menu sans sous-menu membres).
         this.foyerSvc.obtenir(foyerId).subscribe(f => {
           this.contexte.setFoyer(f);
           this.chargerContexteFoyer(foyerId);
         });
-      }
-      // Scénario : charger si absent
-      if (!this.contexte.scenarioId()) {
+      } else if (!this.contexte.scenarioId()) {
+        // Même foyer déjà en contexte mais scénario/membres pas encore chargés
+        // (ex. réinitialisation externe) : recharger sans re-fetcher le foyer.
         this.chargerContexteFoyer(foyerId);
       }
     } else if (this.contexte.foyerId()) {

@@ -1,4 +1,4 @@
-<div class="dashboard-layout">
+<div class="flex flex-col lg:grid lg:grid-cols-[1fr_208px] lg:h-full">
   @if (viewport.estCompact()) {
     <app-page-nav
       [annee]="annee()"
@@ -6,13 +6,13 @@
       [(selection)]="pageNavSelectionForBinding" />
   }
 
-  <main class="dashboard-content">
-    <div class="page-head">
+  <main class="flex flex-col gap-4 min-w-0 lg:overflow-y-auto lg:pr-2">
+    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
       <div class="min-w-0">
-        <h1>{{ titrePage() }}</h1>
-        <p class="page-subtitle">{{ periodeLabel() }}</p>
+        <h1 class="m-0 text-xl sm:text-2xl font-extrabold leading-tight">{{ titrePage() }}</h1>
+        <p class="m-0 mt-1 text-sm text-surface-500">{{ periodeLabel() }}</p>
       </div>
-      <div class="ctx-tools">
+      <div class="flex gap-1 shrink-0 self-end sm:self-auto">
         <p-button
           icon="pi pi-chevron-left"
           [text]="true"
@@ -51,12 +51,12 @@
       }
     } @else if (vue() === 'annee' && projectionAnnuelle() && ventilationAnnuelle()) {
       <p-card>
-        <div class="hero">
+        <div class="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
           <app-metric-ring
             [segments]="ringSegmentsAnnee()"
             [centerValue]="ringCenterAnnee()"
             [centerLabel]="t.dashboard.moisPosVsNeg" />
-          <div class="hero-txt">
+          <div class="flex-1 min-w-0 w-full sm:w-auto">
             <app-stat-grid [statusTag]="statusAnnee()" [stats]="statsAnnee()" />
           </div>
         </div>
@@ -66,8 +66,8 @@
 
       <app-tab-group [value]="ongletAnnee()" (valueChange)="onAnneeTabChange($event)">
         <app-tab-panel value="recap" [label]="t.dashboard.recapitulatifs">
-          <div class="section-stack">
-            <div class="toggle-wrap">
+          <div class="flex flex-col gap-4">
+            <div class="flex flex-wrap gap-3 justify-center">
               <p-selectbutton
                 [options]="vueDecompositionOptions"
                 [ngModel]="vueDecomposition()"
@@ -91,16 +91,16 @@
         </app-tab-panel>
 
         <app-tab-panel value="flux" [label]="t.dashboard.fluxMensuel">
-          <div class="chart-shell">
+          <div class="relative flex h-56 sm:h-64 md:h-[280px] w-full overflow-hidden">
             <p-chart type="bar" [data]="$any(mixedChartData())" [options]="$any(mixedChartOptions)" class="w-full block" />
           </div>
-          <p class="footnote">{{ t.dashboard.cliquezBarre }}</p>
+          <p class="m-0 text-xs text-surface-500">{{ t.dashboard.cliquezBarre }}</p>
         </app-tab-panel>
 
         <app-tab-panel value="tresorerie" [label]="t.dashboard.tresorerieCumulee">
           @defer (on viewport) {
-            <p class="footnote">{{ t.dashboard.tresoCumuleeDescription }}</p>
-            <div class="chart-shell">
+            <p class="m-0 text-xs text-surface-500">{{ t.dashboard.tresoCumuleeDescription }}</p>
+            <div class="relative flex h-56 sm:h-64 md:h-[280px] w-full overflow-hidden">
               <p-chart type="line" [data]="$any(tresorerieCumuleeData())" [options]="$any(tresorerieCumuleeOptions)" class="w-full block" />
             </div>
           } @placeholder {
@@ -115,13 +115,13 @@
               [devise]="deviseBase()"
               (select)="ouvrirMoisDepuisTimeline($event)" />
           } @else {
-            <p class="empty-copy">{{ t.dashboard.aucunEvenement }}</p>
+            <p class="m-0 text-surface-500">{{ t.dashboard.aucunEvenement }}</p>
           }
         </app-tab-panel>
 
         <app-tab-panel value="objectifs" [label]="t.dashboard.objectifs">
           @if (objectifsRendus().length) {
-            <div class="objective-list">
+            <div class="flex flex-col gap-3">
               @for (objectif of objectifsRendus(); track objectif.id) {
                 <app-objective-progress
                   emoji="🎯"
@@ -133,18 +133,18 @@
               }
             </div>
           } @else {
-            <p class="empty-copy">{{ t.commun.aucunResultat }}</p>
+            <p class="m-0 text-surface-500">{{ t.commun.aucunResultat }}</p>
           }
         </app-tab-panel>
       </app-tab-group>
     } @else if (vue() === 'mois' && ventilations()) {
       <p-card>
-        <div class="hero">
+        <div class="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
           <app-metric-ring
             [segments]="ringSegmentsMois()"
             [centerValue]="ringCenterMois()"
             [centerLabel]="t.dashboard.resteAVivre" />
-          <div class="hero-txt">
+          <div class="flex-1 min-w-0 w-full sm:w-auto">
             <app-stat-grid [statusTag]="statusMois()" [stats]="statsMois()" />
           </div>
         </div>
@@ -154,8 +154,8 @@
 
       <app-tab-group [value]="ongletMois()" (valueChange)="onMoisTabChange($event)">
         <app-tab-panel value="recap" [label]="t.dashboard.recapitulatif">
-          <div class="section-stack">
-            <div class="toggle-wrap">
+          <div class="flex flex-col gap-4">
+            <div class="flex flex-wrap gap-3 justify-center">
               <p-selectbutton
                 [options]="vueDecompositionOptions"
                 [ngModel]="vueDecomposition()"
@@ -181,7 +181,7 @@
 
         <app-tab-panel value="echeances" [label]="t.dashboard.echeances">
           @if (echeancesMois().length) {
-            <div class="objective-list">
+            <div class="flex flex-col gap-3">
               @for (objectif of echeancesMois(); track objectif.id) {
                 <app-objective-progress
                   emoji="🎯"
@@ -193,7 +193,7 @@
               }
             </div>
           } @else {
-            <p class="empty-copy">{{ t.dashboard.aucuneEcheance }}</p>
+            <p class="m-0 text-surface-500">{{ t.dashboard.aucuneEcheance }}</p>
           }
         </app-tab-panel>
 
@@ -204,13 +204,13 @@
               [devise]="deviseBase()"
               (select)="ouvrirMoisDepuisTimeline($event)" />
           } @else {
-            <p class="empty-copy">{{ t.dashboard.aucunEvenement }}</p>
+            <p class="m-0 text-surface-500">{{ t.dashboard.aucunEvenement }}</p>
           }
         </app-tab-panel>
 
         <app-tab-panel value="objectifs" [label]="t.dashboard.objectifs">
           @if (objectifsRendus().length) {
-            <div class="objective-list">
+            <div class="flex flex-col gap-3">
               @for (objectif of objectifsRendus(); track objectif.id) {
                 <app-objective-progress
                   emoji="🎯"
@@ -222,7 +222,7 @@
               }
             </div>
           } @else {
-            <p class="empty-copy">{{ t.commun.aucunResultat }}</p>
+            <p class="m-0 text-surface-500">{{ t.commun.aucunResultat }}</p>
           }
         </app-tab-panel>
       </app-tab-group>
