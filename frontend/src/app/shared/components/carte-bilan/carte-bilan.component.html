@@ -1,16 +1,6 @@
-<p-card [style.border-top]="'4px solid ' + couleurEffective()" class="overflow-hidden">
+<p-card class="overflow-hidden">
     <ng-template #title>
-        <div class="flex justify-between">
-            <div class="flex  items-center gap-3">
-                @if (variante() === 'foyer') {
-                    <p-avatar shape="circle"
-                              class="secondary text-secondary-contrast font-semibold shrink-0"/>
-                } @else {
-                    <p-avatar shape="circle"
-                              [style.background-color]="couleur()" class="text-white font-semibold shrink-0"/>
-                }
-                <span class="font-bold text-base">{{ nom() }}</span>
-            </div>
+        <div class="flex justify-end">
             <div class="flex items-baseline justify-end gap-1.5 mt-1">
                 <span class="text-sm text-surface-400">{{ devise() }}</span>
                 <span class="text-2xl font-extrabold tabular-nums"

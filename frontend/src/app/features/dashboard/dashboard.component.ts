@@ -578,7 +578,28 @@ export class DashboardComponent {
   readonly mixedChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
+    // 'index' + intersect:false : le survol de n'importe quel point du mois (barre ou
+    // ligne) affiche les 3 séries de ce mois ensemble, sans devoir viser précisément
+    // chaque élément.
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        mode: 'index',
+        intersect: false,
+        callbacks: {
+          label: (ctx: { dataset: { label?: string }; parsed: { y: number } }) =>
+            `${ctx.dataset.label}: ${this.formatMontant(ctx.parsed.y)}`,
+          // Ligne récapitulative en bas du tooltip : solde restant du mois survolé
+          // (revenus - charges - réserves), pas affiché comme série séparée du graphique.
+          footer: (items: { dataIndex: number }[]) => {
+            const index = items[0]?.dataIndex;
+            const solde = index !== undefined ? this.moisAgregatsCourant()[index]?.soldeDisponible : undefined;
+            return solde !== undefined ? `${this.t.dashboard.soldeRestant}: ${this.formatMontant(solde)}` : '';
+          },
+        },
+      },
+    },
     scales: {
       x: { grid: { display: false } },
       y: {
@@ -616,29 +637,32 @@ export class DashboardComponent {
       labels: this.t.mois,
       datasets: [
         {
+          type: 'line',
+          label: this.t.projection.revenus,
+          // Aligné sur --p-emerald-500 (couleur du solde disponible dans l'anneau mensuel).
+          borderColor: '#3BBFA1',
+          backgroundColor: '#3BBFA1',
+          data: mois.map((m) => m.revenus),
+          tension: 0.3,
+          fill: false,
+          pointRadius: 4,
+          borderWidth: 1,
+        },
+        {
           type: 'bar',
           label: this.t.projection.charges,
-          backgroundColor: 'rgba(239,68,68,0.75)',
+          // Aligné sur --p-red-400 (couleur des charges fixes dans l'anneau mensuel).
+          backgroundColor: '#EF5350',
           data: mois.map((m) => m.charges),
           stack: 'depenses',
         },
         {
           type: 'bar',
           label: this.t.projection.reserves,
-          backgroundColor: 'rgba(59,130,246,0.75)',
+          // Aligné sur --p-blue-400 (couleur des réserves dans l'anneau mensuel).
+          backgroundColor: '#42A5F5',
           data: mois.map((m) => m.reserves),
           stack: 'depenses',
-        },
-        {
-          type: 'line',
-          label: this.t.projection.revenus,
-          borderColor: '#22c55e',
-          backgroundColor: 'rgba(34,197,94,0.08)',
-          data: mois.map((m) => m.revenus),
-          tension: 0.3,
-          fill: false,
-          pointRadius: 4,
-          borderWidth: 2,
         },
       ],
     };
@@ -878,13 +902,13 @@ export class DashboardComponent {
         {
           type: 'line',
           label: this.t.dashboard.tresorerieCumulee,
-          borderColor: '#6366f1',
-          backgroundColor: 'rgba(99,102,241,0.12)',
+          borderColor: '#3BBFA1',
+          backgroundColor: 'rgb(59 191 161 / 0.29)',
           data: valeurs,
           tension: 0.25,
           fill: true,
           pointRadius: 3,
-          borderWidth: 2,
+          borderWidth: 1,
         },
       ],
     };
