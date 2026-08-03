@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import {
-  ProjectionAnnuelleDto, VentilationsDto, EvenementDto,
+  ProjectionAnnuelleDto, VentilationsDto, VentilationAnnuelleDto, EvenementDto,
 } from '../models/api.models';
 
 /** T9.3 — Service HTTP projection scopé par foyer/scénario. */
@@ -22,6 +22,15 @@ export class ProjectionService {
   mensuelle(foyerId: string, scenarioId: string, annee: number, mois: number) {
     return this.http.get<VentilationsDto>(
       `${this.base(foyerId, scenarioId)}/mensuelle`, { params: { annee, mois } }
+    );
+  }
+
+  /** Décomposition annuelle agrégée (somme des 12 mois) en une seule requête serveur —
+   *  remplace un `forkJoin` de 12 appels {@link mensuelle}, utilisé pour la vue annuelle
+   *  du dashboard (onglets par catégorie / par compte / cascade). */
+  ventilationAnnuelle(foyerId: string, scenarioId: string, annee: number) {
+    return this.http.get<VentilationAnnuelleDto>(
+      `${this.base(foyerId, scenarioId)}/ventilation-annuelle`, { params: { annee } }
     );
   }
 

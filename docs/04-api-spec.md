@@ -410,6 +410,29 @@ Renvoie la trésorerie cumulée sur toutes les années de l'horizon :
 `parCompteMembre` permet d'afficher les charges par compte et par membre (graphique
 horizontal dans le dashboard mensuel).
 
+### 9.3-a Décomposition annuelle agrégée (optimisation dashboard)
+`GET …/scenarios/{scenarioId}/projection/ventilation-annuelle?annee=2026` : même forme
+que la réponse de `/mensuelle` (sans le champ `mois`), mais représentant la **somme des
+12 mois de l'année**, calculée en une seule requête serveur (le backend boucle en interne
+sur les 12 mois, sans 12 aller-retours HTTP). Utilisé par la vue annuelle du dashboard
+pour les décompositions par catégorie / par compte / cascade — le menu de navigation par
+mois, lui, n'a besoin que du solde mensuel déjà présent dans `/projection/annuelle`
+(léger, sans décomposition) et ne doit donc **pas** déclencher cet appel ni les 12 appels
+`/mensuelle`. La requête `/mensuelle` complète (avec décomposition) n'est chargée que
+lorsqu'on navigue effectivement sur le dashboard d'un mois précis.
+```json
+{
+  "annee": 2026,
+  "agregat": {"revenus": 0, "charges": 0, "reserves": 0, "soldeDisponible": 0},
+  "parMembre": {
+    "{membreId}": {"revenus": 0, "charges": 0, "reserves": 0, "soldeDisponible": 0}
+  },
+  "parCategorie": {"{categorieId}": 14814.72},
+  "parCategorieMembre": {"{categorieId}": {"{membreId}": 6814.68}},
+  "parCompteMembre": {"{compteId}": {"{membreId}": 1481.40}}
+}
+```
+
 ### 9.3-bis Événements budgétaires (frise chronologique)
 
 `GET …/scenarios/{scenarioId}/projection/evenements?annee=2026&membreId={membreId?}`

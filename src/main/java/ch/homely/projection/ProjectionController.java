@@ -59,6 +59,16 @@ public class ProjectionController {
         return projectionService.ventilations(foyerId, scenarioId, annee, mois);
     }
 
+    /** Optimisation T8.3 — Décomposition annuelle agrégée (somme des 12 mois), calculée en
+     *  une seule requête serveur pour éviter au frontend de faire 12 appels {@code /mensuelle}. */
+    @GetMapping("/ventilation-annuelle")
+    public VentilationAnnuelleDto ventilationAnnuelle(@PathVariable UUID foyerId,
+                                                        @PathVariable UUID scenarioId,
+                                                        @RequestParam int annee) {
+        multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
+        return projectionService.ventilationsAnnuelle(foyerId, scenarioId, annee);
+    }
+
     /** Événements budgétaires ("ce qui change") pour une année : début, fin, révision, occurrence.
      *  Si {@code membreId} est fourni, ne renvoie que les événements où sa quote-part effective
      *  est &gt; 0 ce mois-là, avec les montants déjà proratisés (voir {@link EvenementDto#quotePart()}). */

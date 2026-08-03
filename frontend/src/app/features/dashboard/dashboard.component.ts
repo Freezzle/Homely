@@ -27,8 +27,6 @@ import {
   TypeCategorie,
   TypePoste,
   VentilationAggregatDto,
-  VentilationSplitDto,
-  VentilationsDto,
 } from '../../core/models/api.models';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { localeDeLangue } from '../../core/i18n/locale.util';
@@ -232,14 +230,13 @@ export class DashboardComponent {
     this.vue() === 'annee' ? this._projectionAnnuelleCle() : null
   );
 
-  private readonly _ventilationAnnuelle = creerChargementReactif(this._ventilationAnnuelleCle, ({ foyerId, scenarioId, annee }) =>
-    forkJoin(Array.from({ length: 12 }, (_, i) => this.projSvc.mensuelle(foyerId, scenarioId, annee, i + 1))),
+  private readonly _ventilationAnnuelleChargement = creerChargementReactif(this._ventilationAnnuelleCle, ({ foyerId, scenarioId, annee }) =>
+    this.projSvc.ventilationAnnuelle(foyerId, scenarioId, annee),
   );
 
-  readonly ventilationAnnuelle = computed(() => {
-    const donnees = this._ventilationAnnuelle.donnees();
-    return donnees ? this.sommerVentilations(donnees) : null;
-  });
+  /** Décomposition annuelle agrégée, déjà sommée côté serveur (une seule requête HTTP
+   *  au lieu d'un forkJoin de 12 appels `mensuelle`). */
+  readonly ventilationAnnuelle = computed<VentilationLike | null>(() => this._ventilationAnnuelleChargement.donnees());
 
   /** Clé de chargement de la projection annuelle N-1, utilisée pour comparer la
    *  trésorerie de fin d'année avec l'an passé. `null` si hors vue annuelle ou si
@@ -269,7 +266,7 @@ export class DashboardComponent {
   readonly chargement = computed(() =>
     this._refData.chargement()
     || (this.vue() === 'annee'
-      ? this._projectionAnnuelle.chargement() || this._ventilationAnnuelle.chargement()
+      ? this._projectionAnnuelle.chargement() || this._ventilationAnnuelleChargement.chargement()
       : this._ventilationsMois.chargement())
   );
 
@@ -1406,61 +1403,4 @@ export class DashboardComponent {
       solde: agregat.soldeDisponible,
     }));
   });
-
-  private sommerVentilations(mois: VentilationsDto[]): VentilationLike {
-    const agregat: VentilationAggregatDto = { revenus: 0, charges: 0, reserves: 0, soldeDisponible: 0 };
-    const parMembre: Record<string, VentilationAggregatDto> = {};
-    const parCategorie: Record<string, number> = {};
-    const parCategorieMembre: Record<string, Record<string, number>> = {};
-    const parCompteMembre: Record<string, Record<string, number>> = {};
-    const parMembreSplit: Record<string, VentilationSplitDto> = {};
-
-    for (const ventilation of mois) {
-      agregat.revenus += ventilation.agregat.revenus;
-      agregat.charges += ventilation.agregat.charges;
-      agregat.reserves += ventilation.agregat.reserves;
-      agregat.soldeDisponible += ventilation.agregat.soldeDisponible;
-
-      for (const [membreId, data] of Object.entries(ventilation.parMembre ?? {})) {
-        const acc = parMembre[membreId] ??= { revenus: 0, charges: 0, reserves: 0, soldeDisponible: 0 };
-        acc.revenus += data.revenus;
-        acc.charges += data.charges;
-        acc.reserves += data.reserves;
-        acc.soldeDisponible += data.soldeDisponible;
-      }
-      for (const [categorieId, montant] of Object.entries(ventilation.parCategorie ?? {})) {
-        parCategorie[categorieId] = (parCategorie[categorieId] ?? 0) + montant;
-      }
-      for (const [categorieId, memMap] of Object.entries(ventilation.parCategorieMembre ?? {})) {
-        const acc = parCategorieMembre[categorieId] ??= {};
-        for (const [membreId, montant] of Object.entries(memMap)) {
-          acc[membreId] = (acc[membreId] ?? 0) + montant;
-        }
-      }
-      for (const [compteId, memMap] of Object.entries(ventilation.parCompteMembre ?? {})) {
-        const acc = parCompteMembre[compteId] ??= {};
-        for (const [membreId, montant] of Object.entries(memMap)) {
-          acc[membreId] = (acc[membreId] ?? 0) + montant;
-        }
-      }
-      for (const [membreId, split] of Object.entries(ventilation.parMembreSplit ?? {})) {
-        const acc = parMembreSplit[membreId] ??= {
-          revenusPerso: 0,
-          revenusPartage: 0,
-          chargesPerso: 0,
-          chargesPartage: 0,
-          reservesPerso: 0,
-          reservesPartage: 0,
-        };
-        acc.revenusPerso += split.revenusPerso;
-        acc.revenusPartage += split.revenusPartage;
-        acc.chargesPerso += split.chargesPerso;
-        acc.chargesPartage += split.chargesPartage;
-        acc.reservesPerso += split.reservesPerso;
-        acc.reservesPartage += split.reservesPartage;
-      }
-    }
-
-    return { agregat, parMembre, parCategorie, parCategorieMembre, parCompteMembre, parMembreSplit };
-  }
 }

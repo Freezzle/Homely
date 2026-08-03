@@ -191,4 +191,15 @@ export interface VentilationsDto {
   parCompteMembre: Record<string, Record<string, number>>;
   parMembreSplit: Record<string, VentilationSplitDto>;
 }
+/** Décomposition annuelle agrégée (somme des 12 mois), calculée en une seule requête
+ *  serveur — même forme que {@link VentilationsDto} sans le champ `mois`. */
+export interface VentilationAnnuelleDto {
+  annee: number;
+  agregat: VentilationAggregatDto;
+  parMembre: Record<string, VentilationAggregatDto>;
+  parCategorie: Record<string, number>;
+  parCategorieMembre: Record<string, Record<string, number>>;
+  parCompteMembre: Record<string, Record<string, number>>;
+  parMembreSplit: Record<string, VentilationSplitDto>;
+}
 export interface SerieAnnuelleDto { annee: number; soldeParScenario: Record<string, number>; tresorerieParScenario: Record<string, number>; }

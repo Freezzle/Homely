@@ -128,6 +128,89 @@ public class ProjectionService {
         return new VentilationsDto(annee, mois, agregat, parMembre, parCat, parCatMembre, parCM, parMembreSplit);
     }
 
+    /**
+     * T8.3 (optimisation) — Décomposition annuelle agrégée : somme des 12 mois calculée en
+     * une seule requête/transaction serveur (au lieu de 12 appels {@code /mensuelle} côté
+     * frontend), en réutilisant la même logique moteur mois par mois.
+     */
+    @Cacheable(value = "projections",
+               key = "#scenarioId + '-vent-annuelle-' + #annee + '-' + T(ch.homely.projection.ProjectionService).versionKey(#foyerId, #scenarioId, @scenarioRepository)")
+    public VentilationAnnuelleDto ventilationsAnnuelle(UUID foyerId, UUID scenarioId, int annee) {
+        ParametresScenario params = chargerParametres(foyerId, scenarioId);
+
+        AggregatMensuel agFoyer = AggregatMensuel.zero();
+        Map<UUID, AggregatMensuel> parMembre = new LinkedHashMap<>();
+        Map<UUID, SplitPersoPartageMensuel> parMembreSplit = new LinkedHashMap<>();
+        for (UUID membreId : params.membres()) {
+            parMembre.put(membreId, AggregatMensuel.zero());
+            parMembreSplit.put(membreId, SplitPersoPartageMensuel.zero());
+        }
+        Map<UUID, Double> parCat = new LinkedHashMap<>();
+        Map<UUID, Map<UUID, Double>> parCatMembre = new LinkedHashMap<>();
+        Map<UUID, Map<UUID, Double>> parCM = new LinkedHashMap<>();
+
+        for (int m = 1; m <= 12; m++) {
+            agFoyer = agFoyer.plus(MoteurCalcul.aggregatFoyerMois(params, annee, m));
+
+            for (UUID membreId : params.membres()) {
+                parMembre.merge(membreId, MoteurCalcul.aggregatMembreMois(params, membreId, annee, m), AggregatMensuel::plus);
+                parMembreSplit.merge(membreId, MoteurCalcul.aggregatMembreMoisSplit(params, membreId, annee, m), this::plusSplit);
+            }
+
+            Ventilations v = MoteurCalcul.ventilations(params, annee, m);
+            v.parCategorie().forEach((catId, montant) -> parCat.merge(catId, montant, Double::sum));
+            v.parCategorieMembre().forEach((catId, memMap) -> {
+                Map<UUID, Double> acc = parCatMembre.computeIfAbsent(catId, k -> new LinkedHashMap<>());
+                memMap.forEach((membreId, montant) -> acc.merge(membreId, montant, Double::sum));
+            });
+            v.parCompteMembre().forEach((compteId, memMap) -> {
+                Map<UUID, Double> acc = parCM.computeIfAbsent(compteId, k -> new LinkedHashMap<>());
+                memMap.forEach((membreId, montant) -> acc.merge(membreId, montant, Double::sum));
+            });
+        }
+
+        Map<UUID, VentilationAnnuelleDto.AggregatDto> parMembreDto = parMembre.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> toVentAnnuelleAggregatDto(e.getValue()),
+                        (a, b) -> a, LinkedHashMap::new));
+        Map<UUID, VentilationAnnuelleDto.SplitDto> parMembreSplitDto = parMembreSplit.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> toVentAnnuelleSplitDto(e.getValue()),
+                        (a, b) -> a, LinkedHashMap::new));
+        Map<UUID, BigDecimal> parCatDto = parCat.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> bd(e.getValue()), (a, b) -> a, LinkedHashMap::new));
+        Map<UUID, Map<UUID, BigDecimal>> parCatMembreDto = parCatMembre.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey,
+                        e -> e.getValue().entrySet().stream()
+                                .collect(Collectors.toMap(Map.Entry::getKey, ie -> bd(ie.getValue()), (a, b) -> a, LinkedHashMap::new)),
+                        (a, b) -> a, LinkedHashMap::new));
+        Map<UUID, Map<UUID, BigDecimal>> parCMDto = parCM.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey,
+                        e -> e.getValue().entrySet().stream()
+                                .collect(Collectors.toMap(Map.Entry::getKey, ie -> bd(ie.getValue()), (a, b) -> a, LinkedHashMap::new)),
+                        (a, b) -> a, LinkedHashMap::new));
+
+        return new VentilationAnnuelleDto(annee, toVentAnnuelleAggregatDto(agFoyer), parMembreDto,
+                parCatDto, parCatMembreDto, parCMDto, parMembreSplitDto);
+    }
+
+    private SplitPersoPartageMensuel plusSplit(SplitPersoPartageMensuel a, SplitPersoPartageMensuel b) {
+        return new SplitPersoPartageMensuel(
+                a.revenusPerso() + b.revenusPerso(), a.revenusPartage() + b.revenusPartage(),
+                a.chargesPerso() + b.chargesPerso(), a.chargesPartage() + b.chargesPartage(),
+                a.reservesPerso() + b.reservesPerso(), a.reservesPartage() + b.reservesPartage());
+    }
+
+    private VentilationAnnuelleDto.AggregatDto toVentAnnuelleAggregatDto(AggregatMensuel ag) {
+        return new VentilationAnnuelleDto.AggregatDto(
+                bd(ag.revenus()), bd(ag.charges()), bd(ag.reserves()), bd(ag.soldeDisponible()));
+    }
+
+    private VentilationAnnuelleDto.SplitDto toVentAnnuelleSplitDto(SplitPersoPartageMensuel split) {
+        return new VentilationAnnuelleDto.SplitDto(
+                bd(split.revenusPerso()), bd(split.revenusPartage()),
+                bd(split.chargesPerso()), bd(split.chargesPartage()),
+                bd(split.reservesPerso()), bd(split.reservesPartage()));
+    }
+
     private VentilationsDto.AggregatDto toVentAggregatDto(AggregatMensuel ag) {
         return new VentilationsDto.AggregatDto(
                 bd(ag.revenus()), bd(ag.charges()), bd(ag.reserves()), bd(ag.soldeDisponible()));
