@@ -377,12 +377,16 @@ export class PosteFormDialogComponent {
       if (i < this.repartitionsArray.length) {
         const ctrl = this.repartitionsArray.at(i);
         ctrl.patchValue({ membreId: m.id, quotePart, compteId });
-        this.definirValiditeCompte(ctrl, true);
+        // Requis seulement si le membre porte effectivement une quote-part : sinon (ex.
+        // typeRepartition CUSTOM éditée avec un foyer élargi depuis, membre non inclus
+        // dans la répartition d'origine) la ligne resterait invalide alors qu'elle n'est
+        // pas envoyée à l'API, bloquant à tort le bouton « Enregistrer » (cf. formulaireValide).
+        this.definirValiditeCompte(ctrl, quotePart > 0);
       } else {
         this.repartitionsArray.push(this.fb.group({
           membreId:  [m.id],
           quotePart: [quotePart],
-          compteId:  [compteId, Validators.required],
+          compteId:  [compteId, quotePart > 0 ? Validators.required : []],
         }));
       }
     });
