@@ -965,6 +965,17 @@ export class DashboardComponent {
       datasets: [
         {
           type: 'line',
+          label: this.t.dashboard.previsuRevenu,
+          borderColor: '#3BBFA1',
+          backgroundColor: '#3BBFA1',
+          data: prevu.map((m) => m.revenus),
+          tension: 0.25,
+          fill: false,
+          pointRadius: 3,
+          borderWidth: 1,
+        },
+        {
+          type: 'line',
           label: this.t.dashboard.previsuMensualise,
           borderColor: '#42A5F5',
           backgroundColor: '#42A5F5',
