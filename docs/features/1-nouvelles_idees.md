@@ -4,3 +4,5 @@ et cela m'indique combien je dois avoir sur ce compte, mais il manque une notion
 Analyse et voir l'hypothèse de renseigner pour chaque poste le compte "à partir" et le compte actuel déjà dans le modèle est le compte de destination. Si le compte est le même entre "a partir" et "destination", alors aucun transfert n'est compatibilisé dans le tree.
 
 #Tache 2
+Dans les evenements du dashboard, il faudrait afficher que les 6 premiers evenements et si y'en a plus, afficher une barre latérale qui permet de collapse/uncollapse.
+Regarde si ya un composant primeng qui peut aider la dedans.
