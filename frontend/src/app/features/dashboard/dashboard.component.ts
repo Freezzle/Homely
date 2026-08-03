@@ -145,6 +145,15 @@ export class DashboardComponent {
     { label: this.t.projection.vueCompte, value: 'COMPTE' },
   ];
 
+  /** Graphique actuellement affiché dans l'onglet "Graphiques" de la vue annuelle. */
+  readonly vueGraphiqueAnnuel = signal<'flux' | 'tresorerie' | 'prevuVsReel'>('flux');
+
+  readonly vueGraphiqueAnnuelOptions = [
+    { label: this.t.dashboard.fluxMensuel, value: 'flux' },
+    { label: this.t.dashboard.tresorerieCumulee, value: 'tresorerie' },
+    { label: this.t.dashboard.prevuVsReel, value: 'prevuVsReel' },
+  ];
+
   /** Titre affiché en en-tête : nom du foyer ou nom du membre sélectionné. */
   readonly titrePage = computed(() => {
     const membre = this.membreCourant();
@@ -292,6 +301,17 @@ export class DashboardComponent {
     if (!p) return [];
     const s = this.sujet();
     return s.mode === 'membre' ? (p.moisParMembre[s.membreId] ?? []) : p.mois.map((m) => m.agregat);
+  });
+
+  /** Agrégats "réels" des 12 mois de l'année, scopés au sujet courant : tout poste
+   *  périodique (periodicité > 1) est imputé au montant plein sur son mois d'ancrage,
+   *  quel que soit son mode — utilisé pour comparer prévu (mensualisé) vs réel
+   *  (échéances) sur le graphique dédié. */
+  readonly moisReelAgregatsCourant = computed<AggregatDto[]>(() => {
+    const p = this.projectionAnnuelle();
+    if (!p) return [];
+    const s = this.sujet();
+    return s.mode === 'membre' ? (p.moisParMembreReel[s.membreId] ?? []) : p.moisReel.map((m) => m.agregat);
   });
 
   private pageNavInitialise = false;
@@ -679,12 +699,19 @@ export class DashboardComponent {
     }, null);
     const objectifs = this.objectifsRendus();
     const nbAtteints = objectifs.filter((objectif) => objectif.statut === 'ATTEINT').length;
+    const soldeMedian = this.soldeDisponibleMedianRobuste(mois);
     return [
       {
         label: this.t.dashboard.moisNegatifs,
         value: `${negatifs.length} / 12`,
         hint: negatifs.length ? negatifs.map((item) => this.formatMois(item.numero)).join(', ') : this.t.dashboard.statutExcedentaire,
         color: negatifs.length ? 'var(--p-red-500)' : 'var(--p-emerald-600)',
+      },
+      {
+        label: this.t.dashboard.soldeMedianRobuste,
+        value: soldeMedian !== null ? this.formatMontant(soldeMedian) : '-',
+        hint: this.t.dashboard.soldeMedianRobusteHint,
+        color: soldeMedian === null ? undefined : soldeMedian >= 0 ? 'var(--p-emerald-500)' : 'var(--p-red-500)',
       },
       {
         label: this.t.dashboard.tresorerieCumulee,
@@ -703,6 +730,17 @@ export class DashboardComponent {
       },
     ];
   });
+
+  /** Moyenne du solde disponible sur 10 des 12 mois de l'année, en retirant le pire
+   *  et le meilleur mois (médiane robuste) — donne une vision moins sensible aux
+   *  extrêmes ponctuels que la moyenne brute sur 12 mois. `null` si moins de 3 mois
+   *  disponibles (donnée pas encore chargée). */
+  private soldeDisponibleMedianRobuste(mois: AggregatDto[]): number | null {
+    if (mois.length < 3) return null;
+    const soldes = [...mois.map((m) => m.soldeDisponible)].sort((a, b) => a - b);
+    const sansExtremes = soldes.slice(1, -1);
+    return sansExtremes.reduce((sum, valeur) => sum + valeur, 0) / sansExtremes.length;
+  }
 
   readonly kpiMois = computed<KpiChip[]>(() => {
     const echeances = this.echeancesMois();
@@ -913,6 +951,65 @@ export class DashboardComponent {
       ],
     };
   });
+
+  /** Graphique comparant, mois par mois, les charges + réserves prévues (mensualisées,
+   *  lissées début-fin) vs réelles (échéances : montant plein imputé au mois d'ancrage
+   *  pour les postes périodiques). Permet de visualiser quand tombent réellement les
+   *  décaissements par rapport à leur étalement comptable. */
+  readonly prevuVsReelData = computed(() => {
+    const prevu = this.moisAgregatsCourant();
+    const reel = this.moisReelAgregatsCourant();
+    if (!prevu.length || !reel.length) return {};
+    return {
+      labels: this.t.mois,
+      datasets: [
+        {
+          type: 'line',
+          label: this.t.dashboard.previsuMensualise,
+          borderColor: '#42A5F5',
+          backgroundColor: '#42A5F5',
+          data: prevu.map((m) => m.charges + m.reserves),
+          tension: 0.25,
+          fill: false,
+          pointRadius: 3,
+          borderWidth: 1,
+        },
+        {
+          type: 'line',
+          label: this.t.dashboard.reelEcheances,
+          borderColor: '#EF5350',
+          backgroundColor: '#EF5350',
+          data: reel.map((m) => m.charges + m.reserves),
+          tension: 0.25,
+          fill: false,
+          pointRadius: 3,
+          borderWidth: 1,
+          borderDash: [6, 4],
+        },
+      ],
+    };
+  });
+
+  readonly prevuVsReelOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: true, position: 'bottom' as const },
+      tooltip: {
+        callbacks: {
+          label: (ctx: { dataset: { label?: string }; parsed: { y: number } }) =>
+            `${ctx.dataset.label}: ${this.formatMontant(ctx.parsed.y)}`,
+        },
+      },
+    },
+    scales: {
+      x: { grid: { display: false } },
+      y: {
+        ticks: { callback: (v: unknown) => this.fmtCompact(Number(v)) },
+        grid: { color: 'rgba(128,128,128,0.08)' },
+      },
+    },
+  };
 
   private tresorerieCumuleeFin(): number {
     const valeurs = this.tresorerieCumuleeValeurs();
