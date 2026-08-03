@@ -348,6 +348,12 @@ public class PosteService {
         p.setDebut(req.debut());
         // Si one-shot (periodicité=0), forcer fin=null
         p.setFin(periodicite == 0 ? null : req.fin());
+        // moment=INCONNU (date de paiement effective inconnue) impose mode=MENSUALISE :
+        // seule stratégie possible, aucun mois d'ancrage où faire tomber le montant plein.
+        if (req.moment() == MomentPeriode.INCONNU && req.mode() != ModeComptabilisation.MENSUALISE) {
+            throw new RegleMetierException(CodesErreur.POSTE_MOMENT_INCONNU_MODE_INVALIDE,
+                    "Un poste dont le moment est INCONNU doit obligatoirement être mensualisé (mode=MENSUALISE).");
+        }
         p.setMode(req.mode());
         p.setMoment(req.moment());
         p.setNature(req.nature() != null ? req.nature() : NaturePoste.EFFECTIF);

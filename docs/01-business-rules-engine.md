@@ -30,7 +30,7 @@
 | `debut` | date \| null | début de la fenêtre de validité |
 | `fin` | date \| null | fin de la fenêtre de validité |
 | `mode` | MENSUALISE \| PERIODIQUE | lissé ou montant plein |
-| `moment` | DEBUT_PERIODE \| FIN_PERIODE | mois d'imputation si périodique |
+| `moment` | DEBUT_PERIODE \| FIN_PERIODE \| INCONNU | mois d'imputation si périodique ; `INCONNU` = date de paiement effective non connue (impose `mode=MENSUALISE`, reste lissé même en vue réelle) |
 | `nature` | EFFECTIF \| ESTIMATION | étiquette métier descriptive (sans impact sur `contribution`) |
 | `estimPourcentage` | décimal ∈ [0, 100] \| null | **descriptif uniquement — réservé usage futur** : plage ±% du montant si `nature=ESTIMATION`. Le moteur actuel n'utilise pas ce champ (projections basées sur `montant` seul). |
 | `repartition` | `{membre → quotePart}` \| null | découpe entre membres (§6) |
@@ -95,6 +95,8 @@ But : visualiser les encaissements/décaissements **effectifs** mois par mois, s
   stocké en `MENSUALISE`) :
   - `moment == DEBUT_PERIODE` → `((mois - ancre) mod Dsafe == 0) ? C : 0`
   - `moment == FIN_PERIODE` → `((mois - ancre + 1) mod Dsafe == 0) ? C : 0`
+  - `moment == INCONNU` → `C / Dsafe` chaque mois actif (comme un mensualisé — pas de
+    mois d'ancrage connu où le montant plein tombe en une fois)
 
 Invariant utile : sur une année complète couverte par la fenêtre, la somme des 12 mois
 de `contributionReelle` est égale à la somme des 12 mois de `contribution`.
@@ -359,12 +361,15 @@ dateAtteintePrevue   = 1er mois où le solde projeté ≥ montantCible (ou null 
 | > 1 | MENSUALISE | — | `montant / D` chaque mois actif |
 | > 1 | PERIODIQUE | DEBUT_PERIODE | montant plein le mois où `(mois − ancre) mod D == 0` |
 | > 1 | PERIODIQUE | FIN_PERIODE | montant plein le mois où `(mois − ancre + 1) mod D == 0` |
+| > 1 | MENSUALISE (imposé) | INCONNU | `montant / D` chaque mois actif, y compris en vue réelle (aucun mois d'ancrage) |
 | 0 | quelconque | — | Dsafe = 1 ⇒ traité comme mensuel |
 
 ### Lecture complémentaire — projection réelle
 
 Pour la projection réelle, les lignes `D > 1` se lisent comme si le `Mode` était
-`PERIODIQUE` (le `moment` reste déterminant). Les lignes `D == 1` restent inchangées.
+`PERIODIQUE` (le `moment` reste déterminant), **sauf** `moment == INCONNU` qui reste
+lissé (`montant / D`) même en vue réelle, car aucune date de paiement effective n'est
+connue. Les lignes `D == 1` restent inchangées.
 
 ---
 

@@ -399,7 +399,7 @@
                                         @if (sousFrequence() === 'AUTRE') {
                                             <div class="flex justify-between">
                                                 <span class="text-surface-500">{{ t.poste.moment }}</span>
-                                                <span>{{ formValue()?.moment === 'FIN_PERIODE' ? t.poste.momentOptions.FIN_PERIODE : t.poste.momentOptions.DEBUT_PERIODE }}</span>
+                                                <span>{{ t.poste.momentOptions[formValue()?.moment ?? 'DEBUT_PERIODE'] }}</span>
                                             </div>
                                             <div class="flex justify-between">
                                                 <span class="text-surface-500">{{ t.poste.mode }}</span>
@@ -460,9 +460,9 @@
             <p-button [label]="t.commun.suivant" [disabled]="!etapeValide(etapeActive())" (click)="suivant()"/>
         } @else {
             <p-button [label]="t.commun.enregistrerEtNouveau" [outlined]="true"
-                      [disabled]="form.invalid || enregistrementEnCours()" (click)="enregistrer(true)"/>
+                      [disabled]="!formulaireValide() || enregistrementEnCours()" (click)="enregistrer(true)"/>
             <p-button [label]="t.commun.enregistrer"
-                      [disabled]="form.invalid || enregistrementEnCours()" [loading]="enregistrementEnCours()"
+                      [disabled]="!formulaireValide() || enregistrementEnCours()" [loading]="enregistrementEnCours()"
                       (click)="enregistrer(false)"/>
         }
     </ng-template>

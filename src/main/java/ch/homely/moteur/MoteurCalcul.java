@@ -91,6 +91,10 @@ public class MoteurCalcul {
      * Utilisé pour visualiser les décaissements/encaissements réels dans le temps,
      * sans lissage.</p>
      *
+     * <p>Exception : {@code moment == INCONNU} (date de paiement effective inconnue)
+     * reste lissé même en vue "réelle" — {@code montant / Dsafe} chaque mois actif,
+     * comme un poste mensualisé.</p>
+     *
      * <p><b>Invariant</b> : sur une année complète (fenêtre de validité couvrante),
      * la somme des 12 contributions réelles == somme des 12 contributions mensualisées.</p>
      */
@@ -114,6 +118,9 @@ public class MoteurCalcul {
             return (debutPoste.getYear() == annee && debutPoste.getMonthValue() == mois) ? poste.montant() : 0.0;
         }
         if (d == 1) return poste.montant();
+
+        // INCONNU : pas de date de paiement effective connue → reste lissé même en vue "réelle".
+        if (poste.moment() == MomentPeriode.INCONNU) return poste.montant() / dSafe;
 
         int ancre = (poste.debut() == null) ? 1 : poste.debut().getMonthValue();
         boolean fin = poste.moment() == MomentPeriode.FIN_PERIODE;

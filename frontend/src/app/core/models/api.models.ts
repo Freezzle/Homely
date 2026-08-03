@@ -76,7 +76,7 @@ export interface ScenarioRequest {
 // ── Postes ────────────────────────────────────────────────────────────────────
 export type TypePoste = 'REVENU' | 'CHARGE' | 'RESERVE';
 export type ModeComptabilisation = 'MENSUALISE' | 'PERIODIQUE';
-export type MomentPeriode = 'DEBUT_PERIODE' | 'FIN_PERIODE';
+export type MomentPeriode = 'DEBUT_PERIODE' | 'FIN_PERIODE' | 'INCONNU';
 export type NaturePoste = 'EFFECTIF' | 'ESTIMATION';
 export type TypeRepartition = 'AUTO' | 'REVERSE_AUTO' | 'CUSTOM';
 

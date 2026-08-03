@@ -225,7 +225,7 @@
                                         <span class="flex items-center gap-1">
                     @if (p.mode === 'MENSUALISE' || p.periodiciteMois <= 1) {
                         <i class="pi pi-calendar-clock text-xs text-blue-400"
-                           [pTooltip]="t.poste.modeOptions.MENSUALISE"></i>
+                           [pTooltip]="p.moment === 'INCONNU' ? t.poste.momentOptions.INCONNU : t.poste.modeOptions.MENSUALISE"></i>
                     } @else {
                         <i class="pi pi-bolt text-xs text-amber-500"
                            [pTooltip]="t.poste.modeOptions.PERIODIQUE + ' · ' + (p.moment === 'FIN_PERIODE' ? t.poste.momentOptions.FIN_PERIODE : t.poste.momentOptions.DEBUT_PERIODE)"></i>

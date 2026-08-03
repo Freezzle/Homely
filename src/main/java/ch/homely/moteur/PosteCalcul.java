@@ -23,6 +23,8 @@ import java.util.UUID;
  * @param fin             fin de la fenêtre de validité (null = toujours actif)
  * @param mode            MENSUALISE | PERIODIQUE
  * @param moment          DEBUT_PERIODE | FIN_PERIODE (utilisé si mode=PERIODIQUE et D>1)
+ *                        ou INCONNU (date de paiement effective inconnue — impose
+ *                        mode=MENSUALISE et lisse aussi la contribution "réelle")
  * @param nature          EFFECTIF | ANTICIPE — descriptif ; n'altère pas les calculs
  * @param typeRepartition AUTO | REVERSE_AUTO | CUSTOM (null → AUTO)
  * @param repartitions    quotes-parts par membre (utilisé uniquement si typeRepartition=CUSTOM)

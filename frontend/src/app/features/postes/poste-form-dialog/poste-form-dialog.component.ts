@@ -18,7 +18,7 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { ContexteService } from '../../../core/services/contexte.service';
 import { PosteService } from '../../../core/services/scenario-poste.service';
 import { CompteService, TauxChangeService } from '../../../core/services/referentiel.service';
-import { CategorieDto, CompteDto, MembreDto, PosteDto, TypePoste, TypeRepartition } from '../../../core/models/api.models';
+import { CategorieDto, CompteDto, MembreDto, MomentPeriode, PosteDto, TypePoste, TypeRepartition } from '../../../core/models/api.models';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { creerDevisesDisponibles } from '../../../core/utils/devise-options.util';
 import { toIsoDateLocal, parseIsoDateLocal } from '../../../core/utils/date.util';
@@ -94,7 +94,7 @@ export class PosteFormDialogComponent {
     devise:          [this.contexte.deviseBase(), Validators.required],
     periodiciteMois: [0, Validators.min(0)],
     mode:            ['MENSUALISE'],
-    moment:          ['DEBUT_PERIODE'],
+    moment:          ['DEBUT_PERIODE' as MomentPeriode],
     nature:          ['EFFECTIF'],
     estimPourcentage: [null as number | null, [Validators.min(0), Validators.max(100)]],
     typeRepartition: ['AUTO' as TypeRepartition],
@@ -114,6 +114,10 @@ export class PosteFormDialogComponent {
   private readonly natureValue = toSignal(
     this.form.get('nature')!.valueChanges.pipe(startWith(this.form.get('nature')!.value)),
     { initialValue: 'EFFECTIF' },
+  );
+  private readonly momentValue = toSignal(
+    this.form.get('moment')!.valueChanges.pipe(startWith(this.form.get('moment')!.value)),
+    { initialValue: 'DEBUT_PERIODE' },
   );
   private readonly finValue = toSignal(
     this.form.get('fin')!.valueChanges.pipe(startWith(this.form.get('fin')!.value)),
@@ -148,6 +152,7 @@ export class PosteFormDialogComponent {
   momentOptions = [
     { label: this.t.poste.momentOptions.DEBUT_PERIODE, value: 'DEBUT_PERIODE' },
     { label: this.t.poste.momentOptions.FIN_PERIODE,   value: 'FIN_PERIODE' },
+    { label: this.t.poste.momentOptions.INCONNU,       value: 'INCONNU' },
   ];
   modeOptions = [
     { label: this.t.poste.modeOptions.MENSUALISE, value: 'MENSUALISE' },
@@ -180,6 +185,9 @@ export class PosteFormDialogComponent {
     this.frequenceChoisie() === 'PONCTUEL' ||
     (this.frequenceChoisie() === 'RECURRENT' && this.sousFrequence() !== null)
   );
+
+  /** Vrai si moment=INCONNU (date de paiement effective non connue) : impose mode=MENSUALISE. */
+  momentEstInconnu = computed(() => this.momentValue() === 'INCONNU');
 
   /** Vrai si l'étape 3 doit afficher le mode simplifié « foyer mono-membre ». */
   estMonoMembre = computed(() => this.membresActifs().length <= 1);
@@ -244,6 +252,19 @@ export class PosteFormDialogComponent {
       ctrl.setValidators([Validators.min(0), Validators.max(100)]);
     }
     ctrl.updateValueAndValidity({ emitEvent: false });
+  });
+
+  /** Moment=INCONNU (date de paiement effective non connue) : seule stratégie possible =
+   * mensualiser. Force et verrouille le select mode tant que ce choix est actif. */
+  private readonly _forcerModeMensualiseSiMomentInconnu = effect(() => {
+    const inconnu = this.momentEstInconnu();
+    const ctrl = this.form.get('mode')!;
+    if (inconnu) {
+      ctrl.setValue('MENSUALISE', { emitEvent: false });
+      ctrl.disable({ emitEvent: false });
+    } else if (ctrl.disabled) {
+      ctrl.enable({ emitEvent: false });
+    }
   });
 
   private initialiserCreation(): void {
@@ -324,6 +345,19 @@ export class PosteFormDialogComponent {
     return rattaches[0]?.id ?? this.defaultCompteId();
   }
 
+  /**
+   * Le compte n'est requis que pour une ligne de répartition effectivement porteuse
+   * d'une quote-part (membre sélectionné, part > 0). Sans ce garde-fou, une ligne de
+   * membre désélectionné (compteId vidé mais toujours `Validators.required`) rend le
+   * `FormGroup` global invalide alors qu'elle ne fait plus partie de la répartition
+   * envoyée à l'API : le bouton « Enregistrer » resterait grisé à tort.
+   */
+  private definirValiditeCompte(ctrl: AbstractControl, requis: boolean): void {
+    const compteCtrl = ctrl.get('compteId')!;
+    compteCtrl.setValidators(requis ? [Validators.required] : []);
+    compteCtrl.updateValueAndValidity({ emitEvent: false });
+  }
+
   private initialiserRepartitions(
     existantes?: { membreId: string; quotePart: number; nomMembre: string }[],
     ventilationsExistantes?: { membreId: string; compteId: string }[],
@@ -341,7 +375,9 @@ export class PosteFormDialogComponent {
       const compteId  = vent?.compteId ?? this.defaultCompteIdForMembre(m.id);
 
       if (i < this.repartitionsArray.length) {
-        this.repartitionsArray.at(i).patchValue({ membreId: m.id, quotePart, compteId });
+        const ctrl = this.repartitionsArray.at(i);
+        ctrl.patchValue({ membreId: m.id, quotePart, compteId });
+        this.definirValiditeCompte(ctrl, true);
       } else {
         this.repartitionsArray.push(this.fb.group({
           membreId:  [m.id],
@@ -416,9 +452,11 @@ export class PosteFormDialogComponent {
     const tr = this.form.get('typeRepartition')?.value as TypeRepartition;
 
     this.repartitionsArray.controls.forEach(c => {
-      if (!selection.has(c.get('membreId')?.value)) {
+      const selectionne = selection.has(c.get('membreId')?.value);
+      if (!selectionne) {
         c.patchValue({ quotePart: 0, compteId: null }, { emitEvent: false });
       }
+      this.definirValiditeCompte(c, selectionne);
     });
 
     const controlesSelectionnes = this.repartitionsArray.controls.filter(c => selection.has(c.get('membreId')?.value));
@@ -450,9 +488,11 @@ export class PosteFormDialogComponent {
   /** Appelé à chaque saisie de quotePart en mode Personnalisé (vide le compte si le membre repasse à 0%). */
   onQuotePartChange(index: number): void {
     const ctrl = this.repartitionsArray.at(index);
-    if ((ctrl.get('quotePart')?.value ?? 0) === 0) {
+    const quotePart = ctrl.get('quotePart')?.value ?? 0;
+    if (quotePart === 0) {
       ctrl.get('compteId')?.setValue(null, { emitEvent: false });
     }
+    this.definirValiditeCompte(ctrl, quotePart > 0);
     this.calculerSomme();
   }
 
@@ -582,7 +622,14 @@ export class PosteFormDialogComponent {
     }
   }
 
-  private formulaireValide(): boolean {
+  /**
+   * Vrai si le formulaire peut être enregistré. Utilisé par le bouton d'enregistrement
+   * (étape récap) : ne doit PAS se baser sur `form.invalid` seul, car les lignes de
+   * répartition des membres non sélectionnés portent un `compteId` requis remis à `null`
+   * (cf. `appliquerSelectionMembres`), ce qui rendrait le formulaire globalement invalide
+   * alors que ces lignes ne concernent pas la répartition effective.
+   */
+  formulaireValide(): boolean {
     if (this.form.invalid) return false;
     if (this.form.hasError('finAvantDebut')) return false;
     if (this.membresSelectionnesIds().size === 0) return false;
@@ -613,6 +660,7 @@ export class PosteFormDialogComponent {
     const v = this.form.value;
     const periodicite = v.periodiciteMois ?? 0;
     const estOneShot = periodicite === 0;
+    const momentInconnu = v.moment === 'INCONNU';
     const typeRepartition = (v.typeRepartition ?? 'AUTO') as TypeRepartition;
     const isCustom = typeRepartition === 'CUSTOM';
 
@@ -636,7 +684,7 @@ export class PosteFormDialogComponent {
       montant:         v.montant!,
       devise:          v.devise ?? this.contexte.deviseBase(),
       periodiciteMois: periodicite,
-      mode:            (estOneShot ? 'MENSUALISE' : v.mode) as any,
+      mode:            (estOneShot || momentInconnu ? 'MENSUALISE' : v.mode) as any,
       moment:          (estOneShot ? 'DEBUT_PERIODE' : v.moment) as any,
       nature:          (v.nature ?? 'EFFECTIF') as any,
       estimPourcentage: v.nature === 'ESTIMATION' ? v.estimPourcentage ?? undefined : undefined,

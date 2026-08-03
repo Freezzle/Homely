@@ -154,7 +154,7 @@
     "moment": "Term to be due",
     "nature": "Nature",
     "modeTooltip": "Monthly = amount smoothed each month (amount / frequency). Periodic = full amount charged once per cycle.",
-    "momentTooltip": "Is the full amount due at the start or the end of the frequency cycle?",
+    "momentTooltip": "Is the full amount due at the start or the end of the frequency cycle? Choose \"Unknown date\" if you don't know the actual payment date (e.g. dentist): the amount will then always be spread monthly.",
     "natureTooltip": "Actual = certain expense/income (rent, salary, bill…). Estimate = provision for estimated variable costs (food, clothing, leisure…).",
     "estimationPourcentage": "Variation percentage",
     "estimationTooltip": "Amount variation range. E.g.: 100 CHF ± 10% = amount can vary between 90 and 110 CHF.",
@@ -209,7 +209,8 @@
     },
     "momentOptions": {
       "DEBUT_PERIODE": "Start of period",
-      "FIN_PERIODE": "End of period"
+      "FIN_PERIODE": "End of period",
+      "INCONNU": "All long the period"
     },
     "natureOptions": {
       "EFFECTIF": "Actual",

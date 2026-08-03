@@ -154,7 +154,7 @@
     "moment": "Terme à échoir",
     "nature": "Nature",
     "modeTooltip": "Mensualisé = montant lissé chaque mois (montant / périodicité). Périodique = montant plein imputé une seule fois par cycle.",
-    "momentTooltip": "Le montant plein tombe-t-il au début ou à la fin du cycle de périodicité ?",
+    "momentTooltip": "Le montant plein tombe-t-il au début ou à la fin du cycle de périodicité ? Choisissez « Date inconnue » si vous ne connaissez pas la date de paiement effective (ex. dentiste) : le montant sera alors toujours mensualisé.",
     "natureTooltip": "Effectif = charge/revenu certain (loyer, salaire, facture…). Estimation = provision pour frais variables estimés (nourriture, habits, loisirs…).",
     "estimationPourcentage": "Pourcent de variations",
     "estimationTooltip": "Plage de variation du montant. Ex : 100 CHF ± 10% = montant peut varier entre 90 et 110 CHF.",
@@ -209,7 +209,8 @@
     },
     "momentOptions": {
       "DEBUT_PERIODE": "Début de période",
-      "FIN_PERIODE": "Fin de période"
+      "FIN_PERIODE": "Fin de période",
+      "INCONNU": "Durant toute la période"
     },
     "natureOptions": {
       "EFFECTIF": "Effectif",

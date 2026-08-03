@@ -78,12 +78,26 @@ class MoteurCalculReelTest {
             }
         }
         @Test
+        void momentInconnuResteLisseEnVueReelle() {
+            // Dentiste 1x/an, date de paiement effective inconnue : doit rester
+            // lissé (montant/D) même en vue "réelle", identique à contribution().
+            PosteCalcul p = poste(CHARGE, 1200, 12, LocalDate.of(2026, 1, 1),
+                    MENSUALISE, INCONNU);
+            for (int m = 1; m <= 12; m++) {
+                assertThat(MoteurCalcul.contributionReelle(p, 2026, m))
+                        .as("mois %d", m)
+                        .isCloseTo(100.0, within(TOL))
+                        .isCloseTo(MoteurCalcul.contribution(p, 2026, m), within(TOL));
+            }
+        }
+        @Test
         void invariantAnnuel() {
             List<PosteCalcul> cas = List.of(
                     poste(REVENU, 6300, 12, null, MENSUALISE, DEBUT_PERIODE),
                     poste(CHARGE, 3600, 6, null, MENSUALISE, DEBUT_PERIODE),
                     poste(RESERVE, 2400, 4, null, MENSUALISE, FIN_PERIODE),
-                    poste(CHARGE, 1200, 12, null, PERIODIQUE, DEBUT_PERIODE)
+                    poste(CHARGE, 1200, 12, null, PERIODIQUE, DEBUT_PERIODE),
+                    poste(CHARGE, 900, 3, null, MENSUALISE, INCONNU)
             );
             for (PosteCalcul p : cas) {
                 double sumReel = 0, sumMens = 0;
