@@ -115,7 +115,7 @@
               }
               @case ('tresorerie') {
                 <div>
-                  <h3 class="m-0 mb-1 text-sm font-semibold">{{ t.dashboard.tresorerieCumulee }}</h3>
+                  <h3 class="m-0 mb-1 text-sm font-semibold">{{ t.dashboard.tresorerieTitle }}</h3>
                   <p class="m-0 mb-2 text-xs text-surface-500">{{ t.dashboard.tresoCumuleeDescription }}</p>
                   <div class="relative flex h-56 sm:h-64 md:h-[280px] w-full overflow-hidden">
                     <p-chart type="line" [data]="$any(tresorerieCumuleeData())" [options]="$any(tresorerieCumuleeOptions)" class="w-full block" />

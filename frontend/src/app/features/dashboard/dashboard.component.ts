@@ -148,7 +148,7 @@ export class DashboardComponent {
 
   readonly vueGraphiqueAnnuelOptions = [
     { label: this.t.dashboard.fluxMensuel, value: 'flux' },
-    { label: this.t.dashboard.tresorerieCumulee, value: 'tresorerie' },
+    { label: this.t.dashboard.tresorerieTitle, value: 'tresorerie' },
     { label: this.t.dashboard.prevuVsReel, value: 'prevuVsReel' },
   ];
 
@@ -635,7 +635,20 @@ export class DashboardComponent {
   readonly tresorerieCumuleeOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
+    // 'index' + intersect:false : le survol de n'importe quel point du mois affiche
+    // la trésorerie scénarisée et réelle ensemble.
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: true, position: 'bottom' as const },
+      tooltip: {
+        mode: 'index',
+        intersect: false,
+        callbacks: {
+          label: (ctx: { dataset: { label?: string }; parsed: { y: number } }) =>
+            `${ctx.dataset.label}: ${this.formatMontant(ctx.parsed.y)}`,
+        },
+      },
+    },
     scales: {
       x: { grid: { display: false } },
       y: {
@@ -908,6 +921,11 @@ export class DashboardComponent {
 
   readonly tresorerieCumuleeValeurs = computed(() => this.calculerTresorerieCumulee(this.moisAgregatsCourant()));
 
+  /** Trésorerie cumulée "réelle" : même calcul mais à partir des agrégats mensuels non
+   *  lissés (échéances imputées au mois d'ancrage, cf. moisReel). Permet de visualiser
+   *  quand la trésorerie évolue réellement par rapport à sa vision scénarisée/lissée. */
+  readonly tresorerieCumuleeReelValeurs = computed(() => this.calculerTresorerieCumulee(this.moisReelAgregatsCourant()));
+
   /** Cumule la trésorerie mois par mois à partir de la trésorerie initiale du scénario
    *  (prorata en mode membre), pour une série d'agrégats mensuels donnée. Factorisé pour
    *  être réutilisé sur l'année courante et l'année précédente (comparaison N vs N-1). */
@@ -931,19 +949,32 @@ export class DashboardComponent {
   readonly tresorerieCumuleeData = computed(() => {
     const valeurs = this.tresorerieCumuleeValeurs();
     if (!valeurs.length) return {};
+    const valeursReel = this.tresorerieCumuleeReelValeurs();
     return {
       labels: this.t.mois,
       datasets: [
         {
           type: 'line',
           label: this.t.dashboard.tresorerieCumulee,
-          borderColor: '#3BBFA1',
-          backgroundColor: 'rgb(59 191 161 / 0.29)',
+          borderColor: '#42A5F5',
+          backgroundColor: 'rgb(66 165 245 / 0.39)',
           data: valeurs,
           tension: 0.25,
           fill: true,
           pointRadius: 3,
           borderWidth: 1,
+        },
+        {
+          type: 'line',
+          label: this.t.dashboard.tresorerieCumuleeReel,
+          borderColor: '#EF5350',
+          backgroundColor: '#EF5350',
+          data: valeursReel,
+          tension: 0.25,
+          fill: false,
+          pointRadius: 3,
+          borderWidth: 1,
+          borderDash: [6, 4],
         },
       ],
     };
