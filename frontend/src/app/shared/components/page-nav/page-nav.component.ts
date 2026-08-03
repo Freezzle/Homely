@@ -26,7 +26,8 @@ export interface PageNavSelection {
           class="pn-chip"
           [class.cur]="selection().mode === 'annee'"
           (click)="selectAnnee()">
-          {{ t.dashboard.vueDensemble }}
+          <span>{{ t.dashboard.vueDensemble }}</span>
+          <span class="pn-s pn-s-pos">{{ annee() }}</span>
         </button>
         @for (m of months(); track m.mois) {
           <button
@@ -34,7 +35,10 @@ export interface PageNavSelection {
             class="pn-chip"
             [class.cur]="selection().mode === 'mois' && selection().mois === m.mois"
             (click)="selectMois(m.mois)">
-            {{ m.label }}
+            <span class="pn-chip-label">{{ m.label }}</span>
+            <span class="pn-chip-s" [class.pn-s-pos]="m.solde >= 0" [class.pn-s-neg]="m.solde < 0">
+              {{ m.solde >= 0 ? '+' : '' }}{{ m.solde | montant }}
+            </span>
           </button>
         }
       </div>
@@ -144,11 +148,15 @@ export interface PageNavSelection {
     }
 
     .pn-chip {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1px;
       flex-shrink: 0;
       border: 1.5px solid var(--p-content-border-color);
       background: var(--p-content-background);
-      border-radius: 99px;
-      padding: 6px 13px;
+      border-radius: 14px;
+      padding: 5px 13px;
       font-size: 12px;
       font-weight: 700;
       color: var(--p-text-muted-color);
@@ -160,6 +168,18 @@ export interface PageNavSelection {
       border-color: var(--p-primary-color);
       background: var(--p-primary-50);
       color: var(--p-text-color);
+    }
+
+    .pn-chip-label {
+      white-space: nowrap;
+    }
+
+    .pn-chip-s {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 10px;
+      font-weight: 600;
+      white-space: nowrap;
     }
   `],
 })
