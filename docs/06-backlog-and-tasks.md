@@ -105,6 +105,11 @@ Format des tâches : `T<epic>.<n>`.
   *Accept.* : cohérence multi-tenant vérifiée ; suppression d'un membre référencé refusée.
 - [~] **T6.2** Seed `V2__seed_demo.sql` (foyer Charmillot complet, [doc 02 §7](02-domain-and-data-model.md)).
   *Accept.* : après seed, la projection annuelle 2026 = vecteurs T2 (**critère fort**).
+- [x] **T6.3** Second foyer de démonstration `V16__seed_foyer_exemple.sql` (« Foyer
+  Berthoud », anonymisé) : 2 membres, 8 comptes, 20 catégories, scénario de référence avec
+  périodes de répartition, postes et ventilations. *Accept.* : migration s'applique sans
+  erreur, données distinctes du foyer Charmillot (aucun conflit d'UUID). **Non documenté
+  avant cette cartographie** (voir [doc 00](00-synthese.md) / [doc 02 §4](02-domain-and-data-model.md)).
 
 ### E7 · Scénarios & postes
 - [x] **T7.1** CRUD Scénario + RepartitionDefaut (validation somme=1) + garde « une seule
@@ -174,6 +179,11 @@ Format des tâches : `T<epic>.<n>`.
 - [x] **T8.6** `postes/{id}/apercu?annee=` (contribution mensuelle d'un poste).
 - [x] **T8.7** Projection annuelle enrichie : `moisReel` et `moisParMembreReel`.
   *Accept.* : payload annuel inclut les séries mensualisées et réelles.
+- [x] **T8.8** `projection/evenements?annee=&membreId=` — détection des événements
+  budgétaires (DEBUT/FIN/REVISION de poste), voir [doc 01 §8-ter](01-business-rules-engine.md)
+  et [doc 04 §9.3-bis](04-api-spec.md). *Accept.* : `MoteurEvenementsTest` vert (chaînes de
+  révision, fin décalée au mois suivant, aucune échéance intermédiaire pour les postes
+  périodiques). **Non documenté avant cette cartographie.**
 
 ---
 
@@ -194,14 +204,25 @@ Format des tâches : `T<epic>.<n>`.
 - [x] **T10.3** Scénarios (liste, hypothèses, duplication, définir référence).
   **⚠️ Corrigé par cette cartographie** : pas d'écran de **comparaison** côte-à-côte de
   scénarios (dépend de T8.5, non implémenté).
-- [x] **T10.4** **Tableau de bord annuel** : KPI + flux mensuels foyer + flux par membre +
-  tableau détaillé annuel. *Accept.* : chiffres affichés == vecteurs T2 sur le seed.
-- [x] **T10.5** **Tableau de bord du mois** : KPI foyer, catégories séparées
-  revenus/charges/réserves, synthèse par membre et charges par compte.
+- [x] **T10.4** **Tableau de bord annuel** — *fusionné dans T10.11 (écran unifié)* : voir
+  T10.11 ci-dessous.
+- [x] **T10.5** **Tableau de bord du mois** — *fusionné dans T10.11 (écran unifié)* : voir
+  T10.11 ci-dessous.
 - [x] **T10.9** Refonte dashboard mensuel (KPI utiles, listes catégories séparées,
   synthèse par membre, suppression des visuels peu pertinents).
 - [x] **T10.10** UX dialog poste (nature, affichage conditionnel mode/moment,
   organisation des champs et icônes de mode en liste).
+- [x] **T10.11** **Refonte du dashboard en écran unique** `DashboardComponent`
+  (`f/:foyerId/dashboard/:sujetId/:annee/:mois?`) remplaçant les anciennes routes séparées
+  `dashboard-annuel`/`dashboard-mensuel` : sujet **foyer** ou **par membre** (menu latéral,
+  scoping des agrégats fait côté backend), vues annuelle/mensuelle pilotées par les
+  segments d'URL, guards de redirection/rétrocompat (`redirectToCurrentYearGuard`,
+  `dashboardLegacyRedirectGuard`), onglets (récap/graphiques/événements/objectifs ou
+  récap/échéances/événement/objectifs), composants partagés `tab-group`, `page-nav`,
+  `metric-ring`, `stat-grid`, `kpi-chip-row`, **`event-grid`** (frise des événements
+  budgétaires, T8.8). *Accept.* : chiffres affichés == vecteurs T2/T3 sur le seed ; scoping
+  par membre cohérent avec `parMembre`/`moisParMembre` des DTO. **Non documenté avant
+  cette cartographie** (voir [doc 05 §3.1](05-frontend-spec.md)).
 - [ ] **T10.6** **Patrimoine** : courbe net worth + répartition + tableau comptes.
   **⚠️ Corrigé par cette cartographie : aucun écran/route/composant « patrimoine »
   n'existe dans le frontend actuel** (dépend de l'endpoint backend T8.4, lui-même non

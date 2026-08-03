@@ -252,6 +252,58 @@ montantCompteMembre(compte, m, T) =
 > Reproduit les blocs « Charges/Revenus/Réserves par compte » du Dashboard du mois, où
 > chaque bloc filtre sur la colonne « Compte M1 » (resp. M2) et somme la part du membre.
 
+## 8-ter. Événements budgétaires ("ce qui change") — `MoteurCalcul#evenements`
+
+Module du moteur pur (`ch.homely.moteur.MoteurCalcul#evenements(List<PosteCalcul>, int
+annee)`, `EvenementCalcul`, `TypeEvenement`), non présent à l'origine dans l'Excel :
+alimente la frise chronologique du dashboard (voir [doc 05](05-frontend-spec.md)). Il ne
+représente **que des changements** — pas le calendrier des échéances récurrentes (un poste
+périodique n'émet plus d'événement à chaque échéance intermédiaire).
+
+**Trois types** (`TypeEvenement`) :
+- **DEBUT** — un poste démarre et n'est **pas** issu d'une révision (`posteOrigineId ==
+  null`). Émis au mois de `poste.debut()`, montant **plein** (brut, non mensualisé) et
+  signé (+ REVENU, − CHARGE/RESERVE).
+- **FIN** — un poste se termine (`poste.fin()` renseigné) et **n'a aucun successeur**
+  (aucun autre poste ne le référence via `posteOrigineId`). Émis **le mois suivant** la
+  date de fin (ex. fin au 30.09 → événement en octobre), montant = **+delta** (soulagement,
+  signe opposé au montant du poste).
+- **REVISION** — un poste démarre et **est** issu d'une révision (`posteOrigineId`
+  renseigné, poste d'origine résolu dans la liste fournie). Émis au mois de
+  `poste.debut()`. `montant` = delta brut signé `signe × (nouveauMontant − ancienMontant)`
+  ; ne génère **pas** d'événement FIN séparé pour le poste d'origine (une chaîne de N
+  révisions ne produit qu'un DEBUT initial + N−1 REVISION, jamais de FIN intermédiaire).
+
+**Champs transportés** (`EvenementCalcul`/`EvenementDto`) : `mois` (1–12), `type`,
+`posteId` (le nouveau maillon pour REVISION), `description`, `categorieId`, `typePoste`,
+`nature`, `devise` (devise d'origine du poste — la conversion FX vers la devise du foyer
+est faite en couche service, pas dans le moteur pur), `montant` (brut, jamais mensualisé —
+c'est à la couche d'affichage de le formater selon `periodiciteMois`/`mode`),
+`periodiciteMois`, `mode` (du poste concerné — successeur pour REVISION). Pour REVISION
+uniquement : `montantOrigine`/`periodiciteMoisOrigine`/`modeOrigine` portent les valeurs du
+poste d'origine (permet un rendu "avant → après" côté UI) ; `null` pour DEBUT/FIN.
+
+**Règles de filtrage/tri** :
+- Un poste à montant ≤ 0 n'émet aucun événement.
+- `debut`/`fin` hors de l'année demandée → aucun événement pour cette règle (recalculé par
+  année, y compris le décalage +1 mois pour FIN qui peut faire "déborder" un événement sur
+  l'année suivante : une fin au 31.12.2026 produit un événement FIN en janvier **2027**,
+  pas 2026).
+- Tri final : par `mois` croissant, puis par priorité de type (**FIN** &gt; **REVISION**
+  &gt; **DEBUT** — pour qu'un mois affiche d'abord ce qui se termine), puis par
+  `description`.
+
+**Vue par membre** (`?membreId=` sur l'endpoint, voir [doc 04 §9.3-bis](04-api-spec.md)) :
+la couche service applique la `quotePartEffective` du membre au `montant`/
+`montantOrigine` et ne renvoie que les événements où cette quote-part est &gt; 0 pour le
+mois concerné (`EvenementDto.quotePart` porte la quote-part appliquée, `1` en vue foyer).
+Le calcul de la quote-part n'est **jamais** dupliqué côté frontend.
+
+Tests golden purs : `MoteurEvenementsTest` (`src/test/java/ch/homely/moteur`), couvre
+DEBUT/FIN/REVISION, chaînes de révisions à 3 maillons, postes périodiques
+(mensualisé/périodique), one-shot, fin en décembre (report sur l'année suivante), et
+l'absence d'événement pour un poste stable toute l'année.
+
 ## 9. Extension patrimoine (net worth) — sémantique à respecter
 
 Module **nouveau** (absent de l'Excel). Le principe reprend la trésorerie chaînée mais

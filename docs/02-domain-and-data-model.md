@@ -188,7 +188,7 @@ Correspondance des libellés Excel → enums (à respecter dans le seed) :
 - Mode : `mensualisé` → `MENSUALISE`, `périodique` → `PERIODIQUE`.
 - Moment : `début périodicité` → `DEBUT_PERIODE`, `fin périodicité` → `FIN_PERIODE`.
 
-## 4. Schéma SQL (PostgreSQL) — état consolidé après V1→V15
+## 4. Schéma SQL (PostgreSQL) — état consolidé après V1→V15 (V16 = données seed uniquement, aucun changement de schéma)
 
 > Conventions : `snake_case`, PK `uuid` (`gen_random_uuid()`), montants `NUMERIC(15,2)`,
 > taux `NUMERIC(10,6)`, `TIMESTAMPTZ` pour les dates système, `DATE` pour les dates métier.
@@ -418,7 +418,10 @@ CREATE INDEX idx_objectif_scenario ON objectif (scenario_id);
 > application, par libellé/nom) → **V14** (suppression de la table legacy
 > `repartition_defaut`) → **V15** (suppression de la notion d'actif patrimonial : table
 > `actif` supprimée, `objectif.actif_id` retiré, `objectif.compte_id` devient
-> obligatoire).
+> obligatoire) → **V16** (second foyer de démonstration « Foyer Berthoud », anonymisé :
+> 2 membres, 8 comptes, 20 catégories, 1 scénario de référence avec périodes de
+> répartition/postes/ventilations — données modifiées ±5-15 % par rapport à la source
+> réelle, jamais reproduites au centime).
 >
 > Migration V10 : postes existants avec `nature='ESTIMATION'` reçoivent automatiquement
 > `estim_pourcentage = 10.0` (valeur par défaut). Postes `EFFECTIF` conservent `NULL`.

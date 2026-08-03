@@ -60,8 +60,11 @@ réactifs dans tous les composants abonnés.
 /register                               (public)
 /foyers                                 (choix / création de foyer)
 /f/:foyerId
-  ├── /dashboard-annuel
-  ├── /dashboard-mensuel                (route par défaut de /f/:foyerId)
+  ├── /dashboard                                    → redirige vers dashboard/foyer/<année courante>
+  ├── /dashboard/:sujetId                           → redirige vers dashboard/:sujetId/<année courante>
+  ├── /dashboard/:sujetId/:annee                    ┐ DashboardComponent unique (vue annuelle)
+  ├── /dashboard/:sujetId/:annee/:mois              ┘ DashboardComponent unique (vue mensuelle)
+  │     `sujetId` = "foyer" (cumul) ou l'id d'un membre (données propres au membre)
   ├── /revenus | /charges | /reserves
   ├── /scenarios
   ├── /objectifs
@@ -77,6 +80,16 @@ réactifs dans tous les composants abonnés.
 sont masquées dans les templates via `contexte.estEditor()` / `contexte.estOwner()` (pas
 de guard de rôle dédié côté routing).
 
+**Dashboard — architecture réelle (remplace l'ancien duo `dashboard-annuel`/
+`dashboard-mensuel`, voir §3.1)** : un unique `DashboardComponent`, piloté entièrement par
+l'URL, avec deux guards fonctionnels (`redirect-current-year.guard.ts`) :
+- `redirectToCurrentYearGuard` : complète toute URL `dashboard` ou `dashboard/:sujetId`
+  incomplète avec l'année courante (`.../dashboard/foyer/<année>`).
+- `dashboardLegacyRedirectGuard` : rétrocompatibilité des anciennes URLs
+  `dashboard/<année>[/<mois>]` (où l'ancien segment était directement l'année) → réécrites
+  vers `dashboard/foyer/<année>[/<mois>]`.
+- Query params (ex. `scenarioId`) toujours préservés lors des redirections.
+
 ### 2.1 Création de foyer — dialog
 
 La page `/foyers` propose un bouton **« Nouveau foyer »** ouvrant un `p-dialog` unique :
@@ -87,73 +100,57 @@ La page `/foyers` propose un bouton **« Nouveau foyer »** ouvrant un `p-dialog
 **Règles UX :**
 - Bouton **Créer** désactivé si nom du foyer vide ou si un nom de membre est vide.
 - Couleur par défaut : `#6366f1` (indigo).
-- Après création → redirection automatique vers `/f/:id/dashboard-annuel`.
+- Après création → redirection automatique vers `/f/:id/dashboard` (puis
+  `redirectToCurrentYearGuard` complète l'URL en `dashboard/foyer/<année>`).
 
 ## 3. Écrans
 
-### 3.1 Tableau de bord annuel  *(reprend « Dashboard annuel » Excel)*
+### 3.1 Tableau de bord — écran unifié (foyer / par membre, annuel / mensuel)
 
-**Endpoints** : `GET .../projection/annuelle?annee=`
+*(remplace l'ancienne paire d'écrans séparés « Dashboard annuel » / « Dashboard du mois »
+— un seul `DashboardComponent`, `frontend/src/app/features/dashboard/`, piloté par les
+segments de route `:sujetId/:annee/:mois?`, voir §2)*
 
-**En-tête** :
-- Sélecteur d'**année** (`p-select`, options générées depuis `sc.anneeDepart` sur
-  `sc.horizonAnnees` années).
-- **Sélecteur de vue** (`p-selectButton`, trois options) si le foyer a >1 membre :
-  - **Foyer** — seul le graphique et le tableau foyer sont affichés.
-  - **Par membre** — seuls les graphiques/tables par membre sont affichés.
-  - **Les deux** — tout est visible (défaut initial : « Par membre »).
+**Deux axes indépendants pilotés par l'URL** :
+- **Sujet** (`:sujetId`) : `foyer` (cumul de tous les membres) ou l'id d'un **membre**
+  (données propres uniquement, scoping fait côté backend — `parMembre`/`moisParMembre`/
+  `moisParMembreReel` des DTO de projection, jamais recalculé côté frontend). Si l'id ne
+  correspond à aucun membre connu du foyer, redirection silencieuse vers `foyer`. Le
+  changement de sujet se fait via le menu latéral (`SidebarMenuComponent`) : items
+  "Dashboard" → "Foyer" + un item par membre quand le foyer compte >1 membre (foyer
+  mono-membre : item plat unique, pas de sous-menu).
+- **Vue** (présence du segment `:mois`) : **annuelle** (`:annee` seul) ou **mensuelle**
+  (`:annee/:mois`). Navigation précédent/suivant (`app-page-nav`, en colonne latérale ou
+  en drawer selon le viewport) + flèches ◀/▶ dans l'en-tête.
 
-**KPI annuels** (4 cartes, grille 2 cols mobile / 4 cols desktop) :
-- Revenus · Charges · Réserves · Solde disponible, chacun avec estimation mensuelle
-  (`÷ 12`, format compact `fr-CH`). Couleur de bordure conditionnelle (vert si solde ≥ 0,
-  rouge sinon).
+**En-tête** : titre = nom du foyer ou nom du membre courant, sous-titre = période
+affichée (année seule, ou "Mois Année").
 
-**Graphique mixte foyer** (`p-chart type="bar"`, visible si vue ≠ PAR_MEMBRE) :
-- Barres empilées Charges (rouge) + Réserves (bleu), sur l'axe `stack='depenses'`.
-- Ligne Revenus (vert, tension 0,3).
-- 12 labels mois (Jan–Déc), axes formatés en compact.
+**Bloc résumé** (`p-card`, commun aux deux vues) :
+- `app-metric-ring` : anneau de synthèse (mois positifs vs négatifs en vue annuelle,
+  "reste à vivre" en vue mensuelle).
+- `app-stat-grid` : grille de statistiques + tag de statut.
+- `app-kpi-chip-row` : ligne de puces KPI (revenus/charges/réserves/solde…).
 
-**Graphiques par membre** (grille 1 col mobile / 2 cols desktop, visible si vue ≠ FOYER
-et foyer > 1 membre) :
-- Un `p-card` par membre avec son graphique mixte (même structure foyer).
-- Sous le graphique : tableau `p-table` détail mensuel (12 lignes + total).
-  Sur mobile (<sm) : cartes compactes par mois en substitut de la table.
+**Onglets** (`app-tab-group`/`app-tab-panel`, un jeu différent par vue) :
+- **Vue annuelle** (`ongletAnnee`) : `recap` (bascule catégorie/type de poste/compte via
+  `p-selectbutton`, `app-carte-bilan`) · `graphiques` (bascule flux mensuel / trésorerie
+  cumulée / prévu vs réel, en `p-chart`) · `events` (frise `app-event-grid` des
+  événements — voir ci-dessous) · `objectifs` (`app-objective-progress` par objectif actif).
+- **Vue mensuelle** (`ongletMois`) : `recap` (idem, scopé au mois) · `echeances`
+  (objectifs à échéance) · `event` (frise événements du mois) · `objectifs`.
 
-**Tableau mensuel foyer** (`p-table`, visible si vue ≠ PAR_MEMBRE) :
-- Colonnes : Mois · Revenus · Charges · Réserves · Solde.
-- Ligne de pied de page : totaux annuels.
-- Sur mobile : même format de cartes compactes.
+**Frise d'événements budgétaires** (`app-event-grid`, alimentée par `GET
+.../projection/evenements`, voir [doc 04 §9.3-bis](04-api-spec.md) et [doc 01
+§8-ter](01-business-rules-engine.md)) : liste les débuts/fins/révisions de postes de
+l'année (ou du mois filtré), scopés au sujet courant via `?membreId=`. Cliquer un
+événement (`(select)`) navigue vers le mois correspondant.
 
-### 3.2 Tableau de bord du mois  *(reprend « Dashboard du mois » Excel)*
+### 3.2 (fusionné avec §3.1 — voir ci-dessus)
 
-**Endpoints** : `GET .../projection/mensuelle?annee=&mois=`, `GET .../categories`,
-`GET .../comptes`
+L'ancienne section « Tableau de bord du mois » est intégrée à l'écran unifié §3.1 (vue
+mensuelle du même composant).
 
-**En-tête** :
-- Sélecteurs **année** + **mois** (dropdowns indépendants).
-- Sélecteur de vue FOYER / PAR MEMBRE / LES DEUX (si >1 membre).
-
-**KPI foyer** (4 cartes, visible si vue ≠ PAR_MEMBRE) :
-Revenus · Charges · Réserves · Solde du mois.
-
-**Taux d'effort foyer** (barre de progression visuelle, visible si vue ≠ PAR_MEMBRE) :
-- Calcul : `charges / revenus × 100`, plafonné à 100 %.
-- Couleur progressive : vert (<50 %), ambre (50–75 %), rouge (≥75 %).
-- Marqueurs à 50 % et 75 % sur la barre.
-
-**Ventilation par catégorie** (3 listes côte à côte en grille 1/3 cols) :
-- Revenus · Charges · Réserves ; tri décroissant par montant ; total en bas.
-- Seules les catégories avec montant ≠ 0 sont affichées.
-
-**Contribution par catégorie et par membre** (grille 1/2 cols, visible si vue ≠ FOYER) :
-- Un `p-card` par membre.
-- Badge taux d'effort individuel coloré (vert/ambre/rouge).
-- Trois blocs empilés : revenus, charges, réserves — chacun listé par catégorie.
-
-**Répartition par compte et par membre** (grille 1/2 cols, visible si vue ≠ FOYER) :
-- Un `p-card` par membre avec mini-KPI 2×2 (revenus/charges/réserves/solde).
-- Graphique horizontal `p-chart type="bar"` (indexAxis = 'y') des charges par compte,
-  hauteur dynamique (`nbre_comptes × 38 + 16 px`).
 
 ### 3.3 Revenus / Charges / Réserves  *(reprennent les feuilles de saisie)*
 
@@ -327,6 +324,26 @@ Composant unique `PostesListeComponent` paramétré par `type` via `input<TypePo
 
 ## 4. Composants & pratiques transverses
 
+### 4.0 Composants partagés du dashboard (`shared/components/`)
+Composants standalone réutilisés par le nouvel écran unifié (§3.1), sans logique métier
+propre (agrégats reçus en `@Input`, calculés côté service/backend) :
+- `tab-group`/`tab-panel` (`TabGroupComponent`/`TabPanelComponent`) : onglets génériques
+  pilotés par une valeur (`[value]`/`(valueChange)`), utilisés aussi ailleurs que le
+  dashboard le cas échéant.
+- `page-nav` (`PageNavComponent`) : navigation année/mois (drawer compact ou colonne
+  latérale selon `ViewportService`), `[(selection)]` en `PageNavSelection` (`{mode:
+  'annee'}` ou `{mode: 'mois', mois}`).
+- `metric-ring` (`MetricRingComponent`) : anneau de synthèse (segments + valeur centrale).
+- `stat-grid` (`StatGridComponent`) : grille de statistiques avec tag de statut.
+- `kpi-chip-row`/`kpi-chip` : ligne de puces KPI compactes.
+- `event-grid` (`EventGridComponent`) : frise/grille des événements budgétaires
+  (`EvenementDto`, voir [doc 04 §9.3-bis](04-api-spec.md)), émet `(select)` pour naviguer
+  vers le mois d'un événement.
+- `objective-progress` (`ObjectiveProgressComponent`) : barre de progression d'objectif
+  (réutilisé dashboard + écran Objectifs §3.6).
+- `carte-bilan` (`CarteBilanComponent`) : carte de synthèse (bilan foyer/membre, lignes de
+  décomposition), déjà existante avant la refonte.
+
 ### 4.1 Graphiques
 - `p-chart` (Chart.js). Palette de couleurs synchronisée avec `membre.couleur` pour la
   cohérence entre écrans.
@@ -378,8 +395,8 @@ Composant unique `PostesListeComponent` paramétré par `type` via `input<TypePo
 
 | Feuille Excel | Écran Angular |
 |---|---|
-| Dashboard annuel | Tableau de bord annuel (KPI + graphiques + tableaux mensuels) |
-| Dashboard du mois | Tableau de bord du mois (ventilations catégorie / compte / membre) |
+| Dashboard annuel | Tableau de bord unifié — vue annuelle (§3.1), KPI + graphiques + frise d'événements + objectifs |
+| Dashboard du mois | Tableau de bord unifié — vue mensuelle (§3.1), même composant, ventilations catégorie/compte/membre + échéances |
 | Revenus / Charges / Réserves | Écrans de saisie Revenus / Charges / Réserves |
 | Paramètres | Référentiels + Paramètres foyer + hypothèses de scénario |
 | Moteur | *(non exposé : calcul serveur)* — visible via projections/graphiques |

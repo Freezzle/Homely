@@ -46,8 +46,8 @@ ch.homely
 ├── objectif/          # Objectif
 ├── moteur/            # ★ MoteurCalcul (pur) + projection réelle/mensualisée
 └── projection/        # endpoints réels : annuelle / annuelle-complete / tresorerie /
-                       #   mensuelle / apercu poste (patrimoine et comparaison ne sont
-                       #   PAS implémentés à ce jour — voir docs/06 T8.4/T8.5)
+                       #   mensuelle / evenements / apercu poste (patrimoine et
+                       #   comparaison ne sont PAS implémentés à ce jour — voir docs/06 T8.4/T8.5)
 ```
 
 Chaque feature : `controller` (REST) → `service` (métier/validation) → `repository`
@@ -182,7 +182,8 @@ Chaque feature : `controller` (REST) → `service` (métier/validation) → `rep
 src/app/
 ├── core/            # guards, interceptors (jwt, date), services (ContexteService,
                      #   I18nService…), pipes (montant/date Intl), constants, models, utils
-├── shared/          # composants réutilisables (carte-bilan, tag), utils
+├── shared/          # composants réutilisables (carte-bilan, tag, tab-group, page-nav,
+│                    # metric-ring, stat-grid, kpi-chip-row, event-grid, objective-progress), utils
 ├── shell/            # topbar, sidebar-menu, foyer-scenario-switcher
 └── features/
     ├── auth/            # login, register
@@ -190,7 +191,9 @@ src/app/
     ├── referentiels/    # membres, comptes, categories, taux
     ├── scenarios/       # scenarios-liste, repartition-periodes
     ├── postes/          # postes-liste (revenus/charges/réserves, même composant réutilisé)
-    ├── dashboard/        # dashboard-annuel, dashboard-mensuel
+    ├── dashboard/        # DashboardComponent unifié (sujet foyer/membre, vue annuelle/mensuelle
+    │                     # pilotée par l'URL) + redirect-current-year.guard (redirection année
+    │                     # courante + rétrocompat anciennes URLs)
     ├── objectifs/        # objectifs (cartes + progression)
     └── parametres/       # paramètres foyer, acces (gestion des invitations, OWNER)
 ```

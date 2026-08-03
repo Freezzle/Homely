@@ -26,8 +26,9 @@ gestion du réalisé/import bancaire. Détails : [`README.md`](README.md) §1-2.
 | **Périodes de répartition** (prorata variable dans le temps) | ✅ Complet | `RepartitionPeriode`/`RepartitionPeriodePart`, classification `AUTO`/`REVERSE_AUTO`/`CUSTOM` par poste |
 | **Postes budgétaires** (revenus/charges/réserves) | ✅ Complet | CRUD + cycle de vie avancé : révision de montant chaînée (`posteOrigineId`), annulation, décalage de fenêtre, clôture/réactivation |
 | **Objectifs d'épargne** | ✅ Complet | Compte obligatoire, progression/épargne requise calculées |
-| **Moteur de calcul** (lissage, périodicité, fenêtres, prorata N membres, multi-devises, trésorerie chaînée) | ✅ Complet | Module `moteur` pur (aucune dépendance Spring/JPA/horloge), fidèle à [doc 01](01-business-rules-engine.md) |
-| **Projections** (annuelle, mensuelle, trésorerie, aperçu poste) | ✅ Complet | Endpoints réels : `annuelle`, `annuelle-complete`, `tresorerie`, `mensuelle`, `postes/{id}/apercu` |
+| **Moteur de calcul** (lissage, périodicité, fenêtres, prorata N membres, multi-devises, trésorerie chaînée, événements) | ✅ Complet | Module `moteur` pur (aucune dépendance Spring/JPA/horloge), fidèle à [doc 01](01-business-rules-engine.md) ; inclut désormais la détection d'événements budgétaires (DEBUT/FIN/REVISION, `MoteurCalcul#evenements`) |
+| **Projections** (annuelle, mensuelle, trésorerie, événements, aperçu poste) | ✅ Complet | Endpoints réels : `annuelle`, `annuelle-complete`, `tresorerie`, `mensuelle`, `evenements`, `postes/{id}/apercu` |
+| **Tableau de bord** (foyer + par membre, frise d'événements) | ✅ Complet | Écran unifié `DashboardComponent` (route `dashboard/:sujetId/:annee/:mois?`) — remplace les anciens écrans séparés dashboard-annuel/dashboard-mensuel ; sujet = foyer ou membre |
 | **Patrimoine / net worth** | ❌ **Non implémenté** | Aucune notion d'actif patrimonial (supprimée) ; aucun endpoint/service de calcul de patrimoine net, aucun écran dédié |
 | **Comparaison de scénarios** | ❌ **Non implémenté** | Aucun endpoint ni écran côte-à-côte multi-scénarios |
 | **Pagination/tri des listes API** | ❌ **Non implémenté** | Toutes les listes renvoient un tableau JSON brut |
@@ -54,9 +55,11 @@ ch.homely
 ├── poste/          Poste (+ posteOrigineId), RepartitionPoste, VentilationCompte,
 │                   PosteValidator, PosteService (reviser/annuler/decaler/cloturer/reactiver)
 ├── objectif/       Objectif (compte obligatoire) + calculs progression/épargne requise
-├── moteur/         ★ MoteurCalcul (pur, records immuables) — cœur du calcul budgétaire
-└── projection/     ProjectionService (cache Caffeine) + ProjectionController +
-                    ProjectionExtraController (comparaison/aperçu — comparaison NON implémentée)
+├── moteur/         ★ MoteurCalcul (pur, records immuables) — cœur du calcul budgétaire,
+│                   inclut la détection d'événements budgétaires (`evenements`)
+└── projection/     ProjectionService (cache Caffeine) + ProjectionController (annuelle,
+                    tresorerie, mensuelle, evenements) + ProjectionExtraController
+                    (aperçu poste — comparaison de scénarios NON implémentée)
 ```
 
 **Migrations Flyway** (`src/main/resources/db/migration`) :
@@ -78,6 +81,7 @@ ch.homely
 | V13 | Suppression de la colonne `ordre` sur membre/compte/categorie/actif |
 | V14 | Suppression de la table legacy `repartition_defaut` |
 | V15 | Suppression de la notion d'actif patrimonial (table `actif`, `objectif.actif_id`) ; `objectif.compte_id` devient obligatoire |
+| V16 | Second foyer de démonstration « Foyer Berthoud » (anonymisé : prénoms, libellés et montants ±5-15 % modifiés) — 2 membres, 8 comptes, 20 catégories, 1 scénario de référence avec périodes de répartition, postes et ventilations |
 
 Détails endpoints : [doc 04](04-api-spec.md). Détails schéma : [doc 02](02-domain-and-data-model.md).
 
@@ -87,20 +91,22 @@ Détails endpoints : [doc 04](04-api-spec.md). Détails schéma : [doc 02](02-do
 frontend/src/app
 ├── core/        guards (auth), interceptors (jwt refresh, date), services (ContexteService,
 │                I18nService…), pipes (montant/date/pct/périodicité), constants, models
-├── shared/      composants réutilisables (carte-bilan, tag)
-├── shell/       topbar, sidebar-menu, foyer-scenario-switcher
+├── shared/      composants réutilisables (carte-bilan, tag, tab-group, page-nav,
+│                metric-ring, stat-grid, kpi-chip-row, event-grid, objective-progress)
+├── shell/       topbar, sidebar-menu (dashboard foyer + par membre), foyer-scenario-switcher
 └── features/
     ├── auth/            login, register
     ├── foyer/           foyer-creation (onboarding), foyer-liste
     ├── referentiels/     membres, comptes, categories, taux
     ├── scenarios/        scenarios-liste, repartition-periodes
     ├── postes/           postes-liste (revenus/charges/réserves — composant unique paramétré)
-    ├── dashboard/         dashboard-annuel, dashboard-mensuel
+    ├── dashboard/         DashboardComponent unifié (sujet foyer/membre × vue annuelle/mensuelle,
+    │                      pilotée par l'URL) + guards de redirection/rétrocompat
     ├── objectifs/         cartes + progression
     └── parametres/        paramètres foyer, acces (invitations, OWNER)
 ```
 
-17 routes réelles (voir [doc 05 §2](05-frontend-spec.md)). Pas de feature `patrimoine/`
+Routes réelles (voir [doc 05 §2](05-frontend-spec.md)). Pas de feature `patrimoine/`
 ni de route de comparaison de scénarios. Détails écrans : [doc 05](05-frontend-spec.md).
 
 **Versions réelles** (`frontend/package.json`) : Angular `^22.0.5`, PrimeNG `^22.0.0`,
@@ -135,6 +141,20 @@ Tailwind `^4.3.2`, `@ngx-translate/core` `^18.0.0`, Chart.js `^4.4.7`.
 | Tests unitaires frontend | Implicitement attendus | 0 fichier `.spec.ts` | 03 §8, 05 §6, 06 T11.5 |
 | CI GitHub Actions | Tâche ouverte (cohérent) | Confirmé absent | 03 §8, 06 T0.4/T11.6 |
 
+## 6-bis. Écarts documentation ↔ code (cartographie suivante — code évolué depuis §6)
+
+> Le code a continué d'évoluer après la cartographie du §6 (moteur d'événements +
+> refonte du dashboard) sans que docs 00/01/02/04/05/06 soient mis à jour en conséquence
+> (doc 03 avait déjà partiellement suivi, voir son §2.2 « Exemple vécu »). Corrigé par
+> cette passe :
+
+| Écart | Avant | Après correction | Documents mis à jour |
+|---|---|---|---|
+| Moteur — événements budgétaires (`MoteurCalcul#evenements`, `TypeEvenement`) | Non documenté | Documenté (règle + tests golden `MoteurEvenementsTest`) | 01 §8-ter |
+| Endpoint `GET .../projection/evenements` | Non documenté | Documenté (params `annee`/`membreId`, DTO, tri) | 04 §9.3-bis, 06 T8.8 |
+| Dashboard unifié (route `dashboard/:sujetId/:annee/:mois?`, sujet foyer/membre) | Documenté comme deux écrans séparés `dashboard-annuel`/`dashboard-mensuel` | Réécrit : écran unique `DashboardComponent`, tableau de bord **par membre** (nouveau), frise d'événements, composants partagés (`tab-group`, `page-nav`, `metric-ring`, `stat-grid`, `kpi-chip-row`, `event-grid`) | 05 §2, §3.1, §4.0 ; 00 §2/§4 ; 06 T10.4/T10.5/T10.9 fusionnées en T10.11 ; 03 (arbre `dashboard/`, `shared/`) |
+| Migration `V16__seed_foyer_exemple.sql` (second foyer démo « Berthoud ») | Non documentée | Documentée (tableau migrations, historique) | 00 §3, 02 §4, 06 T6.3 |
+
 ## 7. Comment naviguer la documentation
 
 | # | Document | Contenu |
@@ -146,6 +166,7 @@ Tailwind `^4.3.2`, `@ngx-translate/core` `^18.0.0`, Chart.js `^4.4.7`.
 | 4 | [`04-api-spec.md`](04-api-spec.md) | Contrats REST |
 | 5 | [`05-frontend-spec.md`](05-frontend-spec.md) | Écrans, composants, patterns Angular |
 | 6 | [`06-backlog-and-tasks.md`](06-backlog-and-tasks.md) | Backlog séquencé, statuts corrigés |
+
 
 > Cette cartographie a été produite par exploration factuelle du code (pas d'hypothèse) ;
 > elle devra être ré-exécutée périodiquement (ex. à chaque jalon du backlog) pour rester

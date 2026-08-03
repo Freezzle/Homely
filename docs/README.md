@@ -98,7 +98,13 @@ d'abord les tests depuis les vecteurs fournis, puis implémenter jusqu'au vert.
   classification `AUTO`/`REVERSE_AUTO`/`CUSTOM` par poste.
 - Paramètres de poste enrichis : `mode`, `moment`, `nature` (`EFFECTIF`/`ESTIMATION`).
 - Projection annuelle enrichie : `mois`, `moisReel`, `moisParMembre`, `moisParMembreReel`.
-- Dashboard mensuel : KPI foyer + ventilations catégories + synthèse par membre.
+- Moteur — détection d'**événements budgétaires** (`MoteurCalcul#evenements` :
+  DEBUT/FIN/REVISION de poste par mois) exposée via `GET .../projection/evenements`
+  (filtrage/prorata par membre côté backend).
+- **Tableau de bord unifié** (foyer et **par membre**) : écran unique piloté par l'URL
+  (`dashboard/:sujetId/:annee/:mois?`), remplace les anciens écrans séparés annuel/mensuel ;
+  frise chronologique des événements budgétaires, onglets récap/graphiques/échéances/objectifs.
+- Second foyer de démonstration (« Foyer Berthoud », anonymisé) en plus du foyer Charmillot.
 - `run-ng.ps1` : wrapper local pour lancer le frontend Angular (`ng serve`).
 
 **Non implémenté à ce jour** (malgré une mention antérieure « fait » dans le backlog,

@@ -410,6 +410,44 @@ Renvoie la trésorerie cumulée sur toutes les années de l'horizon :
 `parCompteMembre` permet d'afficher les charges par compte et par membre (graphique
 horizontal dans le dashboard mensuel).
 
+### 9.3-bis Événements budgétaires (frise chronologique)
+
+`GET …/scenarios/{scenarioId}/projection/evenements?annee=2026&membreId={membreId?}`
+(route indépendante, sous `ProjectionController` comme les autres endpoints `/projection`)
+— voir [doc 01 §8-ter](01-business-rules-engine.md) pour la sémantique du moteur
+(`MoteurCalcul#evenements`). Rôle minimal requis : `VIEWER`.
+
+- `annee` (obligatoire) : année pour laquelle détecter les événements DEBUT/FIN/REVISION.
+- `membreId` (optionnel) : si fourni, ne renvoie que les événements où la quote-part
+  effective du membre est &gt; 0 ce mois-là ; les montants (`montant`/`montantOrigine`)
+  sont déjà proratisés côté backend (jamais recalculés côté frontend).
+
+Réponse — liste triée (mois croissant, puis FIN &gt; REVISION &gt; DEBUT, puis
+description) :
+```json
+[
+  {
+    "mois": 6,
+    "type": "REVISION",
+    "posteId": "uuid",
+    "description": "Loyer",
+    "categorieId": "uuid",
+    "typePoste": "CHARGE",
+    "nature": "EFFECTIF",
+    "montant": -50.0,
+    "periodiciteMois": 1,
+    "mode": "MENSUALISE",
+    "montantOrigine": -300.0,
+    "periodiciteMoisOrigine": 1,
+    "modeOrigine": "MENSUALISE",
+    "quotePart": 1.0
+  }
+]
+```
+`montant`/`montantOrigine` sont **bruts** (non mensualisés) et signés (+ REVENU,
+− CHARGE/RESERVE) ; `montantOrigine`/`periodiciteMoisOrigine`/`modeOrigine` sont `null`
+sauf pour `type: "REVISION"`. `quotePart` vaut `1` en vue foyer (pas de `membreId`).
+
 ### 9.4 Patrimoine / net worth — ⚠️ NON IMPLÉMENTÉ (spécification cible)
 
 > **État réel (2026) : cet endpoint n'existe pas dans le code.** Aucun service/contrôleur
