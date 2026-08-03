@@ -365,6 +365,7 @@
     "prevuVsReelDescription": "Compares, month by month, planned (smoothed) charges and reserves against actual due dates (full amount posted to the month it actually falls in).",
     "previsuMensualise": "Planned (smoothed)",
     "reelEcheances": "Actual (due dates)",
+    "differentielPrevuReel": "Difference (planned - actual)",
     "soldeMedianRobuste": "Median balance",
     "soldeMedianRobusteHint": "Average over 10 months, worst and best month excluded",
     "ceQuiChange": "What's changing",

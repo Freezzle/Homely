@@ -993,12 +993,27 @@ export class DashboardComponent {
   readonly prevuVsReelOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    // 'index' + intersect:false : le survol de n'importe quel point du mois affiche
+    // le prévu et le réel ensemble, comme sur le graphique du flux mensuel.
+    interaction: { mode: 'index', intersect: false },
     plugins: {
       legend: { display: true, position: 'bottom' as const },
       tooltip: {
+        mode: 'index',
+        intersect: false,
         callbacks: {
           label: (ctx: { dataset: { label?: string }; parsed: { y: number } }) =>
             `${ctx.dataset.label}: ${this.formatMontant(ctx.parsed.y)}`,
+          // Ligne récapitulative en bas du tooltip : différentiel prévu - réel du mois survolé.
+          footer: (items: { dataIndex: number }[]) => {
+            const index = items[0]?.dataIndex;
+            const prevu = this.moisAgregatsCourant()[index]?.charges;
+            const reserves = this.moisAgregatsCourant()[index]?.reserves;
+            const reel = this.moisReelAgregatsCourant()[index];
+            if (index === undefined || prevu === undefined || reserves === undefined || !reel) return '';
+            const diff = (prevu + reserves) - (reel.charges + reel.reserves);
+            return `${this.t.dashboard.differentielPrevuReel}: ${this.formatMontant(diff)}`;
+          },
         },
       },
     },
