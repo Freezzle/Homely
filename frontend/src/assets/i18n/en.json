@@ -363,7 +363,7 @@
     "tresorerieCumulee": "Cumulative cash flow",
     "fluxMensuelDescription": "Monthly flow, month by month, over the scenario horizon.",
     "graphiques": "Charts",
-    "prevuVsReel": "Scenario vs actual",
+    "prevuVsReel": "Scenario vs due dates",
     "prevuVsReelDescription": "Compares, month by month, scenario charges and reserves against actual due dates (full amount posted to the month it falls in).",
     "previsuRevenu": "Planned Incomes",
     "previsuMensualise": "Planned Expenses+Savings",

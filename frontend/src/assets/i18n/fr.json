@@ -363,7 +363,7 @@
     "fluxMensuelDescription": "Flux mensuel, mois par mois, sur l'horizon des postes scénarisés.",
     "tresorerieCumulee": "Trésorerie cumulée",
     "graphiques": "Graphiques",
-    "prevuVsReel": "Scénarisé vs réel",
+    "prevuVsReel": "Scénarisé vs échéances",
     "prevuVsReelDescription": "Compare, mois par mois, les charges et réserves scénarisées aux échéances réelles (montant plein imputé au mois où il tombe).",
     "previsuRevenu": "Revenus scénarisés",
     "previsuMensualise": "Charges+Réserves scénarisés",
