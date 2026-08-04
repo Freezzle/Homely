@@ -24,7 +24,7 @@ export class TopbarComponent implements OnInit {
   private auth = inject(AuthService);
 
   // Visibilité de la dialogue de sélection foyer/scénario.
-  readonly switcherVisible = signal(false);
+  switcherVisible = signal(false);
 
   // Libellé texte affiché à la place des anciens selects : "Foyer · Scénario".
   readonly libelleContexte = computed(() => {
