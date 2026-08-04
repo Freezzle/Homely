@@ -93,6 +93,21 @@ public class Poste {
     private int ordre = 0;
 
     /**
+     * Importance « vitale » du poste, sur une échelle de 1 (non vital) à 5 (vital).
+     * Champ descriptif : n'a aucun impact sur les calculs du moteur.
+     */
+    @Column(nullable = false)
+    private int importance = 3;
+
+    /**
+     * Potentiel d'optimisation du montant du poste, sur une échelle de 1 (non
+     * optimisable) à 5 (très optimisable). Champ descriptif : n'a aucun impact
+     * sur les calculs du moteur.
+     */
+    @Column(name = "potentiel_optimisation", nullable = false)
+    private int potentielOptimisation = 3;
+
+    /**
      * Poste dont ce poste est issu par une révision de montant planifiée.
      * Null si ce poste n'appartient pas à une chaîne de révisions.
      */

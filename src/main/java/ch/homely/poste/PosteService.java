@@ -179,6 +179,8 @@ public class PosteService {
         nouveau.setEstimPourcentage(actuel.getEstimPourcentage());
         nouveau.setTypeRepartition(actuel.getTypeRepartition());
         nouveau.setOrdre(actuel.getOrdre());
+        nouveau.setImportance(actuel.getImportance());
+        nouveau.setPotentielOptimisation(actuel.getPotentielOptimisation());
         nouveau.setPosteOrigineId(actuel.getId());
 
         for (RepartitionPoste rp : actuel.getRepartitions()) {
@@ -358,6 +360,14 @@ public class PosteService {
         p.setMoment(req.moment());
         p.setNature(req.nature() != null ? req.nature() : NaturePoste.EFFECTIF);
         p.setOrdre(req.ordre());
+        int importance = req.importance() != null ? req.importance() : 3;
+        if (importance < 1) importance = 1;
+        if (importance > 5) importance = 5;
+        p.setImportance(importance);
+        int potentielOptimisation = req.potentielOptimisation() != null ? req.potentielOptimisation() : 3;
+        if (potentielOptimisation < 1) potentielOptimisation = 1;
+        if (potentielOptimisation > 5) potentielOptimisation = 5;
+        p.setPotentielOptimisation(potentielOptimisation);
 
         if (req.categorieId() != null) {
             Categorie cat = categorieRepo.findByIdAndFoyerId(req.categorieId(), foyerId)
@@ -463,7 +473,7 @@ public class PosteService {
                 p.getDebut(), p.getFin(), p.getMode(), p.getMoment(), p.getNature(),
                 p.getEstimPourcentage(),
                 p.getTypeRepartition(),
-                p.getOrdre(), reps, vents,
+                p.getOrdre(), p.getImportance(), p.getPotentielOptimisation(), reps, vents,
                 p.getPosteOrigineId(), successeurParOrigine.get(p.getId()));
     }
 }

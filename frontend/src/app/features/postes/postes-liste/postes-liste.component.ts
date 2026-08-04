@@ -359,6 +359,14 @@ export class PostesListeComponent {
       : this.t.poste.natureOptions.EFFECTIF;
   }
 
+  importanceTooltip(n: number): string {
+    return this.t.poste.importanceValeur.replace('{{n}}', String(n));
+  }
+
+  potentielOptimisationTooltip(n: number): string {
+    return this.t.poste.potentielOptimisationValeur.replace('{{n}}', String(n));
+  }
+
   afficheMontantMensualise(p: PosteDto): boolean {
     return p.periodiciteMois !== 0 && p.periodiciteMois !== 1 && p.mode === 'MENSUALISE';
   }

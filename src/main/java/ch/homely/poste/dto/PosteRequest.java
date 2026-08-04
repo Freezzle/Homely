@@ -8,6 +8,7 @@ import ch.homely.poste.TypeRepartition;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -28,6 +29,8 @@ public record PosteRequest(
         @DecimalMin("0.0") @DecimalMax("100.0") BigDecimal estimPourcentage,  // Obligatoire si nature=ESTIMATION, sinon nullable
         TypeRepartition typeRepartition,   // null → AUTO
         int ordre,
+        @Min(1) @Max(5) Integer importance,  // null → 3 (neutre)
+        @Min(1) @Max(5) Integer potentielOptimisation,  // null → 3 (neutre)
         @Valid List<RepartitionPosteDto> repartitions,
         @Valid List<VentilationCompteDto> ventilations
 ) {

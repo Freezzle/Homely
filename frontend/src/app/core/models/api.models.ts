@@ -91,6 +91,8 @@ export interface PosteDto {
   estimPourcentage?: number;  // Pourcentage d'estimation (nullable si nature=EFFECTIF)
   typeRepartition: TypeRepartition;
   ordre: number;
+  importance: number;  // 1 (non vital) à 5 (vital)
+  potentielOptimisation: number;  // 1 (non optimisable) à 5 (très optimisable)
   repartitions: RepartitionPosteDto[];
   ventilations: VentilationCompteDto[];
   posteOrigineId?: string;   // Poste dont ce poste est issu par révision de montant
@@ -104,6 +106,8 @@ export interface PosteRequest {
   estimPourcentage?: number;  // Obligatoire si nature=ESTIMATION
   typeRepartition?: TypeRepartition;
   ordre: number;
+  importance?: number;  // 1 (non vital) à 5 (vital), défaut 3
+  potentielOptimisation?: number;  // 1 (non optimisable) à 5 (très optimisable), défaut 3
   repartitions?: { membreId: string; quotePart: number; }[];
   ventilations?: { membreId: string; compteId: string; }[];
 }

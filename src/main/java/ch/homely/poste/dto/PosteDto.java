@@ -28,6 +28,8 @@ public record PosteDto(
         BigDecimal estimPourcentage,  // Pourcentage d'estimation (nullable si nature=EFFECTIF)
         TypeRepartition typeRepartition,
         int ordre,
+        int importance,  // 1 (non vital) à 5 (vital) — descriptif, sans impact sur les calculs
+        int potentielOptimisation,  // 1 (non optimisable) à 5 (très optimisable) — descriptif
         List<RepartitionPosteDto> repartitions,
         List<VentilationCompteDto> ventilations,
         UUID posteOrigineId,  // Poste dont ce poste est issu par révision de montant (null si aucun)

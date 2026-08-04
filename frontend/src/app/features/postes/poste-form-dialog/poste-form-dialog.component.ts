@@ -13,6 +13,7 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { MessageModule } from 'primeng/message';
 import { TooltipModule } from 'primeng/tooltip';
 import { StepperModule } from 'primeng/stepper';
+import { SliderModule } from 'primeng/slider';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ContexteService } from '../../../core/services/contexte.service';
@@ -51,7 +52,7 @@ type Etape = 0 | 1 | 2 | 3;
   imports: [
     CommonModule, FormsModule, ReactiveFormsModule, DialogModule, ButtonModule, InputTextModule,
     InputNumberModule, SelectModule, SelectButtonModule, DatePickerModule, MessageModule, TooltipModule,
-    StepperModule, ConfirmDialogModule, MembresTagsComponent, MontantPipe, PeriodicitePipe,
+    StepperModule, ConfirmDialogModule, SliderModule, MembresTagsComponent, MontantPipe, PeriodicitePipe,
   ],
   templateUrl: './poste-form-dialog.component.html',
 })
@@ -97,6 +98,8 @@ export class PosteFormDialogComponent {
     moment:          ['DEBUT_PERIODE' as MomentPeriode],
     nature:          ['EFFECTIF'],
     estimPourcentage: [null as number | null, [Validators.min(0), Validators.max(100)]],
+    importance:      [3, [Validators.required, Validators.min(1), Validators.max(5)]],
+    potentielOptimisation: [3, [Validators.required, Validators.min(1), Validators.max(5)]],
     typeRepartition: ['AUTO' as TypeRepartition],
     debut:           [null as Date | null, Validators.required],
     fin:             [null as Date | null],
@@ -271,7 +274,7 @@ export class PosteFormDialogComponent {
     this.form.reset({
       mode: 'MENSUALISE', moment: 'DEBUT_PERIODE', nature: 'EFFECTIF',
       periodiciteMois: 0, devise: this.contexte.deviseBase(),
-      typeRepartition: 'AUTO', estimPourcentage: null,
+      typeRepartition: 'AUTO', estimPourcentage: null, importance: 3, potentielOptimisation: 3,
     });
     this.initialiserRepartitions(undefined);
     this.frequenceChoisie.set(null);
@@ -292,6 +295,8 @@ export class PosteFormDialogComponent {
       montant: p.montant, devise: p.devise ?? this.contexte.deviseBase(), periodiciteMois: p.periodiciteMois ?? 0,
       mode: p.mode, moment: p.moment, nature: p.nature ?? 'EFFECTIF',
       estimPourcentage: p.estimPourcentage ?? null,
+      importance: p.importance ?? 3,
+      potentielOptimisation: p.potentielOptimisation ?? 3,
       typeRepartition: p.typeRepartition ?? 'AUTO',
       debut: p.debut ? parseIsoDateLocal(p.debut) : null,
       fin: p.fin ? parseIsoDateLocal(p.fin) : null,
@@ -692,6 +697,8 @@ export class PosteFormDialogComponent {
       moment:          (estOneShot ? 'DEBUT_PERIODE' : v.moment) as any,
       nature:          (v.nature ?? 'EFFECTIF') as any,
       estimPourcentage: v.nature === 'ESTIMATION' ? v.estimPourcentage ?? undefined : undefined,
+      importance:      v.importance ?? 3,
+      potentielOptimisation: v.potentielOptimisation ?? 3,
       typeRepartition,
       debut:           v.debut ? toIsoDateLocal(v.debut) : undefined,
       fin:             estOneShot ? undefined : (v.fin ? toIsoDateLocal(v.fin) : undefined),

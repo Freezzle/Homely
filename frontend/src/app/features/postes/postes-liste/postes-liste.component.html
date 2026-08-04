@@ -190,6 +190,22 @@
                                                [severity]="'warn'"
                                                class="text-[10px] py-0.5 shrink-0"/>
                                     }
+                                    @if (p.importance && p.importance !== 3) {
+                                        <i class="pi pi-heart-fill text-[11px] shrink-0"
+                                           [class.text-surface-400]="p.importance === 1"
+                                           [class.text-blue-400]="p.importance === 2"
+                                           [class.text-amber-500]="p.importance === 4"
+                                           [class.text-red-500]="p.importance === 5"
+                                           [pTooltip]="importanceTooltip(p.importance)"></i>
+                                    }
+                                    @if (p.potentielOptimisation && p.potentielOptimisation !== 3) {
+                                        <i class="pi pi-arrows-h text-[11px] shrink-0"
+                                           [class.text-surface-400]="p.potentielOptimisation === 1"
+                                           [class.text-blue-400]="p.potentielOptimisation === 2"
+                                           [class.text-amber-500]="p.potentielOptimisation === 4"
+                                           [class.text-red-500]="p.potentielOptimisation === 5"
+                                           [pTooltip]="potentielOptimisationTooltip(p.potentielOptimisation)"></i>
+                                    }
                                     @if (p.posteOrigineId) {
                                         <p-tag [value]="t.poste.revisionTag"
                                                [severity]="'info'"
