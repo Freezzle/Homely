@@ -1,5 +1,6 @@
 package ch.homely.poste;
 
+import ch.homely.poste.dto.PosteActionGroupeeRequest;
 import ch.homely.poste.dto.PosteClotureRequest;
 import ch.homely.poste.dto.PosteDecalerDateEffetRequest;
 import ch.homely.poste.dto.PosteDecalerDateEffetResponse;
@@ -7,6 +8,7 @@ import ch.homely.poste.dto.PosteDto;
 import ch.homely.poste.dto.PosteRequest;
 import ch.homely.poste.dto.PosteRevisionRequest;
 import ch.homely.poste.dto.PosteRevisionResponse;
+import ch.homely.poste.dto.PosteSuppressionGroupeeRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -62,6 +64,19 @@ public class PosteController {
     public ResponseEntity<Void> supprimer(@PathVariable UUID foyerId, @PathVariable UUID scenarioId,
                                            @PathVariable UUID posteId) {
         posteService.supprimer(foyerId, scenarioId, posteId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/actions-groupees")
+    public List<PosteDto> actionsGroupees(@PathVariable UUID foyerId, @PathVariable UUID scenarioId,
+                                           @Valid @RequestBody PosteActionGroupeeRequest req) {
+        return posteService.mettreAJourGroupee(foyerId, scenarioId, req);
+    }
+
+    @PostMapping("/supprimer-groupe")
+    public ResponseEntity<Void> supprimerGroupe(@PathVariable UUID foyerId, @PathVariable UUID scenarioId,
+                                                 @Valid @RequestBody PosteSuppressionGroupeeRequest req) {
+        posteService.supprimerGroupe(foyerId, scenarioId, req);
         return ResponseEntity.noContent().build();
     }
 

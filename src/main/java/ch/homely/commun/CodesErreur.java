@@ -27,4 +27,6 @@ public final class CodesErreur {
     public static final String POSTE_SANS_REVISION             = "POSTE_SANS_REVISION";
     public static final String POSTE_MAILLON_INTERMEDIAIRE     = "POSTE_MAILLON_INTERMEDIAIRE";
     public static final String POSTE_MOMENT_INCONNU_MODE_INVALIDE = "POSTE_MOMENT_INCONNU_MODE_INVALIDE";
+    public static final String POSTE_HORS_SCENARIO             = "POSTE_HORS_SCENARIO";
+    public static final String ACTION_GROUPEE_CHAMP_MANQUANT   = "ACTION_GROUPEE_CHAMP_MANQUANT";
 }

@@ -1,0 +1,14 @@
+<p-dialog [visible]="visible()" (visibleChange)="visibleChange.emit($event)"
+          [header]="titre()"
+          [modal]="true" class="w-full max-w-md">
+
+    <p class="text-sm text-surface-600 dark:text-surface-300 pt-2">
+        {{ message() }}
+    </p>
+
+    <ng-template #footer>
+        <p-button [label]="t.commun.annuler" severity="secondary" (click)="fermer()"/>
+        <p-button [label]="t.commun.supprimer" severity="danger" (click)="confirmer()"
+                  [loading]="enregistrementEnCours"/>
+    </ng-template>
+</p-dialog>

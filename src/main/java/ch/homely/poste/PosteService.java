@@ -14,6 +14,8 @@ import ch.homely.moteur.MoteurCalcul;
 import ch.homely.moteur.PosteCalcul;
 import ch.homely.moteur.RepartitionCalcul;
 import ch.homely.poste.dto.PosteClotureRequest;
+import ch.homely.poste.dto.PosteActionGroupeeRequest;
+import ch.homely.poste.dto.PosteSuppressionGroupeeRequest;
 import ch.homely.poste.dto.PosteDecalerDateEffetRequest;
 import ch.homely.poste.dto.PosteDecalerDateEffetResponse;
 import ch.homely.poste.dto.PosteDto;
@@ -131,6 +133,80 @@ public class PosteService {
         Poste p = trouver(scenarioId, posteId);
         posteRepo.delete(p);
         projectionService.invaliderCache(scenarioId);
+    }
+
+    /**
+     * Applique la même valeur d'un champ descriptif (catégorie/importance/potentiel
+     * d'optimisation) à un ensemble de postes en une seule opération atomique.
+     * Une seule vérification multi-tenant et une seule invalidation de cache projection.
+     */
+    public List<PosteDto> mettreAJourGroupee(UUID foyerId, UUID scenarioId, PosteActionGroupeeRequest req) {
+        multiTenant.verifierAcces(foyerId, RoleFoyer.EDITOR);
+        verifierScenario(foyerId, scenarioId);
+
+        List<Poste> postes = chargerEtVerifierAppartenance(scenarioId, req.ids());
+
+        switch (req.champ()) {
+            case CATEGORIE -> {
+                Categorie cat = null;
+                if (req.categorieId() != null) {
+                    cat = categorieRepo.findByIdAndFoyerId(req.categorieId(), foyerId)
+                            .orElseThrow(() -> new RessourceIntrouvableException(
+                                    "Catégorie introuvable : " + req.categorieId()));
+                }
+                for (Poste p : postes) {
+                    p.setCategorie(cat);
+                }
+            }
+            case IMPORTANCE -> {
+                if (req.importance() == null) {
+                    throw new RegleMetierException(CodesErreur.ACTION_GROUPEE_CHAMP_MANQUANT,
+                            "importance est requis pour une action groupée sur le champ IMPORTANCE");
+                }
+                for (Poste p : postes) {
+                    p.setImportance(req.importance());
+                }
+            }
+            case POTENTIEL_OPTIMISATION -> {
+                if (req.potentielOptimisation() == null) {
+                    throw new RegleMetierException(CodesErreur.ACTION_GROUPEE_CHAMP_MANQUANT,
+                            "potentielOptimisation est requis pour une action groupée sur le champ POTENTIEL_OPTIMISATION");
+                }
+                for (Poste p : postes) {
+                    p.setPotentielOptimisation(req.potentielOptimisation());
+                }
+            }
+        }
+
+        List<Poste> sauvegardes = posteRepo.saveAll(postes);
+        projectionService.invaliderCache(scenarioId);
+        return sauvegardes.stream().map(p -> toDto(p, Map.of())).toList();
+    }
+
+    /**
+     * Supprime plusieurs postes en une seule opération atomique. Une seule vérification
+     * multi-tenant et une seule invalidation de cache projection.
+     */
+    public void supprimerGroupe(UUID foyerId, UUID scenarioId, PosteSuppressionGroupeeRequest req) {
+        multiTenant.verifierAcces(foyerId, RoleFoyer.EDITOR);
+        verifierScenario(foyerId, scenarioId);
+
+        List<Poste> postes = chargerEtVerifierAppartenance(scenarioId, req.ids());
+        posteRepo.deleteAll(postes);
+        projectionService.invaliderCache(scenarioId);
+    }
+
+    /**
+     * Charge les postes demandés et vérifie qu'ils appartiennent tous bien au scénario
+     * (protection contre une tentative de modification d'un poste d'un autre scénario/foyer).
+     */
+    private List<Poste> chargerEtVerifierAppartenance(UUID scenarioId, List<UUID> ids) {
+        List<Poste> postes = posteRepo.findAllByScenarioIdAndIdIn(scenarioId, ids);
+        if (postes.size() != ids.stream().distinct().count()) {
+            throw new RegleMetierException(CodesErreur.POSTE_HORS_SCENARIO,
+                    "Un ou plusieurs postes n'appartiennent pas à ce scénario");
+        }
+        return postes;
     }
 
     /**

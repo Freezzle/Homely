@@ -16,7 +16,7 @@ import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
 import { ContexteService } from '../../../core/services/contexte.service';
 import { PosteService } from '../../../core/services/scenario-poste.service';
 import { CategorieService, CompteService } from '../../../core/services/referentiel.service';
-import { PosteDto, CategorieDto, CompteDto, MembreDto, VentilationCompteDto, TypePoste } from '../../../core/models/api.models';
+import { PosteDto, CategorieDto, CompteDto, MembreDto, VentilationCompteDto, TypePoste, ChampGroupable } from '../../../core/models/api.models';
 import { MontantPipe, PeriodicitePipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { localeDeLangue } from '../../../core/i18n/locale.util';
@@ -30,6 +30,8 @@ import { PosteRevisionDialogComponent } from '../poste-revision-dialog/poste-rev
 import { PosteClotureDialogComponent } from '../poste-cloture-dialog/poste-cloture-dialog.component';
 import { PosteDecalageDialogComponent } from '../poste-decalage-dialog/poste-decalage-dialog.component';
 import { PosteFormDialogComponent } from '../poste-form-dialog/poste-form-dialog.component';
+import { PosteBulkChampDialogComponent } from '../poste-bulk-champ-dialog/poste-bulk-champ-dialog.component';
+import { PosteBulkSuppressionDialogComponent } from '../poste-bulk-suppression-dialog/poste-bulk-suppression-dialog.component';
 
 /**
  * Poste enrichi de métadonnées d'affichage calculées côté front pour le regroupement
@@ -54,7 +56,8 @@ interface PosteAffiche extends PosteDto {
             InputTextModule, SelectModule, MultiSelectModule,
             TagModule, TooltipModule, ConfirmDialogModule, SkeletonModule, CheckboxModule,
             MenuModule,
-            MontantPipe, PeriodicitePipe, MembresTagsComponent, PosteApercuDialogComponent, PosteHistoriqueDrawerComponent, PosteRevisionDialogComponent, PosteClotureDialogComponent, PosteDecalageDialogComponent, PosteFormDialogComponent],
+            MontantPipe, PeriodicitePipe, MembresTagsComponent, PosteApercuDialogComponent, PosteHistoriqueDrawerComponent, PosteRevisionDialogComponent, PosteClotureDialogComponent, PosteDecalageDialogComponent, PosteFormDialogComponent,
+            PosteBulkChampDialogComponent, PosteBulkSuppressionDialogComponent],
   templateUrl: './postes-liste.component.html',
 })
 export class PostesListeComponent {
@@ -112,6 +115,88 @@ export class PostesListeComponent {
     if (!p) return null;
     return this.postes().find(x => x.posteOrigineId === p.id) ?? null;
   });
+
+  // ── Sélection multiple et actions groupées ────────────────────────────────
+  /** Mode sélection : les cases à cocher ne sont visibles que lorsqu'il est actif,
+   *  pour ne pas encombrer la liste au quotidien. */
+  modeSelection = signal(false);
+  selection = signal<Set<string>>(new Set());
+
+  /** Ids ciblés par le dialog bulk courant : la sélection multiple, ou un poste unique
+   *  (action déclenchée depuis le sous-menu "Changer une valeur" d'un élément isolé). */
+  bulkIds = signal<string[]>([]);
+  bulkChampDialogVisible = false;
+  bulkChampCourant: ChampGroupable = 'CATEGORIE';
+  bulkSuppressionDialogVisible = false;
+
+  /** Vrai si au moins un poste sélectionné appartient à une chaîne de révisions :
+   *  la suppression groupée est alors désactivée pour éviter une incohérence. */
+  selectionContientChaine = computed(() => {
+    const ids = this.selection();
+    return this.postes().some(p => ids.has(p.id) && this.estDansChaine(p));
+  });
+
+  isSelectionne(id: string): boolean {
+    return this.selection().has(id);
+  }
+
+  toggleSelection(id: string): void {
+    const courant = new Set(this.selection());
+    if (courant.has(id)) courant.delete(id); else courant.add(id);
+    this.selection.set(courant);
+  }
+
+  /** Active ou quitte le mode sélection. En quittant, la sélection en cours est vidée. */
+  toggleModeSelection(): void {
+    if (this.modeSelection()) {
+      this.modeSelection.set(false);
+      this.effacerSelection();
+    } else {
+      this.modeSelection.set(true);
+    }
+  }
+
+  effacerSelection(): void {
+    this.selection.set(new Set());
+  }
+
+  /** Ouvre le dialog bulk d'un champ donné pour la sélection multiple courante. */
+  ouvrirBulkChamp(champ: ChampGroupable): void {
+    this.bulkIds.set(Array.from(this.selection()));
+    this.bulkChampCourant = champ;
+    this.bulkChampDialogVisible = true;
+  }
+
+  /** Ouvre le dialog bulk d'un champ donné pour un poste unique (sous-menu individuel). */
+  ouvrirBulkChampPourPoste(p: PosteDto, champ: ChampGroupable): void {
+    this.bulkIds.set([p.id]);
+    this.bulkChampCourant = champ;
+    this.bulkChampDialogVisible = true;
+  }
+
+  onBulkChampVisibleChange(visible: boolean): void {
+    this.bulkChampDialogVisible = visible;
+  }
+
+  ouvrirBulkSuppression(): void {
+    this.bulkIds.set(Array.from(this.selection()));
+    this.bulkSuppressionDialogVisible = true;
+  }
+
+  onBulkSuppressionVisibleChange(visible: boolean): void {
+    this.bulkSuppressionDialogVisible = visible;
+  }
+
+  /** Après une mise à jour groupée réussie : recharge la liste, conserve la sélection active. */
+  onBulkChampEnregistre(): void {
+    this.charger();
+  }
+
+  /** Après une suppression groupée réussie : recharge la liste et vide la sélection. */
+  onBulkSuppressionEnregistre(): void {
+    this.effacerSelection();
+    this.charger();
+  }
 
   triActuel = signal<'DATE' | 'CATEGORIE' | 'DESCRIPTION'>('CATEGORIE');
   cacherInactifs = signal(true);
@@ -398,6 +483,15 @@ export class PostesListeComponent {
           items.push({ label: this.t.poste.terminer, icon: 'pi pi-stop-circle', command: () => this.ouvrirCloture(p) });
         }
       }
+      items.push({
+        label: this.t.poste.bulk.sousMenuChangerValeur,
+        icon: 'pi pi-sliders-h',
+        items: [
+          { label: this.t.poste.bulk.actionCategorie, icon: 'pi pi-tag', command: () => this.ouvrirBulkChampPourPoste(p, 'CATEGORIE') },
+          { label: this.t.poste.bulk.actionImportance, icon: 'pi pi-heart', command: () => this.ouvrirBulkChampPourPoste(p, 'IMPORTANCE') },
+          { label: this.t.poste.bulk.actionPotentiel, icon: 'pi pi-arrows-h', command: () => this.ouvrirBulkChampPourPoste(p, 'POTENTIEL_OPTIMISATION') },
+        ],
+      });
       items.push({ label: this.t.commun.supprimer, icon: 'pi pi-trash', command: () => this.supprimer(p) });
     }
 

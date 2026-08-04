@@ -130,6 +130,21 @@ export interface PosteDecalerDateEffetResponse {
   posteEdite: PosteDto;
 }
 
+// ── Actions groupées sur postes ────────────────────────────────────────────
+export type ChampGroupable = 'CATEGORIE' | 'IMPORTANCE' | 'POTENTIEL_OPTIMISATION';
+
+export interface PosteActionGroupeeRequest {
+  ids: string[];
+  champ: ChampGroupable;
+  categorieId?: string | null;      // requis si champ=CATEGORIE (null = désélection)
+  importance?: number;              // requis si champ=IMPORTANCE
+  potentielOptimisation?: number;   // requis si champ=POTENTIEL_OPTIMISATION
+}
+
+export interface PosteSuppressionGroupeeRequest {
+  ids: string[];
+}
+
 // ── Événements budgétaires ("ce qui change") ───────────────────────────────
 export type TypeEvenement = 'DEBUT' | 'FIN' | 'REVISION';
 export interface EvenementDto {

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ScenarioDto, ScenarioRequest, PosteDto, PosteRequest, PosteRevisionRequest, PosteRevisionResponse,
          PosteClotureRequest, PosteDecalerDateEffetRequest, PosteDecalerDateEffetResponse,
+         PosteActionGroupeeRequest, PosteSuppressionGroupeeRequest,
          ObjectifDto, ObjectifRequest, RepartitionPeriodeDto, RepartitionPeriodeRequest } from '../models/api.models';
 
 @Injectable({ providedIn: 'root' })
@@ -55,6 +56,16 @@ export class PosteService {
   reactiver(foyerId: string, scenarioId: string, posteId: string) {
     return this.http.post<PosteDto>(
       `${this.base(foyerId, scenarioId)}/${posteId}/reactiver`, {}
+    );
+  }
+  actionsGroupees(foyerId: string, scenarioId: string, req: PosteActionGroupeeRequest) {
+    return this.http.post<PosteDto[]>(
+      `${this.base(foyerId, scenarioId)}/actions-groupees`, req
+    );
+  }
+  supprimerGroupe(foyerId: string, scenarioId: string, req: PosteSuppressionGroupeeRequest) {
+    return this.http.post<void>(
+      `${this.base(foyerId, scenarioId)}/supprimer-groupe`, req
     );
   }
 }

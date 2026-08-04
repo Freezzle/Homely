@@ -14,6 +14,9 @@ public interface PosteRepository extends JpaRepository<Poste, UUID> {
 
     Optional<Poste> findByIdAndScenarioId(UUID id, UUID scenarioId);
 
+    /** Utilisé par les actions groupées : charge uniquement les postes appartenant bien au scénario. */
+    List<Poste> findAllByScenarioIdAndIdIn(UUID scenarioId, List<UUID> ids);
+
     /**
      * Recherche le poste (s'il existe) issu d'une révision du poste donné.
      * Sert à vérifier qu'un poste est bien le dernier maillon de sa chaîne
