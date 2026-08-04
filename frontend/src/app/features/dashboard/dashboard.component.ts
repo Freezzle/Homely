@@ -955,17 +955,6 @@ export class DashboardComponent {
       datasets: [
         {
           type: 'line',
-          label: this.t.dashboard.tresorerieCumulee,
-          borderColor: '#42A5F5',
-          backgroundColor: 'rgb(66 165 245 / 0.39)',
-          data: valeurs,
-          tension: 0.25,
-          fill: true,
-          pointRadius: 3,
-          borderWidth: 1,
-        },
-        {
-          type: 'line',
           label: this.t.dashboard.tresorerieCumuleeReel,
           borderColor: '#EF5350',
           backgroundColor: '#EF5350',
@@ -975,6 +964,17 @@ export class DashboardComponent {
           pointRadius: 3,
           borderWidth: 1,
           borderDash: [6, 4],
+        },
+        {
+          type: 'line',
+          label: this.t.dashboard.tresorerieCumulee,
+          borderColor: '#42A5F5',
+          backgroundColor: 'rgb(66 165 245 / 0.39)',
+          data: valeurs,
+          tension: 0.25,
+          fill: true,
+          pointRadius: 3,
+          borderWidth: 1,
         },
       ],
     };
@@ -991,17 +991,6 @@ export class DashboardComponent {
     return {
       labels: this.t.mois,
       datasets: [
-        {
-          type: 'line',
-          label: this.t.dashboard.previsuRevenu,
-          borderColor: '#3BBFA1',
-          backgroundColor: '#3BBFA1',
-          data: prevu.map((m) => m.revenus),
-          tension: 0.25,
-          fill: false,
-          pointRadius: 3,
-          borderWidth: 1,
-        },
         {
           type: 'line',
           label: this.t.dashboard.previsuMensualise,
