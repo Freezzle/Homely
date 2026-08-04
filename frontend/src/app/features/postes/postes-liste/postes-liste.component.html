@@ -28,8 +28,11 @@
                           [pTooltip]="selectionContientChaine() ? t.poste.bulk.supprimerDesactiveTooltip : t.poste.bulk.actionSupprimer"
                           [ariaLabel]="t.poste.bulk.actionSupprimer"
                           (click)="ouvrirBulkSuppression()"/>
-                <p-button icon="pi pi-times" [text]="true" [rounded]="true" severity="secondary"
+                <p-button icon="pi pi-eraser" [text]="true" [rounded]="true" severity="secondary"
                           [pTooltip]="t.poste.bulk.annulerSelection" [ariaLabel]="t.poste.bulk.annulerSelection"
+                          (click)="effacerSelection()"/>
+                <p-button icon="pi pi-times" [text]="true" [rounded]="true" severity="secondary"
+                          [pTooltip]="t.poste.bulk.quitterSelection" [ariaLabel]="t.poste.bulk.quitterSelection"
                           (click)="toggleModeSelection()"/>
             </div>
         </div>
