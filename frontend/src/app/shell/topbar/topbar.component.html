@@ -1,64 +1,42 @@
 <div class="flex flex-wrap items-center gap-2 md:gap-3 px-3 md:px-4 py-2 border-b border-surface-200 dark:border-surface-700 shadow-sm">
-  <!-- Bouton toggle sidebar (mobile uniquement) -->
-  @if (contexte.foyerId()) {
-    <button type="button"
-            pSidebarTrigger
-            target="main-nav"
-            class="lg:hidden inline-flex items-center justify-center w-9 h-9 rounded hover:bg-surface-100 dark:hover:bg-surface-800 text-surface-700 dark:text-surface-200"
-            [attr.aria-label]="t.nav.ouvrirMenu">
-      <i class="pi pi-bars"></i>
-    </button>
-  }
+    <!-- Bouton toggle sidebar (mobile uniquement) -->
+    @if (contexte.foyerId()) {
+        <button type="button"
+                pSidebarTrigger
+                target="main-nav"
+                class="lg:hidden inline-flex items-center justify-center w-9 h-9 rounded hover:bg-surface-100 dark:hover:bg-surface-800 text-surface-700 dark:text-surface-200"
+                [attr.aria-label]="t.nav.ouvrirMenu">
+            <i class="pi pi-bars"></i>
+        </button>
+    }
 
 
-  <!-- Foyer / scénario courants : texte cliquable ouvrant la dialogue de sélection -->
-  @if (contexte.foyerCourant()) {
-    <button type="button"
-            class="flex items-center gap-2 max-w-[50vw] md:max-w-xs px-2 py-1 rounded hover:bg-surface-100 dark:hover:bg-surface-800 text-surface-700 dark:text-surface-200"
-            [pTooltip]="t.foyer.changerContexte"
-            tooltipPosition="bottom"
-            [attr.aria-label]="t.commun.choisirFoyerScenario"
-            (click)="switcherVisible.set(true)">
-      <i class="pi pi-home"></i>
-      <span class="truncate text-sm font-medium">{{ libelleContexte() }}</span>
-    </button>
-  }
+    <!-- Foyer / scénario courants : texte cliquable ouvrant la dialogue de sélection -->
+    @if (contexte.foyerCourant()) {
+        <button type="button"
+                class="flex items-center gap-2 max-w-[70vw] md:max-w-xs px-2 py-1 rounded hover:bg-surface-100 dark:hover:bg-surface-800 text-surface-700 dark:text-surface-200"
+                [pTooltip]="t.foyer.changerContexte"
+                tooltipPosition="bottom"
+                [attr.aria-label]="t.commun.choisirFoyerScenario"
+                (click)="switcherVisible.set(true)">
+            <i class="pi pi-home"></i>
+            <span class="truncate text-sm font-medium">{{ libelleContexte() }}</span>
+        </button>
+    }
 
-  <div class="flex-1"></div>
+    <div class="flex-1"></div>
 
-  <!-- Sélecteur de langue -->
-  <input pButton
-    [ariaLabel]="t.commun.changerLangue"
-    [pTooltip]="t.commun.changerLangue"
-         class="w-10"
-    tooltipPosition="bottom"
-    [rounded]="true"
-    severity="secondary"
-    [text]="true"
-         value="{{ i18n.currentLang() === 'en' ? 'EN' : 'FR' }}"
-    (click)="basculerLangue()"/>
+    <!-- Menu utilisateur (regroupe langue, thème et déconnexion) -->
+    <p-button
+            icon="pi pi-user"
+            [ariaLabel]="t.commun.menuUtilisateur"
+            [rounded]="true"
+            severity="secondary"
+            [text]="true"
+            (click)="menuUser.toggle($event)"
+    />
+    <p-menu #menuUser [popup]="true" [model]="userMenuItems"
+            appendTo="body"/>
 
-  <!-- Bouton dark mode -->
-  <p-button
-    [icon]="contexte.isDark() ? 'pi pi-sun' : 'pi pi-moon'"
-    [ariaLabel]="t.commun.basculerTheme"
-    [rounded]="true"
-    severity="secondary"
-    [text]="true"
-    (click)="contexte.toggleDark()"
-  />
-
-  <!-- Menu utilisateur -->
-  <p-button
-    icon="pi pi-user"
-    [ariaLabel]="t.commun.menuUtilisateur"
-    [rounded]="true"
-    severity="secondary"
-    [text]="true"
-    (click)="menuUser.toggle($event)"
-  />
-  <p-menu #menuUser [popup]="true" [model]="userMenuItems"
-          appendTo="body" />
-
-  <app-foyer-scenario-switcher [(visible)]="switcherVisible" />
+    <app-foyer-scenario-switcher [(visible)]="switcherVisible"/>
 </div>

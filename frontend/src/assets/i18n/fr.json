@@ -466,7 +466,13 @@
     "suppressionImpossible": "Suppression impossible : cet élément est référencé.",
     "basculerTheme": "Basculer le thème clair/sombre",
     "menuUtilisateur": "Ouvrir le menu utilisateur",
-    "changerLangue": "Changer de langue"
+    "changerLangue": "Changer de langue",
+    "groupeLangue": "Langue",
+    "langueFrancais": "Français",
+    "langueAnglais": "Anglais",
+    "groupeMode": "Apparence",
+    "modeLumineux": "Lumineux",
+    "modeSombre": "Sombre"
   },
   "referentiels": {
     "membre": {

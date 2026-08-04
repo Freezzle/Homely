@@ -466,7 +466,13 @@
     "suppressionImpossible": "Cannot delete: this item is referenced elsewhere.",
     "basculerTheme": "Toggle light/dark theme",
     "menuUtilisateur": "Open user menu",
-    "changerLangue": "Switch language"
+    "changerLangue": "Switch language",
+    "groupeLangue": "Language",
+    "langueFrancais": "French",
+    "langueAnglais": "English",
+    "groupeMode": "Appearance",
+    "modeLumineux": "Light",
+    "modeSombre": "Dark"
   },
   "referentiels": {
     "membre": {
