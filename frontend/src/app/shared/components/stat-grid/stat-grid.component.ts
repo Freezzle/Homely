@@ -8,6 +8,10 @@ export interface StatItem {
   label: string;
   value: string;
   color?: string;
+  /** Texte secondaire affiché en petit à droite de la valeur (ex. marge ± d'une fourchette). */
+  subValue?: string;
+  /** Couleur du texte secondaire (par défaut, couleur muted). */
+  subColor?: string;
 }
 
 export interface StatGridStatusTag {
@@ -28,7 +32,12 @@ export interface StatGridStatusTag {
       @for (stat of stats(); track stat.label) {
         <div>
           <div class="stat-label">{{ stat.label }}</div>
-          <div class="stat-value" [style.color]="stat.color ?? null">{{ stat.value }}</div>
+          <div class="stat-value-row">
+            <div class="stat-value" [style.color]="stat.color ?? null">{{ stat.value }}</div>
+            @if (stat.subValue) {
+              <div class="stat-subvalue" [style.color]="stat.subColor ?? null">{{ stat.subValue }}</div>
+            }
+          </div>
         </div>
       }
     </div>
@@ -56,6 +65,20 @@ export interface StatGridStatusTag {
       line-height: 1.2;
           font-weight: 700;
       color: var(--p-text-color);
+    }
+
+    .stat-value-row {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .stat-subvalue {
+      font-size: 11px;
+      line-height: 1.2;
+      font-weight: 500;
+      color: var(--p-text-muted-color);
     }
   `],
 })

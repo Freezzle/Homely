@@ -877,7 +877,7 @@ export class DashboardComponent {
     const marge = this.margeVariableMois();
     return [
       { value: this.chargesSuresMois(), color: 'var(--p-red-400)' },
-      { value: marge * 2, color: 'var(--p-amber-400)' },
+      { value: marge * 2, color: 'var(--p-red-200)' },
       { value: this.agregatMoisCourant().reserves, color: 'var(--p-blue-400)' },
       { value: Math.max(rav - marge, 0), color: 'var(--p-emerald-500)' },
     ];
@@ -889,16 +889,19 @@ export class DashboardComponent {
     const rav = this.agregatMoisCourant().soldeDisponible;
     const marge = this.margeVariableMois();
     const reserves = this.agregatMoisCourant().reserves;
+    const revenus = this.agregatMoisCourant().revenus;
     return [
+      {
+        label: this.t.dashboard.revenusMois,
+        value: this.formatMontant(revenus),
+        color: 'var(--p-green-500)',
+      },
       {
         label: this.t.dashboard.chargesSures,
         value: this.formatMontant(this.chargesSuresMois()),
+        subValue: `± ${this.formatMontant(marge)}`,
         color: 'var(--p-red-400)',
-      },
-      {
-        label: this.t.dashboard.margeVariable,
-        value: `± ${this.formatMontant(marge)}`,
-        color: 'var(--p-amber-400)',
+        subColor: 'var(--p-red-300)',
       },
       {
         label: this.t.dashboard.reserves,
