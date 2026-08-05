@@ -33,7 +33,7 @@ export class TopbarComponent implements OnInit {
     if (!foyer) {
       return '';
     }
-    return scenario ? `${foyer.nom} · ${scenario.nom}` : foyer.nom;
+    return scenario ? `${foyer.nom} (${scenario.nom})` : foyer.nom;
   });
 
   // Icône radio (pi-check) toujours présente pour aligner les libellés entre items
