@@ -1,0 +1,133 @@
+@if (chargement()) {
+  <div class="mb-skeleton" aria-hidden="true"></div>
+} @else if (postes().length === 0) {
+  <div class="mb-empty">
+    <i class="pi pi-chart-scatter" aria-hidden="true"></i>
+    <p>{{ labels().aucunPoste }}</p>
+  </div>
+} @else {
+  <div class="mb-layout">
+    <div class="mb-chart" role="group" [attr.aria-label]="labels().axisNecessite + ' / ' + labels().axisPriorite">
+      <div class="mb-axis-label mb-axis-y" aria-hidden="true">
+        <span class="mb-axis-title">{{ labels().axisNecessite }}</span>
+        <span class="mb-axis-poids">{{ labels().axisNecessitePoids }}</span>
+      </div>
+      <span class="mb-axis-sens mb-axis-sens-haut" aria-hidden="true">▲ {{ labels().axisNecessiteHaut }}</span>
+      <span class="mb-axis-sens mb-axis-sens-bas" aria-hidden="true">▼ {{ labels().axisNecessiteBas }}</span>
+
+      <div class="mb-axis-label mb-axis-x" aria-hidden="true">
+        <span class="mb-axis-title">{{ labels().axisPriorite }}</span>
+        <span class="mb-axis-poids">{{ labels().axisPrioritePoids }}</span>
+      </div>
+      <span class="mb-axis-sens mb-axis-sens-gauche" aria-hidden="true">◄ {{ labels().axisPrioriteGauche }}</span>
+      <span class="mb-axis-sens mb-axis-sens-droite" aria-hidden="true">{{ labels().axisPrioriteDroite }} ►</span>
+
+      <div class="mb-plot">
+        @for (quadrant of quadrants(); track quadrant.id) {
+          <div
+            class="mb-quadrant"
+            tabindex="0"
+            role="button"
+            [attr.aria-pressed]="selection() === quadrant.id"
+            [attr.aria-label]="quadrant.ariaLabel"
+            [style.left.%]="quadrant.left"
+            [style.top.%]="quadrant.top"
+            [style.--accent]="quadrant.couleurAccent"
+            [class.selected]="selection() === quadrant.id"
+            (click)="selectionner(quadrant.id)"
+            (keydown.enter)="selectionner(quadrant.id)"
+            (keydown.space)="selectionner(quadrant.id); $event.preventDefault()">
+            <span class="mb-quadrant-label">{{ quadrant.label }}</span>
+          </div>
+        }
+
+        <div class="mb-gridlines" aria-hidden="true">
+          <div class="mb-gridline mb-gridline-h"></div>
+          <div class="mb-gridline mb-gridline-v"></div>
+        </div>
+
+        @for (item of postes(); track item.id) {
+          <div
+            class="mb-point"
+            [class.charge]="item.type === 'CHARGE'"
+            [class.reserve]="item.type === 'RESERVE'"
+            [class.dimmed]="estEstompe(item)"
+            [class.highlighted]="posteSurvole()?.id === item.id"
+            [style.left.%]="positionX(item)"
+            [style.top.%]="positionY(item)"
+            [style.width.px]="rayonPoint(item) * 2"
+            [style.height.px]="rayonPoint(item) * 2"
+            [style.margin-left.px]="-rayonPoint(item)"
+            [style.margin-top.px]="-rayonPoint(item)"
+            [attr.title]="item.nom + ' — ' + formatMontant(item.montantAnnuel)"
+            (mouseenter)="survolerPoste(item)"
+            (mouseleave)="survolerPoste(null)">
+          </div>
+        }
+      </div>
+    </div>
+
+    <aside class="mb-panel" aria-live="polite">
+      @if (quadrantSelectionneVm(); as quadrant) {
+        <header class="mb-panel-header" [style.--accent]="quadrant.couleurAccent">
+          <div class="mb-panel-title">
+            <span class="mb-panel-dot" aria-hidden="true"></span>
+            <h3>{{ quadrant.label }}</h3>
+          </div>
+          <button type="button" class="mb-panel-close" (click)="deselectionner()" [attr.aria-label]="labels().desactionnerAriaLabel">
+            <i class="pi pi-times" aria-hidden="true"></i>
+          </button>
+        </header>
+        <p class="mb-panel-meta">{{ postesDuQuadrantSelectionne().length }} {{ labels().posteCount }} · {{ totalQuadrantSelectionne() }}</p>
+
+        <ul class="mb-panel-list">
+          @for (item of postesDuQuadrantSelectionne(); track item.poste.id) {
+            <li
+              class="mb-panel-row"
+              tabindex="0"
+              role="button"
+              (click)="centrerSur(item.poste)"
+              (keydown.enter)="centrerSur(item.poste)"
+              (mouseenter)="survolerPoste(item.poste)"
+              (mouseleave)="survolerPoste(null)">
+              <div class="mb-panel-row-top">
+                <span class="mb-panel-marker" [class.charge]="item.poste.type === 'CHARGE'" [class.reserve]="item.poste.type === 'RESERVE'" aria-hidden="true"></span>
+                <span class="mb-panel-nom">{{ item.poste.nom }}</span>
+                <span class="mb-panel-montant">{{ item.montantAnnuelLabel }}</span>
+              </div>
+              <div class="mb-panel-row-badges">
+                <span class="mb-icon-badge" [attr.title]="necessiteTooltip(item.poste)">
+                  <i class="pi pi-heart-fill"
+                     [class.text-surface-400]="item.poste.necessite === 1"
+                     [class.text-blue-400]="item.poste.necessite === 2"
+                     [class.text-amber-500]="item.poste.necessite === 4"
+                     [class.text-red-500]="item.poste.necessite === 5"
+                     aria-hidden="true"></i>
+                </span>
+                <span class="mb-icon-badge" [attr.title]="optimisableTooltip(item.poste)">
+                  <i class="pi pi-arrows-h"
+                     [class.text-surface-400]="item.poste.optimisable === 1"
+                     [class.text-blue-400]="item.poste.optimisable === 2"
+                     [class.text-amber-500]="item.poste.optimisable === 4"
+                     [class.text-red-500]="item.poste.optimisable === 5"
+                     aria-hidden="true"></i>
+                </span>
+                <span class="mb-badge" [attr.title]="labels().badgePoidsMontant">{{ poidsMontantPourcent(item.poste) }}%</span>
+              </div>
+            </li>
+          }
+        </ul>
+
+        <footer class="mb-panel-total">
+          <span>{{ labels().total }}</span>
+          <span>{{ totalQuadrantSelectionne() }}</span>
+        </footer>
+      } @else {
+        <div class="mb-panel-empty">
+          <i class="pi pi-mouse-pointer" aria-hidden="true"></i>
+          <p>{{ labels().panneauVide }}</p>
+        </div>
+      }
+    </aside>
+  </div>
+}

@@ -10,3 +10,4 @@ export * from './objective-progress/objective-progress.component';
 export * from './timeline/timeline.component';
 export * from './event-grid/event-grid.component';
 export * from './duel-picker/duel-picker.component';
+export * from './matrice-budgetaire/matrice-budgetaire.component';

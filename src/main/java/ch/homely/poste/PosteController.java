@@ -5,6 +5,7 @@ import ch.homely.poste.dto.PosteClotureRequest;
 import ch.homely.poste.dto.PosteDecalerDateEffetRequest;
 import ch.homely.poste.dto.PosteDecalerDateEffetResponse;
 import ch.homely.poste.dto.PosteDto;
+import ch.homely.poste.dto.PostePositionneDto;
 import ch.homely.poste.dto.PosteRequest;
 import ch.homely.poste.dto.PosteRevisionRequest;
 import ch.homely.poste.dto.PosteRevisionResponse;
@@ -25,10 +26,13 @@ public class PosteController {
 
     private final PosteService posteService;
     private final PosteValidator posteValidator;
+    private final MatriceBudgetaireService matriceBudgetaireService;
 
-    public PosteController(PosteService posteService, PosteValidator posteValidator) {
+    public PosteController(PosteService posteService, PosteValidator posteValidator,
+                            MatriceBudgetaireService matriceBudgetaireService) {
         this.posteService = posteService;
         this.posteValidator = posteValidator;
+        this.matriceBudgetaireService = matriceBudgetaireService;
     }
 
     @InitBinder("posteRequest")
@@ -45,6 +49,17 @@ public class PosteController {
     public PosteDto obtenir(@PathVariable UUID foyerId, @PathVariable UUID scenarioId,
                              @PathVariable UUID posteId) {
         return posteService.obtenir(foyerId, scenarioId, posteId);
+    }
+
+    /** Matrice budgétaire "Nécessité vs Priorité d'action" (dashboard annuel) : postes
+     *  CHARGE/RESERVE non obsolètes de l'année, dédupliqués par chaîne de révisions,
+     *  positionnés (scores 0-100, poids du montant, quadrant) — tout calculé côté serveur.
+     *  Si {@code membreId} est fourni, ne renvoie que les postes qui le concernent. */
+    @GetMapping("/matrice-budgetaire")
+    public List<PostePositionneDto> matriceBudgetaire(@PathVariable UUID foyerId, @PathVariable UUID scenarioId,
+                                                        @RequestParam int annee,
+                                                        @RequestParam(required = false) UUID membreId) {
+        return matriceBudgetaireService.calculer(foyerId, scenarioId, annee, membreId);
     }
 
     @PostMapping

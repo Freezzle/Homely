@@ -22,6 +22,7 @@ import {
   ModeComptabilisation,
   ObjectifDto,
   PosteDto,
+  PostePositionneDto,
   ProjectionAnnuelleDto,
   ScenarioDto,
   TypeCategorie,
@@ -44,6 +45,7 @@ import { TabGroupComponent } from '../../shared/components/tab-group/tab-group.c
 import { TabPanelComponent } from '../../shared/components/tab-group/tab-panel.component';
 import { TimelineItem } from '../../shared/components/timeline/timeline.component';
 import { EventGridComponent } from '../../shared/components/event-grid/event-grid.component';
+import { MatriceBudgetaireComponent, MatriceBudgetaireLabels } from '../../shared/components/matrice-budgetaire/matrice-budgetaire.component';
 
 type StatutObjectif = 'DANS_LES_TEMPS' | 'EN_RETARD' | 'ATTEINT';
 type DashboardTimelineItem = TimelineItem & { mois: number };
@@ -75,6 +77,7 @@ const ZERO_AGREGAT: { revenus: number; charges: number; reserves: number; soldeD
     TabGroupComponent,
     TabPanelComponent,
     EventGridComponent,
+    MatriceBudgetaireComponent,
   ],
   templateUrl: './dashboard.component.html',
 })
@@ -144,12 +147,13 @@ export class DashboardComponent {
   ];
 
   /** Graphique actuellement affiché dans l'onglet "Graphiques" de la vue annuelle. */
-  readonly vueGraphiqueAnnuel = signal<'flux' | 'tresorerie' | 'prevuVsReel'>('flux');
+  readonly vueGraphiqueAnnuel = signal<'flux' | 'tresorerie' | 'prevuVsReel' | 'matrice'>('flux');
 
   readonly vueGraphiqueAnnuelOptions = [
     { label: this.t.dashboard.fluxMensuel, value: 'flux' },
     { label: this.t.dashboard.tresorerieTitle, value: 'tresorerie' },
     { label: this.t.dashboard.prevuVsReel, value: 'prevuVsReel' },
+    { label: this.t.dashboard.matriceBudgetaire, value: 'matrice' },
   ];
 
   /** Titre affiché en en-tête : nom du foyer ou nom du membre sélectionné. */
@@ -213,6 +217,19 @@ export class DashboardComponent {
   );
 
   readonly evenementsDto = computed<EvenementDto[]>(() => this._evenements.donnees() ?? []);
+
+  /** Matrice budgétaire "Nécessité vs Priorité d'action" (dashboard annuel) : postes déjà
+   *  filtrés (non obsolètes, dédupliqués par chaîne de révisions, scopés au membre courant
+   *  si applicable) et positionnés (scores 0-100, poids du montant, quadrant) — tout est
+   *  calculé côté serveur par `MatriceBudgetaireService`, ce composant ne fait plus que
+   *  transmettre les données reçues au composant partagé `app-matrice-budgetaire`. */
+  private readonly _matriceBudgetaire = creerChargementReactif(this._evenementsCle, ({ foyerId, scenarioId, annee, membreId }) =>
+    this.posteSvc.matriceBudgetaire(foyerId, scenarioId, annee, membreId),
+  );
+
+  readonly postesMatriceAnnee = computed<PostePositionneDto[]>(() => this._matriceBudgetaire.donnees() ?? []);
+
+  readonly matriceChargement = computed(() => this._matriceBudgetaire.chargement());
 
   private readonly _ventilationsMoisCle = computed<{ foyerId: string; scenarioId: string; annee: number; mois: number } | null>(() => {
     const ref = this._refCle();
@@ -841,6 +858,39 @@ export class DashboardComponent {
     const s = this.sujet();
     return s.mode === 'foyer' ? actifs : actifs.filter((p) => this.posteConcerneMembre(p, s.membreId, this.annee(), mois));
   });
+
+  /** Textes traduits transmis au composant partagé `app-matrice-budgetaire` (voir
+   *  `MatriceBudgetaireLabels`) — le composant partagé ne connaît aucune clé i18n. */
+  readonly matriceLabels = computed<MatriceBudgetaireLabels>(() => ({
+    quadrants: {
+      rigides: this.t.dashboard.matriceQuadrantRigides,
+      negocier: this.t.dashboard.matriceQuadrantNegocier,
+      bruit: this.t.dashboard.matriceQuadrantBruit,
+      couper: this.t.dashboard.matriceQuadrantCouper,
+    },
+    quadrantsResume: {
+      rigides: this.t.dashboard.matriceQuadrantRigidesResume,
+      negocier: this.t.dashboard.matriceQuadrantNegocierResume,
+      bruit: this.t.dashboard.matriceQuadrantBruitResume,
+      couper: this.t.dashboard.matriceQuadrantCouperResume,
+    },
+    axisNecessite: this.t.dashboard.matriceAxisNecessite,
+    axisNecessiteHaut: this.t.dashboard.matriceAxisNecessiteHaut,
+    axisNecessiteBas: this.t.dashboard.matriceAxisNecessiteBas,
+    axisNecessitePoids: this.t.dashboard.matriceAxisNecessitePoids,
+    axisPriorite: this.t.dashboard.matriceAxisPriorite,
+    axisPrioriteGauche: this.t.dashboard.matriceAxisPrioriteGauche,
+    axisPrioriteDroite: this.t.dashboard.matriceAxisPrioriteDroite,
+    axisPrioritePoids: this.t.dashboard.matriceAxisPrioritePoids,
+    aucunPoste: this.t.dashboard.matriceAucunPoste,
+    panneauVide: this.t.dashboard.matricePanneauVide,
+    posteCount: this.t.dashboard.matricePosteCount,
+    total: this.t.dashboard.matriceTotal,
+    desactionnerAriaLabel: this.t.dashboard.matriceDesactionner,
+    badgeNecessite: this.t.dashboard.matriceBadgeNecessite,
+    badgeOptimisable: this.t.dashboard.matriceBadgeOptimisable,
+    badgePoidsMontant: this.t.dashboard.matriceBadgePoidsMontant,
+  }));
 
   // Note : `nature` (EFFECTIF|ESTIMATION) est purement descriptif côté moteur (doc 01
   // §3) — il n'exclut aucune charge du total réel (`charges` = somme de toutes les

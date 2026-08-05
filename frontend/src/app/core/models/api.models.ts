@@ -130,6 +130,18 @@ export interface PosteDecalerDateEffetResponse {
   posteEdite: PosteDto;
 }
 
+// ── Matrice budgétaire "Nécessité vs Priorité d'action" (dashboard annuel) ──
+// Tout le calcul (montant annualisé, scores 0-100 par rang percentile, poids du
+// montant, classification en quadrant) est fait côté serveur — voir MatriceBudgetaireService.
+export type QuadrantMatrice = 'rigides' | 'negocier' | 'bruit' | 'couper';
+export interface PostePositionneDto {
+  id: string; nom: string; type: TypePoste;
+  montantMensuel: number; montantAnnuel: number;
+  necessite: number; optimisable: number;
+  prioriteScore: number; necessiteScore: number; poidsMontant: number;
+  quadrant: QuadrantMatrice;
+}
+
 // ── Actions groupées sur postes ────────────────────────────────────────────
 export type ChampGroupable = 'CATEGORIE' | 'IMPORTANCE' | 'POTENTIEL_OPTIMISATION';
 

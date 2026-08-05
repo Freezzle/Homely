@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ScenarioDto, ScenarioRequest, PosteDto, PosteRequest, PosteRevisionRequest, PosteRevisionResponse,
          PosteClotureRequest, PosteDecalerDateEffetRequest, PosteDecalerDateEffetResponse,
-         PosteActionGroupeeRequest, PosteSuppressionGroupeeRequest,
+         PosteActionGroupeeRequest, PosteSuppressionGroupeeRequest, PostePositionneDto,
          ObjectifDto, ObjectifRequest, RepartitionPeriodeDto, RepartitionPeriodeRequest } from '../models/api.models';
 
 @Injectable({ providedIn: 'root' })
@@ -66,6 +66,17 @@ export class PosteService {
   supprimerGroupe(foyerId: string, scenarioId: string, req: PosteSuppressionGroupeeRequest) {
     return this.http.post<void>(
       `${this.base(foyerId, scenarioId)}/supprimer-groupe`, req
+    );
+  }
+  /** Matrice budgétaire "Nécessité vs Priorité d'action" (dashboard annuel) : postes
+   *  déjà filtrés (non obsolètes, dédupliqués par chaîne de révisions) et positionnés
+   *  (scores 0-100, poids du montant, quadrant) côté serveur. Si `membreId` est fourni,
+   *  ne renvoie que les postes qui le concernent. */
+  matriceBudgetaire(foyerId: string, scenarioId: string, annee: number, membreId?: string) {
+    const params: Record<string, string | number> = { annee };
+    if (membreId) { params['membreId'] = membreId; }
+    return this.http.get<PostePositionneDto[]>(
+      `${this.base(foyerId, scenarioId)}/matrice-budgetaire`, { params }
     );
   }
 }

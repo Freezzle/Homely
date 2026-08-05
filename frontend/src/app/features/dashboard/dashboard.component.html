@@ -131,6 +131,13 @@
                   </div>
                 </div>
               }
+              @case ('matrice') {
+                <div>
+                  <h3 class="m-0 mb-1 text-sm font-semibold">{{ t.dashboard.matriceBudgetaire }}</h3>
+                  <p class="m-0 mb-2 text-xs text-surface-500">{{ t.dashboard.matriceBudgetaireDescription }}</p>
+                  <app-matrice-budgetaire [postes]="postesMatriceAnnee()" [devise]="deviseBase()" [labels]="matriceLabels()" [chargement]="matriceChargement()" />
+                </div>
+              }
             }
           </div>
         </app-tab-panel>
