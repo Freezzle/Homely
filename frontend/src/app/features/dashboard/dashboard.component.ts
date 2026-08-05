@@ -842,13 +842,19 @@ export class DashboardComponent {
     return s.mode === 'foyer' ? actifs : actifs.filter((p) => this.posteConcerneMembre(p, s.membreId, this.annee(), mois));
   });
 
+  // Note : `nature` (EFFECTIF|ESTIMATION) est purement descriptif côté moteur (doc 01
+  // §3) — il n'exclut aucune charge du total réel (`charges` = somme de toutes les
+  // contributions, quelle que soit la nature). Les « charges fixes » doivent donc
+  // inclure TOUTES les charges (comme le récapitulatif serveur) ; `margeVariable`
+  // n'est qu'un indicateur ± additionnel de l'incertitude sur les postes ESTIMATION,
+  // pas une soustraction du montant central de ces postes.
   readonly chargesSuresMois = computed(() => {
     const s = this.sujet();
     const mois = this.moisSelectionne() ?? 1;
     return this.postesActifsMois()
-      .filter((poste) => poste.type === 'CHARGE' && poste.nature === 'EFFECTIF')
+      .filter((poste) => poste.type === 'CHARGE')
       .reduce((sum, poste) => {
-        const montant = Math.abs(poste.montantMensualise ?? poste.montant);
+        const montant = Math.abs(this.decomp.contributionMois(poste, this.annee(), mois));
         const q = s.mode === 'membre' ? this.quotePartMembrePoste(poste, s.membreId, this.annee(), mois) : 1;
         return sum + montant * q;
       }, 0);
@@ -858,9 +864,9 @@ export class DashboardComponent {
     const s = this.sujet();
     const mois = this.moisSelectionne() ?? 1;
     return this.postesActifsMois()
-      .filter((poste) => poste.nature === 'ESTIMATION')
+      .filter((poste) => poste.type === 'CHARGE' && poste.nature === 'ESTIMATION')
       .reduce((sum, poste) => {
-        const montant = Math.abs(poste.montantMensualise ?? poste.montant) * ((poste.estimPourcentage ?? 0) / 100);
+        const montant = Math.abs(this.decomp.contributionMois(poste, this.annee(), mois)) * ((poste.estimPourcentage ?? 0) / 100);
         const q = s.mode === 'membre' ? this.quotePartMembrePoste(poste, s.membreId, this.annee(), mois) : 1;
         return sum + montant * q;
       }, 0);

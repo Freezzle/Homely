@@ -7,6 +7,7 @@ import {
 } from '../models/api.models';
 import { LigneDecomposition, MembreTagInfo } from '../../shared/components/carte-bilan/carte-bilan.component';
 import { normaliserCouleur, couleurTexteContraste } from '../../shared/utils/couleur.util';
+import { parseIsoDateLocal } from '../utils/date.util';
 
 /** Forme minimale commune à une ventilation mensuelle ou à un agrégat annuel sommé. */
 export interface VentilationLike {
@@ -239,6 +240,51 @@ export class DecompositionService {
     if (N <= 1) return 1;
     const pi = parts.find(p => p.membreId === membreId)?.quotePart ?? 0;
     return (1 - pi) / (N - 1);
+  }
+
+  /**
+   * Contribution d'un poste pour un mois donné (dans la devise du poste, avant taux) —
+   * mirror fidèle de `MoteurCalcul.contribution` (backend, doc 01 §3) : fenêtre de
+   * validité, one-shot imputé sur son mois exact, mode PERIODIQUE imputé en plein sur
+   * son mois d'ancrage (0 les autres mois), sinon lissé (`montant / periodiciteMois`).
+   * Utilisé côté dashboard pour reproduire exactement les montants du récapitulatif
+   * (agrégats serveur) sans dupliquer par ailleurs la logique du moteur.
+   */
+  contributionMois(
+    poste: Pick<PosteDto, 'montant' | 'periodiciteMois' | 'debut' | 'fin' | 'mode' | 'moment'>,
+    annee: number,
+    mois: number,
+  ): number {
+    if (!poste || poste.montant <= 0) return 0;
+
+    const d = poste.periodiciteMois;
+    const debut = poste.debut ? parseIsoDateLocal(poste.debut) : null;
+    const fin = poste.fin ? parseIsoDateLocal(poste.fin) : null;
+    const premierJour = new Date(annee, mois - 1, 1);
+    const finDeMois = new Date(annee, mois, 0);
+
+    const actifDebut = !debut || debut <= finDeMois;
+    const actifFin = !fin || fin >= premierJour;
+    if (!actifDebut || !actifFin) return 0;
+
+    const estOneShot = d === 0;
+    const estDebut = d !== 1 && !estOneShot && poste.moment === 'DEBUT_PERIODE' && poste.mode === 'PERIODIQUE';
+    const estFin = d !== 1 && !estOneShot && poste.moment === 'FIN_PERIODE' && poste.mode === 'PERIODIQUE';
+    const ancre = debut ? debut.getMonth() + 1 : 1;
+    const c = poste.montant;
+    const floorMod = (n: number, dd: number) => ((n % dd) + dd) % dd;
+
+    if (estOneShot) {
+      if (!debut) return 0;
+      return debut.getFullYear() === annee && debut.getMonth() + 1 === mois ? c : 0;
+    }
+    if (estDebut) {
+      return floorMod(mois - ancre, d) === 0 ? c : 0;
+    }
+    if (estFin) {
+      return floorMod(mois - ancre + 1, d) === 0 ? c : 0;
+    }
+    return c / d;
   }
 
   private formatMoisAnnee(iso: string): string {
