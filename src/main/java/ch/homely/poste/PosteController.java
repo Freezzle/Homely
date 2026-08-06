@@ -51,10 +51,11 @@ public class PosteController {
         return posteService.obtenir(foyerId, scenarioId, posteId);
     }
 
-    /** Matrice budgétaire "Nécessité vs Priorité d'action" (dashboard annuel) : postes
-     *  CHARGE/RESERVE non obsolètes de l'année, dédupliqués par chaîne de révisions,
-     *  positionnés (scores 0-100, poids du montant, quadrant) — tout calculé côté serveur.
-     *  Si {@code membreId} est fourni, ne renvoie que les postes qui le concernent. */
+    /** Postes "à optimiser en priorité" (dashboard annuel) : postes CHARGE/RESERVE non
+     *  obsolètes de l'année, dédupliqués par chaîne de révisions, classés par score
+     *  unique (0-100) et tronqués aux {@value MatriceBudgetaireService#TOP_N} premiers —
+     *  tout calculé côté serveur. Si {@code membreId} est fourni, ne renvoie que les
+     *  postes qui le concernent. */
     @GetMapping("/matrice-budgetaire")
     public List<PostePositionneDto> matriceBudgetaire(@PathVariable UUID foyerId, @PathVariable UUID scenarioId,
                                                         @RequestParam int annee,

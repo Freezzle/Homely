@@ -862,34 +862,14 @@ export class DashboardComponent {
   /** Textes traduits transmis au composant partagé `app-matrice-budgetaire` (voir
    *  `MatriceBudgetaireLabels`) — le composant partagé ne connaît aucune clé i18n. */
   readonly matriceLabels = computed<MatriceBudgetaireLabels>(() => ({
-    quadrants: {
-      rigides: this.t.dashboard.matriceQuadrantRigides,
-      negocier: this.t.dashboard.matriceQuadrantNegocier,
-      bruit: this.t.dashboard.matriceQuadrantBruit,
-      couper: this.t.dashboard.matriceQuadrantCouper,
-    },
-    quadrantsResume: {
-      rigides: this.t.dashboard.matriceQuadrantRigidesResume,
-      negocier: this.t.dashboard.matriceQuadrantNegocierResume,
-      bruit: this.t.dashboard.matriceQuadrantBruitResume,
-      couper: this.t.dashboard.matriceQuadrantCouperResume,
-    },
-    axisNecessite: this.t.dashboard.matriceAxisNecessite,
-    axisNecessiteHaut: this.t.dashboard.matriceAxisNecessiteHaut,
-    axisNecessiteBas: this.t.dashboard.matriceAxisNecessiteBas,
-    axisNecessitePoids: this.t.dashboard.matriceAxisNecessitePoids,
-    axisPriorite: this.t.dashboard.matriceAxisPriorite,
-    axisPrioriteGauche: this.t.dashboard.matriceAxisPrioriteGauche,
-    axisPrioriteDroite: this.t.dashboard.matriceAxisPrioriteDroite,
-    axisPrioritePoids: this.t.dashboard.matriceAxisPrioritePoids,
     aucunPoste: this.t.dashboard.matriceAucunPoste,
-    panneauVide: this.t.dashboard.matricePanneauVide,
-    posteCount: this.t.dashboard.matricePosteCount,
-    total: this.t.dashboard.matriceTotal,
-    desactionnerAriaLabel: this.t.dashboard.matriceDesactionner,
+    colonneRang: this.t.dashboard.matriceColonneRang,
+    colonneNom: this.t.dashboard.matriceColonneNom,
+    colonneMontant: this.t.dashboard.matriceColonneMontant,
+    colonneScore: this.t.dashboard.matriceColonneScore,
     badgeNecessite: this.t.dashboard.matriceBadgeNecessite,
     badgeOptimisable: this.t.dashboard.matriceBadgeOptimisable,
-    badgePoidsMontant: this.t.dashboard.matriceBadgePoidsMontant,
+    scoreTooltip: this.t.dashboard.matriceScoreTooltip
   }));
 
   // Note : `nature` (EFFECTIF|ESTIMATION) est purement descriptif côté moteur (doc 01

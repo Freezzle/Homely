@@ -6,6 +6,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -15,9 +17,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests unitaires purs (aucune dépendance Spring/BDD) de {@link MatriceBudgetaireService},
- * miroir de {@code matrice-budgetaire.utils.spec.ts} côté frontend — mêmes formules,
- * mêmes vecteurs de test (jeu de données {@code POSTES_EXEMPLE} de la spec métier), pour
- * garantir que le calcul serveur (désormais la seule source de vérité) reste cohérent.
+ * qui vérifient la formule de score unique "à optimiser en priorité" : l'importance
+ * (inversée) pèse plus que l'optimisable, optimisable et montant sont calculés
+ * ensemble (produit), et seuls les {@value MatriceBudgetaireService#TOP_N} postes au
+ * score le plus élevé sont retournés.
  */
 class MatriceBudgetaireServiceTest {
 
@@ -52,73 +55,123 @@ class MatriceBudgetaireServiceTest {
     @Test
     @DisplayName("Liste vide -> résultat vide")
     void listeVide() {
-        assertThat(MatriceBudgetaireService.positionnerEntrees(List.of())).isEmpty();
+        assertThat(MatriceBudgetaireService.classerEntrees(List.of())).isEmpty();
     }
 
     @Test
-    @DisplayName("Les scores sont toujours dans [0, 100] et le poidsMontant dans [0, 1]")
-    void scoresDansLIntervalle() {
-        List<PostePositionneDto> resultat = MatriceBudgetaireService.positionnerEntrees(posteExemple());
+    @DisplayName("Le score est toujours dans [0, 100] et le rang est 1-based sans trou")
+    void scoresDansLIntervalleEtRangsCorrects() {
+        List<PostePositionneDto> resultat = MatriceBudgetaireService.classerEntrees(posteExemple());
         assertThat(resultat).hasSize(14);
         for (PostePositionneDto p : resultat) {
-            assertThat(p.prioriteScore()).isBetween(BigDecimal.ZERO, BigDecimal.valueOf(100));
-            assertThat(p.necessiteScore()).isBetween(BigDecimal.ZERO, BigDecimal.valueOf(100));
-            assertThat(p.poidsMontant()).isBetween(BigDecimal.ZERO, BigDecimal.ONE);
+            assertThat(p.score()).isBetween(BigDecimal.ZERO, BigDecimal.valueOf(100));
+        }
+        List<Integer> rangs = resultat.stream().map(PostePositionneDto::rang).toList();
+        assertThat(rangs).containsExactlyElementsOf(java.util.stream.IntStream.rangeClosed(1, 14).boxed().toList());
+    }
+
+    @Test
+    @DisplayName("Le classement est bien trié par score strictement décroissant (ou égal)")
+    void classementTrieParScoreDecroissant() {
+        List<PostePositionneDto> resultat = MatriceBudgetaireService.classerEntrees(posteExemple());
+        for (int i = 1; i < resultat.size(); i++) {
+            assertThat(resultat.get(i - 1).score()).isGreaterThanOrEqualTo(resultat.get(i).score());
         }
     }
 
     @Test
     @DisplayName("Le montant annualisé est bien mensuel x 12")
     void montantAnnuelEstMensuelFoisDouze() {
-        List<PostePositionneDto> resultat = MatriceBudgetaireService.positionnerEntrees(posteExemple());
+        List<PostePositionneDto> resultat = MatriceBudgetaireService.classerEntrees(posteExemple());
         PostePositionneDto loyer = parNom(resultat).get("Loyer");
         assertThat(loyer.montantAnnuel()).isEqualByComparingTo(BigDecimal.valueOf(1450 * 12).setScale(2));
     }
 
     @Test
-    @DisplayName("Répartition par quadrant conforme aux vecteurs golden vérifiés (matrice-budgetaire.utils.spec.ts)")
-    void repartitionParQuadrant() {
-        Map<String, PostePositionneDto> parNom = parNom(MatriceBudgetaireService.positionnerEntrees(posteExemple()));
-
-        assertThat(parNom.get("Loyer").quadrant()).isEqualTo("rigides");
-        assertThat(parNom.get("Assurance maladie").quadrant()).isEqualTo("rigides");
-        assertThat(parNom.get("Electricite").quadrant()).isEqualTo("rigides");
-        assertThat(parNom.get("Internet").quadrant()).isEqualTo("rigides");
-        assertThat(parNom.get("Fonds urgence").quadrant()).isEqualTo("rigides");
-        assertThat(parNom.get("3e pilier").quadrant()).isEqualTo("rigides");
-
-        assertThat(parNom.get("Abonnement mobile").quadrant()).isEqualTo("bruit");
-        assertThat(parNom.get("Netflix").quadrant()).isEqualTo("couper");
-        assertThat(parNom.get("Spotify").quadrant()).isEqualTo("couper");
-        assertThat(parNom.get("Salle de sport").quadrant()).isEqualTo("couper");
-        assertThat(parNom.get("Restaurants").quadrant()).isEqualTo("couper");
-        assertThat(parNom.get("Vacances").quadrant()).isEqualTo("couper");
-        assertThat(parNom.get("Renovation").quadrant()).isEqualTo("couper");
-
-        assertThat(parNom.get("Courses alimentaires").quadrant()).isEqualTo("negocier");
+    @DisplayName("Le score le plus faible du jeu de test appartient à un poste de nécessité maximale (5)")
+    void scoreLePlusFaibleAppartientAUnPosteTresImportant() {
+        Map<String, PostePositionneDto> parNom = parNom(MatriceBudgetaireService.classerEntrees(posteExemple()));
+        BigDecimal scoreMin = parNom.values().stream().map(PostePositionneDto::score)
+                .min(BigDecimal::compareTo).orElseThrow();
+        PostePositionneDto posteScoreMin = parNom.values().stream()
+                .filter(p -> p.score().compareTo(scoreMin) == 0).findFirst().orElseThrow();
+        assertThat(posteScoreMin.necessite()).isEqualTo(5);
     }
 
     @Test
-    @DisplayName("classifierQuadrant : les 4 combinaisons de seuils sont correctement mappées")
-    void classifierQuadrantSeuils() {
-        assertThat(MatriceBudgetaireService.classifierQuadrant(60, 40)).isEqualTo("rigides");
-        assertThat(MatriceBudgetaireService.classifierQuadrant(60, 60)).isEqualTo("negocier");
-        assertThat(MatriceBudgetaireService.classifierQuadrant(40, 40)).isEqualTo("bruit");
-        assertThat(MatriceBudgetaireService.classifierQuadrant(40, 60)).isEqualTo("couper");
+    @DisplayName("À montant identique, faible importance + peu optimisable domine importance forte + optimisable fort")
+    void faibleImportanceDomineOptimisableSeul() {
+        // Deux postes de montant identique : l'un très important et très optimisable,
+        // l'autre peu important et peu optimisable. Le second (peu important) doit
+        // scorer plus haut : l'importance pèse plus que l'optimisable.
+        PosteEntree importantEtOptimisable = new PosteEntree(UUID.nameUUIDFromBytes("A".getBytes()), "A",
+                TypePoste.CHARGE, BigDecimal.valueOf(500), BigDecimal.valueOf(6000), 5, 5);
+        PosteEntree peuImportantPeuOptimisable = new PosteEntree(UUID.nameUUIDFromBytes("B".getBytes()), "B",
+                TypePoste.CHARGE, BigDecimal.valueOf(500), BigDecimal.valueOf(6000), 1, 1);
+        Map<String, PostePositionneDto> parNom = parNom(
+                MatriceBudgetaireService.classerEntrees(List.of(importantEtOptimisable, peuImportantPeuOptimisable)));
+
+        assertThat(parNom.get("B").score()).isGreaterThan(parNom.get("A").score());
     }
 
     @Test
-    @DisplayName("À nécessité saisie égale, un montant supérieur fait remonter le score de nécessité affiché")
-    void montantInflueSurLeScoreANecessiteEgale() {
-        PosteEntree petit = new PosteEntree(UUID.nameUUIDFromBytes("Petit montant".getBytes()), "Petit montant",
-                TypePoste.CHARGE, BigDecimal.valueOf(10), BigDecimal.valueOf(120), 3, 3);
-        PosteEntree gros = new PosteEntree(UUID.nameUUIDFromBytes("Gros montant".getBytes()), "Gros montant",
-                TypePoste.CHARGE, BigDecimal.valueOf(2000), BigDecimal.valueOf(24000), 3, 3);
-        Map<String, PostePositionneDto> parNom = parNom(MatriceBudgetaireService.positionnerEntrees(List.of(petit, gros)));
+    @DisplayName("Un gros montant à faible importance dépasse un gros montant à forte optimisabilité (à importance haute)")
+    void grosMontantFaibleImportanceDepasseGrosMontantOptimisableSeul() {
+        PosteEntree grosMontantFaibleImportance = new PosteEntree(UUID.nameUUIDFromBytes("GrosFaibleImportance".getBytes()),
+                "GrosFaibleImportance", TypePoste.CHARGE, BigDecimal.valueOf(2000), BigDecimal.valueOf(24000), 1, 1);
+        PosteEntree grosMontantOptimisableForteImportance = new PosteEntree(
+                UUID.nameUUIDFromBytes("GrosOptimisableImportant".getBytes()), "GrosOptimisableImportant",
+                TypePoste.CHARGE, BigDecimal.valueOf(2000), BigDecimal.valueOf(24000), 5, 5);
+        Map<String, PostePositionneDto> parNom = parNom(MatriceBudgetaireService.classerEntrees(
+                List.of(grosMontantFaibleImportance, grosMontantOptimisableForteImportance)));
 
-        // Même nécessité saisie (3/5) pour les deux, mais "Gros montant" pèse 200x plus :
-        // son score de nécessité affiché doit dépasser celui de "Petit montant".
-        assertThat(parNom.get("Gros montant").necessiteScore())
-                .isGreaterThan(parNom.get("Petit montant").necessiteScore());
+        assertThat(parNom.get("GrosFaibleImportance").score())
+                .isGreaterThan(parNom.get("GrosOptimisableImportant").score());
+    }
+
+    @Test
+    @DisplayName("Optimisable et montant sont calculés ensemble (produit) : peu optimisable neutralise l'effet du montant")
+    void optimisableEtMontantCalculesEnsemble() {
+        // Même nécessité (3) pour les trois : seule la composante optimisable×montant diffère.
+        // "GrosPeuOptimisable" a optimisableNorm=0 -> opportunite=0 quel que soit le montant
+        // -> son score doit être exactement celui obtenu sans aucune opportunité.
+        // Un 3e poste ("MontantMoyen") sert à éviter que "PetitTresOptimisable" ne soit le
+        // minimum absolu du groupe (rang percentile 0 -> opportunite nulle aussi).
+        PosteEntree grosMontantPeuOptimisable = new PosteEntree(UUID.nameUUIDFromBytes("GrosPeuOptimisable".getBytes()),
+                "GrosPeuOptimisable", TypePoste.CHARGE, BigDecimal.valueOf(2000), BigDecimal.valueOf(24000), 3, 1);
+        PosteEntree petitMontantTresOptimisable = new PosteEntree(UUID.nameUUIDFromBytes("PetitTresOptimisable".getBytes()),
+                "PetitTresOptimisable", TypePoste.CHARGE, BigDecimal.valueOf(300), BigDecimal.valueOf(3600), 3, 5);
+        PosteEntree montantMinimal = new PosteEntree(UUID.nameUUIDFromBytes("MontantMinimal".getBytes()),
+                "MontantMinimal", TypePoste.CHARGE, BigDecimal.valueOf(10), BigDecimal.valueOf(120), 3, 5);
+        Map<String, PostePositionneDto> parNom = parNom(MatriceBudgetaireService.classerEntrees(
+                List.of(grosMontantPeuOptimisable, petitMontantTresOptimisable, montantMinimal)));
+
+        double importanceNorm = (3 - 1) / 4.0;
+        double inutilite = 1 - importanceNorm;
+        BigDecimal scoreAttenduSansOpportunite = BigDecimal.valueOf(0.7 * inutilite * 100.0).setScale(2, RoundingMode.HALF_UP);
+        assertThat(parNom.get("GrosPeuOptimisable").score()).isEqualByComparingTo(scoreAttenduSansOpportunite);
+        // "PetitTresOptimisable" n'est ni le montant min ni le montant max du groupe -> son
+        // rang percentile de montant est strictement entre 0 et 1, donc opportunite > 0.
+        assertThat(parNom.get("PetitTresOptimisable").score()).isGreaterThan(scoreAttenduSansOpportunite);
+    }
+
+    @Test
+    @DisplayName("Troncature au top 30 : seuls les 30 meilleurs scores sont retournés, rang 1..30")
+    void troncatureAuTop30() {
+        List<PosteEntree> beaucoupDePostes = new ArrayList<>();
+        for (int i = 0; i < 50; i++) {
+            // Nécessité/optimisable variés pour garantir des scores distincts.
+            int necessite = 1 + (i % 5);
+            int optimisable = 1 + ((i + 2) % 5);
+            beaucoupDePostes.add(poste("Poste" + i, TypePoste.CHARGE, 100 + i, necessite, optimisable));
+        }
+        List<PostePositionneDto> resultat = MatriceBudgetaireService.classerEntrees(beaucoupDePostes);
+
+        assertThat(resultat).hasSize(MatriceBudgetaireService.TOP_N);
+        assertThat(resultat.get(0).rang()).isEqualTo(1);
+        assertThat(resultat.get(resultat.size() - 1).rang()).isEqualTo(MatriceBudgetaireService.TOP_N);
+        for (int i = 1; i < resultat.size(); i++) {
+            assertThat(resultat.get(i - 1).score()).isGreaterThanOrEqualTo(resultat.get(i).score());
+        }
     }
 }

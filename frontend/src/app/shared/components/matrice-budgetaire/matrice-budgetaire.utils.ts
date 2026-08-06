@@ -1,31 +1,36 @@
 /**
- * Métadonnées de présentation pour la matrice "Nécessité vs Priorité d'action".
+ * Métadonnées de présentation pour le classement "Postes à optimiser en priorité".
  *
- * ⚠️ Tout le calcul (montant annualisé, scores 0-100 par rang percentile, poids du
- * montant, classification en quadrant) est fait côté **serveur** par
- * `MatriceBudgetaireService` (voir `PostePositionneDto`, exposé par
+ * ⚠️ Tout le calcul (montant annualisé, score unique 0-100, tri décroissant, troncature
+ * au top 30) est fait côté **serveur** par `MatriceBudgetaireService` (voir
+ * `PostePositionneDto`, exposé par
  * `GET /api/foyers/{foyerId}/scenarios/{scenarioId}/postes/matrice-budgetaire`).
- * Ce fichier ne contient plus que des constantes de rendu (aucune logique métier),
- * pour que le composant partagé sache dessiner les 4 quadrants et leurs couleurs.
+ * Ce fichier ne contient plus que des constantes de rendu (aucune logique métier) : le
+ * dégradé de couleur des barres selon le score.
  */
 
-/** Nom des 4 quadrants de la matrice. */
-export type QuadrantName = 'rigides' | 'negocier' | 'bruit' | 'couper';
+/** Nombre maximal de postes affichés (miroir de `MatriceBudgetaireService.TOP_N`). */
+export const TOP_N = 30;
 
-export interface QuadrantDefinition {
-  id: QuadrantName;
-  labelKey: string;
-  couleurAccent: string;
+/** Paliers de score (0-100) utilisés pour le dégradé de couleur des barres — du plus
+ *  neutre (score faible, poste à garder tel quel) au plus marqué (score élevé, poste
+ *  prioritaire à réviser/couper). Triés par seuil croissant, le dernier est le palier
+ *  par défaut au-delà de son seuil. */
+export interface PalierScore {
+  seuil: number;
+  couleur: string;
 }
 
-/** Le croisement des 2 axes (quadrants + gridlines) se fait au centre de l'échelle 0-100
- *  renvoyée par le serveur. */
-export const CENTRE_ECHELLE = 50;
-
-/** Les 4 quadrants, dans l'ordre d'affichage (haut-gauche, haut-droite, bas-gauche, bas-droite). */
-export const QUADRANTS: QuadrantDefinition[] = [
-  { id: 'rigides', labelKey: 'essentielsRigides', couleurAccent: '#0EA5E9' },
-  { id: 'negocier', labelKey: 'essentielsANegocier', couleurAccent: '#6366F1' },
-  { id: 'bruit', labelKey: 'bruitBudgetaire', couleurAccent: '#94A3B8' },
-  { id: 'couper', labelKey: 'aCouperEnPriorite', couleurAccent: '#F97316' },
+export const PALIERS_SCORE: PalierScore[] = [
+  { seuil: 33, couleur: '#94A3B8' }, // faible priorité
+  { seuil: 66, couleur: '#F59E0B' }, // priorité moyenne
+  { seuil: 101, couleur: '#EF4444' }, // priorité haute
 ];
+
+/** Couleur associée à un score (0-100) selon les paliers ci-dessus. */
+export function couleurPourScore(score: number): string {
+  for (const palier of PALIERS_SCORE) {
+    if (score < palier.seuil) return palier.couleur;
+  }
+  return PALIERS_SCORE[PALIERS_SCORE.length - 1].couleur;
+}

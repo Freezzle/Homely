@@ -22,14 +22,33 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Calcule le positionnement des postes pour la matrice budgétaire "Nécessité vs
- * Priorité d'action" du dashboard annuel — tout le calcul est fait ici côté serveur
- * (montant annualisé, scores 0-100 par rang percentile, poids du montant pour la
- * taille du point, classification en quadrant), le frontend ne fait plus que du rendu.
+ * Calcule le classement des postes "à optimiser en priorité" (dashboard annuel) —
+ * tout le calcul est fait ici côté serveur (montant annualisé, score unique 0-100, tri
+ * décroissant, troncature au top 30), le frontend ne fait plus que du rendu.
  *
- * <p>Nomenclature du modèle réel ({@link PosteDto}) vs vocabulaire de la matrice :
+ * <p>Nomenclature du modèle réel ({@link PosteDto}) vs vocabulaire du score :
  * {@code necessite} = {@code importance} (1 non vital à 5 vital) ; {@code optimisable}
  * = {@code potentielOptimisation} (1 non optimisable à 5 très optimisable).</p>
+ *
+ * <p><b>Formule de score</b> (calculée sur <i>tous</i> les postes candidats de l'année,
+ * avant troncature) :</p>
+ * <ul>
+ *   <li>{@code inutilite = 1 - (necessite - 1) / 4} — un poste peu important a une
+ *       inutilité proche de 1.</li>
+ *   <li>{@code poidsMontant} = rang percentile (0-1) de {@code log(montantAnnuel + 1)}
+ *       parmi tous les postes candidats de l'année (robuste aux valeurs extrêmes).</li>
+ *   <li>{@code opportunite = optimisableNorm × poidsMontant} — optimisable et montant
+ *       sont calculés <b>ensemble</b> (produit, pas somme) : un gros montant sur un
+ *       poste peu optimisable ne doit pas faire remonter le score autant qu'un gros
+ *       montant optimisable.</li>
+ *   <li>{@code score = (POIDS_IMPORTANCE × inutilite + POIDS_OPTIMISABLE_MONTANT ×
+ *       opportunite) × 100} — l'importance pèse plus que l'optimisable/montant
+ *       (0.7 &gt; 0.3) : supprimer un poste inutile fait plus de bien qu'optimiser son
+ *       coût.</li>
+ * </ul>
+ *
+ * <p>Seuls les {@value #TOP_N} postes au score le plus élevé sont retournés, avec leur
+ * rang (1 = score le plus élevé).</p>
  *
  * <p>Trois règles de filtrage, basées sur la <b>date du jour</b> (pas l'année consultée) :</p>
  * <ul>
@@ -44,17 +63,16 @@ import java.util.UUID;
 @Service
 public class MatriceBudgetaireService {
 
-    /** Part du montant annualisé dans le score de chaque axe (0-1) — le reste revient à
-     *  la note saisie (necessite ou optimisable). Le montant peut donc faire remonter un
-     *  poste au-dessus d'un autre nominalement mieux noté mais avec un montant négligeable,
-     *  sans pour autant écraser le ressenti/l'optimisable saisis (poids volontairement modéré). */
-    private static final double POIDS_MONTANT = 0.2;
+    /** Poids de l'inutilité (importance inversée) dans le score final — volontairement
+     *  supérieur au poids optimisable/montant : réduire/couper un poste inutile fait
+     *  plus de bien qu'optimiser son coût (on n'optimise souvent qu'à la marge). */
+    private static final double POIDS_IMPORTANCE = 0.7;
 
-    /** Croisement des 2 axes (quadrants) sur l'échelle 0-100. */
-    private static final double CENTRE_ECHELLE = 50.0;
+    /** Poids du couple optimisable×montant dans le score final. */
+    private static final double POIDS_OPTIMISABLE_MONTANT = 0.3;
 
-    /** Amplitude du jitter vertical déterministe (±) appliqué à l'axe Y pour l'affichage. */
-    private static final double JITTER_Y = 4.0;
+    /** Nombre maximal de postes retournés (les {@value} au score le plus élevé). */
+    public static final int TOP_N = 30;
 
     private final PosteService posteService;
     private final ProjectionService projectionService;
@@ -115,7 +133,7 @@ public class MatriceBudgetaireService {
                         p.importance(), p.potentielOptimisation()))
                 .toList();
 
-        return positionnerEntrees(entrees);
+        return classerEntrees(entrees);
     }
 
     /** Montant annuel <b>réel</b> pour l'année sélectionnée : somme des contributions
@@ -211,7 +229,7 @@ public class MatriceBudgetaireService {
         return false;
     }
 
-    // ── Scoring (0-100, rang percentile, testable indépendamment de la BDD) ─────
+    // ── Scoring (0-100, testable indépendamment de la BDD) ──────────────────────
 
     /** Poste d'entrée du calcul de score, découplé de {@link PosteDto} pour rester
      *  facilement testable de façon unitaire (pas de dépendance JPA).
@@ -225,76 +243,57 @@ public class MatriceBudgetaireService {
     public record PosteEntree(UUID id, String nom, TypePoste type, BigDecimal montantMensuel,
                                BigDecimal montantAnnuel, int necessite, int optimisable) {}
 
-    /** Surcharge testable directement avec des {@link PosteEntree}, sans passer par {@link PosteDto}. */
-    public static List<PostePositionneDto> positionnerEntrees(List<PosteEntree> postes) {
+    /** Surcharge testable directement avec des {@link PosteEntree}, sans passer par
+     *  {@link PosteDto}. Calcule le score sur l'ensemble de {@code postes}, puis ne
+     *  retourne que les {@value #TOP_N} premiers par score décroissant. */
+    public static List<PostePositionneDto> classerEntrees(List<PosteEntree> postes) {
         if (postes.isEmpty()) return List.of();
 
         Map<UUID, Double> montantAnnuelLog = new LinkedHashMap<>();
         for (PosteEntree p : postes) {
             montantAnnuelLog.put(p.id(), Math.log(p.montantAnnuel().doubleValue() + 1));
         }
-        Map<UUID, Double> poidsMontantParPoste = normaliserMinMax(montantAnnuelLog);
+        Map<UUID, Double> poidsMontantParPoste = rangsPercentile01(montantAnnuelLog);
 
-        Map<UUID, Double> scoresXBruts = new LinkedHashMap<>();
-        Map<UUID, Double> scoresYBruts = new LinkedHashMap<>();
+        Map<UUID, Double> scoresParPoste = new LinkedHashMap<>();
         for (PosteEntree p : postes) {
+            double importanceNorm = (p.necessite() - 1) / 4.0;
             double optimisableNorm = (p.optimisable() - 1) / 4.0;
-            double necessiteNorm = (p.necessite() - 1) / 4.0;
             double poidsMontant = poidsMontantParPoste.get(p.id());
-            scoresXBruts.put(p.id(), (1 - POIDS_MONTANT) * optimisableNorm + POIDS_MONTANT * poidsMontant);
-            scoresYBruts.put(p.id(), (1 - POIDS_MONTANT) * necessiteNorm + POIDS_MONTANT * poidsMontant);
+
+            double inutilite = 1 - importanceNorm;
+            double opportunite = optimisableNorm * (poidsMontant * 1.4);
+
+            double score = (POIDS_IMPORTANCE * inutilite + POIDS_OPTIMISABLE_MONTANT * opportunite) * 100.0;
+            scoresParPoste.put(p.id(), score);
         }
 
-        Map<UUID, Double> prioriteScores = rangsPercentile(scoresXBruts);
-        Map<UUID, Double> necessiteScoresBruts = rangsPercentile(scoresYBruts);
+        List<PosteEntree> triesParScoreDesc = postes.stream()
+                .sorted(Comparator.comparingDouble((PosteEntree p) -> scoresParPoste.get(p.id())).reversed())
+                .toList();
 
         List<PostePositionneDto> resultat = new ArrayList<>();
-        for (PosteEntree p : postes) {
-            double prioriteScore = prioriteScores.get(p.id());
-            double necessiteScoreBrut = necessiteScoresBruts.get(p.id());
-            double necessiteScoreAffiche = clamp(necessiteScoreBrut + jitterY(p.id().toString()), 0, 100);
-            double montantAnnuel = p.montantAnnuel().doubleValue();
+        int rang = 1;
+        for (PosteEntree p : triesParScoreDesc) {
+            if (rang > TOP_N) break;
             resultat.add(new PostePositionneDto(
                     p.id(), p.nom(), p.type(),
-                    bd(p.montantMensuel().doubleValue()), bd(montantAnnuel),
+                    bd(p.montantMensuel().doubleValue()), bd(p.montantAnnuel().doubleValue()),
                     p.necessite(), p.optimisable(),
-                    bd(prioriteScore), bd(necessiteScoreAffiche), bd(poidsMontantParPoste.get(p.id())),
-                    classifierQuadrant(necessiteScoreBrut, prioriteScore)));
+                    bd(scoresParPoste.get(p.id())), rang));
+            rang++;
         }
         return resultat;
     }
 
-    /** Classifie un poste dans l'un des 4 quadrants selon ses scores 0-100 (non jitterés). */
-    public static String classifierQuadrant(double necessiteScore, double prioriteScore) {
-        boolean necessiteHaute = necessiteScore > CENTRE_ECHELLE;
-        boolean prioriteHaute = prioriteScore > CENTRE_ECHELLE;
-        if (necessiteHaute && !prioriteHaute) return "rigides";
-        if (necessiteHaute) return "negocier";
-        if (!prioriteHaute) return "bruit";
-        return "couper";
-    }
-
-    /** Normalisation min-max sur [0, 1]. 0.5 (neutre) si un seul élément ou si tous égaux. */
-    private static Map<UUID, Double> normaliserMinMax(Map<UUID, Double> valeurs) {
-        if (valeurs.size() == 1) {
-            UUID seul = valeurs.keySet().iterator().next();
-            return Map.of(seul, 0.5);
-        }
-        double min = valeurs.values().stream().mapToDouble(Double::doubleValue).min().orElse(0);
-        double max = valeurs.values().stream().mapToDouble(Double::doubleValue).max().orElse(0);
-        double ecart = max - min;
-        Map<UUID, Double> resultat = new LinkedHashMap<>();
-        valeurs.forEach((id, v) -> resultat.put(id, ecart == 0 ? 0.5 : (v - min) / ecart));
-        return resultat;
-    }
-
-    /** Rang percentile (0-100) de chaque élément parmi l'ensemble fourni, avec ranking
-     *  fractionnaire pour les égalités (même rang moyen) — stable et déterministe. */
-    private static Map<UUID, Double> rangsPercentile(Map<UUID, Double> valeurs) {
+    /** Rang percentile (0-1) de chaque élément parmi l'ensemble fourni, avec ranking
+     *  fractionnaire pour les égalités (même rang moyen) — stable et déterministe.
+     *  0.5 (neutre) si un seul élément ou si tous égaux. */
+    private static Map<UUID, Double> rangsPercentile01(Map<UUID, Double> valeurs) {
         int n = valeurs.size();
         if (n == 1) {
             UUID seul = valeurs.keySet().iterator().next();
-            return Map.of(seul, CENTRE_ECHELLE);
+            return Map.of(seul, 0.5);
         }
         List<Map.Entry<UUID, Double>> tries = new ArrayList<>(valeurs.entrySet());
         tries.sort(Map.Entry.comparingByValue());
@@ -305,26 +304,11 @@ public class MatriceBudgetaireService {
             int j = i;
             while (j + 1 < n && tries.get(j + 1).getValue().doubleValue() == tries.get(i).getValue().doubleValue()) j++;
             double rangMoyen = (i + j) / 2.0;
-            double percentile = (rangMoyen / (n - 1)) * 100.0;
-            for (int k = i; k <= j; k++) rangs.put(tries.get(k).getKey(), percentile);
+            double percentile01 = rangMoyen / (n - 1);
+            for (int k = i; k <= j; k++) rangs.put(tries.get(k).getKey(), percentile01);
             i = j + 1;
         }
         return rangs;
-    }
-
-    /** Jitter vertical déterministe dans [-4, 4], seedé par l'id du poste — stable d'un
-     *  appel à l'autre. Évite les superpositions parfaites entre postes de score identique. */
-    private static double jitterY(String id) {
-        int hash = 0;
-        for (int i = 0; i < id.length(); i++) {
-            hash = (hash * 31 + id.charAt(i));
-        }
-        double unitaire = (Math.abs(hash) % 1000) / 1000.0;
-        return (unitaire - 0.5) * 2 * JITTER_Y;
-    }
-
-    private static double clamp(double valeur, double min, double max) {
-        return Math.min(max, Math.max(min, valeur));
     }
 
     private static BigDecimal bd(double v) {
