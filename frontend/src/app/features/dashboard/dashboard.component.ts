@@ -717,23 +717,10 @@ export class DashboardComponent {
 
   annualKpis = computed<KpiChip[]>(() => {
     const mois = this.moisAgregatsCourant();
-    const negatifs = mois
-      .map((agregat, index) => ({ agregat, numero: index + 1 }))
-      .filter((item) => item.agregat.soldeDisponible < 0);
-    const plusGrosMois = mois.reduce<{ mois: number; montant: number } | null>((best, agregat, index) => {
-      const montant = agregat.charges + agregat.reserves;
-      return !best || montant > best.montant ? { mois: index + 1, montant } : best;
-    }, null);
     const objectifs = this.objectifsRendus();
     const nbAtteints = objectifs.filter((objectif) => objectif.statut === 'ATTEINT').length;
     const soldeMedian = this.soldeDisponibleMedianRobuste(mois);
     return [
-      {
-        label: this.t.dashboard.moisNegatifs,
-        value: `${negatifs.length} / 12`,
-        hint: negatifs.length ? negatifs.map((item) => this.formatMois(item.numero)).join(', ') : this.t.dashboard.statutExcedentaire,
-        color: negatifs.length ? 'var(--p-red-500)' : 'var(--p-emerald-600)',
-      },
       {
         label: this.t.dashboard.soldeMedianRobuste,
         value: soldeMedian !== null ? this.formatMontant(soldeMedian) : '-',
@@ -744,11 +731,6 @@ export class DashboardComponent {
         label: this.t.dashboard.tresorerieCumulee,
         value: this.formatMontant(this.tresorerieCumuleeFin()),
         hint: String(this.annee()),
-      },
-      {
-        label: this.t.dashboard.plusGrosMois,
-        value: plusGrosMois ? `${this.formatMontant(plusGrosMois.montant)}` : '-',
-        hint: plusGrosMois ? this.t.mois[plusGrosMois.mois - 1] : undefined,
       },
       {
         label: this.t.dashboard.nbObjectifs,
