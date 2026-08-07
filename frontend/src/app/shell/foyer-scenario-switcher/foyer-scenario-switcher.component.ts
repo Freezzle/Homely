@@ -2,13 +2,13 @@ import { Component, inject, signal, OnInit, effect, untracked, model } from '@an
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { SelectModule } from 'primeng/select';
 import { DialogModule } from 'primeng/dialog';
 import { ContexteService } from '../../core/services/contexte.service';
 import { FoyerService } from '../../core/services/referentiel.service';
 import { ScenarioService } from '../../core/services/scenario-poste.service';
 import { FoyerDto, ScenarioDto } from '../../core/models/api.models';
 import { I18nService } from '../../core/i18n/i18n.service';
+import { SelectComponent } from '../../shared/components/form-fields';
 
 /**
  * Dialogue de sélection du foyer / scénario courants.
@@ -20,7 +20,7 @@ import { I18nService } from '../../core/i18n/i18n.service';
 @Component({
   selector: 'app-foyer-scenario-switcher',
   standalone: true,
-  imports: [CommonModule, FormsModule, SelectModule, DialogModule],
+  imports: [CommonModule, FormsModule, DialogModule, SelectComponent],
   templateUrl: './foyer-scenario-switcher.component.html',
 })
 export class FoyerScenarioSwitcherComponent implements OnInit {

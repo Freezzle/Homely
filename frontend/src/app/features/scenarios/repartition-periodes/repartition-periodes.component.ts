@@ -1,12 +1,10 @@
 import { Component, inject, input, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormArray, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormArray, Validators } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { DatePickerModule } from 'primeng/datepicker';
 import { MessageModule } from 'primeng/message';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
@@ -19,6 +17,7 @@ import { I18nService } from '../../../core/i18n/i18n.service';
 import { TagComponent } from '../../../shared/components/tag/tag.component';
 import { toIsoDateLocal, parseIsoDateLocal } from '../../../core/utils/date.util';
 import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
+import { DatePickerComponent, InputNumberComponent } from '../../../shared/components/form-fields';
 
 /**
  * Composant d'édition des périodes de répartition (prorata) d'un scénario.
@@ -32,9 +31,9 @@ import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
   /* display: contents rend le host transparent afin que le bouton
      reçoive le même contexte de layout que les autres boutons du tableau */
   styles: [`:host { display: contents; }`],
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, ButtonModule, DialogModule,
-    TableModule, TagModule, InputNumberModule, DatePickerModule, MessageModule,
-    ConfirmDialogModule, TooltipModule, PctPipe, TagComponent],
+  imports: [CommonModule, ReactiveFormsModule, ButtonModule, DialogModule,
+    TableModule, TagModule, MessageModule, ConfirmDialogModule, TooltipModule,
+    DatePickerComponent, InputNumberComponent, PctPipe, TagComponent],
   templateUrl: './repartition-periodes.component.html',
 })
 export class RepartitionPeriodesComponent {
@@ -64,6 +63,10 @@ export class RepartitionPeriodesComponent {
   });
 
   get partsArray() { return this.form.get('parts') as FormArray; }
+
+  constructor() {
+    this.partsArray.valueChanges.subscribe(() => this.calculerSomme());
+  }
 
   ouvrirDialog(): void {
     this.dialogVisible = true;
@@ -214,8 +217,6 @@ export class RepartitionPeriodesComponent {
 
   private toIso(d: Date): string { return toIsoDateLocal(d); }
 }
-
-
 
 
 

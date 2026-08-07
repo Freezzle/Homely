@@ -8,11 +8,13 @@
                              styleClass="flex flex-col items-stretch gap-1"/>
 
             @if (form.value.option === 'PERSONNALISEE') {
-                <div class="flex flex-col gap-1">
-                    <label class="text-sm font-medium">{{ t.poste.clotureDateLabel }} *</label>
-                    <p-datepicker appendTo="body" formControlName="datePersonnalisee" view="month" dateFormat="mm/yy"
-                                  [showButtonBar]="true" class="w-full"></p-datepicker>
-                </div>
+                <app-date-picker
+                    [label]="t.poste.clotureDateLabel"
+                    [required]="true"
+                    formControlName="datePersonnalisee"
+                    view="month"
+                    dateFormat="mm/yy"
+                    [showButtonBar]="true"/>
             }
 
             <div class="text-sm rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-primary-700 dark:text-primary-300">

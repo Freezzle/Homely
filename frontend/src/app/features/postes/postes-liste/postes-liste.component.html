@@ -60,21 +60,22 @@
         <!-- Ligne 2 : tri et recherche description à gauche, menu à droite -->
         <div class="grid gap-2 grid-cols-[minmax(0,1fr)_auto] md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center">
             <div class="flex justify-start">
-                <p-select appendTo="body"
-                          [ngModel]="triActuel()"
-                          (onChange)="triActuel.set($event.value)"
-                          [options]="triOptions"
-                          optionLabel="label" optionValue="value"
-                          class="w-full text-sm"/>
+                <app-select
+                    [ngModel]="triActuel()"
+                    (ngModelChange)="triActuel.set($event)"
+                    [options]="triOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    class="w-full text-sm"/>
             </div>
 
             <div class="flex justify-start col-span-2 md:col-span-1">
-                <input pInputText
-                       type="text"
-                       [ngModel]="filtreDescription()"
-                       (ngModelChange)="filtreDescription.set($event)"
-                       [placeholder]="t.poste.filtreDescription"
-                       class="w-full text-sm"/>
+                <app-input-text
+                    type="text"
+                    [ngModel]="filtreDescription()"
+                    (ngModelChange)="filtreDescription.set($event)"
+                    [label]="t.poste.filtreDescription"
+                    class="w-full text-sm"/>
             </div>
 
             <div class="flex justify-end gap-1">
@@ -96,15 +97,12 @@
                             class="w-72">
                         <ng-template #item let-item>
                             <div class="flex items-center gap-3 px-2 py-1.5" (click)="$event.stopPropagation()">
-                                <p-checkbox [binary]="true"
-                                            [inputId]="item.data"
-                                            [ngModel]="item.data === 'cacher-inactifs' ? cacherInactifs() : cacherFuturs()"
-                                            (onChange)="item.data === 'cacher-inactifs' ? cacherInactifs.set($event.checked) : cacherFuturs.set($event.checked)"
-                                            (click)="$event.stopPropagation()"/>
-                                <label class="cursor-pointer text-sm text-surface-600 dark:text-surface-300 select-none"
-                                       [for]="item.data">
-                                    {{ item.label }}
-                                </label>
+                                <app-checkbox
+                                    [inputId]="item.data"
+                                    [label]="item.label"
+                                    [ngModel]="item.data === 'cacher-inactifs' ? cacherInactifs() : cacherFuturs()"
+                                    (ngModelChange)="item.data === 'cacher-inactifs' ? cacherInactifs.set($event) : cacherFuturs.set($event)"
+                                    (click)="$event.stopPropagation()"/>
                             </div>
                         </ng-template>
                     </p-menu>
@@ -115,41 +113,44 @@
         <!-- Ligne 3 : les 3 filtres -->
         <div class="grid gap-2 lg:grid-cols-3">
             <!-- Filtre catégories -->
-            <p-multiselect appendTo="body"
-                           [ngModel]="filtreCategorieIds()"
-                           (ngModelChange)="filtreCategorieIds.set($event)"
-                           [options]="categories()"
-                           optionLabel="libelle" optionValue="id"
-                           [placeholder]="t.poste.filtreCategories"
-                           [showClear]="true"
-                           class="w-full text-sm"/>
+            <app-multi-select
+                [ngModel]="filtreCategorieIds()"
+                (ngModelChange)="filtreCategorieIds.set($event)"
+                [options]="categories()"
+                optionLabel="libelle"
+                optionValue="id"
+                [label]="t.poste.filtreCategories"
+                [showClear]="true"
+                class="w-full text-sm"/>
 
             <!-- Filtre comptes -->
-            <p-multiselect appendTo="body"
-                           [ngModel]="filtreCompteIds()"
-                           (ngModelChange)="filtreCompteIds.set($event)"
-                           [options]="comptes()"
-                           optionLabel="libelle" optionValue="id"
-                           [placeholder]="t.poste.filtreComptes"
-                           [showClear]="true"
-                           class="w-full text-sm">
+            <app-multi-select
+                [ngModel]="filtreCompteIds()"
+                (ngModelChange)="filtreCompteIds.set($event)"
+                [options]="comptes()"
+                optionLabel="libelle"
+                optionValue="id"
+                [label]="t.poste.filtreComptes"
+                [showClear]="true"
+                class="w-full text-sm">
                 <ng-template #item let-compte>
                     <div class="flex items-center gap-2 flex-wrap">
                         <span>{{ compte.libelle }}</span>
                         <app-membres-tags [membres]="membresForCompte(compte)"/>
                     </div>
                 </ng-template>
-            </p-multiselect>
+            </app-multi-select>
 
             <!-- Filtre membres -->
-            <p-multiselect appendTo="body"
-                           [ngModel]="filtreMembreIds()"
-                           (ngModelChange)="filtreMembreIds.set($event)"
-                           [options]="membres()"
-                           optionLabel="nom" optionValue="id"
-                           [placeholder]="t.poste.filtreMembres"
-                           [showClear]="true"
-                           class="w-full text-sm"/>
+            <app-multi-select
+                [ngModel]="filtreMembreIds()"
+                (ngModelChange)="filtreMembreIds.set($event)"
+                [options]="membres()"
+                optionLabel="nom"
+                optionValue="id"
+                [label]="t.poste.filtreMembres"
+                [showClear]="true"
+                class="w-full text-sm"/>
         </div>
     </div>
 
@@ -327,11 +328,11 @@
                              (le menu d'actions par ligne n'a plus de sens quand on sélectionne en masse) -->
                         <div class="flex items-center justify-end shrink-0">
                             @if (contexte.estEditor() && modeSelection()) {
-                                <p-checkbox [binary]="true"
-                                            [ngModel]="isSelectionne(p.id)"
-                                            (onChange)="toggleSelection(p.id)"
-                                            [inputId]="'select-' + p.id"
-                                            class="m-2"/>
+                                <app-checkbox
+                                    [ngModel]="isSelectionne(p.id)"
+                                    (ngModelChange)="toggleSelection(p.id)"
+                                    [inputId]="'select-' + p.id"
+                                    class="m-2"/>
                             } @else {
                                 <p-button icon="pi pi-cog"
                                           [rounded]="true"

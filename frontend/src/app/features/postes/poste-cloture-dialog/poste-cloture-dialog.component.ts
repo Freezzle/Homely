@@ -5,7 +5,6 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
-import { DatePickerModule } from 'primeng/datepicker';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { MessageService } from 'primeng/api';
 import { I18nService } from '../../../core/i18n/i18n.service';
@@ -16,6 +15,7 @@ import { toIsoDateLocal } from '../../../core/utils/date.util';
 import { formatPeriodeMois, localeCouranteDeLangue } from '../../../core/utils/format-affichage.util';
 import { finDeMois, moisEffectifCloture, prochainMoisPeriodique, posteDebuteApresMoisCourant } from '../../../core/utils/poste-periodicite.util';
 import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
+import { DatePickerComponent } from '../../../shared/components/form-fields';
 
 /** Options de l'action rapide « Terminer » (clôture d'un poste). */
 type OptionCloture = 'MOIS_COURANT' | 'PROCHAIN_PERIODIQUE' | 'PERSONNALISEE';
@@ -28,7 +28,7 @@ type OptionCloture = 'MOIS_COURANT' | 'PROCHAIN_PERIODIQUE' | 'PERSONNALISEE';
 @Component({
   selector: 'app-poste-cloture-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, DialogModule, ButtonModule, DatePickerModule, SelectButtonModule],
+  imports: [CommonModule, ReactiveFormsModule, DialogModule, ButtonModule, DatePickerComponent, SelectButtonModule],
   templateUrl: './poste-cloture-dialog.component.html',
 })
 export class PosteClotureDialogComponent {

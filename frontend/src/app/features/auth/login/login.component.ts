@@ -2,18 +2,18 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
 import { CardModule } from 'primeng/card';
 import { AuthService } from '../../../core/services/auth.service';
 import { I18nService } from '../../../core/i18n/i18n.service';
+import { InputTextComponent } from '../../../shared/components/form-fields';
 
 @Component({
   selector: 'app-login',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink,
-    CardModule, InputTextModule, ButtonModule, MessageModule],
+    CardModule, InputTextComponent, ButtonModule, MessageModule],
   templateUrl: './login.component.html',
 })
 export class LoginComponent {

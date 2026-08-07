@@ -6,14 +6,13 @@
 
   <span class="duel-vs">VS</span>
 
-  <p-select
-    appendTo="body"
+  <app-select
     [options]="rightOptions()"
     [ngModel]="right()"
     optionLabel="nom"
     dataKey="id"
     class="duel-select"
-    (onChange)="rightChange.emit($event.value)"
+    (ngModelChange)="rightChange.emit($event)"
   >
     <ng-template #selectedItem let-s>
       @if (s) {
@@ -30,5 +29,5 @@
         <span>{{ s.nom }}</span>
       </div>
     </ng-template>
-  </p-select>
+  </app-select>
 </div>

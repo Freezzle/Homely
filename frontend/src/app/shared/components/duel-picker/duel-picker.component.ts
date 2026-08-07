@@ -2,14 +2,14 @@ import { CommonModule } from '@angular/common';
 import { Component, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ScenarioDto } from '../../../core/models/api.models';
-import { SelectModule } from 'primeng/select';
+import { SelectComponent } from '../form-fields';
 
 type ScenarioAvecCouleur = ScenarioDto & { couleur?: string };
 
 @Component({
   selector: 'app-duel-picker',
   standalone: true,
-  imports: [CommonModule, SelectModule, FormsModule],
+  imports: [CommonModule, FormsModule, SelectComponent],
   templateUrl: './duel-picker.component.html',
   styleUrl: './duel-picker.component.scss',
 })

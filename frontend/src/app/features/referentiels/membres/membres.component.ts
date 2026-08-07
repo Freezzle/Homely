@@ -4,9 +4,6 @@ import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { ColorPickerModule } from 'primeng/colorpicker';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ContexteService } from '../../../core/services/contexte.service';
@@ -14,6 +11,7 @@ import { MembreService } from '../../../core/services/referentiel.service';
 import { MembreDto } from '../../../core/models/api.models';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { creerCrudReferentiel } from '../../../core/utils/crud-referentiel.util';
+import { ColorInputComponent, InputTextComponent } from '../../../shared/components/form-fields';
 
 /** T10.2 — CRUD Membres */
 @Component({
@@ -23,7 +21,7 @@ import { creerCrudReferentiel } from '../../../core/utils/crud-referentiel.util'
   imports: [
     CommonModule, ReactiveFormsModule,
     TableModule, ButtonModule, DialogModule,
-    InputTextModule, InputNumberModule, ColorPickerModule,
+    InputTextComponent, ColorInputComponent,
     ConfirmDialogModule,
   ],
   templateUrl: './membres.component.html',
@@ -67,7 +65,7 @@ export class MembresComponent {
 
   enregistrer(): void {
     const v = this.form.value;
-    // p-colorpicker format hex retourne parfois sans '#' → normalisation défensive
+    // Normalisation défensive du format hexadécimal
     const raw = v.couleur ?? '6366f1';
     const couleur = raw.startsWith('#') ? raw : '#' + raw;
     const req = { nom: v.nom!, couleur };

@@ -1,12 +1,9 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import {FormBuilder, Validators, ReactiveFormsModule, FormsModule} from '@angular/forms';
+import { FormBuilder, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
 import { MessageModule } from 'primeng/message';
 import { MessageService } from 'primeng/api';
@@ -15,6 +12,7 @@ import { CategorieService } from '../../../core/services/referentiel.service';
 import { CategorieDto, TypeCategorie } from '../../../core/models/api.models';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { DialogSuppressionComponent } from '../../../shared/components/dialog-suppression/dialog-suppression.component';
+import { InputTextComponent, SelectComponent } from '../../../shared/components/form-fields';
 import { creerCrudReferentiel } from '../../../core/utils/crud-referentiel.util';
 import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
 
@@ -22,12 +20,12 @@ import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
 @Component({
   selector: 'app-categories',
   standalone: true,
-             imports: [
-               CommonModule, ReactiveFormsModule,
-               TableModule, ButtonModule, DialogModule, TagModule, MessageModule,
-               InputTextModule, InputNumberModule, SelectModule, FormsModule,
-               DialogSuppressionComponent,
-             ],
+  imports: [
+    CommonModule, ReactiveFormsModule,
+    TableModule, ButtonModule, DialogModule, TagModule, MessageModule,
+    InputTextComponent, SelectComponent, FormsModule,
+    DialogSuppressionComponent,
+  ],
   templateUrl: './categories.component.html',
 })
 export class CategoriesComponent {

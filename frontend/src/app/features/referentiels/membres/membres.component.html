@@ -44,15 +44,15 @@
 
 <p-dialog [(visible)]="dialogVisible" [header]="membreEnEdition ? t.commun.modifier : t.commun.creer"
           [modal]="true" class="w-full max-w-md">
-  <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
-    <div class="flex flex-col gap-1">
-      <label class="text-sm font-medium">{{ t.referentiels.membre.nom }} *</label>
-      <input pInputText formControlName="nom" class="w-full" />
-    </div>
-    <div class="flex flex-col gap-1">
-      <label class="text-sm font-medium">{{ t.referentiels.membre.couleur }}</label>
-      <p-colorpicker appendTo="body" formControlName="couleur" />
-    </div>
+  <form [formGroup]="form" class="flex flex-col pt-2">
+    <app-input-text
+      [label]="t.referentiels.membre.nom"
+      formControlName="nom"
+      [required]="true" />
+    <app-color-input
+      [label]="t.referentiels.membre.couleur"
+      formControlName="couleur"
+      [ariaLabel]="t.referentiels.membre.couleur" />
   </form>
   <ng-template #footer>
     <p-button [label]="t.commun.annuler" severity="secondary" (click)="dialogVisible = false" />

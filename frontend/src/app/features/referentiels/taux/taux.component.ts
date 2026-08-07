@@ -4,8 +4,6 @@ import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { InputNumberModule } from 'primeng/inputnumber';
 import { TagModule } from 'primeng/tag';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
@@ -15,6 +13,7 @@ import { TauxChangeDto } from '../../../core/models/api.models';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { creerChargementReactif } from '../../../core/utils/reference-data.util';
 import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
+import { InputNumberComponent, InputTextComponent } from '../../../shared/components/form-fields';
 
 /** T10.2 — Taux de change (CRUD upsert) */
 @Component({
@@ -24,7 +23,7 @@ import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
   imports: [
     CommonModule, ReactiveFormsModule,
     TableModule, ButtonModule, DialogModule, TagModule,
-    InputTextModule, InputNumberModule,
+    InputTextComponent, InputNumberComponent,
     ConfirmDialogModule,
   ],
   templateUrl: './taux.component.html',
@@ -121,6 +120,5 @@ export class TauxComponent {
     });
   }
 }
-
 
 

@@ -3,14 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { SelectModule } from 'primeng/select';
-import { MultiSelectModule } from 'primeng/multiselect';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { SkeletonModule } from 'primeng/skeleton';
-import { CheckboxModule } from 'primeng/checkbox';
 import { MenuModule } from 'primeng/menu';
 import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
 import { ContexteService } from '../../../core/services/contexte.service';
@@ -21,6 +17,7 @@ import { MontantPipe, PeriodicitePipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { localeDeLangue } from '../../../core/i18n/locale.util';
 import { MembresTagsComponent } from '../../../shared/components/membres-tags/membres-tags.component';
+import { CheckboxComponent, InputTextComponent, MultiSelectComponent, SelectComponent } from '../../../shared/components/form-fields';
 import { toIsoDateLocal } from '../../../core/utils/date.util';
 import { formatPeriodeMois, formaterMontantSimple } from '../../../core/utils/format-affichage.util';
 import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
@@ -53,8 +50,8 @@ interface PosteAffiche extends PosteDto {
   standalone: true,
   providers: [ConfirmationService],
   imports: [CommonModule, FormsModule, TableModule, ButtonModule,
-            InputTextModule, SelectModule, MultiSelectModule,
-            TagModule, TooltipModule, ConfirmDialogModule, SkeletonModule, CheckboxModule,
+            InputTextComponent, SelectComponent, MultiSelectComponent,
+            TagModule, TooltipModule, ConfirmDialogModule, SkeletonModule, CheckboxComponent,
             MenuModule,
             MontantPipe, PeriodicitePipe, MembresTagsComponent, PosteApercuDialogComponent, PosteHistoriqueDrawerComponent, PosteRevisionDialogComponent, PosteClotureDialogComponent, PosteDecalageDialogComponent, PosteFormDialogComponent,
             PosteBulkChampDialogComponent, PosteBulkSuppressionDialogComponent],

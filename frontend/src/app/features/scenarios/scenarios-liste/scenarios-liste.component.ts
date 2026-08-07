@@ -5,8 +5,6 @@ import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { TagModule } from 'primeng/tag';
-import { InputTextModule } from 'primeng/inputtext';
-import { InputNumberModule } from 'primeng/inputnumber';
 import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
@@ -18,14 +16,15 @@ import { I18nService } from '../../../core/i18n/i18n.service';
 import { RepartitionPeriodesComponent } from '../repartition-periodes/repartition-periodes.component';
 import { arrondirSommeRepartition, sommeRepartitionValide as estSommeRepartitionValide } from '../../../core/utils/repartition.util';
 import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
+import { InputNumberComponent, InputTextComponent } from '../../../shared/components/form-fields';
 
 @Component({
   selector: 'app-scenarios-liste',
   standalone: true,
   providers: [ConfirmationService],
   imports: [CommonModule, FormsModule, ReactiveFormsModule, TableModule, ButtonModule,
-    DialogModule, TagModule, InputTextModule, InputNumberModule, TooltipModule,
-    ConfirmDialogModule, MontantPipe, RepartitionPeriodesComponent],
+    DialogModule, TagModule, TooltipModule, ConfirmDialogModule,
+    InputTextComponent, InputNumberComponent, MontantPipe, RepartitionPeriodesComponent],
   templateUrl: './scenarios-liste.component.html',
 })
 export class ScenariosListeComponent {
@@ -108,8 +107,8 @@ export class ScenariosListeComponent {
     this.calculerSomme();
   }
 
-  onRepChange(membreId: string, val: string): void {
-    this.repsMap[membreId] = parseFloat(val) || 0;
+  onRepChange(membreId: string, val: number | null): void {
+    this.repsMap[membreId] = val ?? 0;
     this.calculerSomme();
   }
 

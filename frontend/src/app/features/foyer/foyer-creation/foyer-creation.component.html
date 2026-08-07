@@ -20,24 +20,16 @@
             <p-message severity="info" icon="pi pi-sparkles" [closable]="false"
               class="w-full">{{ t.foyer.onboarding.info.foyer }}</p-message>
 
-            <div class="flex flex-col gap-1">
-               <label class="text-sm font-medium">{{ t.foyer.onboarding.champs.nomFoyer }}</label>
-               <input pInputText
-                 [ngModel]="foyerNom()"
-                 (ngModelChange)="foyerNom.set($event)"
-                 [placeholder]="t.foyer.onboarding.champs.nomFoyer"
-                 class="w-full" />
-             </div>
+            <app-input-text
+               [label]="t.foyer.onboarding.champs.nomFoyer"
+               [ngModel]="foyerNom()"
+               (ngModelChange)="foyerNom.set($event)" />
 
-             <div class="flex flex-col gap-1">
-               <label class="text-sm font-medium">{{ t.foyer.onboarding.champs.deviseBase }}</label>
-               <p-select
-                 appendTo="body"
-                 [ngModel]="foyerDevise()"
-                 (ngModelChange)="foyerDevise.set($event)"
-                 [options]="devises"
-                 class="w-full" />
-             </div>
+             <app-select
+               [label]="t.foyer.onboarding.champs.deviseBase"
+               [ngModel]="foyerDevise()"
+               (ngModelChange)="foyerDevise.set($event)"
+               [options]="devises" />
 
             <!-- ── Section Membres ── -->
             <div class="flex flex-col gap-1">
@@ -46,17 +38,15 @@
               <div class="flex flex-col gap-2">
                 @for (membre of membres(); track membre.ordre; let i = $index) {
                   <div class="flex items-center gap-2">
-                    <input pInputText
+                    <app-input-text
+                      class="flex-1"
+                      [label]="t.foyer.membreNom"
                       [ngModel]="membres()[i].nom"
-                      (ngModelChange)="updateMembreNom(i, $event)"
-                      [placeholder]="t.foyer.membreNom"
-                      class="flex-1" />
-                    <input
+                      (ngModelChange)="updateMembreNom(i, $event)" />
+                    <app-color-input
                       [ngModel]="membres()[i].couleur"
                       (ngModelChange)="updateMembreCouleur(i, $event)"
-                      type="color"
-                      [attr.aria-label]="t.referentiels.membre.couleur"
-                      class="h-9 w-11 border border-surface-300 rounded cursor-pointer" />
+                      [ariaLabel]="t.referentiels.membre.couleur" />
                     <p-button
                       icon="pi pi-times"
                       [text]="true"
@@ -102,36 +92,27 @@
               @for (_ of comptes(); track $index; let i = $index) {
                 <div class="flex items-start gap-2 p-3 border border-surface-200 rounded-lg">
                   <div class="flex flex-col gap-2 flex-1">
-                    <input pInputText
+                    <app-input-text
+                      [label]="t.foyer.onboarding.champs.libelleCompte"
                       [ngModel]="comptes()[i].libelle"
-                      (ngModelChange)="updateCompteLibelle(i, $event)"
-                      [placeholder]="t.foyer.onboarding.champs.libelleCompte"
-                      class="w-full" />
+                      (ngModelChange)="updateCompteLibelle(i, $event)" />
                     <div class="flex gap-2">
-                      <div class="flex flex-col gap-1 flex-1">
-                        <label class="text-xs text-surface-500">{{ t.foyer.onboarding.champs.soldeInitial }}</label>
-                        <p-inputnumber
-                          [ngModel]="comptes()[i].soldeInitial"
-                          (ngModelChange)="updateCompteSolde(i, $event)"
-                          mode="decimal"
-                          [minFractionDigits]="2"
-                          [maxFractionDigits]="2"
-                          class="w-full">
-                        </p-inputnumber>
-                      </div>
-                      <div class="flex flex-col gap-1 flex-1">
-                        <label class="text-xs text-surface-500">{{ t.foyer.onboarding.champs.membresRattaches }}</label>
-                        <p-multiselect
-                          appendTo="body"
-                          [ngModel]="comptes()[i].membreOrdres"
-                          (ngModelChange)="updateCompteMembreOrdres(i, $event)"
-                          [options]="membreOptions()"
-                          optionLabel="label"
-                          optionValue="value"
-                          [placeholder]="t.referentiels.compte.membresPlaceholder"
-                          class="w-full">
-                        </p-multiselect>
-                      </div>
+                      <app-input-number
+                        class="flex-1"
+                        [label]="t.foyer.onboarding.champs.soldeInitial"
+                        [ngModel]="comptes()[i].soldeInitial"
+                        (ngModelChange)="updateCompteSolde(i, $event)"
+                        mode="decimal"
+                        [minFractionDigits]="2"
+                        [maxFractionDigits]="2" />
+                      <app-multi-select
+                        class="flex-1"
+                        [label]="t.foyer.onboarding.champs.membresRattaches"
+                        [ngModel]="comptes()[i].membreOrdres"
+                        (ngModelChange)="updateCompteMembreOrdres(i, $event)"
+                        [options]="membreOptions()"
+                        optionLabel="label"
+                        optionValue="value" />
                     </div>
                   </div>
                   <p-button
@@ -185,11 +166,11 @@
                 <h3 class="font-semibold text-green-600 dark:text-green-400">{{ revenuLabel }}</h3>
                 @for (_ of categoriesRevenu(); track $index; let i = $index) {
                   <div class="flex items-center gap-1">
-                    <input pInputText
+                    <app-input-text
+                      class="flex-1"
+                      [label]="t.foyer.onboarding.champs.libelleCategorie"
                       [ngModel]="categoriesRevenu()[i].libelle"
-                      (ngModelChange)="updateCategorieLibelle('REVENU', i, $event)"
-                      [placeholder]="t.foyer.onboarding.champs.libelleCategorie"
-                      class="flex-1 text-sm" />
+                      (ngModelChange)="updateCategorieLibelle('REVENU', i, $event)" />
                     <p-button icon="pi pi-times" [text]="true" severity="danger" size="small"
                       [ariaLabel]="t.foyer.onboarding.champs.supprimerLigne"
                       (click)="supprimerCategorie('REVENU', i)" />
@@ -205,11 +186,11 @@
                 <h3 class="font-semibold text-red-600 dark:text-red-400">{{ chargeLabel }}</h3>
                 @for (_ of categoriesCharge(); track $index; let i = $index) {
                   <div class="flex items-center gap-1">
-                    <input pInputText
+                    <app-input-text
+                      class="flex-1"
+                      [label]="t.foyer.onboarding.champs.libelleCategorie"
                       [ngModel]="categoriesCharge()[i].libelle"
-                      (ngModelChange)="updateCategorieLibelle('CHARGE', i, $event)"
-                      [placeholder]="t.foyer.onboarding.champs.libelleCategorie"
-                      class="flex-1 text-sm" />
+                      (ngModelChange)="updateCategorieLibelle('CHARGE', i, $event)" />
                     <p-button icon="pi pi-times" [text]="true" severity="danger" size="small"
                       [ariaLabel]="t.foyer.onboarding.champs.supprimerLigne"
                       (click)="supprimerCategorie('CHARGE', i)" />
@@ -225,11 +206,11 @@
                 <h3 class="font-semibold text-blue-600 dark:text-blue-400">{{ reserveLabel }}</h3>
                 @for (_ of categoriesReserve(); track $index; let i = $index) {
                   <div class="flex items-center gap-1">
-                    <input pInputText
+                    <app-input-text
+                      class="flex-1"
+                      [label]="t.foyer.onboarding.champs.libelleCategorie"
                       [ngModel]="categoriesReserve()[i].libelle"
-                      (ngModelChange)="updateCategorieLibelle('RESERVE', i, $event)"
-                      [placeholder]="t.foyer.onboarding.champs.libelleCategorie"
-                      class="flex-1 text-sm" />
+                      (ngModelChange)="updateCategorieLibelle('RESERVE', i, $event)" />
                     <p-button icon="pi pi-times" [text]="true" severity="danger" size="small"
                       [ariaLabel]="t.foyer.onboarding.champs.supprimerLigne"
                       (click)="supprimerCategorie('RESERVE', i)" />
@@ -264,37 +245,25 @@
             <p-message severity="info" icon="pi pi-sparkles" [closable]="false"
               class="w-full">{{ t.foyer.onboarding.info.scenario }}</p-message>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <div class="flex flex-col gap-1">
-                 <label class="text-sm font-medium">{{ t.foyer.onboarding.champs.nomScenario }}</label>
-                 <input pInputText
-                   [ngModel]="scenario().nom"
-                   (ngModelChange)="updateScenarioNom($event)"
-                   [placeholder]="t.foyer.onboarding.champs.nomScenario"
-                   class="w-full" />
-               </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4">
+               <app-input-text
+                 [label]="t.foyer.onboarding.champs.nomScenario"
+                 [ngModel]="scenario().nom"
+                 (ngModelChange)="updateScenarioNom($event)" />
 
-               <div class="flex flex-col gap-1">
-                 <label class="text-sm font-medium">{{ t.foyer.onboarding.champs.anneeDepart }}</label>
-                 <p-select
-                   appendTo="body"
-                   [ngModel]="scenario().anneeDepart"
-                   (ngModelChange)="updateScenarioAnnee($event)"
-                   [options]="annees"
-                   class="w-full" />
-               </div>
+               <app-select
+                 [label]="t.foyer.onboarding.champs.anneeDepart"
+                 [ngModel]="scenario().anneeDepart"
+                 (ngModelChange)="updateScenarioAnnee($event)"
+                 [options]="annees" />
 
-               <div class="flex flex-col gap-1">
-                 <label class="text-sm font-medium">{{ t.foyer.onboarding.champs.tresorerieInitiale }}</label>
-                 <p-inputnumber
-                   [ngModel]="scenario().tresorerieInitiale"
-                   (ngModelChange)="updateScenarioTresorerie($event)"
-                   mode="decimal"
-                   [minFractionDigits]="2"
-                   [maxFractionDigits]="2"
-                   class="w-full">
-                 </p-inputnumber>
-               </div>
+               <app-input-number
+                 [label]="t.foyer.onboarding.champs.tresorerieInitiale"
+                 [ngModel]="scenario().tresorerieInitiale"
+                 (ngModelChange)="updateScenarioTresorerie($event)"
+                 mode="decimal"
+                 [minFractionDigits]="2"
+                 [maxFractionDigits]="2" />
              </div>
 
             <!-- Répartitions — liste fixe basée sur les membres -->
@@ -304,15 +273,14 @@
                 @for (rep of scenario().repartitions; track rep.membreOrdre) {
                   <div class="flex items-center gap-3">
                     <span class="flex-1 text-sm">{{ rep.nomMembre }}</span>
-                    <p-inputnumber
+                    <app-input-number
                       [ngModel]="rep.quotePart"
                       (ngModelChange)="updateRepartition(rep.membreOrdre, $event)"
                       [min]="0"
                       [max]="100"
                       [minFractionDigits]="0"
                       [maxFractionDigits]="2"
-                      suffix=" %">
-                    </p-inputnumber>
+                      suffix=" %" />
                   </div>
                 }
                 <div class="flex items-center gap-2 mt-1"

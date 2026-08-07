@@ -5,11 +5,6 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormArray, FormsModule, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { SelectModule } from 'primeng/select';
-import { SelectButtonModule } from 'primeng/selectbutton';
-import { DatePickerModule } from 'primeng/datepicker';
 import { MessageModule } from 'primeng/message';
 import { TooltipModule } from 'primeng/tooltip';
 import { StepperModule } from 'primeng/stepper';
@@ -27,6 +22,13 @@ import { arrondirSommeRepartition, sommeRepartitionValide as estSommeRepartition
 import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
 import { normaliserCouleur, couleurTexteContraste } from '../../../shared/utils/couleur.util';
 import { MembresTagsComponent } from '../../../shared/components/membres-tags/membres-tags.component';
+import {
+  DatePickerComponent,
+  InputNumberComponent,
+  InputTextComponent,
+  SelectButtonComponent,
+  SelectComponent,
+} from '../../../shared/components/form-fields';
 import { MontantPipe, PeriodicitePipe } from '../../../core/pipes/format.pipes';
 
 /**
@@ -42,17 +44,17 @@ function datesCoherentesValidator(group: AbstractControl): ValidationErrors | nu
   return null;
 }
 
-/** Index des 4 étapes fixes du stepper (jamais plus, jamais moins). */
-type Etape = 0 | 1 | 2 | 3;
+/** Index des 5 étapes fixes du stepper (jamais plus, jamais moins). */
+type Etape = 0 | 1 | 2 | 3 | 4;
 
 @Component({
   selector: 'app-poste-form-dialog',
   standalone: true,
   providers: [ConfirmationService],
   imports: [
-    CommonModule, FormsModule, ReactiveFormsModule, DialogModule, ButtonModule, InputTextModule,
-    InputNumberModule, SelectModule, SelectButtonModule, DatePickerModule, MessageModule, TooltipModule,
-    StepperModule, ConfirmDialogModule, SliderModule, MembresTagsComponent, MontantPipe, PeriodicitePipe,
+    CommonModule, FormsModule, ReactiveFormsModule, DialogModule, ButtonModule, InputTextComponent,
+    InputNumberComponent, SelectComponent, SelectButtonComponent, DatePickerComponent, MessageModule,
+    TooltipModule, StepperModule, ConfirmDialogModule, SliderModule, MembresTagsComponent, MontantPipe, PeriodicitePipe,
   ],
   templateUrl: './poste-form-dialog.component.html',
 })
@@ -75,7 +77,8 @@ export class PosteFormDialogComponent {
   readonly visibleChange = output<boolean>();
   readonly enregistre = output<void>();
 
-  @ViewChild('descriptionInput') private descriptionInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('descriptionInput') private descriptionInput?: InputTextComponent;
+  @ViewChild('stepListEl') private stepListEl?: ElementRef<HTMLElement>;
 
   comptes = signal<CompteDto[]>([]);
   enregistrementEnCours = signal(false);
@@ -133,7 +136,7 @@ export class PosteFormDialogComponent {
   );
 
   // ── Mini-questionnaire du rythme (façade au-dessus du form réactif) ──
-  frequenceChoisie = signal<'PONCTUEL' | 'RECURRENT' | null>(null);
+  frequenceChoisie = signal<'PONCTUEL' | 'RECURRENT' | null>('PONCTUEL');
   sousFrequence    = signal<'MENSUEL' | 'AUTRE' | null>(null);
 
   // ── Sélection des membres concernés (étape 3) ──
@@ -162,8 +165,8 @@ export class PosteFormDialogComponent {
     { label: this.t.poste.modeOptions.PERIODIQUE, value: 'PERIODIQUE' },
   ];
   estimationOptions = [
-    { label: this.t.commun.non, value: 'EFFECTIF' as const },
-    { label: this.t.commun.oui, value: 'ESTIMATION' as const },
+    { label: this.t.poste.montantExact, value: 'EFFECTIF' as const },
+    { label: this.t.poste.montantEstime, value: 'ESTIMATION' as const },
   ];
   typeRepartitionOptions = [
     { label: this.t.poste.typeRepartitionOptions.AUTO,         value: 'AUTO' as TypeRepartition },
@@ -179,6 +182,7 @@ export class PosteFormDialogComponent {
   etapesTitres = computed(() => [
     this.t.poste.stepper.etape1Titre,
     this.t.poste.stepper.etape2Titre,
+    this.t.poste.stepper.etapeMontantTitre,
     this.t.poste.stepper.etape3Titre,
     this.t.poste.stepper.etape4Titre,
   ]);
@@ -220,6 +224,23 @@ export class PosteFormDialogComponent {
     if (this.visible() && foyerId) {
       this.compteSvc.lister(foyerId).subscribe(c => this.comptes.set(c));
     }
+  });
+
+  /**
+   * Garde l'étape active toujours visible (centrée) dans la liste des pastilles :
+   * utile dès que le stepper compte plus d'étapes que ce que la largeur du dialog
+   * peut afficher (ex. sur mobile), pour que l'utilisateur suive sa progression.
+   */
+  private readonly _centrerEtapeActive = effect(() => {
+    const etape = this.etapeActive();
+    if (!this.visible()) return;
+    untracked(() => {
+      queueMicrotask(() => {
+        const conteneur = this.stepListEl?.nativeElement;
+        const actif = conteneur?.querySelector<HTMLElement>(`[data-p-active="true"]`);
+        actif?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      });
+    });
   });
 
   /** Ouverture/fermeture : (ré)initialise le formulaire sur le poste courant (ou vide en création). */
@@ -277,7 +298,7 @@ export class PosteFormDialogComponent {
       typeRepartition: 'AUTO', estimPourcentage: null, importance: 3, potentielOptimisation: 3,
     });
     this.initialiserRepartitions(undefined);
-    this.frequenceChoisie.set(null);
+    this.frequenceChoisie.set('PONCTUEL');
     this.sousFrequence.set(null);
     this.dernierTypeRepartitionMulti = 'AUTO';
     // Par défaut en création, tous les membres actifs sont sélectionnés.
@@ -324,7 +345,7 @@ export class PosteFormDialogComponent {
     }
 
     this.etapeActive.set(0);
-    this.etapesVisitees.set(new Set([0, 1, 2, 3]));
+    this.etapesVisitees.set(new Set([0, 1, 2, 3, 4]));
     this.etapesTouched.set(new Set());
     this._focusDescriptionFait = true; // pas d'autofocus surprise en édition
   }
@@ -539,14 +560,15 @@ export class PosteFormDialogComponent {
   etapeValide(etape: Etape): boolean {
     switch (etape) {
       case 0:
-        return this.form.get('description')!.valid && this.form.get('montant')!.valid &&
-               this.form.get('categorieId')!.valid && this.form.get('estimPourcentage')!.valid;
+        return this.form.get('description')!.valid && this.form.get('categorieId')!.valid;
       case 1: {
         if (!this.questionnaireFrequenceResolue()) return false;
         if (this.form.get('debut')!.invalid) return false;
         return !this.form.hasError('finAvantDebut');
       }
       case 2:
+        return this.form.get('montant')!.valid && this.form.get('estimPourcentage')!.valid;
+      case 3:
         return this.membresSelectionnesIds().size > 0 &&
                (!this.estCustomMultiMembre() || this.sommeRepartitionValide) &&
                this.controlesSelectionnes().every(c => c.get('compteId')!.valid);
@@ -565,6 +587,8 @@ export class PosteFormDialogComponent {
     this.etapesTouched.update(s => new Set(s).add(etape));
     if (etape === 0) {
       this.form.get('description')!.markAsTouched();
+    }
+    if (etape === 2) {
       this.form.get('montant')!.markAsTouched();
       this.form.get('estimPourcentage')!.markAsTouched();
     }
@@ -585,7 +609,7 @@ export class PosteFormDialogComponent {
   }
 
   suivant(): void {
-    const prochaine = Math.min(this.etapeActive() + 1, 3) as Etape;
+    const prochaine = Math.min(this.etapeActive() + 1, 4) as Etape;
     this.allerA(prochaine);
   }
 
@@ -608,7 +632,7 @@ export class PosteFormDialogComponent {
   onDialogShow(): void {
     if (this._focusDescriptionFait) return;
     this._focusDescriptionFait = true;
-    this.descriptionInput?.nativeElement.focus();
+    this.descriptionInput?.focus();
   }
 
   /** Intercepte la fermeture déclenchée par le dialog (croix, clic hors-modal) pour appliquer la confirmation si dirty. */
@@ -620,13 +644,23 @@ export class PosteFormDialogComponent {
     this.fermer();
   }
 
+  /**
+   * Ferme le dialog. En création, la brouillon est immédiatement réinitialisé (au lieu
+   * d'attendre la prochaine ouverture) : sinon, si l'effet de reset de la prochaine
+   * ouverture ne se redéclenche pas à temps (ex. ouvertures rapprochées), d'anciennes
+   * valeurs pouvaient rester visibles à la réouverture du formulaire de création.
+   */
   fermer(): void {
     if (this.form.dirty) {
       this.confirm.confirm({
         message: this.t.commun.confirmerAnnulationFormulaire,
-        accept: () => this.visibleChange.emit(false),
+        accept: () => {
+          if (!this.poste()) this.initialiserCreation();
+          this.visibleChange.emit(false);
+        },
       });
     } else {
+      if (!this.poste()) this.initialiserCreation();
       this.visibleChange.emit(false);
     }
   }
@@ -647,7 +681,7 @@ export class PosteFormDialogComponent {
   }
 
   private premiereEtapeFautive(): Etape {
-    for (const etape of [0, 1, 2] as Etape[]) {
+    for (const etape of [0, 1, 2, 3] as Etape[]) {
       this.etapesTouched.update(s => new Set(s).add(etape));
       if (this.etapeEnErreur(etape)) return etape;
     }
@@ -742,6 +776,6 @@ export class PosteFormDialogComponent {
     this.etapeActive.set(0);
     this.etapesTouched.set(new Set());
     this._focusDescriptionFait = false;
-    setTimeout(() => this.descriptionInput?.nativeElement.focus());
+    setTimeout(() => this.descriptionInput?.focus());
   }
 }

@@ -5,8 +5,6 @@ import { FormBuilder, Validators, ReactiveFormsModule, FormsModule } from '@angu
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
@@ -18,6 +16,7 @@ import { FoyerService } from '../../../core/services/referentiel.service';
 import { AccesFoyerDto, RoleFoyer } from '../../../core/models/api.models';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
+import { InputTextComponent, SelectComponent } from '../../../shared/components/form-fields';
 
 /** T10.2 — Gestion des accès (OWNER uniquement) */
 @Component({
@@ -27,7 +26,7 @@ import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
   imports: [
     CommonModule, ReactiveFormsModule, FormsModule,
     TableModule, ButtonModule, DialogModule, TagModule, TooltipModule,
-    InputTextModule, SelectModule,
+    InputTextComponent, SelectComponent,
     ConfirmDialogModule,
   ],
   templateUrl: './acces.component.html',
@@ -146,4 +145,3 @@ export class AccesComponent {
     });
   }
 }
-

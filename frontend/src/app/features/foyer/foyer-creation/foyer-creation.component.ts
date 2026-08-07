@@ -6,13 +6,18 @@ import { Router } from '@angular/router';
 // PrimeNG
 import { StepperModule } from 'primeng/stepper';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { SelectModule } from 'primeng/select';
-import { MultiSelectModule } from 'primeng/multiselect';
 import { MessageModule } from 'primeng/message';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
+
+// Design system — champs de formulaire réutilisables
+import {
+  InputTextComponent,
+  InputNumberComponent,
+  SelectComponent,
+  MultiSelectComponent,
+  ColorInputComponent,
+} from '../../../shared/components/form-fields';
 
 // App
 import { FoyerService, MembreService } from '../../../core/services/referentiel.service';
@@ -62,12 +67,13 @@ interface ScenarioLocal {
     FormsModule,
     StepperModule,
     ButtonModule,
-    InputTextModule,
-    InputNumberModule,
-    SelectModule,
-    MultiSelectModule,
     MessageModule,
     ToastModule,
+    InputTextComponent,
+    InputNumberComponent,
+    SelectComponent,
+    MultiSelectComponent,
+    ColorInputComponent,
   ],
   providers: [MessageService],
   templateUrl: './foyer-creation.component.html',

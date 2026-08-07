@@ -5,13 +5,14 @@
     @switch (champ()) {
         @case ('CATEGORIE') {
             <div class="flex flex-col gap-2 pt-2">
-                <label class="text-sm font-medium">{{ t.poste.categorie }}</label>
-                <p-select appendTo="body"
-                          [(ngModel)]="valeurCategorieId"
-                          [options]="categories()"
-                          optionLabel="libelle" optionValue="id"
-                          [showClear]="true"
-                          class="w-full"/>
+                <app-select
+                    [label]="t.poste.categorie"
+                    [(ngModel)]="valeurCategorieId"
+                    [options]="categories()"
+                    optionLabel="libelle"
+                    optionValue="id"
+                    [showClear]="true"
+                    class="w-full"/>
             </div>
         }
         @case ('IMPORTANCE') {

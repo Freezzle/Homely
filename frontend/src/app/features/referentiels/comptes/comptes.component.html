@@ -44,38 +44,38 @@
 
 <p-dialog [(visible)]="dialogVisible" [header]="compteEnEdition ? t.commun.modifier : t.commun.creer"
           [modal]="true" class="w-full max-w-lg">
-  <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
-    <div class="flex flex-col gap-1">
-      <label class="text-sm font-medium">{{ t.referentiels.compte.libelle }} *</label>
-      <input pInputText formControlName="libelle" class="w-full" />
-    </div>
+  <form [formGroup]="form" class="flex flex-col pt-2">
+    <app-input-text
+      [label]="t.referentiels.compte.libelle"
+      formControlName="libelle"
+      [required]="true" />
 
     <!-- Membres rattachés -->
-    <div class="flex flex-col gap-1">
-      <label class="text-sm font-medium">{{ t.referentiels.compte.membres }} *</label>
-      <p-multiselect
-        appendTo="body"
+    <div class="flex flex-col">
+      <app-multi-select
+        [label]="t.referentiels.compte.membres"
         formControlName="membreIds"
+        [required]="true"
         [options]="membresActifs()"
         optionLabel="nom"
         optionValue="id"
-        [placeholder]="t.referentiels.compte.membresPlaceholder"
-        class="w-full"
-        display="chip" />
+        display="chip"
+      />
       @if (form.get('membreIds')?.invalid && form.get('membreIds')?.touched) {
         <p-message severity="warn">{{ t.referentiels.compte.membresRequis }}</p-message>
       }
     </div>
 
-    <div class="flex flex-col gap-1">
-      <label class="text-sm font-medium">{{ t.referentiels.compte.devise }}</label>
-      <p-select appendTo="body" formControlName="devise" [options]="devisesOptions()" class="w-full" />
-      <small class="text-surface-400">{{ t.commun.deviseConfigureeAide }}</small>
-    </div>
-    <div class="flex flex-col gap-1">
-      <label class="text-sm font-medium">{{ t.referentiels.compte.soldeInitial }}</label>
-      <p-inputnumber formControlName="soldeInitial" mode="decimal" [minFractionDigits]="2" class="w-full" />
-    </div>
+    <app-select
+      [label]="t.referentiels.compte.devise"
+      formControlName="devise"
+      [options]="devisesOptions()"
+      [hint]="t.commun.deviseConfigureeAide" />
+    <app-input-number
+      [label]="t.referentiels.compte.soldeInitial"
+      formControlName="soldeInitial"
+      mode="decimal"
+      [minFractionDigits]="2" />
   </form>
   <ng-template #footer>
     <p-button [label]="t.commun.annuler" severity="secondary" (click)="dialogVisible = false" />

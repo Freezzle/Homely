@@ -5,7 +5,6 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
-import { DatePickerModule } from 'primeng/datepicker';
 import { MessageService } from 'primeng/api';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { ContexteService } from '../../../core/services/contexte.service';
@@ -14,6 +13,7 @@ import { PosteDto } from '../../../core/models/api.models';
 import { toIsoDateLocal, parseIsoDateLocal } from '../../../core/utils/date.util';
 import { formatPeriodeMois, formaterMontantSimple, localeCouranteDeLangue } from '../../../core/utils/format-affichage.util';
 import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
+import { DatePickerComponent } from '../../../shared/components/form-fields';
 
 /**
  * Dialog autonome de décalage de la date d'effet entre un maillon (poste) et son
@@ -25,7 +25,7 @@ import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
 @Component({
   selector: 'app-poste-decalage-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, DialogModule, ButtonModule, DatePickerModule],
+  imports: [CommonModule, ReactiveFormsModule, DialogModule, ButtonModule, DatePickerComponent],
   templateUrl: './poste-decalage-dialog.component.html',
 })
 export class PosteDecalageDialogComponent {

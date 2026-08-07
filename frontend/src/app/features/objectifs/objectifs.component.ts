@@ -4,10 +4,6 @@ import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { SelectModule } from 'primeng/select';
-import { DatePickerModule } from 'primeng/datepicker';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { SkeletonModule } from 'primeng/skeleton';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
@@ -27,6 +23,12 @@ import { I18nService } from '../../core/i18n/i18n.service';
 import { toIsoDateLocal, parseIsoDateLocal } from '../../core/utils/date.util';
 import { creerCrudReferentielScenario } from '../../core/utils/crud-referentiel.util';
 import { creerChargementReactif } from '../../core/utils/reference-data.util';
+import {
+  DatePickerComponent,
+  InputNumberComponent,
+  InputTextComponent,
+  SelectComponent,
+} from '../../shared/components/form-fields';
 
 type StatutObjectif = 'DANS_LES_TEMPS' | 'EN_RETARD' | 'ATTEINT';
 
@@ -38,9 +40,9 @@ type StatutObjectif = 'DANS_LES_TEMPS' | 'EN_RETARD' | 'ATTEINT';
   imports: [
     CommonModule, ReactiveFormsModule,
     CardModule, ButtonModule, DialogModule, TagModule,
-    InputTextModule, InputNumberModule, SelectModule, DatePickerModule,
     ProgressBarModule, SkeletonModule, ConfirmDialogModule,
     AvatarModule, AvatarGroupModule, TooltipModule, MessageModule,
+    InputTextComponent, InputNumberComponent, DatePickerComponent, SelectComponent,
     MontantPipe, DateFrPipe,
   ],
   templateUrl: './objectifs.component.html',
@@ -159,4 +161,3 @@ export class ObjectifsComponent {
     this.toast.add({ severity: 'info', summary: this.t.objectif.actionAVenir });
   }
 }
-

@@ -4,13 +4,8 @@ import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { SelectModule } from 'primeng/select';
-import { MultiSelectModule } from 'primeng/multiselect';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageModule } from 'primeng/message';
-import { TagModule } from 'primeng/tag';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ContexteService } from '../../../core/services/contexte.service';
 import { CompteService, MembreService, TauxChangeService } from '../../../core/services/referentiel.service';
@@ -18,6 +13,12 @@ import { CompteDto, MembreDto } from '../../../core/models/api.models';
 import { MontantPipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { MembresTagsComponent } from '../../../shared/components/membres-tags/membres-tags.component';
+import {
+  InputNumberComponent,
+  InputTextComponent,
+  MultiSelectComponent,
+  SelectComponent,
+} from '../../../shared/components/form-fields';
 import { creerDevisesDisponibles } from '../../../core/utils/devise-options.util';
 import { creerCrudReferentiel } from '../../../core/utils/crud-referentiel.util';
 
@@ -28,8 +29,8 @@ import { creerCrudReferentiel } from '../../../core/utils/crud-referentiel.util'
   providers: [ConfirmationService],
   imports: [
       CommonModule, ReactiveFormsModule,
-      TableModule, ButtonModule, DialogModule, TagModule, MessageModule,
-      InputTextModule, InputNumberModule, SelectModule, MultiSelectModule,
+      TableModule, ButtonModule, DialogModule, MessageModule,
+      InputTextComponent, InputNumberComponent, SelectComponent, MultiSelectComponent,
       ConfirmDialogModule, MontantPipe, MembresTagsComponent,
   ],
   templateUrl: './comptes.component.html',

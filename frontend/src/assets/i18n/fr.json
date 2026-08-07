@@ -156,6 +156,8 @@
     "modeTooltip": "Mensualisé = le montant est étalé sur chaque mois. Périodique = le montant complet est prélevé une seule fois par cycle (ex. tous les 3 mois).",
     "momentTooltip": "Le montant complet tombe-t-il au début ou à la fin du cycle ? Choisissez « Date inconnue » si vous ne connaissez pas la date de paiement exacte (ex. dentiste) : le montant sera alors toujours étalé sur les mois.",
     "natureTooltip": "Effectif = montant certain et connu à l'avance (loyer, salaire, facture…). Estimation = montant approximatif pour des frais qui varient (nourriture, habits, loisirs…).",
+    "montantExact": "Montant exact",
+    "montantEstime": "Montant estimé",
     "estimationPourcentage": "Marge de variation (%)",
     "estimationTooltip": "Plage de variation du montant. Ex : 100 CHF ± 10% = montant peut varier entre 90 et 110 CHF.",
     "estimationPlaceholder": "Ex : 10.0",
@@ -174,17 +176,17 @@
     "typeRepartitionTooltip": "AUTO = suit automatiquement la répartition définie dans le scénario. Inverse auto = échange les parts entre les personnes. Personnalisé = parts fixes définies manuellement.",
     "repartitionParDefaut": "Par défaut",
     "typeRepartitionOptions": {
-      "AUTO": "Auto (période du scénario)",
-      "REVERSE_AUTO": "Inverse auto (permutation)",
-      "CUSTOM": "Personnalisé"
+      "AUTO": "Répartition auto",
+      "REVERSE_AUTO": "Répartition inversée",
+      "CUSTOM": "Personnalisée"
     },
     "ventilation": "Détail par compte",
     "apercu": "Aperçu mensuel",
     "questionnaire": {
       "nomTitre": "Quel nom de poste ?",
       "freqTitre": "Ce poste est...",
-      "ponctuel": "Ponctuel",
-      "recurrent": "Récurrent",
+      "ponctuel": "Poste ponctuel",
+      "recurrent": "Poste récurrent",
       "chaqueMois": "Chaque mois",
       "autreFrequence": "Autre",
       "quandTitre": "Quand le paiement s'impute-t-il ?",
@@ -203,6 +205,7 @@
     "stepper": {
       "etape1Titre": "Le poste",
       "etape2Titre": "Le rythme",
+      "etapeMontantTitre": "Le montant",
       "etape3Titre": "Répartition / Compte",
       "etape4Titre": "Récapitulatif",
       "selectionnerMembres": "Sélectionnez les membres concernés par ce poste.",

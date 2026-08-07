@@ -3,15 +3,17 @@
   <h1 class="text-2xl font-bold">{{ t.parametres.titre }}</h1>
 
   <p-card>
-    <form [formGroup]="form" class="flex flex-col gap-4">
-      <div class="flex flex-col gap-1">
-        <label class="text-sm font-medium">{{ t.parametres.nom }} *</label>
-        <input pInputText formControlName="nom" class="w-full" />
-      </div>
-      <div class="flex flex-col gap-1">
-        <label class="text-sm font-medium">{{ t.parametres.deviseBase }}</label>
-        <p-select appendTo="body" formControlName="deviseBase" [options]="devises" class="w-full" />
-      </div>
+    <form [formGroup]="form" class="flex flex-col">
+      <app-input-text
+        [label]="t.parametres.nom"
+        [required]="true"
+        formControlName="nom"
+        class="w-full" />
+      <app-select
+        [label]="t.parametres.deviseBase"
+        formControlName="deviseBase"
+        [options]="devises"
+        class="w-full" />
       <div class="flex justify-end">
         <p-button [label]="t.parametres.enregistrer" icon="pi pi-save"
                   (click)="enregistrer()" [disabled]="form.invalid || !contexte.estOwner()"

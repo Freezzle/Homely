@@ -10,87 +10,58 @@
 
     <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
         <p-stepper [value]="etapeActive()" [linear]="false">
-            <p-step-list>
-                <p-step [value]="0" [disabled]="!etapesVisitees().has(0)" (click)="cliquerPastille(0)">
-                    {{ etapesTitres()[0] }}
-                </p-step>
-                <p-step [value]="1" [disabled]="!etapesVisitees().has(1)" (click)="cliquerPastille(1)">
-                    {{ etapesTitres()[1] }}
-                </p-step>
-                <p-step [value]="2" [disabled]="!etapesVisitees().has(2)" (click)="cliquerPastille(2)">
-                    {{ etapesTitres()[2] }}
-                </p-step>
-                <p-step [value]="3" [disabled]="!etapesVisitees().has(3)" (click)="cliquerPastille(3)">
-                    {{ etapesTitres()[3] }}
-                </p-step>
-            </p-step-list>
+            <div #stepListEl class="overflow-x-auto">
+                <p-step-list>
+                    <p-step [value]="0" [disabled]="!etapesVisitees().has(0)" (click)="cliquerPastille(0)">
+                        {{ etapesTitres()[0] }}
+                    </p-step>
+                    <p-step [value]="1" [disabled]="!etapesVisitees().has(1)" (click)="cliquerPastille(1)">
+                        {{ etapesTitres()[1] }}
+                    </p-step>
+                    <p-step [value]="2" [disabled]="!etapesVisitees().has(2)" (click)="cliquerPastille(2)">
+                        {{ etapesTitres()[2] }}
+                    </p-step>
+                    <p-step [value]="3" [disabled]="!etapesVisitees().has(3)" (click)="cliquerPastille(3)">
+                        {{ etapesTitres()[3] }}
+                    </p-step>
+                    <p-step [value]="4" [disabled]="!etapesVisitees().has(4)" (click)="cliquerPastille(4)">
+                        {{ etapesTitres()[4] }}
+                    </p-step>
+                </p-step-list>
+            </div>
 
             <p-step-panels>
                 <!-- ═══════════════════ Étape 1 — Le poste ═══════════════════ -->
                 <p-step-panel [value]="0">
                     <ng-template #content>
                         <div class="flex flex-col gap-4 py-3 min-h-[22rem] max-h-[22rem] overflow-y-auto pl-2 pr-2">
-                            <div class="flex flex-col gap-1">
-                                <label class="text-sm font-medium">{{ t.poste.questionnaire.nomTitre }} *</label>
-                                <input #descriptionInput pInputText formControlName="description" class="w-full"
-                                       [placeholder]="t.poste.description"/>
+                            <div>
+                                <app-input-text #descriptionInput
+                                                [label]="t.poste.questionnaire.nomTitre"
+                                                [required]="true"
+                                                formControlName="description"/>
                                 @if (form.get('description')!.invalid && form.get('description')!.touched) {
                                     <p-message severity="error">{{ t.commun.champObligatoire }}</p-message>
                                 }
                             </div>
 
-                            <div class="grid grid-cols-3 gap-4">
-                                <div class="flex flex-col gap-1">
-                                    <label class="text-sm font-medium">{{ t.poste.montant }} *</label>
-                                    <p-inputnumber formControlName="montant" mode="decimal" [minFractionDigits]="2"
-                                                   class="w-full"/>
-                                    @if (form.get('montant')!.invalid && form.get('montant')!.touched) {
-                                        <p-message severity="error">{{ t.commun.champObligatoire }}</p-message>
-                                    }
-                                </div>
-                                <div class="flex flex-col gap-1">
-                                    <label class="text-sm font-medium">{{ t.poste.devise }}</label>
-                                    <p-select appendTo="body" formControlName="devise" [options]="devisesDisponibles()"
-                                              class="w-full"/>
-                                </div>
-                                <div class="flex flex-col gap-1">
-                                    <label class="text-sm font-medium">{{ t.poste.categorie }} *</label>
-                                    <p-select appendTo="body" formControlName="categorieId" [options]="categories()"
-                                              optionLabel="libelle" optionValue="id" [showClear]="true" class="w-full"/>
-                                    @if (form.get('categorieId')!.invalid && form.get('categorieId')!.touched) {
-                                        <p-message severity="error">{{ t.commun.champObligatoire }}</p-message>
-                                    }
-                                </div>
+                            <div>
+                                <app-select
+                                    [label]="t.poste.categorie"
+                                    [required]="true"
+                                    formControlName="categorieId"
+                                    [options]="categories()"
+                                    optionLabel="libelle"
+                                    optionValue="id"
+                                    [showClear]="true"/>
+                                @if (form.get('categorieId')!.invalid && form.get('categorieId')!.touched) {
+                                    <p-message severity="error">{{ t.commun.champObligatoire }}</p-message>
+                                }
                             </div>
 
                             <div class="flex flex-col gap-2 w-full">
-                                <label class="text-sm font-medium" [pTooltip]="t.poste.natureTooltip">
-                                    {{ t.poste.questionnaire.estimationTitre }}
-                                </label>
-                                <p-selectbutton [options]="estimationOptions" optionLabel="label" optionValue="value"
-                                                formControlName="nature" class="w-full"/>
-                            </div>
-
-                            @if (formValue()?.nature === 'ESTIMATION') {
-                                <div class="flex flex-col gap-1 border-l-2 border-primary pl-3">
-                                    <label class="text-sm font-medium" [pTooltip]="t.poste.estimationTooltip">
-                                        {{ t.poste.estimationPourcentage }} *
-                                    </label>
-                                    <p-inputnumber formControlName="estimPourcentage"
-                                                   [min]="0" [max]="100"
-                                                   [minFractionDigits]="1" [maxFractionDigits]="1"
-                                                   suffix="%" class="w-full"
-                                                   [placeholder]="t.poste.estimationPlaceholder"/>
-                                    @if (form.get('estimPourcentage')!.invalid && form.get('estimPourcentage')!.touched) {
-                                        <p-message severity="error">{{ t.commun.champObligatoire }}</p-message>
-                                    }
-                                </div>
-                            }
-
-                            <div class="flex flex-col gap-2 w-full">
-                                <label class="text-sm font-medium flex items-center justify-between"
-                                       [pTooltip]="t.poste.importanceTooltip">
-                                    <span>{{ t.poste.importance }}</span>
+                                <label class="text-sm font-medium flex items-center justify-between">
+                                    <span [pTooltip]="t.poste.importanceTooltip">{{ t.poste.importance }}</span>
                                     <span class="text-xs text-surface-500">
                                         {{ formValue()?.importance ?? 3 }} / 5
                                     </span>
@@ -103,11 +74,151 @@
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </ng-template>
+                </p-step-panel>
+
+                <!-- ═══════════════════ Étape 2 — Le rythme ═══════════════════ -->
+                <p-step-panel [value]="1">
+                    <ng-template #content>
+                        <div class="flex flex-col gap-4 py-3 min-h-[22rem] max-h-[22rem] overflow-y-auto pl-2 pr-2">
+                            <app-select-button
+                                [options]="frequenceOptions"
+                                optionLabel="label"
+                                optionValue="value"
+                                [ngModel]="frequenceChoisie()"
+                                [ngModelOptions]="{standalone: true}"
+                                (ngModelChange)="choisirFrequence($event)"
+                                styleClass="w-full"/>
+
+                            @if (frequenceChoisie() === 'RECURRENT') {
+                                <div class="flex flex-col gap-2 border-l-2 border-primary pl-3">
+                                    <app-select-button
+                                        [options]="sousFrequenceOptions"
+                                        optionLabel="label"
+                                        optionValue="value"
+                                        [ngModel]="sousFrequence()"
+                                        [ngModelOptions]="{standalone: true}"
+                                        (ngModelChange)="choisirSousFrequence($event)"
+                                        styleClass="w-full"/>
+                                    @if (sousFrequence() === 'AUTRE') {
+                                        <app-select
+                                            formControlName="periodiciteMois"
+                                            [options]="periodiciteOptionsAutre"
+                                            optionLabel="label"
+                                            optionValue="value"/>
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <app-select
+                                                [label]="t.poste.moment"
+                                                [tooltip]="t.poste.momentTooltip"
+                                                formControlName="moment"
+                                                [options]="momentOptions"
+                                                optionLabel="label"
+                                                optionValue="value"/>
+                                            <app-select
+                                                [label]="t.poste.mode"
+                                                [tooltip]="t.poste.modeTooltip"
+                                                formControlName="mode"
+                                                [options]="modeOptions"
+                                                optionLabel="label"
+                                                optionValue="value"/>
+                                        </div>
+                                    }
+                                </div>
+                            }
+
+                                @if (this.frequenceChoisie() === 'PONCTUEL') {
+                                    <div class="w-full">
+                                        <app-date-picker
+                                            [label]="t.poste.questionnaire.datePosteLabel"
+                                            [required]="true"
+                                            formControlName="debut"
+                                            dateFormat="dd/mm/yy"
+                                            [showButtonBar]="true"/>
+                                        @if (form.get('debut')!.invalid && form.get('debut')!.touched) {
+                                            <p-message severity="error">{{ t.commun.champObligatoire }}</p-message>
+                                        }
+                                    </div>
+                                } @else {
+                                    <label class="text-sm font-medium">{{ t.poste.questionnaire.periodeValiditeTitre }}</label>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <app-date-picker
+                                                [label]="t.poste.debut"
+                                                [required]="true"
+                                                formControlName="debut"
+                                                dateFormat="dd/mm/yy"
+                                                [showButtonBar]="true"/>
+                                            @if (form.get('debut')!.invalid && form.get('debut')!.touched) {
+                                                <p-message severity="error">{{ t.commun.champObligatoire }}</p-message>
+                                            }
+                                        </div>
+                                        <app-date-picker
+                                            [label]="t.poste.fin"
+                                            formControlName="fin"
+                                            dateFormat="dd/mm/yy"
+                                            [showButtonBar]="true"/>
+                                    </div>
+                                    @if (form.hasError('finAvantDebut')) {
+                                        <p-message severity="warn">{{ t.poste.finAvantDebut }}</p-message>
+                                    }
+
+                            }
+                        </div>
+                    </ng-template>
+                </p-step-panel>
+
+                <!-- ═══════════════════ Étape 3 — Le montant ═══════════════════ -->
+                <p-step-panel [value]="2">
+                    <ng-template #content>
+                        <div class="flex flex-col gap-4 py-3 min-h-[22rem] max-h-[22rem] overflow-y-auto pl-2 pr-2">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <app-input-number
+                                        [label]="t.poste.montant"
+                                        [required]="true"
+                                        formControlName="montant"
+                                        mode="decimal"
+                                        [minFractionDigits]="2"/>
+                                    @if (form.get('montant')!.invalid && form.get('montant')!.touched) {
+                                        <p-message severity="error">{{ t.commun.champObligatoire }}</p-message>
+                                    }
+                                </div>
+                                <app-select
+                                    [label]="t.poste.devise"
+                                    formControlName="devise"
+                                    [options]="devisesDisponibles()"/>
+                            </div>
+
+                            <app-select-button
+                                [tooltip]="t.poste.natureTooltip"
+                                [options]="estimationOptions"
+                                optionLabel="label"
+                                optionValue="value"
+                                formControlName="nature"
+                                styleClass="w-full"/>
+
+                            @if (formValue()?.nature === 'ESTIMATION') {
+                                <div class="border-l-2 border-primary pl-3">
+                                    <app-input-number
+                                        [label]="t.poste.estimationPourcentage"
+                                        [required]="true"
+                                        [tooltip]="t.poste.estimationTooltip"
+                                        formControlName="estimPourcentage"
+                                        [min]="0"
+                                        [max]="100"
+                                        [minFractionDigits]="1"
+                                        [maxFractionDigits]="1"
+                                        suffix="%"/>
+                                    @if (form.get('estimPourcentage')!.invalid && form.get('estimPourcentage')!.touched) {
+                                        <p-message severity="error">{{ t.commun.champObligatoire }}</p-message>
+                                    }
+                                </div>
+                            }
 
                             <div class="flex flex-col gap-2 w-full">
-                                <label class="text-sm font-medium flex items-center justify-between"
-                                       [pTooltip]="t.poste.potentielOptimisationTooltip">
-                                    <span>{{ t.poste.potentielOptimisation }}</span>
+                                <label class="text-sm font-medium flex items-center justify-between">
+                                    <span [pTooltip]="t.poste.potentielOptimisationTooltip">{{ t.poste.potentielOptimisation }}</span>
                                     <span class="text-xs text-surface-500">
                                         {{ formValue()?.potentielOptimisation ?? 3 }} / 5
                                     </span>
@@ -124,104 +235,27 @@
                     </ng-template>
                 </p-step-panel>
 
-                <!-- ═══════════════════ Étape 2 — Le rythme ═══════════════════ -->
-                <p-step-panel [value]="1">
-                    <ng-template #content>
-                        <div class="flex flex-col gap-4 py-3 min-h-[22rem] max-h-[22rem] overflow-y-auto pl-2 pr-2">
-                            <div class="flex flex-col gap-2 w-full">
-                                <label class="text-sm font-medium">{{ t.poste.questionnaire.freqTitre }}</label>
-                                <p-selectbutton [options]="frequenceOptions" optionLabel="label" optionValue="value"
-                                                [ngModel]="frequenceChoisie()" [ngModelOptions]="{standalone: true}"
-                                                (ngModelChange)="choisirFrequence($event)" class="w-full"/>
-                            </div>
-
-                            @if (frequenceChoisie() === 'RECURRENT') {
-                                <div class="flex flex-col gap-2 border-l-2 border-primary pl-3">
-                                    <p-selectbutton [options]="sousFrequenceOptions" optionLabel="label"
-                                                    optionValue="value"
-                                                    [ngModel]="sousFrequence()" [ngModelOptions]="{standalone: true}"
-                                                    (ngModelChange)="choisirSousFrequence($event)"/>
-                                    @if (sousFrequence() === 'AUTRE') {
-                                        <p-select appendTo="body" formControlName="periodiciteMois"
-                                                  [options]="periodiciteOptionsAutre" optionLabel="label"
-                                                  optionValue="value"
-                                                  class="w-full"/>
-                                        <div class="grid grid-cols-2 gap-4">
-                                            <div class="flex flex-col gap-1">
-                                                <label class="text-sm font-medium"
-                                                       [pTooltip]="t.poste.momentTooltip">{{ t.poste.moment }}</label>
-                                                <p-select appendTo="body" formControlName="moment"
-                                                          [options]="momentOptions"
-                                                          optionLabel="label" optionValue="value" class="w-full"/>
-                                            </div>
-                                            <div class="flex flex-col gap-1">
-                                                <label class="text-sm font-medium"
-                                                       [pTooltip]="t.poste.modeTooltip">{{ t.poste.mode }}</label>
-                                                <p-select appendTo="body" formControlName="mode" [options]="modeOptions"
-                                                          optionLabel="label" optionValue="value" class="w-full"/>
-                                            </div>
-                                        </div>
-                                    }
-                                </div>
-                            }
-
-                            @if (questionnaireFrequenceResolue()) {
-                                @if ((formValue()?.periodiciteMois ?? 1) === 0) {
-                                    <div class="flex flex-col gap-1 w-full">
-                                        <label class="text-sm font-medium">{{ t.poste.questionnaire.datePosteLabel }}
-                                            *</label>
-                                        <p-datepicker appendTo="body" formControlName="debut" dateFormat="dd/mm/yy"
-                                                      [showButtonBar]="true" class="w-full"></p-datepicker>
-                                        @if (form.get('debut')!.invalid && form.get('debut')!.touched) {
-                                            <p-message severity="error">{{ t.commun.champObligatoire }}</p-message>
-                                        }
-                                    </div>
-                                } @else {
-                                    <label class="text-sm font-medium">{{ t.poste.questionnaire.periodeValiditeTitre }}</label>
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <div class="flex flex-col gap-1">
-                                            <label class="text-sm font-medium">{{ t.poste.debut }} *</label>
-                                            <p-datepicker appendTo="body" formControlName="debut" dateFormat="dd/mm/yy"
-                                                          [showButtonBar]="true" class="w-full"></p-datepicker>
-                                            @if (form.get('debut')!.invalid && form.get('debut')!.touched) {
-                                                <p-message severity="error">{{ t.commun.champObligatoire }}</p-message>
-                                            }
-                                        </div>
-                                        <div class="flex flex-col gap-1">
-                                            <label class="text-sm font-medium">{{ t.poste.fin }}</label>
-                                            <p-datepicker appendTo="body" formControlName="fin" dateFormat="dd/mm/yy"
-                                                          [showButtonBar]="true" class="w-full"></p-datepicker>
-                                        </div>
-                                    </div>
-                                    @if (form.hasError('finAvantDebut')) {
-                                        <p-message severity="warn">{{ t.poste.finAvantDebut }}</p-message>
-                                    }
-                                }
-                            }
-                        </div>
-                    </ng-template>
-                </p-step-panel>
-
-                <!-- ═══════════════════ Étape 3 — Répartition / Compte ═══════════════════ -->
-                <p-step-panel [value]="2">
+                <!-- ═══════════════════ Étape 4 — Répartition / Compte ═══════════════════ -->
+                <p-step-panel [value]="3">
                     <ng-template #content>
                         <div class="flex flex-col gap-4 py-3 min-h-[22rem] max-h-[22rem] overflow-y-auto pl-2 pr-2"
                              formArrayName="repartitions">
                             @if (estMonoMembre()) {
                                 <!-- Foyer mono-membre : une seule ligne, pas de notion de répartition -->
                                 @for (ctrl of repartitionsArray.controls; track ctrl; let i = $index) {
-                                    <div [formGroupName]="i" class="flex flex-col gap-1">
-                                        <label class="text-sm font-medium">{{ nomMembre(ctrl.get('membreId')?.value) }}
-                                            *</label>
-                                        <p-select appendTo="body" formControlName="compteId"
-                                                  [options]="comptesForMembre(ctrl.get('membreId')?.value)"
-                                                  optionLabel="libelle"
-                                                  optionValue="id" [placeholder]="t.poste.ventilation" class="w-full"
-                                                  [showClear]="true"/>
-                                        @if (ctrl.get('compteId')!.invalid && ctrl.get('compteId')!.touched) {
-                                            <p-message severity="error">{{ t.commun.champObligatoire }}</p-message>
-                                        }
-                                    </div>
+                                <div [formGroupName]="i">
+                                    <app-select
+                                        [label]="nomMembre(ctrl.get('membreId')?.value)"
+                                        [required]="true"
+                                        formControlName="compteId"
+                                        [options]="comptesForMembre(ctrl.get('membreId')?.value)"
+                                        optionLabel="libelle"
+                                        optionValue="id"
+                                        [showClear]="true"/>
+                                    @if (ctrl.get('compteId')!.invalid && ctrl.get('compteId')!.touched) {
+                                        <p-message severity="error">{{ t.commun.champObligatoire }}</p-message>
+                                    }
+                                </div>
                                 }
                             } @else {
                                 <!-- Bloc 1 : sélection des membres concernés -->
@@ -250,17 +284,16 @@
 
                                 <!-- Bloc 2 : type de répartition (si ≥2 membres sélectionnés) -->
                                 @if (afficherTypeRepartition()) {
-                                    <div class="flex flex-col gap-2">
-                                        <label class="text-sm font-medium" [pTooltip]="t.poste.typeRepartitionTooltip">
-                                            {{ t.poste.typeRepartition }}
-                                        </label>
-                                        <p-selectbutton [options]="typeRepartitionOptions" optionLabel="label"
-                                                        optionValue="value"
-                                                        [allowEmpty]="false"
-                                                        [ngModel]="formValue()?.typeRepartition"
-                                                        [ngModelOptions]="{standalone: true}"
-                                                        (ngModelChange)="choisirTypeRepartition($event)"/>
-                                    </div>
+                                    <app-select-button
+                                        [tooltip]="t.poste.typeRepartitionTooltip"
+                                        [options]="typeRepartitionOptions"
+                                        optionLabel="label"
+                                        optionValue="value"
+                                        [allowEmpty]="false"
+                                        [ngModel]="formValue()?.typeRepartition"
+                                        [ngModelOptions]="{standalone: true}"
+                                        (ngModelChange)="choisirTypeRepartition($event)"
+                                        styleClass="w-full"/>
                                 }
 
                                 <!-- Bloc 3 : table des parts et comptes -->
@@ -268,15 +301,15 @@
                                     <p-message severity="info">{{ t.poste.stepper.selectionnerMembres }}</p-message>
                                 } @else if (membresSelectionnesIds().size === 1) {
                                     @for (ctrl of controlesSelectionnes(); track ctrl) {
-                                        <div [formGroupName]="repartitionsArray.controls.indexOf(ctrl)"
-                                             class="flex flex-col gap-1">
-                                            <label class="text-sm font-medium">{{ nomMembre(ctrl.get('membreId')?.value) }}
-                                                *</label>
-                                            <p-select appendTo="body" formControlName="compteId"
-                                                      [options]="comptesForMembre(ctrl.get('membreId')?.value)"
-                                                      optionLabel="libelle"
-                                                      optionValue="id" [placeholder]="t.poste.ventilation"
-                                                      class="w-full" [showClear]="true"/>
+                                        <div [formGroupName]="repartitionsArray.controls.indexOf(ctrl)">
+                                            <app-select
+                                                [label]="nomMembre(ctrl.get('membreId')?.value)"
+                                                [required]="true"
+                                                formControlName="compteId"
+                                                [options]="comptesForMembre(ctrl.get('membreId')?.value)"
+                                                optionLabel="libelle"
+                                                optionValue="id"
+                                                [showClear]="true"/>
                                             @if (ctrl.get('compteId')!.invalid && ctrl.get('compteId')!.touched) {
                                                 <p-message severity="error">{{ t.commun.champObligatoire }}</p-message>
                                             }
@@ -296,12 +329,15 @@
                                                     </div>
                                                     @if (estCustomMultiMembre()) {
                                                         <div class="col-span-2">
-                                                            <p-inputnumber formControlName="quotePart" [min]="0"
-                                                                           [max]="100"
-                                                                           suffix="%" [minFractionDigits]="0"
-                                                                           [maxFractionDigits]="2"
-                                                                           class="w-full" inputStyleClass="w-full"
-                                                                           (onInput)="onQuotePartChange(repartitionsArray.controls.indexOf(ctrl))"/>
+                                                            <app-input-number
+                                                                formControlName="quotePart"
+                                                                [min]="0"
+                                                                [max]="100"
+                                                                suffix="%"
+                                                                [minFractionDigits]="0"
+                                                                [maxFractionDigits]="2"
+                                                                inputStyleClass="w-full"
+                                                                (onInput)="onQuotePartChange(repartitionsArray.controls.indexOf(ctrl))"/>
                                                         </div>
                                                         <div class="col-span-2 text-sm text-surface-500 truncate">
                                                             {{ (formValue()?.montant ?? 0) * (ctrl.get('quotePart')?.value ?? 0) / 100 | montant:(formValue()?.devise ?? undefined) }}
@@ -310,11 +346,13 @@
                                                         <div class="col-span-4 text-sm text-surface-400 italic">{{ t.poste.stepper.auto }}</div>
                                                     }
                                                     <div class="col-span-5">
-                                                        <p-select appendTo="body" formControlName="compteId"
-                                                                  [options]="comptesForMembre(ctrl.get('membreId')?.value)"
-                                                                  optionLabel="libelle"
-                                                                  optionValue="id" [placeholder]="t.poste.ventilation"
-                                                                  class="w-full" [showClear]="true">
+                                                        <app-select
+                                                            [label]="t.poste.ventilation"
+                                                            formControlName="compteId"
+                                                            [options]="comptesForMembre(ctrl.get('membreId')?.value)"
+                                                            optionLabel="libelle"
+                                                            optionValue="id"
+                                                            [showClear]="true">
                                                             <ng-template #selectedItem let-compte>
                                                                 @if (compte) {
                                                                     <div class="flex items-center gap-1.5 flex-wrap">
@@ -329,7 +367,7 @@
                                                                     <app-membres-tags [membres]="membresForCompte(compte)"/>
                                                                 </div>
                                                             </ng-template>
-                                                        </p-select>
+                                                        </app-select>
                                                         @if (ctrl.get('compteId')!.invalid && ctrl.get('compteId')!.touched) {
                                                             <p-message severity="error" styleClass="col-start-9 col-span-4">{{ t.commun.champObligatoire }}</p-message>
                                                         }
@@ -358,8 +396,8 @@
                     </ng-template>
                 </p-step-panel>
 
-                <!-- ═══════════════════ Étape 4 — Récapitulatif ═══════════════════ -->
-                <p-step-panel [value]="3">
+                <!-- ═══════════════════ Étape 5 — Récapitulatif ═══════════════════ -->
+                <p-step-panel [value]="4">
                     <ng-template #content>
                         <div class="flex flex-col gap-5 py-3 min-h-[22rem] max-h-[22rem] overflow-y-auto pl-2 pr-2">
                             <!-- Bloc 1 : Le poste -->
@@ -380,29 +418,12 @@
                                         }
                                     </div>
                                     <div class="flex justify-between">
-                                        <span class="text-surface-500">{{ t.poste.montant }}</span>
-                                        <span>{{ formValue()?.montant | montant:(formValue()?.devise ?? undefined) }}</span>
-                                    </div>
-                                    <div class="flex justify-between">
                                         <span class="text-surface-500">{{ t.poste.categorie }}</span>
                                         <span>{{ categorieLibelle(formValue()?.categorieId) || '–' }}</span>
                                     </div>
                                     <div class="flex justify-between">
-                                        <span class="text-surface-500">{{ t.poste.nature }}</span>
-                                        <span>
-                                            {{ formValue()?.nature === 'ESTIMATION' ? t.poste.natureOptions.ESTIMATION : t.poste.natureOptions.EFFECTIF }}
-                                            @if (formValue()?.nature === 'ESTIMATION') {
-                                                ({{ formValue()?.estimPourcentage ?? 0 }}%)
-                                            }
-                                        </span>
-                                    </div>
-                                    <div class="flex justify-between">
                                         <span class="text-surface-500">{{ t.poste.importance }}</span>
                                         <span>{{ formValue()?.importance ?? 3 }} / 5</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-surface-500">{{ t.poste.potentielOptimisation }}</span>
-                                        <span>{{ formValue()?.potentielOptimisation ?? 3 }} / 5</span>
                                     </div>
                                 </div>
                             </div>
@@ -452,12 +473,41 @@
                                 </div>
                             </div>
 
-                            <!-- Bloc 3 : Répartition / Compte -->
+                            <!-- Bloc 3 : Le montant -->
+                            <div class="flex flex-col gap-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm font-semibold">{{ t.poste.stepper.etapeMontantTitre }}</span>
+                                    <button type="button" class="text-sm text-primary hover:underline"
+                                            (click)="allerA(2)">{{ t.commun.modifier }}
+                                    </button>
+                                </div>
+                                <div class="flex flex-col gap-1 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-surface-500">{{ t.poste.montant }}</span>
+                                        <span>{{ formValue()?.montant | montant:(formValue()?.devise ?? undefined) }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-surface-500">{{ t.poste.nature }}</span>
+                                        <span>
+                                            {{ formValue()?.nature === 'ESTIMATION' ? t.poste.natureOptions.ESTIMATION : t.poste.natureOptions.EFFECTIF }}
+                                            @if (formValue()?.nature === 'ESTIMATION') {
+                                                ({{ formValue()?.estimPourcentage ?? 0 }}%)
+                                            }
+                                        </span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-surface-500">{{ t.poste.potentielOptimisation }}</span>
+                                        <span>{{ formValue()?.potentielOptimisation ?? 3 }} / 5</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Bloc 4 : Répartition / Compte -->
                             <div class="flex flex-col gap-2">
                                 <div class="flex items-center justify-between">
                                     <span class="text-sm font-semibold">{{ t.poste.stepper.etape3Titre }}</span>
                                     <button type="button" class="text-sm text-primary hover:underline"
-                                            (click)="allerA(2)">{{ t.commun.modifier }}
+                                            (click)="allerA(3)">{{ t.commun.modifier }}
                                     </button>
                                 </div>
                                 <div class="flex flex-col gap-1 text-sm">
@@ -498,7 +548,7 @@
         <span class="flex-1"></span>
         <p-button [label]="t.commun.precedent" severity="secondary" [outlined]="true"
                   [disabled]="etapeActive() === 0" (click)="precedent()"/>
-        @if (etapeActive() < 3) {
+        @if (etapeActive() < 4) {
             <p-button [label]="t.commun.suivant" [disabled]="!etapeValide(etapeActive())" (click)="suivant()"/>
         } @else {
             <p-button [label]="t.commun.enregistrerEtNouveau" [outlined]="true"

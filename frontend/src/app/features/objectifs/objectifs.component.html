@@ -120,26 +120,28 @@
 <p-dialog [(visible)]="dialogVisible" [header]="objectifEnEdition ? t.commun.modifier : t.commun.creer"
           [modal]="true" class="w-full max-w-md">
   <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
-    <div class="flex flex-col gap-1">
-      <label class="text-sm font-medium">{{ t.objectif.libelle }} *</label>
-      <input pInputText formControlName="libelle" class="w-full" />
-    </div>
+    <app-input-text [label]="t.objectif.libelle" [required]="true" formControlName="libelle" />
     <div class="grid grid-cols-2 gap-4">
-      <div class="flex flex-col gap-1">
-        <label class="text-sm font-medium">{{ t.objectif.montantCible }} *</label>
-        <p-inputnumber formControlName="montantCible" mode="decimal" [minFractionDigits]="2" class="w-full" />
-      </div>
-      <div class="flex flex-col gap-1">
-        <label class="text-sm font-medium">{{ t.objectif.echeance }}</label>
-        <p-datepicker appendTo="body" formControlName="echeance" dateFormat="dd/mm/yy" [showButtonBar]="true" class="w-full" />
-      </div>
+      <app-input-number
+        [label]="t.objectif.montantCible"
+        [required]="true"
+        formControlName="montantCible"
+        mode="decimal"
+        [minFractionDigits]="2" />
+      <app-date-picker
+        [label]="t.objectif.echeance"
+        formControlName="echeance"
+        dateFormat="dd/mm/yy"
+        [showButtonBar]="true" />
     </div>
     <!-- Compte (obligatoire) -->
-    <div class="flex flex-col gap-1">
-      <label class="text-sm font-medium">{{ t.objectif.compte }} *</label>
-      <p-select appendTo="body" formControlName="compteId" [options]="comptes()" optionLabel="libelle" optionValue="id"
-                class="w-full" />
-    </div>
+    <app-select
+      [label]="t.objectif.compte"
+      [required]="true"
+      formControlName="compteId"
+      [options]="comptes()"
+      optionLabel="libelle"
+      optionValue="id" />
     @if (form.get('compteId')?.invalid && form.get('compteId')?.touched) {
       <p-message severity="warn">{{ t.objectif.supportRequis }}</p-message>
     }

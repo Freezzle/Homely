@@ -40,15 +40,18 @@
 <!-- Dialog création / édition -->
 <p-dialog [(visible)]="dialogVisible" [header]="categorieEnEdition ? t.commun.modifier : t.commun.creer"
           [modal]="true" class="w-full max-w-md">
-  <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
-    <div class="flex flex-col gap-1">
-      <label class="text-sm font-medium">{{ t.referentiels.categorie.libelle }} *</label>
-      <input pInputText formControlName="libelle" class="w-full" />
-    </div>
-    <div class="flex flex-col gap-1">
-      <label class="text-sm font-medium">{{ t.referentiels.categorie.typePoste }}</label>
-      <p-select appendTo="body" formControlName="typePoste" [options]="typeOptions" optionLabel="label" optionValue="value" class="w-full" />
-    </div>
+  <form [formGroup]="form" class="flex flex-col pt-2">
+    <app-input-text
+      [label]="t.referentiels.categorie.libelle"
+      formControlName="libelle"
+      [required]="true" />
+    <app-select
+      [label]="t.referentiels.categorie.typePoste"
+      formControlName="typePoste"
+      [required]="true"
+      [options]="typeOptions"
+      optionLabel="label"
+      optionValue="value" />
   </form>
   <ng-template #footer>
     <p-button [label]="t.commun.annuler" severity="secondary" (click)="dialogVisible = false" />
@@ -66,23 +69,18 @@
     [enCours]="suppressionEnCours()"
     (confirmer)="confirmerSuppression()">
   @if (categorieASupprimer) {
-    <div class="flex flex-col gap-4 pt-2">
+    <div class="flex flex-col gap-3 pt-2">
       <p-message severity="warn" class="w-full">
         <span>{{ t.referentiels.categorie.dialogSuppressionInfo }}</span>
       </p-message>
 
-      <div class="flex flex-col gap-1">
-        <label class="text-sm font-medium">{{ t.referentiels.categorie.migrerVers }}</label>
-        <p-select
-          appendTo="body"
-          [(ngModel)]="migrerVersCategorieId"
-          [options]="categoriesMigration()"
-          optionLabel="libelle"
-          optionValue="id"
-          [showClear]="true"
-          [placeholder]="t.referentiels.categorie.migrerVersPlaceholder"
-          class="w-full" />
-      </div>
+      <app-select
+        [label]="t.referentiels.categorie.migrerVers"
+        [(ngModel)]="migrerVersCategorieId"
+        [options]="categoriesMigration()"
+        optionLabel="libelle"
+        optionValue="id"
+        [showClear]="true" />
     </div>
   }
 </app-dialog-suppression>

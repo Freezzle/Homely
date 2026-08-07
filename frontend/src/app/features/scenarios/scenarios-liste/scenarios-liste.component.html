@@ -54,26 +54,27 @@
 <p-dialog [(visible)]="dialogVisible" [header]="scenarioEnEdition ? t.commun.modifier : t.commun.creer"
           [modal]="true" class="w-full max-w-lg">
   <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
-    <div class="flex flex-col gap-1">
-      <label class="text-sm font-medium">Nom *</label>
-      <input pInputText formControlName="nom" class="w-full" />
-    </div>
+    <app-input-text [label]="t.commun.nom" [required]="true" formControlName="nom" />
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div class="flex flex-col gap-1 min-w-0">
-        <label class="text-sm font-medium">{{ t.scenario.anneeDepart }}</label>
-        <p-inputnumber formControlName="anneeDepart" [min]="2020" [max]="2099" [useGrouping]="false"
-                       class="w-full" inputStyleClass="w-full" />
-      </div>
-      <div class="flex flex-col gap-1 min-w-0">
-        <label class="text-sm font-medium">{{ t.scenario.tresorerieInitiale }}</label>
-        <p-inputnumber formControlName="tresorerieInitiale" mode="decimal" [minFractionDigits]="2"
-                       class="w-full" inputStyleClass="w-full" />
-      </div>
-      <div class="flex flex-col gap-1 min-w-0">
-        <label class="text-sm font-medium">{{ t.scenario.horizonAnnees }}</label>
-        <p-inputnumber formControlName="horizonAnnees" [min]="1" [max]="100"
-                       class="w-full" inputStyleClass="w-full" />
-      </div>
+      <app-input-number
+        class="min-w-0"
+        [label]="t.scenario.anneeDepart"
+        formControlName="anneeDepart"
+        [min]="2020"
+        [max]="2099"
+        [useGrouping]="false" />
+      <app-input-number
+        class="min-w-0"
+        [label]="t.scenario.tresorerieInitiale"
+        formControlName="tresorerieInitiale"
+        mode="decimal"
+        [minFractionDigits]="2" />
+      <app-input-number
+        class="min-w-0"
+        [label]="t.scenario.horizonAnnees"
+        formControlName="horizonAnnees"
+        [min]="1"
+        [max]="100" />
     </div>
     <!-- Répartition (uniquement à la création : non modifiable depuis ce formulaire) -->
     @if (!scenarioEnEdition && !monoMembre) {
@@ -87,8 +88,16 @@
         @for (m of membres(); track m.id) {
           <div class="flex items-center gap-3">
             <span class="flex-1 text-sm">{{ m.nom }}</span>
-            <input pInputText [value]="repsMap[m.id]" type="number" min="0" max="100" step="0.01"
-                   class="w-24 text-right" (input)="onRepChange(m.id, $any($event.target).value)" />
+            <app-input-number
+              class="w-24"
+              [ngModel]="repsMap[m.id]"
+              [ngModelOptions]="{ standalone: true }"
+              (ngModelChange)="onRepChange(m.id, $event)"
+              [min]="0"
+              [max]="100"
+              [minFractionDigits]="0"
+              [maxFractionDigits]="2"
+              [useGrouping]="false" />
             <span class="text-sm">%</span>
           </div>
         }

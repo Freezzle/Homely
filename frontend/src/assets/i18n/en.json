@@ -156,6 +156,8 @@
     "modeTooltip": "Monthly = the amount is spread evenly across each month. Periodic = the full amount is charged only once per cycle (e.g. every 3 months).",
     "momentTooltip": "Is the full amount due at the start or the end of the cycle? Choose \"Unknown date\" if you don't know the exact payment date (e.g. dentist): the amount will then always be spread across the months.",
     "natureTooltip": "Actual = a known, fixed amount (rent, salary, bill…). Estimate = an approximate amount for costs that vary (food, clothing, leisure…).",
+    "montantExact": "Exact amount",
+    "montantEstime": "Estimated amount",
     "estimationPourcentage": "Variation range (%)",
     "estimationTooltip": "Amount variation range. E.g.: 100 CHF ± 10% = amount can vary between 90 and 110 CHF.",
     "estimationPlaceholder": "E.g.: 10.0",
@@ -174,8 +176,8 @@
     "typeRepartitionTooltip": "AUTO = automatically follows the split defined in the scenario. Auto reverse = swaps the shares between people. Custom = fixed shares you set manually.",
     "repartitionParDefaut": "Default",
     "typeRepartitionOptions": {
-      "AUTO": "Auto (scenario period)",
-      "REVERSE_AUTO": "Auto reverse (swap)",
+      "AUTO": "Auto split",
+      "REVERSE_AUTO": "Reversed split",
       "CUSTOM": "Custom"
     },
     "ventilation": "Account breakdown",
@@ -183,8 +185,8 @@
     "questionnaire": {
       "nomTitre": "What's the item's name?",
       "freqTitre": "This item is...",
-      "ponctuel": "One-time",
-      "recurrent": "Recurring",
+      "ponctuel": "One-time item",
+      "recurrent": "Recurring item",
       "chaqueMois": "Every month",
       "autreFrequence": "Other",
       "quandTitre": "When is the payment due?",
@@ -203,6 +205,7 @@
     "stepper": {
       "etape1Titre": "The item",
       "etape2Titre": "The rhythm",
+      "etapeMontantTitre": "The amount",
       "etape3Titre": "Split / Account",
       "etape4Titre": "Summary",
       "selectionnerMembres": "Select the members involved in this item.",

@@ -5,8 +5,6 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { DatePickerModule } from 'primeng/datepicker';
 import { MessageService } from 'primeng/api';
 import { MontantPipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
@@ -16,6 +14,7 @@ import { PosteDto } from '../../../core/models/api.models';
 import { toIsoDateLocal, parseIsoDateLocal } from '../../../core/utils/date.util';
 import { formatPeriodeMois, formaterMontantSimple, localeCouranteDeLangue } from '../../../core/utils/format-affichage.util';
 import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
+import { DatePickerComponent, InputNumberComponent } from '../../../shared/components/form-fields';
 
 /**
  * Dialog autonome de révision de montant planifiée d'un poste. Extrait de
@@ -27,7 +26,7 @@ import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
 @Component({
   selector: 'app-poste-revision-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, DialogModule, ButtonModule, InputNumberModule, DatePickerModule, MontantPipe],
+  imports: [CommonModule, ReactiveFormsModule, DialogModule, ButtonModule, InputNumberComponent, DatePickerComponent, MontantPipe],
   templateUrl: './poste-revision-dialog.component.html',
 })
 export class PosteRevisionDialogComponent {

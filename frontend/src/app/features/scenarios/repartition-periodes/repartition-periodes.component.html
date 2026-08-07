@@ -70,16 +70,18 @@
           [modal]="true" class="w-full max-w-lg">
   <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
     <div class="grid grid-cols-2 gap-4">
-      <div class="flex flex-col gap-1">
-        <label class="text-sm font-medium">{{ t.scenario.debutPeriode }} *</label>
-        <p-datepicker formControlName="debut" dateFormat="dd.mm.yy" class="w-full" appendTo="body"
-                      [showButtonBar]="true"/>
-      </div>
-      <div class="flex flex-col gap-1">
-        <label class="text-sm font-medium">{{ t.scenario.finPeriode }}</label>
-        <p-datepicker formControlName="fin" dateFormat="dd.mm.yy" class="w-full" appendTo="body"
-                      [showButtonBar]="true" [showClear]="true"/>
-      </div>
+      <app-date-picker
+        [label]="t.scenario.debutPeriode"
+        [required]="true"
+        formControlName="debut"
+        dateFormat="dd.mm.yy"
+        [showButtonBar]="true" />
+      <app-date-picker
+        [label]="t.scenario.finPeriode"
+        formControlName="fin"
+        dateFormat="dd.mm.yy"
+        [showButtonBar]="true"
+        [showClear]="true" />
     </div>
     @if (periodeErreur) {
       <p-message severity="warn">{{ periodeErreur }}</p-message>
@@ -102,9 +104,13 @@
         @for (ctrl of partsArray.controls; track ctrl; let i = $index) {
           <div [formGroupName]="i" class="grid grid-cols-2 items-center gap-3">
             <span class="text-sm">{{ membres()[i]?.nom }}</span>
-            <p-inputnumber formControlName="quotePart" [min]="0" [max]="100"
-                           suffix="%" [minFractionDigits]="0" [maxFractionDigits]="2"
-                           (onInput)="calculerSomme()"/>
+            <app-input-number
+              formControlName="quotePart"
+              [min]="0"
+              [max]="100"
+              suffix="%"
+              [minFractionDigits]="0"
+              [maxFractionDigits]="2" />
           </div>
         }
       </div>

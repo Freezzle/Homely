@@ -8,21 +8,27 @@
                 <span class="text-sm">{{ p.montant | montant:p.devise }}</span>
             </div>
 
-            <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium">{{ t.poste.revisionNouveauMontant }} *</label>
-                <p-inputnumber formControlName="nouveauMontant" mode="decimal" [minFractionDigits]="2"
-                               class="w-full"/>
+            <div>
+                <app-input-number
+                    [label]="t.poste.revisionNouveauMontant"
+                    [required]="true"
+                    formControlName="nouveauMontant"
+                    mode="decimal"
+                    [minFractionDigits]="2"/>
                 @if (montantIdentique()) {
                     <span class="text-xs text-red-600 dark:text-red-400">{{ t.poste.revisionMontantIdentique }}</span>
                 }
             </div>
 
-            <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium">{{ t.poste.revisionDateEffet }} *</label>
-                <p-datepicker appendTo="body" formControlName="dateEffet" view="month" dateFormat="mm/yy"
-                              [minDate]="dateMin()" [maxDate]="dateMax()"
-                              [showButtonBar]="true" class="w-full"></p-datepicker>
-            </div>
+            <app-date-picker
+                [label]="t.poste.revisionDateEffet"
+                [required]="true"
+                formControlName="dateEffet"
+                view="month"
+                dateFormat="mm/yy"
+                [minDate]="dateMin()"
+                [maxDate]="dateMax()"
+                [showButtonBar]="true"/>
 
             <div class="text-sm rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-primary-700 dark:text-primary-300">
                 {{ resume() }}

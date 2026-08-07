@@ -38,22 +38,21 @@
 
 <p-dialog [(visible)]="dialogVisible" [header]="tauxEnEdition ? t.commun.modifier : t.commun.creer"
           [modal]="true" class="w-full max-w-sm">
-  <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
-    <div class="flex flex-col gap-1">
-      <label class="text-sm font-medium">{{ t.referentiels.taux.devise }} *</label>
-      <input pInputText formControlName="devise" class="w-full"
-             [readonly]="!!tauxEnEdition" [placeholder]="t.referentiels.taux.devisePlaceholder" />
-    </div>
-    <div class="flex flex-col gap-1">
-      <label class="text-sm font-medium">{{ t.referentiels.taux.tauxVersBase }} *</label>
-      <p-inputnumber formControlName="tauxVersBase" mode="decimal" [minFractionDigits]="6" [maxFractionDigits]="6"
-                     [min]="0.000001" class="w-full" />
-      @if (form.get('tauxVersBase')?.disabled) {
-        <small class="text-surface-400">{{ t.referentiels.taux.tauxDeviseBaseVerrouille }}</small>
-      } @else {
-        <small class="text-surface-400">{{ egaliteTauxVersBase() }}</small>
-      }
-    </div>
+  <form [formGroup]="form" class="flex flex-col pt-2">
+    <app-input-text
+      [label]="t.referentiels.taux.devise"
+      formControlName="devise"
+      [required]="true"
+      [readonly]="!!tauxEnEdition" />
+    <app-input-number
+      [label]="t.referentiels.taux.tauxVersBase"
+      formControlName="tauxVersBase"
+      [required]="true"
+      mode="decimal"
+      [minFractionDigits]="6"
+      [maxFractionDigits]="6"
+      [min]="0.000001"
+      [hint]="form.get('tauxVersBase')?.disabled ? t.referentiels.taux.tauxDeviseBaseVerrouille : egaliteTauxVersBase()" />
   </form>
   <ng-template #footer>
     <p-button [label]="t.commun.annuler" severity="secondary" (click)="dialogVisible = false" />
