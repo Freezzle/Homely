@@ -220,6 +220,8 @@
       "MENSUALISE": "Mensualiser le montant",
       "PERIODIQUE": "Verser le montant en une fois"
     },
+    "montantMensualiseTooltip": "Montant mensualisé",
+    "montantPeriodiqueTooltip": "Montant versé en une seule fois",
     "momentOptions": {
       "DEBUT_PERIODE": "Début de période",
       "FIN_PERIODE": "Fin de période",

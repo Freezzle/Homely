@@ -553,7 +553,8 @@ export class PostesListeComponent {
   /**
    * Tags membres à afficher dans la liste des postes.
    * AUTO / REVERSE_AUTO → "Nom · Compte" (tous les membres actifs).
-   * CUSTOM              → "Nom · XX% · Compte" (uniquement les membres avec quotePart > 0).
+   * CUSTOM              → "Nom · XX% · Compte" si plusieurs membres ont une quotePart > 0,
+   *                        sinon "Nom · Compte" (pourcentage 100% implicite, redondant).
    * Mono-membre         → aucun tag (inutile d'afficher l'unique membre).
    * Si aucune ventilation pour le membre, le compte est omis du label.
    */
@@ -570,13 +571,15 @@ export class PostesListeComponent {
     };
 
     if (p.typeRepartition === 'CUSTOM') {
-      // Parts explicites stockées → afficher avec pourcentage + compte
-      return this.repartitionsAffichees(p).map(r => {
+      // Parts explicites stockées → afficher avec pourcentage + compte, uniquement si plusieurs membres concernés
+      const repartitions = this.repartitionsAffichees(p);
+      const afficherPourcentage = repartitions.length > 1;
+      return repartitions.map(r => {
         const compte = compteLabel(r.membreId);
-        const label = compte
-          ? `${r.nomMembre} · ${Math.round(r.quotePart * 100)}% · ${compte}`
-          : `${r.nomMembre} · ${Math.round(r.quotePart * 100)}%`;
-        return { membreId: r.membreId, label, couleur: r.couleur, couleurTexte: r.couleurTexte };
+        const parts = [r.nomMembre];
+        if (afficherPourcentage) parts.push(`${Math.round(r.quotePart * 100)}%`);
+        if (compte) parts.push(compte);
+        return { membreId: r.membreId, label: parts.join(' · '), couleur: r.couleur, couleurTexte: r.couleurTexte };
       });
     }
 

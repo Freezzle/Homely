@@ -202,7 +202,7 @@
                          reliées par une bordure gauche continue (« spine »). Le maillon actif
                          a une spine pleine opacité, les maillons historiques une spine atténuée. ── -->
                     <div [id]="'poste-' + p.id"
-                         class="grid gap-3 px-4 py-3
+                         class="grid gap-3 px-4 py-2.5 md:py-2
                     grid-cols-[minmax(0,1fr)_auto]
                     border-y border-r border-surface-200 dark:border-surface-700
                     bg-white dark:bg-surface-900
@@ -217,10 +217,11 @@
                          [class.ring-primary]="posteEnSurbrillanceId() === p.id">
 
 
-                        <!-- Colonne 1 : contenu -->
-                        <div class="min-w-0 flex flex-col gap-2">
-                            <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
-                                <div class="min-w-0 flex items-start gap-2 flex-wrap">
+                        <!-- Colonne 1 : contenu, condensé en 2 lignes (identité+montant / période+comptes+périodicité) -->
+                        <div class="min-w-0 flex flex-col gap-1.5 md:gap-1">
+                            <!-- Ligne 1 : identité (gauche) · montant (droite sur desktop) -->
+                            <div class="grid gap-1 md:gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                                <div class="min-w-0 flex items-center gap-2 flex-wrap">
                 <span class="font-medium leading-snug wrap-break-word">
                   {{ p.description }}
                 </span>
@@ -229,13 +230,15 @@
                                                severity="secondary"
                                                class="text-[10px] py-0.5 shrink-0"/>
                                     }
-                                </div>
-
-                                <div
-                                        class="min-w-0 flex flex-wrap items-center justify-start gap-2 text-left sm:justify-end sm:text-right">
                                     @if (p.nature === 'ESTIMATION') {
                                         <p-tag [value]="natureAffichee(p)"
                                                [severity]="'warn'"
+                                               class="text-[10px] py-0.5 shrink-0"/>
+                                    }
+                                    @if (p.posteOrigineId) {
+                                        <p-tag [value]="t.poste.revisionTag"
+                                               [severity]="'info'"
+                                               [pTooltip]="t.poste.revisionTagTooltip"
                                                class="text-[10px] py-0.5 shrink-0"/>
                                     }
                                     @if (p.importance && p.importance !== 3) {
@@ -254,73 +257,65 @@
                                            [class.text-red-500]="p.potentielOptimisation === 5"
                                            [pTooltip]="potentielOptimisationTooltip(p.potentielOptimisation)"></i>
                                     }
-                                    @if (p.posteOrigineId) {
-                                        <p-tag [value]="t.poste.revisionTag"
-                                               [severity]="'info'"
-                                               [pTooltip]="t.poste.revisionTagTooltip"
-                                               class="text-[10px] py-0.5 shrink-0"/>
-                                    }
-                                    <span class="font-semibold whitespace-nowrap">
-                  {{ p.montant | montant:p.devise }}
-                </span>
                                 </div>
-                            </div>
 
-                            <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
                                 <div
-                                        class="min-w-0 flex items-center flex-wrap gap-x-2 gap-y-1 text-sm text-surface-500 dark:text-surface-400">
-                                    @if (p.periodiciteMois === 0) {
-                                        <span class="flex items-center gap-1 min-w-0">
-                    <i class="pi pi-calendar text-xs text-surface-400"></i>
-                    <span class="truncate">{{ formatPeriode(p.debut) }}</span>
+                                        class="min-w-0 flex items-center flex-wrap gap-x-2 gap-y-1 text-sm md:justify-end">
+                                    <span class="font-semibold whitespace-nowrap">
+                    {{ p.montant | montant:p.devise }}
                   </span>
-                                        <span class="text-surface-300 dark:text-surface-600 select-none">·</span>
-                                        <span class="flex items-center gap-1">
-                    <i class="pi pi-bolt text-xs text-purple-500" [pTooltip]="t.poste.oneShot"></i>
-                                            {{ t.poste.oneShot }}
-                  </span>
-                                    } @else {
-                                        <span class="flex items-center gap-1 min-w-0">
-                    <i class="pi pi-calendar text-xs text-surface-400"></i>
-                    <span
-                            class="truncate">{{ formatPeriode(p.debut) }}&nbsp;–&nbsp;{{ formatPeriode(p.fin) }}</span>
-                  </span>
-                                        <span class="text-surface-300 dark:text-surface-600 select-none">·</span>
-                                        <span class="flex items-center gap-1">
-                    @if (p.mode === 'MENSUALISE' || p.periodiciteMois <= 1) {
-                        <i class="pi pi-calendar-clock text-xs text-blue-400"
-                           [pTooltip]="p.moment === 'INCONNU' ? t.poste.momentOptions.INCONNU : t.poste.modeOptions.MENSUALISE"></i>
-                    } @else {
-                        <i class="pi pi-bolt text-xs text-amber-500"
-                           [pTooltip]="t.poste.modeOptions.PERIODIQUE + ' · ' + (p.moment === 'FIN_PERIODE' ? t.poste.momentOptions.FIN_PERIODE : t.poste.momentOptions.DEBUT_PERIODE)"></i>
-                    }
-                                            {{ p.periodiciteMois | periodicite }}
-                  </span>
-                                    }
-                                </div>
-
-                                <div class="min-h-5 text-left sm:text-right text-sm text-surface-400">
                                     @if (afficheMontantMensualise(p)) {
-                                        <span class="whitespace-nowrap">{{ p.montantMensualise | montant:p.devise }}&thinsp;/mois</span>
+                                        <span class="text-surface-400 whitespace-nowrap">
+                      ({{ p.montantMensualise | montant:p.devise }}&thinsp;/mois)
+                    </span>
                                     }
                                 </div>
                             </div>
 
-                            <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
-                                <div class="min-w-0">
+                            <!-- Ligne 2 : période de validité + membres/comptes (gauche) · périodicité (droite sur desktop) -->
+                            <div class="grid gap-1 md:gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                                <div class="min-w-0 flex items-center flex-wrap gap-2 text-sm text-surface-500 dark:text-surface-400">
+                                    <span class="flex items-center gap-1 min-w-0">
+                    <i class="pi pi-calendar text-xs text-surface-400"></i>
+                                        @if (p.periodiciteMois === 0) {
+                                            <span class="truncate">{{ formatPeriode(p.debut) }}</span>
+                                        } @else {
+                                            <span
+                                                    class="truncate">{{ formatPeriode(p.debut) }}&nbsp;–&nbsp;{{ formatPeriode(p.fin) }}</span>
+                                        }
+                  </span>
+
                                     @let membresAffiches = membresAffichesPoste(p);
                                     @if (membresAffiches.length > 0) {
-                                        <div class="flex items-center gap-2 flex-wrap">
-                                            @for (rep of membresAffiches; track rep.membreId) {
-                                                <p-tag [value]="rep.label"
-                                                       [style]="{ 'background-color': rep.couleur, color: rep.couleurTexte }"
-                                                       class="text-xs py-1 px-2 border-none max-w-full"/>
-                                            }
-                                        </div>
+                                        @for (rep of membresAffiches; track rep.membreId) {
+                                            <p-tag [value]="rep.label"
+                                                   [style]="{ 'background-color': rep.couleur, color: rep.couleurTexte }"
+                                                   class="text-xs py-1 px-2 border-none max-w-full"/>
+                                        }
                                     }
                                 </div>
 
-                                <div></div>
+                                <div class="flex items-center flex-wrap gap-1 text-sm md:justify-end">
+                                    @if (p.periodiciteMois === 0) {
+                                        <span class="flex items-center gap-1 text-surface-500 dark:text-surface-400">
+                      <i class="pi pi-bolt text-xs text-purple-500" [pTooltip]="t.poste.oneShot"></i>
+                                            {{ t.poste.oneShot }}
+                    </span>
+                                    } @else {
+                                        <span class="flex items-center gap-1 text-surface-500 dark:text-surface-400">
+                      @if (p.periodiciteMois > 1) {
+                          @if (p.mode === 'MENSUALISE') {
+                              <i class="pi pi-calendar-clock text-xs text-blue-400"
+                                 [pTooltip]="t.poste.montantMensualiseTooltip"></i>
+                          } @else {
+                              <i class="pi pi-bolt text-xs text-amber-500"
+                                 [pTooltip]="t.poste.montantPeriodiqueTooltip + ' · ' + (p.moment === 'FIN_PERIODE' ? t.poste.momentOptions.FIN_PERIODE : t.poste.momentOptions.DEBUT_PERIODE)"></i>
+                          }
+                      }
+                                            {{ p.periodiciteMois | periodicite }}
+                    </span>
+                                    }
+                                </div>
                             </div>
                         </div>
 

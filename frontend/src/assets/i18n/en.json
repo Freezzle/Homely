@@ -220,6 +220,8 @@
       "MENSUALISE": "Spread the amount monthly",
       "PERIODIQUE": "Pay the full amount at once"
     },
+    "montantMensualiseTooltip": "Monthly amount",
+    "montantPeriodiqueTooltip": "Amount paid in a single payment",
     "momentOptions": {
       "DEBUT_PERIODE": "Start of period",
       "FIN_PERIODE": "End of period",
