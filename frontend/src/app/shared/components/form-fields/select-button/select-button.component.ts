@@ -1,4 +1,4 @@
-import { Component, Input, forwardRef } from '@angular/core';
+import { Component, Input, forwardRef, signal } from '@angular/core';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { TooltipModule } from 'primeng/tooltip';
@@ -20,8 +20,8 @@ import { TooltipModule } from 'primeng/tooltip';
       [optionLabel]="optionLabel"
       [optionValue]="optionValue"
       [allowEmpty]="allowEmpty"
-      [disabled]="disabled"
-      [ngModel]="value"
+      [disabled]="disabled()"
+      [ngModel]="value()"
       (ngModelChange)="handleChange($event)"
       [styleClass]="styleClass"
       [pTooltip]="tooltip || undefined"
@@ -51,8 +51,8 @@ export class SelectButtonComponent implements ControlValueAccessor {
   @Input() tooltip = '';
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  protected value: any = null;
-  protected disabled = false;
+  protected readonly value = signal<any>(null);
+  protected readonly disabled = signal(false);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private onChange: (value: any) => void = () => {};
@@ -60,7 +60,7 @@ export class SelectButtonComponent implements ControlValueAccessor {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   writeValue(value: any): void {
-    this.value = value;
+    this.value.set(value);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -73,12 +73,12 @@ export class SelectButtonComponent implements ControlValueAccessor {
   }
 
   setDisabledState(isDisabled: boolean): void {
-    this.disabled = isDisabled;
+    this.disabled.set(isDisabled);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected handleChange(value: any): void {
-    this.value = value;
+    this.value.set(value);
     this.onChange(value);
     this.onTouched();
   }

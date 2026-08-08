@@ -1,4 +1,4 @@
-import { Component, Input, forwardRef } from '@angular/core';
+import { Component, Input, forwardRef, signal } from '@angular/core';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { CheckboxModule } from 'primeng/checkbox';
 
@@ -16,8 +16,8 @@ import { CheckboxModule } from 'primeng/checkbox';
       <p-checkbox
         [binary]="true"
         [inputId]="inputId"
-        [disabled]="disabled"
-        [ngModel]="value"
+        [disabled]="disabled()"
+        [ngModel]="value()"
         (onChange)="handleChange($event.checked)"
       />
       @if (label) {
@@ -38,14 +38,14 @@ export class CheckboxComponent implements ControlValueAccessor {
   @Input() label = '';
   @Input() inputId = '';
 
-  protected value = false;
-  protected disabled = false;
+  protected readonly value = signal(false);
+  protected readonly disabled = signal(false);
 
   private onChange: (value: boolean) => void = () => {};
   protected onTouched: () => void = () => {};
 
   writeValue(value: boolean): void {
-    this.value = !!value;
+    this.value.set(!!value);
   }
 
   registerOnChange(fn: (value: boolean) => void): void {
@@ -57,11 +57,11 @@ export class CheckboxComponent implements ControlValueAccessor {
   }
 
   setDisabledState(isDisabled: boolean): void {
-    this.disabled = isDisabled;
+    this.disabled.set(isDisabled);
   }
 
   protected handleChange(value: boolean): void {
-    this.value = value;
+    this.value.set(value);
     this.onChange(value);
     this.onTouched();
   }

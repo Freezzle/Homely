@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, forwardRef } from '@angular/core';
+import { Component, EventEmitter, Input, Output, forwardRef, signal } from '@angular/core';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { FieldWrapperComponent } from '../field-wrapper/field-wrapper.component';
@@ -28,8 +28,8 @@ import { generateFieldId } from '../generate-field-id.util';
         [suffix]="suffix"
         [prefix]="prefix"
         [inputStyleClass]="inputStyleClass"
-        [disabled]="disabled"
-        [ngModel]="value"
+        [disabled]="disabled()"
+        [ngModel]="value()"
         (ngModelChange)="handleChange($event)"
         (onInput)="emitInput($event.value)"
         (onBlur)="onTouched()"
@@ -64,14 +64,14 @@ export class InputNumberComponent implements ControlValueAccessor {
 
   protected readonly fieldId = generateFieldId('input-number');
 
-  protected value: number | null = null;
-  protected disabled = false;
+  protected readonly value = signal<number | null>(null);
+  protected readonly disabled = signal(false);
 
   private onChange: (value: number | null) => void = () => {};
   protected onTouched: () => void = () => {};
 
   writeValue(value: number | null): void {
-    this.value = value;
+    this.value.set(value);
   }
 
   registerOnChange(fn: (value: number | null) => void): void {
@@ -83,11 +83,11 @@ export class InputNumberComponent implements ControlValueAccessor {
   }
 
   setDisabledState(isDisabled: boolean): void {
-    this.disabled = isDisabled;
+    this.disabled.set(isDisabled);
   }
 
   protected handleChange(value: number | null): void {
-    this.value = value;
+    this.value.set(value);
     this.onChange(value);
   }
 

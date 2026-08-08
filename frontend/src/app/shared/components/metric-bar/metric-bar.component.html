@@ -1,0 +1,10 @@
+<div class="metric-bar-wrap">
+  @if (leadLabel()) {
+    <div class="metric-bar-item metric-bar-item-lead">
+      <span class="metric-bar-item-label">{{ leadLabel() }}</span>
+      <span class="metric-bar-item-value">{{ leadValue() }}</span>
+    </div>
+  }
+
+  <p-metergroup [value]="meterItems()" [max]="total()" />
+</div>

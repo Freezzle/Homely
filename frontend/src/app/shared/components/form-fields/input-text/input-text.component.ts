@@ -1,4 +1,4 @@
-import { Component, ElementRef, Input, ViewChild, forwardRef } from '@angular/core';
+import { Component, ElementRef, Input, ViewChild, forwardRef, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
@@ -24,8 +24,8 @@ import { generateFieldId } from '../generate-field-id.util';
         [type]="type"
         [attr.maxlength]="maxlength"
         [readonly]="readonly"
-        [disabled]="disabled"
-        [ngModel]="value"
+        [disabled]="disabled()"
+        [ngModel]="value()"
         (ngModelChange)="handleChange($event)"
         (blur)="onTouched()"
         class="w-full"
@@ -54,14 +54,14 @@ export class InputTextComponent implements ControlValueAccessor {
 
   @ViewChild('inputElement') private inputElement?: ElementRef<HTMLInputElement>;
 
-  protected value: string | null = null;
-  protected disabled = false;
+  protected readonly value = signal<string | null>(null);
+  protected readonly disabled = signal(false);
 
   private onChange: (value: string | null) => void = () => {};
   protected onTouched: () => void = () => {};
 
   writeValue(value: string | null): void {
-    this.value = value;
+    this.value.set(value);
   }
 
   registerOnChange(fn: (value: string | null) => void): void {
@@ -73,11 +73,11 @@ export class InputTextComponent implements ControlValueAccessor {
   }
 
   setDisabledState(isDisabled: boolean): void {
-    this.disabled = isDisabled;
+    this.disabled.set(isDisabled);
   }
 
   protected handleChange(value: string | null): void {
-    this.value = value;
+    this.value.set(value);
     this.onChange(value);
   }
 

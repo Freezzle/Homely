@@ -1,4 +1,4 @@
-import { Component, Input, forwardRef } from '@angular/core';
+import { Component, Input, forwardRef, signal } from '@angular/core';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { SelectModule } from 'primeng/select';
 import { FieldWrapperComponent } from '../field-wrapper/field-wrapper.component';
@@ -25,8 +25,8 @@ import { generateFieldId } from '../generate-field-id.util';
         [dataKey]="dataKey"
         [filter]="filter"
         [showClear]="showClear"
-        [disabled]="disabled"
-        [ngModel]="value"
+        [disabled]="disabled()"
+        [ngModel]="value()"
         (ngModelChange)="handleChange($event)"
         (onBlur)="onTouched()"
         class="w-full"
@@ -61,8 +61,8 @@ export class SelectComponent implements ControlValueAccessor {
   protected readonly fieldId = generateFieldId('select');
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  protected value: any = null;
-  protected disabled = false;
+  protected readonly value = signal<any>(null);
+  protected readonly disabled = signal(false);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private onChange: (value: any) => void = () => {};
@@ -70,7 +70,7 @@ export class SelectComponent implements ControlValueAccessor {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   writeValue(value: any): void {
-    this.value = value;
+    this.value.set(value);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -83,12 +83,12 @@ export class SelectComponent implements ControlValueAccessor {
   }
 
   setDisabledState(isDisabled: boolean): void {
-    this.disabled = isDisabled;
+    this.disabled.set(isDisabled);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected handleChange(value: any): void {
-    this.value = value;
+    this.value.set(value);
     this.onChange(value);
   }
 }

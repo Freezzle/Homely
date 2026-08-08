@@ -1,4 +1,4 @@
-import { Component, Input, forwardRef } from '@angular/core';
+import { Component, Input, forwardRef, signal } from '@angular/core';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { FieldWrapperComponent } from '../field-wrapper/field-wrapper.component';
 
@@ -15,8 +15,8 @@ import { FieldWrapperComponent } from '../field-wrapper/field-wrapper.component'
       <input
         type="color"
         [attr.aria-label]="ariaLabel"
-        [disabled]="disabled"
-        [ngModel]="value"
+        [disabled]="disabled()"
+        [ngModel]="value()"
         (ngModelChange)="handleChange($event)"
         (blur)="onTouched()"
         class="h-9 w-11 border border-surface-300 rounded cursor-pointer"
@@ -39,14 +39,14 @@ export class ColorInputComponent implements ControlValueAccessor {
   @Input() hint = '';
   @Input() tooltip = '';
 
-  protected value = '#000000';
-  protected disabled = false;
+  protected readonly value = signal('#000000');
+  protected readonly disabled = signal(false);
 
   private onChange: (value: string) => void = () => {};
   protected onTouched: () => void = () => {};
 
   writeValue(value: string): void {
-    this.value = value ?? '#000000';
+    this.value.set(value ?? '#000000');
   }
 
   registerOnChange(fn: (value: string) => void): void {
@@ -58,11 +58,11 @@ export class ColorInputComponent implements ControlValueAccessor {
   }
 
   setDisabledState(isDisabled: boolean): void {
-    this.disabled = isDisabled;
+    this.disabled.set(isDisabled);
   }
 
   protected handleChange(value: string): void {
-    this.value = value;
+    this.value.set(value);
     this.onChange(value);
   }
 }

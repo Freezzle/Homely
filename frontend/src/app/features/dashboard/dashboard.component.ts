@@ -8,6 +8,7 @@ import { CardModule } from 'primeng/card';
 import { ChartModule } from 'primeng/chart';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { SkeletonModule } from 'primeng/skeleton';
+import { TagModule } from 'primeng/tag';
 import { ContexteService } from '../../core/services/contexte.service';
 import { ProjectionService } from '../../core/services/projection.service';
 import { CategorieService, CompteService } from '../../core/services/referentiel.service';
@@ -38,6 +39,7 @@ import { CarteBilanComponent, LigneDecomposition, MembreTagInfo } from '../../sh
 import { KpiChipRowComponent } from '../../shared/components/kpi-chip-row/kpi-chip-row.component';
 import { KpiChip } from '../../shared/components/kpi-chip/kpi-chip.component';
 import { MetricRingComponent, MetricRingSegment } from '../../shared/components/metric-ring/metric-ring.component';
+import { MetricBarComponent, MetricBarSegment } from '../../shared/components/metric-bar/metric-bar.component';
 import { ObjectiveProgressComponent, ObjectiveProgressSeverity } from '../../shared/components/objective-progress/objective-progress.component';
 import { PageNavComponent, PageNavMonthSummary, PageNavSelection } from '../../shared/components/page-nav/page-nav.component';
 import { StatGridComponent, StatGridStatusTag, StatItem } from '../../shared/components/stat-grid/stat-grid.component';
@@ -67,10 +69,12 @@ const ZERO_AGREGAT: { revenus: number; charges: number; reserves: number; soldeD
     ChartModule,
     SelectButtonModule,
     SkeletonModule,
+    TagModule,
     CarteBilanComponent,
     KpiChipRowComponent,
 
     MetricRingComponent,
+    MetricBarComponent,
     ObjectiveProgressComponent,
     PageNavComponent,
     StatGridComponent,
@@ -884,49 +888,40 @@ export class DashboardComponent {
       }, 0);
   });
 
-  readonly ringSegmentsMois = computed<MetricRingSegment[]>(() => {
-    const rav = this.agregatMoisCourant().soldeDisponible;
-    const marge = this.margeVariableMois();
-    return [
-      { value: this.chargesSuresMois(), color: 'var(--p-red-400)' },
-      { value: marge * 2, color: 'var(--p-red-200)' },
-      { value: this.agregatMoisCourant().reserves, color: 'var(--p-blue-400)' },
-      { value: Math.max(rav - marge, 0), color: 'var(--p-emerald-500)' },
-    ];
-  });
-
-  readonly ringCenterMois = computed(() => this.formatMontant(this.agregatMoisCourant().soldeDisponible));
-
-  readonly statsMois = computed<StatItem[]>(() => {
+  /** Segments labellisés de la barre mensuelle (remplace l'ancien anneau) : mêmes
+   *  valeurs/couleurs que l'anneau précédent. `p-meterGroup` affiche nativement
+   *  chaque libellé avec son pourcentage (pas de montant affiché). */
+  readonly barSegmentsMois = computed<MetricBarSegment[]>(() => {
     const rav = this.agregatMoisCourant().soldeDisponible;
     const marge = this.margeVariableMois();
     const reserves = this.agregatMoisCourant().reserves;
-    const revenus = this.agregatMoisCourant().revenus;
     return [
       {
-        label: this.t.dashboard.revenusMois,
-        value: this.formatMontant(revenus),
-        color: 'var(--p-green-500)',
+        label: this.t.dashboard.chargesSures,
+        value: this.chargesSuresMois(),
+        color: 'var(--p-red-400)',
       },
       {
-        label: this.t.dashboard.chargesSures,
-        value: this.formatMontant(this.chargesSuresMois()),
-        subValue: `± ${this.formatMontant(marge)}`,
-        color: 'var(--p-red-400)',
-        subColor: 'var(--p-red-300)',
+        label: this.t.dashboard.margeVariable,
+        value: marge * 2,
+        color: 'var(--p-red-200)',
       },
       {
         label: this.t.dashboard.reserves,
-        value: this.formatMontant(reserves),
+        value: reserves,
         color: 'var(--p-blue-400)',
       },
       {
-        label: this.t.dashboard.fourchetteDuMois,
-        value: `${this.formatMontant(rav - marge)} - ${this.formatMontant(rav + marge)}`,
+        label: this.t.dashboard.resteAVivre,
+        value: Math.max(rav - marge, 0),
         color: 'var(--p-emerald-500)',
       },
     ];
   });
+
+  readonly revenusMoisLabel = computed(() => this.t.dashboard.revenusMois);
+
+  readonly revenusMoisValeur = computed(() => this.formatMontant(this.agregatMoisCourant().revenus));
 
   readonly statusMois = computed<StatGridStatusTag>(() => {
     const rav = this.agregatMoisCourant().soldeDisponible;

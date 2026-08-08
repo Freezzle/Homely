@@ -111,6 +111,16 @@ const SohoPreset = {
         background: CANVAS_BG,
       },
     },
+    metergroup: {
+      ...components.metergroup,
+      root: {
+        gap: '0.2rem'
+      },
+      labelList: {
+        ...components.metergroup?.labelList,
+        horizontalGap: '0.4rem'
+      }
+    }
   },
 };
 

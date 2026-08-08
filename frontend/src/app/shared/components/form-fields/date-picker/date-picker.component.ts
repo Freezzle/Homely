@@ -1,4 +1,4 @@
-import { Component, forwardRef, Input } from '@angular/core';
+import { Component, forwardRef, Input, signal } from '@angular/core';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { DatePickerModule } from 'primeng/datepicker';
 import { FieldWrapperComponent } from '../field-wrapper/field-wrapper.component';
@@ -25,8 +25,8 @@ import { generateFieldId } from '../generate-field-id.util';
         [maxDate]="maxDate"
         [showButtonBar]="showButtonBar"
         [showClear]="showClear"
-        [disabled]="disabled"
-        [ngModel]="value"
+        [disabled]="disabled()"
+        [ngModel]="value()"
         (ngModelChange)="handleChange($event)"
         (onBlur)="onTouched()"
         class="w-full"
@@ -56,14 +56,14 @@ export class DatePickerComponent implements ControlValueAccessor {
 
   protected readonly fieldId = generateFieldId('date-picker');
 
-  protected value: Date | null = null;
-  protected disabled = false;
+  protected readonly value = signal<Date | null>(null);
+  protected readonly disabled = signal(false);
 
   private onChange: (value: Date | null) => void = () => {};
   protected onTouched: () => void = () => {};
 
   writeValue(value: Date | null): void {
-    this.value = value;
+    this.value.set(value);
   }
 
   registerOnChange(fn: (value: Date | null) => void): void {
@@ -75,11 +75,11 @@ export class DatePickerComponent implements ControlValueAccessor {
   }
 
   setDisabledState(isDisabled: boolean): void {
-    this.disabled = isDisabled;
+    this.disabled.set(isDisabled);
   }
 
   protected handleChange(value: Date | null): void {
-    this.value = value;
+    this.value.set(value);
     this.onChange(value);
   }
 }
