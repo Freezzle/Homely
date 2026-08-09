@@ -62,6 +62,16 @@
 
             <app-kpi-chip-row [items]="annualKpis()"/>
 
+            @if (tauxEffortCardsAnnee().length) {
+                <div class="flex flex-wrap gap-4">
+                    @for (carte of tauxEffortCardsAnnee(); track carte.membre.id) {
+                        <div class="flex-1 min-w-[280px]">
+                            <app-taux-effort-card [data]="carte" [afficherNom]="!estModeMembre()"/>
+                        </div>
+                    }
+                </div>
+            }
+
             <app-tab-group [value]="ongletAnnee()" (valueChange)="onAnneeTabChange($event)">
                 <app-tab-panel value="recap" [label]="t.dashboard.recapitulatifs">
                     <div class="flex flex-col gap-4">
@@ -186,6 +196,16 @@
             </p-card>
 
             <app-kpi-chip-row [items]="kpiMois()"/>
+
+            @if (tauxEffortCards().length) {
+                <div class="flex flex-wrap gap-4">
+                    @for (carte of tauxEffortCards(); track carte.membre.id) {
+                        <div class="flex-1 min-w-[280px]">
+                            <app-taux-effort-card [data]="carte" [afficherNom]="!estModeMembre()"/>
+                        </div>
+                    }
+                </div>
+            }
 
             <app-tab-group [value]="ongletMois()" (valueChange)="onMoisTabChange($event)">
                 <app-tab-panel value="recap" [label]="t.dashboard.recapitulatif">

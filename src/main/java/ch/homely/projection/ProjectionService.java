@@ -2,9 +2,13 @@ package ch.homely.projection;
 
 import ch.homely.compte.Compte;
 import ch.homely.compte.CompteRepository;
+import ch.homely.membre.Membre;
+import ch.homely.membre.MembreRepository;
 import ch.homely.moteur.*;
+import ch.homely.poste.NaturePoste;
 import ch.homely.poste.Poste;
 import ch.homely.poste.PosteRepository;
+import ch.homely.poste.TypePoste;
 import ch.homely.projection.dto.*;
 import ch.homely.scenario.RepartitionPeriode;
 import ch.homely.scenario.RepartitionPeriodeRepository;
@@ -22,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -40,15 +45,17 @@ public class ProjectionService {
     private final TauxChangeRepository     tauxRepo;
     private final CompteRepository         compteRepo;
     private final RepartitionPeriodeRepository periodeRepo;
+    private final MembreRepository         membreRepo;
 
     public ProjectionService(ScenarioRepository scenarioRepo, PosteRepository posteRepo,
                              TauxChangeRepository tauxRepo, CompteRepository compteRepo,
-                             RepartitionPeriodeRepository periodeRepo) {
+                             RepartitionPeriodeRepository periodeRepo, MembreRepository membreRepo) {
         this.scenarioRepo = scenarioRepo;
         this.posteRepo    = posteRepo;
         this.tauxRepo     = tauxRepo;
         this.compteRepo   = compteRepo;
         this.periodeRepo  = periodeRepo;
+        this.membreRepo   = membreRepo;
     }
 
     // ── T8.1 ─────────────────────────────────────────────────────────────────
@@ -126,6 +133,103 @@ public class ProjectionService {
                         e -> e.getValue().entrySet().stream()
                                 .collect(Collectors.toMap(Map.Entry::getKey, ie -> bd(ie.getValue())))));
         return new VentilationsDto(annee, mois, agregat, parMembre, parCat, parCatMembre, parCM, parMembreSplit);
+    }
+
+    // ── Indicateur 04 — Taux d'effort du membre ─────────────────────────────
+
+    /**
+     * Taux d'effort par membre pour un mois donné : revenus / charges / réserves du
+     * membre, ainsi qu'un scénario "pire cas" où chaque poste CHARGE/RESERVE de nature
+     * ESTIMATION est majoré de {@code estimPourcentage}. Le moteur ({@link MoteurCalcul})
+     * n'est pas modifié : le pire cas est simulé en reconstruisant une liste alternative
+     * de {@link PosteCalcul} avec des montants majorés, puis en rappelant les mêmes
+     * fonctions d'agrégation que pour le scénario normal.
+     */
+    @Cacheable(value = "projections",
+               key = "#scenarioId + '-effort-' + #annee + '-' + #mois + '-' + T(ch.homely.projection.ProjectionService).versionKey(#foyerId, #scenarioId, @scenarioRepository)")
+    public List<TauxEffortMembreDto> tauxEffort(UUID foyerId, UUID scenarioId, int annee, int mois) {
+        ParametresScenario params = chargerParametres(foyerId, scenarioId);
+        ParametresScenario paramsPireCas = construireParamsPireCas(params, scenarioId, foyerId);
+        Map<UUID, Membre> membresParId = membreRepo.findAllById(params.membres()).stream()
+                .collect(Collectors.toMap(Membre::getId, m -> m));
+
+        List<TauxEffortMembreDto> resultat = new ArrayList<>();
+        for (UUID membreId : params.membres()) {
+            AggregatMensuel normal  = MoteurCalcul.aggregatMembreMois(params, membreId, annee, mois);
+            AggregatMensuel pireCas = MoteurCalcul.aggregatMembreMois(paramsPireCas, membreId, annee, mois);
+            resultat.add(toTauxEffortDto(membreId, membresParId.get(membreId), normal, pireCas));
+        }
+        return resultat;
+    }
+
+    /**
+     * Indicateur 04 — Variante annuelle : même logique que {@link #tauxEffort}, mais les
+     * agrégats normal/pire cas sont sommés sur les 12 mois de l'année (mêmes fonctions
+     * moteur mois par mois, réutilisant le pattern de {@link #ventilationsAnnuelle}).
+     */
+    @Cacheable(value = "projections",
+               key = "#scenarioId + '-effort-annuelle-' + #annee + '-' + T(ch.homely.projection.ProjectionService).versionKey(#foyerId, #scenarioId, @scenarioRepository)")
+    public List<TauxEffortMembreDto> tauxEffortAnnuel(UUID foyerId, UUID scenarioId, int annee) {
+        ParametresScenario params = chargerParametres(foyerId, scenarioId);
+        ParametresScenario paramsPireCas = construireParamsPireCas(params, scenarioId, foyerId);
+        Map<UUID, Membre> membresParId = membreRepo.findAllById(params.membres()).stream()
+                .collect(Collectors.toMap(Membre::getId, m -> m));
+
+        List<TauxEffortMembreDto> resultat = new ArrayList<>();
+        for (UUID membreId : params.membres()) {
+            AggregatMensuel normal  = AggregatMensuel.zero();
+            AggregatMensuel pireCas = AggregatMensuel.zero();
+            for (int m = 1; m <= 12; m++) {
+                normal  = normal.plus(MoteurCalcul.aggregatMembreMois(params, membreId, annee, m));
+                pireCas = pireCas.plus(MoteurCalcul.aggregatMembreMois(paramsPireCas, membreId, annee, m));
+            }
+            resultat.add(toTauxEffortDto(membreId, membresParId.get(membreId), normal, pireCas));
+        }
+        return resultat;
+    }
+
+    /**
+     * Construit un jeu de paramètres alternatif où chaque poste CHARGE/RESERVE de nature
+     * ESTIMATION est majoré de {@code estimPourcentage} — simule le "pire cas" sans modifier
+     * le moteur ({@link MoteurCalcul}), en reconstruisant une liste alternative de
+     * {@link PosteCalcul} avec des montants majorés.
+     */
+    private ParametresScenario construireParamsPireCas(ParametresScenario params, UUID scenarioId, UUID foyerId) {
+        // Pourcentage d'estimation par poste (non porté par PosteCalcul, chargé à part).
+        Map<UUID, BigDecimal> estimPourcentageParPoste = posteRepo.findForMoteur(scenarioId, foyerId).stream()
+                .filter(p -> p.getNature() == NaturePoste.ESTIMATION && p.getEstimPourcentage() != null)
+                .collect(Collectors.toMap(Poste::getId, Poste::getEstimPourcentage, (a, b) -> a));
+
+        List<PosteCalcul> postesPireCas = params.postes().stream()
+                .map(pc -> {
+                    BigDecimal pct = estimPourcentageParPoste.get(pc.id());
+                    boolean chargeOuReserve = pc.type() == TypePoste.CHARGE || pc.type() == TypePoste.RESERVE;
+                    if (pct == null || !chargeOuReserve) {
+                        return pc;
+                    }
+                    double facteur = 1 + pct.doubleValue() / 100.0;
+                    return new PosteCalcul(pc.id(), pc.type(), pc.montant() * facteur, pc.devise(),
+                            pc.periodiciteMois(), pc.debut(), pc.fin(), pc.mode(), pc.moment(),
+                            pc.nature(), pc.typeRepartition(), pc.repartitions(), pc.ventilations(),
+                            pc.categorieId(), pc.posteOrigineId(), pc.description());
+                })
+                .toList();
+        return new ParametresScenario(
+                params.deviseBase(), params.anneeDepart(), params.tresorerieInitiale(),
+                params.horizonAnnees(), params.periodesDefaut(), params.taux(),
+                postesPireCas, params.membres());
+    }
+
+    private TauxEffortMembreDto toTauxEffortDto(UUID membreId, Membre membre, AggregatMensuel normal, AggregatMensuel pireCas) {
+        return new TauxEffortMembreDto(
+                membreId,
+                membre != null ? membre.getNom() : null,
+                membre != null ? membre.getCouleur() : null,
+                bd(normal.revenus()),
+                bd(normal.charges()),
+                bd(normal.reserves()),
+                bd(pireCas.charges()),
+                bd(pireCas.reserves()));
     }
 
     /**

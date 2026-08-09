@@ -435,6 +435,7 @@ public class PosteService {
         p.setMode(req.mode());
         p.setMoment(req.moment());
         p.setNature(req.nature() != null ? req.nature() : NaturePoste.EFFECTIF);
+        p.setEstimPourcentage(req.estimPourcentage());
         p.setOrdre(req.ordre());
         int importance = req.importance() != null ? req.importance() : 3;
         if (importance < 1) importance = 1;

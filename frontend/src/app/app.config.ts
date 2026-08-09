@@ -114,7 +114,10 @@ const SohoPreset = {
     metergroup: {
       ...components.metergroup,
       root: {
-        gap: '0.2rem'
+        gap: '0.2rem',
+      },
+      meters: {
+        size: '1rem'
       },
       labelList: {
         ...components.metergroup?.labelList,

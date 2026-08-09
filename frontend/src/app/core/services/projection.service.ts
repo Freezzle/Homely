@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import {
-  ProjectionAnnuelleDto, VentilationsDto, VentilationAnnuelleDto, EvenementDto,
+  ProjectionAnnuelleDto, VentilationsDto, VentilationAnnuelleDto, EvenementDto, TauxEffortMembreDto,
 } from '../models/api.models';
 
 /** T9.3 — Service HTTP projection scopé par foyer/scénario. */
@@ -41,6 +41,21 @@ export class ProjectionService {
     if (membreId) { params['membreId'] = membreId; }
     return this.http.get<EvenementDto[]>(
       `${this.base(foyerId, scenarioId)}/evenements`, { params }
+    );
+  }
+
+  /** Indicateur 04 — Taux d'effort par membre pour un mois donné (normal + pire cas). */
+  tauxEffort(foyerId: string, scenarioId: string, annee: number, mois: number) {
+    return this.http.get<TauxEffortMembreDto[]>(
+      `${this.base(foyerId, scenarioId)}/taux-effort`, { params: { annee, mois } }
+    );
+  }
+
+  /** Indicateur 04 — Variante annuelle : agrégats normal/pire cas sommés sur les 12
+   *  mois de l'année, utilisée par le dashboard annuel. */
+  tauxEffortAnnuel(foyerId: string, scenarioId: string, annee: number) {
+    return this.http.get<TauxEffortMembreDto[]>(
+      `${this.base(foyerId, scenarioId)}/taux-effort-annuel`, { params: { annee } }
     );
   }
 }

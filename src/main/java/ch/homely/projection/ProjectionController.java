@@ -69,6 +69,26 @@ public class ProjectionController {
         return projectionService.ventilationsAnnuelle(foyerId, scenarioId, annee);
     }
 
+    /** Indicateur 04 — Taux d'effort par membre pour un mois donné (normal + pire cas). */
+    @GetMapping("/taux-effort")
+    public List<TauxEffortMembreDto> tauxEffort(@PathVariable UUID foyerId,
+                                                 @PathVariable UUID scenarioId,
+                                                 @RequestParam int annee,
+                                                 @RequestParam int mois) {
+        multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
+        return projectionService.tauxEffort(foyerId, scenarioId, annee, mois);
+    }
+
+    /** Indicateur 04 — Taux d'effort par membre, calculé sur l'année entière (somme des 12
+     *  mois, normal + pire cas). Réservé au dashboard annuel. */
+    @GetMapping("/taux-effort-annuel")
+    public List<TauxEffortMembreDto> tauxEffortAnnuel(@PathVariable UUID foyerId,
+                                                       @PathVariable UUID scenarioId,
+                                                       @RequestParam int annee) {
+        multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
+        return projectionService.tauxEffortAnnuel(foyerId, scenarioId, annee);
+    }
+
     /** Événements budgétaires ("ce qui change") pour une année : début, fin, révision, occurrence.
      *  Si {@code membreId} est fourni, ne renvoie que les événements où sa quote-part effective
      *  est &gt; 0 ce mois-là, avec les montants déjà proratisés (voir {@link EvenementDto#quotePart()}). */

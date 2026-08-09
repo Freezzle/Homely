@@ -78,3 +78,16 @@ export class PeriodicitePipe implements PipeTransform {
     return `Tous les ${mois} mois`;
   }
 }
+
+/**
+ * Pipe valeur absolue — utile pour afficher un montant signé (ex. virementsNet) avec
+ * un signe +/− géré séparément dans le template plutôt que par {@link Math#abs}.
+ * Usage : {{ -150 | abs }} → 150
+ */
+@Pipe({ name: 'abs', standalone: true, pure: true })
+export class AbsPipe implements PipeTransform {
+  transform(value: number | null | undefined): number | null {
+    if (value == null) return null;
+    return Math.abs(value);
+  }
+}

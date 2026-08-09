@@ -1,0 +1,106 @@
+<p-card [attr.aria-label]="ariaLabel()">
+  <ng-template #header>
+    <div class="card-head">
+      <div>
+        <h3 class="card-title">{{ titre() }}</h3>
+        <p class="card-subtitle">{{ t.projection.effortCardSousTitre }}</p>
+      </div>
+      @if (data().revenusTotal > 0) {
+        <p-tag
+          [value]="labelMap()[zone()]"
+          [severity]="severityMap[zone()]">
+        </p-tag>
+      } @else {
+        <p-tag [value]="t.projection.effortCardZoneNA" severity="secondary"></p-tag>
+      }
+    </div>
+  </ng-template>
+
+  @if (data().revenusTotal > 0) {
+    <div>
+      <!-- Taux d'effort "charges seules" (hors réserves) -->
+      <div class="gauge-section">
+        <div class="gauge-value">
+            <strong>{{ tauxEffortCharges() | number:'1.0-1' }}%</strong>
+            <span class="gauge-label">{{ t.projection.effortCardTauxCharges }}</span>
+        </div>
+
+        <div class="gauge">
+          <div class="gauge-track">
+            <div
+              class="gauge-fill"
+              [class.zone-vert]="zoneCharges() === 'CONFORTABLE'"
+              [class.zone-jaune]="zoneCharges() === 'CORRECT'"
+              [class.zone-orange]="zoneCharges() === 'TENDU'"
+              [class.zone-rouge]="zoneCharges() === 'SATURE'"
+              [style.width.%]="tauxEffortChargesAffiche()">
+            </div>
+            <div
+              class="gauge-worst"
+              [style.left.%]="tauxEffortChargesPireCasAffiche()"
+              [attr.data-label]="(tauxEffortChargesPireCas() | number:'1.0-0') + '%'">
+            </div>
+          </div>
+          <div class="gauge-scale">
+              <span style="left: 0%">0</span>
+              <span style="left: 75%">75</span>
+              <span style="left: 90%">90</span>
+              <span style="left: 95%">95</span>
+              <span style="left: 100%">100</span>
+          </div>
+        </div>
+      </div>
+
+      <p-divider class="my-3"></p-divider>
+
+      <!-- Taux d'effort "charges + réserves" (vision complète du foyer) -->
+      <div class="gauge-section">
+        <div class="gauge-value">
+            <strong>{{ tauxEffort() | number:'1.0-1' }}%</strong>
+            <span class="gauge-label">{{ t.projection.effortCardTauxChargesReserves }}</span>
+        </div>
+
+        <div class="gauge">
+          <div class="gauge-track">
+            <div
+              class="gauge-fill"
+              [class.zone-vert]="zone() === 'CONFORTABLE'"
+              [class.zone-jaune]="zone() === 'CORRECT'"
+              [class.zone-orange]="zone() === 'TENDU'"
+              [class.zone-rouge]="zone() === 'SATURE'"
+              [style.width.%]="tauxEffortAffiche()">
+            </div>
+            <div
+              class="gauge-worst"
+              [style.left.%]="tauxEffortPireCasAffiche()"
+              [attr.data-label]="(tauxEffortPireCas() | number:'1.0-0') + '%'">
+            </div>
+          </div>
+          <div class="gauge-scale">
+              <span style="left: 0%">0</span>
+              <span style="left: 75%">75</span>
+              <span style="left: 90%">90</span>
+              <span style="left: 95%">95</span>
+              <span style="left: 100%">100</span>
+          </div>
+        </div>
+      </div>
+
+      @if (message(); as msg) {
+        <p class="zone-message" [class.zone-message-sature]="zone() === 'SATURE'">{{ msg }}</p>
+      }
+    </div>
+  } @else {
+    <div class="na-block">
+      <span class="na-value">{{ t.projection.effortCardNA }}</span>
+      <span class="na-reason">{{ t.projection.effortCardNaRaison }}</span>
+
+      <p-divider class="my-3"></p-divider>
+
+      <div class="breakdown">
+        <span>{{ t.projection.effortCardCharges }}&nbsp;: <strong>{{ data().chargesTotal | montant }}</strong></span>
+        <span>{{ t.projection.effortCardReserves }}&nbsp;: <strong>{{ data().reservesTotal | montant }}</strong></span>
+      </div>
+    </div>
+  }
+</p-card>

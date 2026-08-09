@@ -585,8 +585,12 @@ public class MoteurCalcul {
         return new Ventilations(annee, mois, parCategorie, parCategorieMembre, parCompteMembre);
     }
 
-    /** Résout le compte cible d'un membre pour un poste (ventilationComptes). */
-    private static UUID resolveCompte(PosteCalcul poste, UUID membreId) {
+    /**
+     * Résout le compte cible d'un membre pour un poste (ventilationComptes).
+     * Package-visible (non {@code private}) pour être réutilisé par d'autres calculs
+     * ayant besoin de la même résolution compte/membre sans dupliquer la logique.
+     */
+    static UUID resolveCompte(PosteCalcul poste, UUID membreId) {
         if (poste.ventilations() == null) return null;
         return poste.ventilations().stream()
                 .filter(v -> membreId.equals(v.membreId()))

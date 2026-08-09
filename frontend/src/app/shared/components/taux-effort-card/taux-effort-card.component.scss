@@ -1,0 +1,174 @@
+:host {
+  display: block;
+}
+
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 1rem 1rem;
+}
+
+.card-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.card-subtitle {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--text-color-secondary);
+}
+
+.gauge-section {
+  &:not(:first-child) {
+    margin-top: 4px;
+  }
+}
+
+.gauge-label {
+  font-size: 0.75rem;
+  color: var(--text-color-secondary);
+  padding-left: 0.25rem;
+}
+
+.gauge-value {
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.gauge {
+  margin-top: 0.25rem;
+}
+
+.gauge-track {
+  position: relative;
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+  // Couleurs de fond "fade" (mélangées avec transparent) pour rester nettement
+  // en retrait par rapport à la barre de remplissage active (.gauge-fill), qui
+  // elle utilise les teintes pleines. Évite la confusion entre fond de zones et
+  // valeur réelle.
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--p-green-400) 25%, transparent) 0% 75%,
+    color-mix(in srgb, var(--p-yellow-500) 25%, transparent) 75% 90%,
+    color-mix(in srgb, var(--p-orange-500) 25%, transparent) 90% 95%,
+    color-mix(in srgb, var(--p-red-500) 25%, transparent) 95% 100%
+  );
+}
+
+.gauge-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 5px 0 0 5px;
+  opacity: 0.9;
+  transition: width 0.4s ease;
+
+  // Zones alignées sur les couleurs sémantiques du thème PrimeNG (Material) :
+  // rouge = danger (red-500), orange = warning (orange-500), jaune = "or" (ambre,
+  // distinct de l'orange car "info" du thème est un bleu qui ne convient pas
+  // sémantiquement à la vigilance), vert = vert clair (green-400, plus léger que
+  // le green-500 utilisé par "success").
+  &.zone-vert   { background: var(--p-green-400); }
+  &.zone-jaune  { background: var(--p-yellow-500); }
+  &.zone-orange { background: var(--p-orange-500); }
+  &.zone-rouge  { background: var(--p-red-500); }
+}
+
+.gauge-worst {
+  position: absolute;
+  top: -3px;
+  height: 16px;
+  width: 2px;
+  background: var(--text-color);
+  transform: translateX(-1px);
+
+  &::after {
+    content: attr(data-label);
+    position: absolute;
+    left: 50%;
+    top: -18px;
+    transform: translateX(-50%);
+    font-size: 10px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    background: var(--surface-card);
+    padding: 0 4px;
+    white-space: nowrap;
+  }
+}
+
+.gauge-scale {
+  position: relative;
+  height: 12px;
+  font-size: 10px;
+  color: var(--text-color-secondary);
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+
+  span {
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+
+    &:first-child { transform: translateX(0); }
+    &:last-child { transform: translateX(-100%); }
+  }
+}
+
+.breakdown {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5em;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+
+  strong { font-weight: 600; }
+}
+
+// Conseil chaleureux affiché sous la ventilation pour les zones Correct/Tendu/Saturé
+// (rien pour Confortable). Fond "or" doux par défaut, plus appuyé (rouge léger) pour
+// Saturé afin de refléter l'urgence sans être alarmiste.
+.zone-message {
+  margin: 0.75rem 0 0 0;
+  padding: 0.5rem 0.625rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  background: color-mix(in srgb, #FFA000 12%, transparent);
+  color: var(--text-color);
+
+  &.zone-message-sature {
+    background: color-mix(in srgb, var(--p-red-500) 10%, transparent);
+  }
+}
+
+.na-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 8px 0;
+
+  .na-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-color-secondary);
+  }
+
+  .na-reason {
+    font-size: 12px;
+    color: var(--text-color-secondary);
+    margin-top: 4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gauge-fill { transition: none; }
+}

@@ -179,6 +179,20 @@ export interface EvenementDto {
   quotePart?: number;
 }
 
+// ── Indicateur 04 — Taux d'effort du membre ────────────────────────────────
+/** Revenus/charges/réserves d'un membre pour un mois donné, normal + "pire cas"
+ *  (postes CHARGE/RESERVE de nature ESTIMATION majorés de leur estimPourcentage). */
+export interface TauxEffortMembreDto {
+  membreId: string;
+  nomMembre?: string;
+  couleurMembre?: string;
+  revenusTotal: number;
+  chargesTotal: number;
+  reservesTotal: number;
+  chargesTotalPireCas: number;
+  reservesTotalPireCas: number;
+}
+
 // ── Objectifs ─────────────────────────────────────────────────────────────────
 export interface ObjectifDto {
   id: string; libelle: string; categorieProjetId?: string;

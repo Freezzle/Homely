@@ -26,6 +26,7 @@ import {
   PostePositionneDto,
   ProjectionAnnuelleDto,
   ScenarioDto,
+  TauxEffortMembreDto,
   TypeCategorie,
   TypePoste,
   VentilationAggregatDto,
@@ -36,6 +37,7 @@ import { ViewportService } from '../../core/services/viewport.service';
 import { creerChargementReactif } from '../../core/utils/reference-data.util';
 import { parseIsoDateLocal } from '../../core/utils/date.util';
 import { CarteBilanComponent, LigneDecomposition, MembreTagInfo } from '../../shared/components/carte-bilan/carte-bilan.component';
+import { TauxEffortCardComponent, TauxEffortCardData } from '../../shared/components/taux-effort-card/taux-effort-card.component';
 import { KpiChipRowComponent } from '../../shared/components/kpi-chip-row/kpi-chip-row.component';
 import { KpiChip } from '../../shared/components/kpi-chip/kpi-chip.component';
 import { MetricRingComponent, MetricRingSegment } from '../../shared/components/metric-ring/metric-ring.component';
@@ -71,6 +73,7 @@ const ZERO_AGREGAT: { revenus: number; charges: number; reserves: number; soldeD
     SkeletonModule,
     TagModule,
     CarteBilanComponent,
+    TauxEffortCardComponent,
     KpiChipRowComponent,
 
     MetricRingComponent,
@@ -246,6 +249,49 @@ export class DashboardComponent {
   );
 
   readonly ventilations = computed(() => this._ventilationsMois.donnees());
+
+  /** Indicateur 04 — Taux d'effort par membre pour le mois sélectionné (vue mois).
+   *  Chargé pour tous les membres actifs du foyer ; filtré côté client selon le sujet
+   *  affiché (foyer entier ou un membre spécifique) via `tauxEffortCards`. */
+  private readonly _tauxEffortCle = computed(() => this._ventilationsMoisCle());
+
+  private readonly _tauxEffort = creerChargementReactif(this._tauxEffortCle, ({ foyerId, scenarioId, annee, mois }) =>
+    this.projSvc.tauxEffort(foyerId, scenarioId, annee, mois),
+  );
+
+  /** Cartes prêtes à l'emploi pour `<app-taux-effort-card>` — toutes les cartes en vue
+   *  foyer (une par membre actif), uniquement celle du membre courant en vue membre. */
+  readonly tauxEffortCards = computed<TauxEffortCardData[]>(() =>
+    this.filtrerCartesSelonSujet(this.mapperTauxEffortCards(this._tauxEffort.donnees())),
+  );
+
+  /** Indicateur 04 — Variante annuelle (vue année) : mêmes cartes, mais agrégats sommés
+   *  sur les 12 mois de l'année sélectionnée. */
+  private readonly _tauxEffortAnnuelCle = computed(() => this._projectionAnnuelleCle());
+
+  private readonly _tauxEffortAnnuel = creerChargementReactif(this._tauxEffortAnnuelCle, ({ foyerId, scenarioId, annee }) =>
+    this.projSvc.tauxEffortAnnuel(foyerId, scenarioId, annee),
+  );
+
+  readonly tauxEffortCardsAnnee = computed<TauxEffortCardData[]>(() =>
+    this.filtrerCartesSelonSujet(this.mapperTauxEffortCards(this._tauxEffortAnnuel.donnees())),
+  );
+
+  private mapperTauxEffortCards(dtos: TauxEffortMembreDto[] | null | undefined): TauxEffortCardData[] {
+    return (dtos ?? []).map((dto) => ({
+      membre: { id: dto.membreId, nom: dto.nomMembre ?? '', couleur: dto.couleurMembre },
+      revenusTotal: dto.revenusTotal,
+      chargesTotal: dto.chargesTotal,
+      reservesTotal: dto.reservesTotal,
+      chargesTotalPireCas: dto.chargesTotalPireCas,
+      reservesTotalPireCas: dto.reservesTotalPireCas,
+    }));
+  }
+
+  private filtrerCartesSelonSujet(cartes: TauxEffortCardData[]): TauxEffortCardData[] {
+    const s = this.sujet();
+    return s.mode === 'membre' ? cartes.filter((c) => c.membre.id === s.membreId) : cartes;
+  }
 
   private readonly _ventilationAnnuelleCle = computed(() =>
     this.vue() === 'annee' ? this._projectionAnnuelleCle() : null
