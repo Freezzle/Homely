@@ -75,6 +75,8 @@
         "libelleCompte": "Libellé du compte",
         "soldeInitial": "Solde initial",
         "membresRattaches": "Membres rattachés",
+        "comptePrimairePour": "Compte primaire pour",
+        "comptePrimaireDoublon": "Un membre ne peut avoir qu'un seul compte primaire.",
         "libelleCategorie": "Libellé",
         "nomScenario": "Nom du scénario",
         "anneeDepart": "Année de départ",
@@ -372,7 +374,7 @@
     "tauxEffortAmbre": "Modéré",
     "tauxEffortRouge": "Élevé",
     "tauxEffortSeuils": "Seuils indicatifs : 70 % et 85 %",
-    "effortCardTitrePrefixe": "Taux d'effort du membre",
+    "effortCardTitrePrefixe": "Taux d'effort",
     "effortCardTitreSansNom": "Taux d'effort",
     "effortCardSousTitre": "Part des revenus absorbée par les charges et réserves du foyer.",
     "effortCardZoneConfortable": "Confortable",
@@ -462,7 +464,19 @@
     "parPonctuel": "/ponctuel",
     "montantSecondaireModele": "{{montant}} tous les {{periodicite}} mois",
     "montantSecondaireRevisionModele": "{{montantAvant}} → {{montantApres}} tous les {{periodicite}} mois",
-    "partProratisee": "part {{pct}} %"
+    "partProratisee": "part {{pct}} %",
+    "comptes": "Comptes",
+    "comptesDescription": "Récapitulatif mensuel de trésorerie par compte : virements simulés, entrées et sorties échues.",
+    "comptesVirementsEntrants": "Virements entrants",
+    "comptesEntrees": "Entrées échues",
+    "comptesSortiesPlanifiees": "Sorties planifiées",
+    "comptesSortiesEchues": "Sorties échues",
+    "comptesVirementsSortants": "Virements sortants",
+    "comptesSoldeRestant": "Solde restant",
+    "comptesInsuffisant": "Trésorerie insuffisante",
+    "comptesAVirer": "À virer en plus : {{montant}}",
+    "comptesTimelineTitre": "Trésorerie cumulée",
+    "comptesAucunCompte": "Aucun compte rattaché."
   },
   "commun": {
     "actions": "Actions",
@@ -519,7 +533,9 @@
       "devise": "Devise",
       "membres": "Membres rattachés",
       "membresRequis": "Au moins un membre actif requis",
-      "membresPlaceholder": "Sélectionner les membres…"
+      "membresPlaceholder": "Sélectionner les membres…",
+      "definirPrimaire": "Définir comme compte primaire de ce membre",
+      "retirerPrimaire": "Retirer ce compte primaire"
     },
     "categorie": {
       "titre": "Catégories",

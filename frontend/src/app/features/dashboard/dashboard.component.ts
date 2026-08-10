@@ -18,6 +18,8 @@ import {
   AggregatDto,
   CategorieDto,
   CompteDto,
+  CompteRecapMensuelDto,
+  CompteTresorerieDto,
   EvenementDto,
   MembreDto,
   ModeComptabilisation,
@@ -50,6 +52,7 @@ import { TabPanelComponent } from '../../shared/components/tab-group/tab-panel.c
 import { TimelineItem } from '../../shared/components/timeline/timeline.component';
 import { EventGridComponent } from '../../shared/components/event-grid/event-grid.component';
 import { MatriceBudgetaireComponent, MatriceBudgetaireLabels } from '../../shared/components/matrice-budgetaire/matrice-budgetaire.component';
+import { ComptesMembreRecapComponent } from '../../shared/components/comptes-membre-recap/comptes-membre-recap.component';
 
 type StatutObjectif = 'DANS_LES_TEMPS' | 'EN_RETARD' | 'ATTEINT';
 type DashboardTimelineItem = TimelineItem & { mois: number };
@@ -85,6 +88,7 @@ const ZERO_AGREGAT: { revenus: number; charges: number; reserves: number; soldeD
     TabPanelComponent,
     EventGridComponent,
     MatriceBudgetaireComponent,
+    ComptesMembreRecapComponent,
   ],
   templateUrl: './dashboard.component.html',
 })
@@ -276,6 +280,32 @@ export class DashboardComponent {
   readonly tauxEffortCardsAnnee = computed<TauxEffortCardData[]>(() =>
     this.filtrerCartesSelonSujet(this.mapperTauxEffortCards(this._tauxEffortAnnuel.donnees())),
   );
+
+  /** Onglet "Comptes" (récap mensuel de trésorerie par compte) : uniquement en vue mois
+   *  ET vue membre — le fetch est lazy (déclenché seulement quand l'onglet est ouvert),
+   *  et scopé au membre courant côté serveur (accès + agrégation). */
+  readonly afficherOngletComptes = computed(() => this.sujet().mode === 'membre');
+
+  private readonly _comptesRecapCle = computed<{ foyerId: string; scenarioId: string; annee: number; mois: number; membreId: string } | null>(() => {
+    if (this.ongletMois() !== 'comptes') return null;
+    const ventCle = this._ventilationsMoisCle();
+    const s = this.sujet();
+    return ventCle && s.mode === 'membre' ? { ...ventCle, membreId: s.membreId } : null;
+  });
+
+  private readonly _comptesRecap = creerChargementReactif(this._comptesRecapCle, ({ foyerId, scenarioId, annee, mois, membreId }) =>
+    this.projSvc.comptesRecap(foyerId, scenarioId, annee, mois, membreId),
+  );
+
+  readonly comptesRecapDto = computed<CompteRecapMensuelDto[]>(() => this._comptesRecap.donnees() ?? []);
+
+  private readonly _comptesTresorerie = creerChargementReactif(this._comptesRecapCle, ({ foyerId, scenarioId, annee, mois, membreId }) =>
+    this.projSvc.comptesTresorerie(foyerId, scenarioId, annee, mois, membreId),
+  );
+
+  readonly comptesTresorerieDto = computed<CompteTresorerieDto[]>(() => this._comptesTresorerie.donnees() ?? []);
+
+  readonly comptesRecapChargement = computed(() => this._comptesRecap.chargement() || this._comptesTresorerie.chargement());
 
   private mapperTauxEffortCards(dtos: TauxEffortMembreDto[] | null | undefined): TauxEffortCardData[] {
     return (dtos ?? []).map((dto) => ({

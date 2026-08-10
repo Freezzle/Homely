@@ -75,6 +75,8 @@
         "libelleCompte": "Account label",
         "soldeInitial": "Initial balance",
         "membresRattaches": "Linked members",
+        "comptePrimairePour": "Primary account for",
+        "comptePrimaireDoublon": "A member can only have one primary account.",
         "libelleCategorie": "Label",
         "nomScenario": "Scenario name",
         "anneeDepart": "Starting year",
@@ -372,7 +374,7 @@
     "tauxEffortAmbre": "Moderate",
     "tauxEffortRouge": "High",
     "tauxEffortSeuils": "Indicative thresholds: 70% and 85%",
-    "effortCardTitrePrefixe": "Effort rate of member",
+    "effortCardTitrePrefixe": "Effort rate",
     "effortCardTitreSansNom": "Effort rate",
     "effortCardSousTitre": "Share of income absorbed by household expenses and savings.",
     "effortCardZoneConfortable": "Comfortable",
@@ -462,7 +464,19 @@
     "parPonctuel": "/one-off",
     "montantSecondaireModele": "{{montant}} every {{periodicite}} months",
     "montantSecondaireRevisionModele": "{{montantAvant}} → {{montantApres}} every {{periodicite}} months",
-    "partProratisee": "share {{pct}} %"
+    "partProratisee": "share {{pct}} %",
+    "comptes": "Accounts",
+    "comptesDescription": "Monthly cash-flow recap per account: simulated transfers, income and due outgoings.",
+    "comptesVirementsEntrants": "Incoming transfers",
+    "comptesEntrees": "Income due",
+    "comptesSortiesPlanifiees": "Planned outgoings",
+    "comptesSortiesEchues": "Outgoings due",
+    "comptesVirementsSortants": "Outgoing transfers",
+    "comptesSoldeRestant": "Remaining balance",
+    "comptesInsuffisant": "Insufficient cash",
+    "comptesAVirer": "Extra transfer needed: {{montant}}",
+    "comptesTimelineTitre": "Cumulative cash flow",
+    "comptesAucunCompte": "No linked account."
   },
   "commun": {
     "actions": "Actions",
@@ -519,7 +533,9 @@
       "devise": "Currency",
       "membres": "Linked members",
       "membresRequis": "At least one active member required",
-      "membresPlaceholder": "Select members…"
+      "membresPlaceholder": "Select members…",
+      "definirPrimaire": "Set as this member's primary account",
+      "retirerPrimaire": "Remove this primary account"
     },
     "categorie": {
       "titre": "Categories",

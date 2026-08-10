@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import {
   FoyerDto, FoyerRequest, FoyerOnboardingRequest, FoyerOnboardingResponse,
   AccesFoyerDto, InviterAccesRequest, ChangerRoleRequest,
-  MembreDto, MembreRequest,
+  MembreDto, MembreRequest, ComptePrimaireRequest,
   CompteDto, CompteRequest,
   CategorieDto, CategorieRequest, TypeCategorie,
   TauxChangeDto, TauxChangeRequest,
@@ -50,7 +50,14 @@ export class FoyerService {
 
 @Injectable({ providedIn: 'root' })
 export class MembreService extends RestCrudService<MembreDto, MembreRequest> {
-  constructor(http: HttpClient) { super(http, 'membres'); }
+  constructor(private membreHttp: HttpClient) { super(membreHttp, 'membres'); }
+
+  /** Désigne (compteId) ou retire (null) le compte primaire d'un membre. */
+  definirComptePrimaire(foyerId: string, membreId: string, compteId: string | null) {
+    const req: ComptePrimaireRequest = { compteId };
+    return this.membreHttp.put<MembreDto>(
+      `/api/foyers/${foyerId}/membres/${membreId}/compte-primaire`, req);
+  }
 }
 
 @Injectable({ providedIn: 'root' })

@@ -29,4 +29,6 @@ public final class CodesErreur {
     public static final String POSTE_MOMENT_INCONNU_MODE_INVALIDE = "POSTE_MOMENT_INCONNU_MODE_INVALIDE";
     public static final String POSTE_HORS_SCENARIO             = "POSTE_HORS_SCENARIO";
     public static final String ACTION_GROUPEE_CHAMP_MANQUANT   = "ACTION_GROUPEE_CHAMP_MANQUANT";
+    public static final String COMPTE_PRIMAIRE_NON_RATTACHE    = "COMPTE_PRIMAIRE_NON_RATTACHE";
+    public static final String COMPTE_PRIMAIRE_MULTIPLE         = "COMPTE_PRIMAIRE_MULTIPLE";
 }

@@ -60,8 +60,6 @@
                 </div>
             </p-card>
 
-            <app-kpi-chip-row [items]="annualKpis()"/>
-
             @if (tauxEffortCardsAnnee().length) {
                 <div class="flex flex-wrap gap-4">
                     @for (carte of tauxEffortCardsAnnee(); track carte.membre.id) {
@@ -195,8 +193,6 @@
                 </div>
             </p-card>
 
-            <app-kpi-chip-row [items]="kpiMois()"/>
-
             @if (tauxEffortCards().length) {
                 <div class="flex flex-wrap gap-4">
                     @for (carte of tauxEffortCards(); track carte.membre.id) {
@@ -280,6 +276,16 @@
                         <p class="m-0 text-surface-500">{{ t.commun.aucunResultat }}</p>
                     }
                 </app-tab-panel>
+
+                @if (afficherOngletComptes()) {
+                    <app-tab-panel value="comptes" [label]="t.dashboard.comptes">
+                        <app-comptes-membre-recap
+                                [recaps]="comptesRecapDto()"
+                                [tresoreries]="comptesTresorerieDto()"
+                                [devise]="deviseBase()"
+                                [chargement]="comptesRecapChargement()"/>
+                    </app-tab-panel>
+                }
             </app-tab-group>
         }
     </main>

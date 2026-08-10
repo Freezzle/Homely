@@ -45,6 +45,8 @@ public record FoyerOnboardingRequest(
     /**
      * Un compte bancaire.
      * {@code membreOrdres} référence les ordres locaux (1-based) des membres déclarés dans {@code membres}.
+     * {@code membresPrimaireOrdres} (optionnel, sous-ensemble de {@code membreOrdres}) désigne les
+     * membres pour qui ce compte doit être marqué comme compte primaire dès la création.
      */
     public record CompteCreation(
             @NotBlank @Size(max = 120)
@@ -53,7 +55,9 @@ public record FoyerOnboardingRequest(
             BigDecimal soldeInitial,
 
             @NotEmpty
-            List<Integer> membreOrdres
+            List<Integer> membreOrdres,
+
+            List<Integer> membresPrimaireOrdres
     ) {}
 
     /** Une catégorie de poste. */

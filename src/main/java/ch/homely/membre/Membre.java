@@ -31,3 +31,4 @@ public class Membre {
     @Column(nullable = false)
     private boolean actif = true;
 }
+

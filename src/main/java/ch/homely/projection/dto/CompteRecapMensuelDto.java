@@ -1,0 +1,47 @@
+package ch.homely.projection.dto;
+
+import java.math.BigDecimal;
+import java.util.UUID;
+
+/**
+ * Récapitulatif mensuel de trésorerie d'un compte (dashboard, vue membre).
+ *
+ * <p>Toutes les valeurs sont scopées à la part du membre demandé sur ce compte (pas le
+ * flux de caisse total du compte, qui regrouperait tous les co-titulaires — prévu pour
+ * une future vue "foyer"). Le tri du compte dans la liste de retour est filtré côté
+ * service aux comptes dont le membre demandé est co-titulaire.</p>
+ *
+ * <p>Si les co-titulaires ont désigné un compte primaire, {@code virementsEntrants} et
+ * {@code virementsSortants} reflètent les virements réels simulés (budget planifié +
+ * comblement de trésorerie si nécessaire) ; sinon (mode "legacy"), {@code virementsEntrants}
+ * reste égal au budget planifié (mensualisé) et {@code virementsSortants} est nul.</p>
+ *
+ * @param compteId             identifiant du compte
+ * @param libelleCompte        libellé du compte
+ * @param virementsEntrants    montant réellement viré vers ce compte ce mois pour la part
+ *                             du membre (budget planifié financé par un primaire externe +
+ *                             comblement éventuel), ou budget planifié seul en mode legacy
+ * @param entrees              revenus échus ce mois du membre sur ce compte (montant plein sur mois d'ancrage)
+ * @param sortiesPlanifiees    charges + réserves mensualisées (lissées) de la part du membre pour ce mois
+ * @param sortiesEchues        charges + réserves réellement échues ce mois pour la part du membre
+ * @param virementsSortants    montant que la part du membre sur ce compte doit fournir ce mois pour
+ *                             financer ses propres postes ventilés sur d'autres comptes dont celui-ci est son primaire
+ * @param soldeRestant         entrees + virementsEntrants − sortiesEchues − virementsSortants
+ * @param insuffisant          {@code true} si la trésorerie cumulée du compte (buffer des mois
+ *                             précédents inclus) devient négative ce mois — un mois déficitaire
+ *                             absorbé par l'épargne accumulée n'est pas signalé comme insuffisant
+ * @param montantManquant      montant supplémentaire à virer sur ce compte pour ramener sa
+ *                             trésorerie cumulée à zéro si {@code insuffisant} (0 sinon)
+ */
+public record CompteRecapMensuelDto(
+        UUID compteId,
+        String libelleCompte,
+        BigDecimal virementsEntrants,
+        BigDecimal entrees,
+        BigDecimal sortiesPlanifiees,
+        BigDecimal sortiesEchues,
+        BigDecimal virementsSortants,
+        BigDecimal soldeRestant,
+        boolean insuffisant,
+        BigDecimal montantManquant
+) {}

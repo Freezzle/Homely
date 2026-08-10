@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "compte")
@@ -37,12 +38,13 @@ public class Compte {
     @Column(nullable = false)
     private boolean actif = true;
 
-    /** Membres rattachés à ce compte (1..N). */
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "compte_membre",
-            joinColumns = @JoinColumn(name = "compte_id"),
-            inverseJoinColumns = @JoinColumn(name = "membre_id")
-    )
-    private Set<Membre> membres = new HashSet<>();
+    /** Rattachements membre ↔ compte (1..N), portant le drapeau "compte primaire". */
+    @OneToMany(mappedBy = "compte", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private Set<CompteMembre> compteMembres = new HashSet<>();
+
+    /** Vue dérivée (lecture seule) des membres rattachés — pour compatibilité des lectures
+     *  existantes. Toute mutation du rattachement doit passer par {@link #getCompteMembres()}. */
+    public Set<Membre> getMembres() {
+        return compteMembres.stream().map(CompteMembre::getMembre).collect(Collectors.toSet());
+    }
 }

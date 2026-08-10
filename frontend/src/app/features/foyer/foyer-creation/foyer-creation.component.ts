@@ -39,6 +39,7 @@ interface CompteLocal {
   libelle: string;
   soldeInitial: number;
   membreOrdres: number[];
+  membresPrimaireOrdres: number[];
 }
 
 interface CategorieLocal {
@@ -106,6 +107,13 @@ export class FoyerCreationComponent implements OnInit {
     this.membres().map(m => ({ label: m.nom, value: m.ordre }))
   );
 
+  /** Options du sélecteur "compte primaire pour" d'un compte : limitées aux membres déjà rattachés à ce compte. */
+  membreOptionsPourCompte(i: number): { label: string; value: number }[] {
+    const compte = this.comptes()[i];
+    if (!compte) return [];
+    return this.membreOptions().filter(o => compte.membreOrdres.includes(o.value));
+  }
+
   // ── Étape 2 : Comptes ────────────────────────────────────────────────────
   comptes = signal<CompteLocal[]>([]);
 
@@ -152,8 +160,21 @@ export class FoyerCreationComponent implements OnInit {
   );
   readonly etape2Valide = computed(() =>
     this.comptes().length >= 1 &&
-    this.comptes().every(c => c.libelle.trim().length > 0 && c.membreOrdres.length > 0)
+    this.comptes().every(c => c.libelle.trim().length > 0 && c.membreOrdres.length > 0) &&
+    !this.primairesEnDoublon()
   );
+
+  /** Un membre ne peut être désigné primaire que pour un seul compte à la fois. */
+  readonly primairesEnDoublon = computed(() => {
+    const vus = new Set<number>();
+    for (const c of this.comptes()) {
+      for (const ordre of c.membresPrimaireOrdres) {
+        if (vus.has(ordre)) return true;
+        vus.add(ordre);
+      }
+    }
+    return false;
+  });
   readonly etape4Valide = computed(() =>
     this.scenario().nom.trim().length > 0 && this.repartitionValide()
   );
@@ -182,7 +203,13 @@ export class FoyerCreationComponent implements OnInit {
   }
 
   updateCompteMembreOrdres(i: number, val: number[]): void {
-    this.comptes.update(list => list.map((c, idx) => idx === i ? { ...c, membreOrdres: val } : c));
+    this.comptes.update(list => list.map((c, idx) => idx === i
+      ? { ...c, membreOrdres: val, membresPrimaireOrdres: c.membresPrimaireOrdres.filter(o => val.includes(o)) }
+      : c));
+  }
+
+  updateCompteMembresPrimaireOrdres(i: number, val: number[]): void {
+    this.comptes.update(list => list.map((c, idx) => idx === i ? { ...c, membresPrimaireOrdres: val } : c));
   }
 
   updateCategorieLibelle(type: 'REVENU' | 'CHARGE' | 'RESERVE', i: number, val: string): void {
@@ -244,6 +271,7 @@ export class FoyerCreationComponent implements OnInit {
       libelle: `${this.t.foyer.onboarding.defaults.compteLibelle}`,
       soldeInitial: 0,
       membreOrdres: [m.ordre],
+      membresPrimaireOrdres: [],
     }));
     this.comptes.set(comptes);
   }
@@ -257,6 +285,7 @@ export class FoyerCreationComponent implements OnInit {
         libelle: this.t.foyer.onboarding.defaults.compteLibelle,
         soldeInitial: 0,
         membreOrdres: this.membres().length > 0 ? [this.membres()[0].ordre] : [],
+        membresPrimaireOrdres: [],
       },
     ]);
   }
@@ -307,6 +336,7 @@ export class FoyerCreationComponent implements OnInit {
         libelle: c.libelle.trim(),
         soldeInitial: c.soldeInitial ?? 0,
         membreOrdres: c.membreOrdres,
+        membresPrimaireOrdres: c.membresPrimaireOrdres,
       })),
       categories: [
         ...this.categoriesRevenu().filter(c => c.libelle.trim()).map(c => ({ libelle: c.libelle.trim(), typePoste: 'REVENU' as const })),

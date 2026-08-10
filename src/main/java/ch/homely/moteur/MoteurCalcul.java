@@ -586,6 +586,54 @@ public class MoteurCalcul {
     }
 
     /**
+     * Détail des ventilations par (compte, membre) pour un mois donné, séparant la vision
+     * <b>mensualisée</b> ({@link #contribution}) de la vision <b>échue</b>
+     * ({@link #contributionReelle}), et les revenus des charges+réserves — alimente le
+     * récapitulatif de trésorerie par compte du dashboard (vue membre).
+     *
+     * <p>Réutilise exactement les mêmes briques que {@link #ventilations} (quote-part
+     * effective, résolution du compte cible) — aucune nouvelle règle de calcul, uniquement
+     * une désagrégation supplémentaire mensualisé/échu et revenu/sortie.</p>
+     *
+     * <p><b>Invariant</b> : la somme mensualisée d'un (compte, membre) sur les 12 mois d'une
+     * année égale la somme échue correspondante sur la même année (même propriété que
+     * {@link #contribution} vs {@link #contributionReelle}).</p>
+     */
+    public static VentilationsCompteDetail ventilationsCompteMembreDetail(ParametresScenario params, int annee, int mois) {
+        Map<UUID, Map<UUID, DetailCompteMembre>> parCompteMembre = new LinkedHashMap<>();
+        int nbMembres = params.membres().size();
+
+        for (PosteCalcul poste : params.postes()) {
+            double taux = tauxConversion(poste.devise(), params.deviseBase(), params.taux());
+            double contribMensualise = contribution(poste, annee, mois) * taux;
+            double contribEchue = contributionReelle(poste, annee, mois) * taux;
+            if (contribMensualise == 0 && contribEchue == 0) continue;
+
+            boolean estRevenu = poste.type() == TypePoste.REVENU;
+
+            for (UUID membreId : params.membres()) {
+                double qp = quotePartEffective(poste, membreId, annee, mois, params.periodesDefaut(), nbMembres);
+                if (qp == 0) continue;
+
+                UUID compteId = resolveCompte(poste, membreId);
+                if (compteId == null) continue;
+
+                double partMensualise = contribMensualise * qp;
+                double partEchue = contribEchue * qp;
+                DetailCompteMembre delta = estRevenu
+                        ? new DetailCompteMembre(partMensualise, partEchue, 0, 0)
+                        : new DetailCompteMembre(0, 0, partMensualise, partEchue);
+
+                parCompteMembre
+                        .computeIfAbsent(compteId, k -> new LinkedHashMap<>())
+                        .merge(membreId, delta, DetailCompteMembre::plus);
+            }
+        }
+
+        return new VentilationsCompteDetail(annee, mois, parCompteMembre);
+    }
+
+    /**
      * Résout le compte cible d'un membre pour un poste (ventilationComptes).
      * Package-visible (non {@code private}) pour être réutilisé par d'autres calculs
      * ayant besoin de la même résolution compte/membre sans dupliquer la logique.

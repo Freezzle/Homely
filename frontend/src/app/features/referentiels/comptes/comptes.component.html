@@ -21,7 +21,28 @@
         <td>
           <div class="flex items-center gap-2 flex-wrap">
             <span class="font-medium">{{ c.libelle }}</span>
-            <app-membres-tags [membres]="membresForCompte(c)" />
+            <div class="flex items-center gap-1.5 flex-wrap">
+              @for (m of membresForCompte(c); track m.id) {
+                <span class="inline-flex items-center gap-1">
+                  <app-tag [couleur]="m.couleur" [texte]="m.nom" />
+                  @if (contexte.estEditor()) {
+                    <button
+                      type="button"
+                      class="p-0 border-0 bg-transparent cursor-pointer leading-none"
+                      [pTooltip]="estPrimairePour(c, m.id) ? t.referentiels.compte.retirerPrimaire : t.referentiels.compte.definirPrimaire"
+                      (click)="togglePrimaire(c, m.id)">
+                      <i class="pi"
+                         [class.pi-star-fill]="estPrimairePour(c, m.id)"
+                         [class.pi-star]="!estPrimairePour(c, m.id)"
+                         [class.text-yellow-500]="estPrimairePour(c, m.id)"
+                         [class.text-surface-300]="!estPrimairePour(c, m.id)"></i>
+                    </button>
+                  } @else if (estPrimairePour(c, m.id)) {
+                    <i class="pi pi-star-fill text-yellow-500" [pTooltip]="t.referentiels.compte.definirPrimaire"></i>
+                  }
+                </span>
+              }
+            </div>
           </div>
         </td>
         <td class="text-right">{{ c.soldeInitial | montant:c.devise }}</td>

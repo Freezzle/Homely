@@ -8,6 +8,8 @@ import ch.homely.foyer.dto.*;
 import ch.homely.categorie.Categorie;
 import ch.homely.categorie.CategorieRepository;
 import ch.homely.compte.Compte;
+import ch.homely.compte.CompteMembre;
+import ch.homely.compte.CompteMembreRepository;
 import ch.homely.compte.CompteRepository;
 import ch.homely.membre.Membre;
 import ch.homely.membre.MembreRepository;
@@ -31,8 +33,10 @@ import java.time.LocalDate;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -50,6 +54,7 @@ public class FoyerService {
     private final MultiTenantService multiTenant;
     private final CategorieRepository categorieRepo;
     private final CompteRepository compteRepo;
+    private final CompteMembreRepository compteMembreRepo;
     private final TauxChangeRepository tauxChangeRepo;
     private final ProjectionService projectionService;
 
@@ -61,6 +66,7 @@ public class FoyerService {
                         MultiTenantService multiTenant,
                         CategorieRepository categorieRepo,
                         CompteRepository compteRepo,
+                        CompteMembreRepository compteMembreRepo,
                         TauxChangeRepository tauxChangeRepo,
                         ProjectionService projectionService) {
         this.foyerRepo       = foyerRepo;
@@ -71,6 +77,7 @@ public class FoyerService {
         this.multiTenant     = multiTenant;
         this.categorieRepo   = categorieRepo;
         this.compteRepo      = compteRepo;
+        this.compteMembreRepo = compteMembreRepo;
         this.tauxChangeRepo  = tauxChangeRepo;
         this.projectionService = projectionService;
     }
@@ -152,6 +159,8 @@ public class FoyerService {
         }
 
         // 5. Comptes
+        // Suivi des membres déjà désignés primaires (par ordre local) pour détecter les doublons
+        Set<Integer> membresPrimaireDejaVus = new HashSet<>();
         for (int i = 0; i < req.comptes().size(); i++) {
             FoyerOnboardingRequest.CompteCreation cc = req.comptes().get(i);
             Compte compte = new Compte();
@@ -159,6 +168,11 @@ public class FoyerService {
             compte.setLibelle(cc.libelle());
             compte.setSoldeInitial(cc.soldeInitial() != null
                     ? cc.soldeInitial() : BigDecimal.ZERO);
+            compteRepo.save(compte);
+
+            List<Integer> primaireOrdres = cc.membresPrimaireOrdres() != null
+                    ? cc.membresPrimaireOrdres() : List.of();
+
             // Résolution des membres par ordre local
             for (Integer ordre : cc.membreOrdres()) {
                 Membre m = parOrdre.get(ordre);
@@ -167,14 +181,22 @@ public class FoyerService {
                             CodesErreur.ONBOARDING_ORDRE_INVALIDE,
                             "Ordre de membre inconnu dans les comptes : " + ordre);
                 }
-                compte.getMembres().add(m);
+                CompteMembre cm = new CompteMembre(compte, m);
+                if (primaireOrdres.contains(ordre)) {
+                    if (!membresPrimaireDejaVus.add(ordre)) {
+                        throw new RegleMetierException(
+                                CodesErreur.COMPTE_PRIMAIRE_MULTIPLE,
+                                "Un membre ne peut avoir qu'un seul compte primaire (ordre " + ordre + ").");
+                    }
+                    cm.setEstPrimaire(true);
+                }
+                compteMembreRepo.save(cm);
             }
-            if (compte.getMembres().isEmpty()) {
+            if (cc.membreOrdres().isEmpty()) {
                 throw new RegleMetierException(
                         CodesErreur.COMPTE_SANS_MEMBRE,
                         "Un compte doit avoir au moins un membre rattaché.");
             }
-            compteRepo.save(compte);
         }
 
         // 6. Scénario de référence (horizon forcé à 40 ans)

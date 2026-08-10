@@ -114,6 +114,13 @@
                         optionLabel="label"
                         optionValue="value" />
                     </div>
+                    <app-multi-select
+                      [label]="t.foyer.onboarding.champs.comptePrimairePour"
+                      [ngModel]="comptes()[i].membresPrimaireOrdres"
+                      (ngModelChange)="updateCompteMembresPrimaireOrdres(i, $event)"
+                      [options]="membreOptionsPourCompte(i)"
+                      optionLabel="label"
+                      optionValue="value" />
                   </div>
                   <p-button
                     icon="pi pi-times"
@@ -135,6 +142,10 @@
                 [disabled]="comptes().length >= 10"
                 (click)="ajouterCompte()" />
             </div>
+
+            @if (primairesEnDoublon()) {
+              <p-message severity="warn">{{ t.foyer.onboarding.champs.comptePrimaireDoublon }}</p-message>
+            }
 
             <div class="flex justify-between">
               <p-button

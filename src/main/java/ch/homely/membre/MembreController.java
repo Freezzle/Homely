@@ -1,5 +1,6 @@
 package ch.homely.membre;
 
+import ch.homely.membre.dto.ComptePrimaireRequest;
 import ch.homely.membre.dto.MembreDto;
 import ch.homely.membre.dto.MembreRequest;
 import jakarta.validation.Valid;
@@ -43,6 +44,14 @@ public class MembreController {
     public MembreDto modifier(@PathVariable UUID foyerId, @PathVariable UUID membreId,
                                @Valid @RequestBody MembreRequest req) {
         return membreService.modifier(foyerId, membreId, req);
+    }
+
+    /** Désigne (ou retire, si {@code compteId} est {@code null}) le compte primaire
+     *  du membre — le compte qui finance les virements entrants de ses autres comptes. */
+    @PutMapping("/{membreId}/compte-primaire")
+    public MembreDto definirComptePrimaire(@PathVariable UUID foyerId, @PathVariable UUID membreId,
+                                            @Valid @RequestBody ComptePrimaireRequest req) {
+        return membreService.definirComptePrimaire(foyerId, membreId, req);
     }
 
     @DeleteMapping("/{membreId}")

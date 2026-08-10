@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import {
   ProjectionAnnuelleDto, VentilationsDto, VentilationAnnuelleDto, EvenementDto, TauxEffortMembreDto,
+  CompteRecapMensuelDto, CompteTresorerieDto,
 } from '../models/api.models';
 
 /** T9.3 — Service HTTP projection scopé par foyer/scénario. */
@@ -56,6 +57,22 @@ export class ProjectionService {
   tauxEffortAnnuel(foyerId: string, scenarioId: string, annee: number) {
     return this.http.get<TauxEffortMembreDto[]>(
       `${this.base(foyerId, scenarioId)}/taux-effort-annuel`, { params: { annee } }
+    );
+  }
+
+  /** Récapitulatif mensuel de trésorerie par compte (dashboard, vue membre) : virements
+   *  entrants simulés, entrées/sorties échues, solde restant, indicateur d'insuffisance. */
+  comptesRecap(foyerId: string, scenarioId: string, annee: number, mois: number, membreId: string) {
+    return this.http.get<CompteRecapMensuelDto[]>(
+      `${this.base(foyerId, scenarioId)}/comptes-recap`, { params: { annee, mois, membreId } }
+    );
+  }
+
+  /** Timeline de trésorerie cumulée par compte (dashboard, vue membre) sur `nbMois` mois,
+   *  mois courant et 2 mois futurs inclus (par défaut 6 : M-3..M+2). */
+  comptesTresorerie(foyerId: string, scenarioId: string, annee: number, mois: number, membreId: string, nbMois = 12) {
+    return this.http.get<CompteTresorerieDto[]>(
+      `${this.base(foyerId, scenarioId)}/comptes-tresorerie`, { params: { annee, mois, membreId, nbMois } }
     );
   }
 }

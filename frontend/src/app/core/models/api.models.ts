@@ -24,7 +24,7 @@ export interface FoyerOnboardingRequest {
   nom: string;
   deviseBase: string;
   membres: { nom: string; couleur?: string }[];
-  comptes: { libelle: string; soldeInitial: number; membreOrdres: number[] }[];
+  comptes: { libelle: string; soldeInitial: number; membreOrdres: number[]; membresPrimaireOrdres?: number[] }[];
   categories: { libelle: string; typePoste: TypeCategorie }[];
   scenario: {
     nom: string;
@@ -42,10 +42,11 @@ export interface InviterAccesRequest { email: string; role: RoleFoyer; }
 export interface ChangerRoleRequest { role: RoleFoyer; }
 
 // ── Référentiels ─────────────────────────────────────────────────────────────
-export interface MembreDto { id: string; nom: string; couleur: string; actif: boolean; }
+export interface MembreDto { id: string; nom: string; couleur: string; actif: boolean; compteIdPrimaire: string | null; }
 export interface MembreRequest { nom: string; couleur: string; }
+export interface ComptePrimaireRequest { compteId: string | null; }
 
-export interface CompteDto { id: string; libelle: string; soldeInitial: number; devise: string; actif: boolean; membreIds: string[]; }
+export interface CompteDto { id: string; libelle: string; soldeInitial: number; devise: string; actif: boolean; membreIds: string[]; membresPrimaireIds: string[]; }
 export interface CompteRequest { libelle: string; soldeInitial: number; devise?: string; membreIds: string[]; }
 
 export type TypeCategorie = 'REVENU' | 'CHARGE' | 'RESERVE' | 'PROJET';
@@ -246,3 +247,23 @@ export interface VentilationAnnuelleDto {
   parMembreSplit: Record<string, VentilationSplitDto>;
 }
 export interface SerieAnnuelleDto { annee: number; soldeParScenario: Record<string, number>; tresorerieParScenario: Record<string, number>; }
+
+// ── Récapitulatif mensuel par compte (dashboard, vue membre) ──────────────────
+export interface CompteRecapMensuelDto {
+  compteId: string;
+  libelleCompte: string;
+  virementsEntrants: number;
+  entrees: number;
+  sortiesPlanifiees: number;
+  sortiesEchues: number;
+  virementsSortants: number;
+  soldeRestant: number;
+  insuffisant: boolean;
+  montantManquant: number;
+}
+export interface PointTresorerieDto { annee: number; mois: number; tresorerieCumulee: number; }
+export interface CompteTresorerieDto {
+  compteId: string;
+  libelleCompte: string;
+  points: PointTresorerieDto[];
+}

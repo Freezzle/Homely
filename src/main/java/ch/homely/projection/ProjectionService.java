@@ -1,6 +1,8 @@
 package ch.homely.projection;
 
 import ch.homely.compte.Compte;
+import ch.homely.compte.CompteMembre;
+import ch.homely.compte.CompteMembreRepository;
 import ch.homely.compte.CompteRepository;
 import ch.homely.membre.Membre;
 import ch.homely.membre.MembreRepository;
@@ -46,16 +48,19 @@ public class ProjectionService {
     private final CompteRepository         compteRepo;
     private final RepartitionPeriodeRepository periodeRepo;
     private final MembreRepository         membreRepo;
+    private final CompteMembreRepository   compteMembreRepo;
 
     public ProjectionService(ScenarioRepository scenarioRepo, PosteRepository posteRepo,
                              TauxChangeRepository tauxRepo, CompteRepository compteRepo,
-                             RepartitionPeriodeRepository periodeRepo, MembreRepository membreRepo) {
+                             RepartitionPeriodeRepository periodeRepo, MembreRepository membreRepo,
+                             CompteMembreRepository compteMembreRepo) {
         this.scenarioRepo = scenarioRepo;
         this.posteRepo    = posteRepo;
         this.tauxRepo     = tauxRepo;
         this.compteRepo   = compteRepo;
         this.periodeRepo  = periodeRepo;
         this.membreRepo   = membreRepo;
+        this.compteMembreRepo = compteMembreRepo;
     }
 
     // ── T8.1 ─────────────────────────────────────────────────────────────────
@@ -381,6 +386,106 @@ public class ProjectionService {
                 e.periodiciteMois(), e.mode(),
                 montantOrigine, e.periodiciteMoisOrigine(), e.modeOrigine(),
                 bd(quotePart));
+    }
+
+    // ── Récapitulatif mensuel par compte (dashboard, vue membre) ────────────
+
+    /**
+     * Récapitulatif mensuel de trésorerie par compte pour un membre donné : virements
+     * entrants/sortants simulés (comblement via compte primaire si configuré, sinon
+     * mode "legacy"), entrées échues, sorties planifiées/échues, solde restant et
+     * indicateur d'insuffisance. Ne renvoie que les comptes dont {@code membreId} est
+     * co-titulaire ; les montants sont scopés à la seule part de {@code membreId} sur
+     * chaque compte (pas le flux de caisse total du compte, qui regrouperait tous les
+     * co-titulaires — prévu pour une future vue "foyer").
+     */
+    @Cacheable(value = "projections",
+               key = "#scenarioId + '-recap-compte-' + #annee + '-' + #mois + '-' + #membreId + '-' + T(ch.homely.projection.ProjectionService).versionKey(#foyerId, #scenarioId, @scenarioRepository)")
+    public List<CompteRecapMensuelDto> recapComptesMembre(UUID foyerId, UUID scenarioId, int annee, int mois, UUID membreId) {
+        ParametresScenario params = chargerParametres(foyerId, scenarioId);
+
+        List<Compte> tousComptes = compteRepo.findAllByFoyerIdAndActifTrueOrderByLibelleAsc(foyerId);
+        List<Compte> comptesMembre = tousComptes.stream()
+                .filter(c -> c.getMembres().stream().anyMatch(m -> m.getId().equals(membreId)))
+                .toList();
+
+        Map<UUID, UUID> primairesParMembre = chargerPrimairesParMembre(foyerId);
+        Map<UUID, List<CompteFluxMensuel>> flux = ComptesFluxSimulateur.simuler(
+                params, tousComptes, primairesParMembre, membreId, annee, mois);
+
+        List<CompteRecapMensuelDto> resultat = new ArrayList<>();
+        for (Compte compte : comptesMembre) {
+            List<CompteFluxMensuel> historique = flux.getOrDefault(compte.getId(), List.of());
+            if (historique.isEmpty()) continue;
+            CompteFluxMensuel f = historique.get(historique.size() - 1);
+
+            // Insuffisant seulement si la trésorerie cumulée du compte (part du membre,
+            // buffer des mois précédents inclus) ne peut pas encaisser le solde négatif
+            // de ce mois — un simple mois déficitaire absorbé par l'épargne accumulée
+            // ne doit pas déclencher l'alerte.
+            boolean insuffisant = f.tresorerieCumulee() < 0;
+            resultat.add(new CompteRecapMensuelDto(
+                    compte.getId(), compte.getLibelle(),
+                    bd(f.virementsEntrants()), bd(f.entrees()), bd(f.sortiesPlanifiees()), bd(f.sortiesEchues()),
+                    bd(f.virementsSortants()), bd(f.soldeRestant()), insuffisant,
+                    bd(insuffisant ? -f.tresorerieCumulee() : 0)));
+        }
+        return resultat;
+    }
+
+    /** Nombre de mois futurs (au-delà du mois demandé) inclus dans la timeline de
+     *  trésorerie des comptes, pour donner une visibilité à venir en plus de
+     *  l'historique (mois courant + N mois futurs dans la fenêtre {@code nbMois}). */
+    private static final int NB_MOIS_FUTURS_TIMELINE_COMPTES = 2;
+
+    /**
+     * Timeline de trésorerie cumulée par compte pour un membre donné, sur {@code nbMois}
+     * mois se terminant {@link #NB_MOIS_FUTURS_TIMELINE_COMPTES} mois après le mois
+     * demandé (par défaut 6 : M-3..M+2, mois courant et 2 mois futurs inclus). Chaîne la
+     * part du membre dans le solde initial du compte (réparti à parts égales entre
+     * co-titulaires) avec la somme de ses soldes restants mensuels (sa part des entrées +
+     * virements entrants − sorties échues − virements sortants) calculés mois par mois
+     * depuis le début du scénario jusqu'au mois final de la fenêtre — même simulation que
+     * {@link #recapComptesMembre}, prolongée dans le futur pour la projection.
+     */
+    @Cacheable(value = "projections",
+               key = "#scenarioId + '-treso-compte-' + #annee + '-' + #mois + '-' + #membreId + '-' + #nbMois + '-' + T(ch.homely.projection.ProjectionService).versionKey(#foyerId, #scenarioId, @scenarioRepository)")
+    public List<CompteTresorerieDto> tresorerieComptesMembre(UUID foyerId, UUID scenarioId, int annee, int mois, UUID membreId, int nbMois) {
+        ParametresScenario params = chargerParametres(foyerId, scenarioId);
+
+        List<Compte> tousComptes = compteRepo.findAllByFoyerIdAndActifTrueOrderByLibelleAsc(foyerId);
+        List<Compte> comptesMembre = tousComptes.stream()
+                .filter(c -> c.getMembres().stream().anyMatch(m -> m.getId().equals(membreId)))
+                .toList();
+
+        int anneeFin = annee;
+        int moisFin = mois + NB_MOIS_FUTURS_TIMELINE_COMPTES;
+        while (moisFin > 12) { moisFin -= 12; anneeFin++; }
+
+        Map<UUID, UUID> primairesParMembre = chargerPrimairesParMembre(foyerId);
+        Map<UUID, List<CompteFluxMensuel>> flux = ComptesFluxSimulateur.simuler(
+                params, tousComptes, primairesParMembre, membreId, anneeFin, moisFin);
+
+        return comptesMembre.stream()
+                .map(compte -> {
+                    List<CompteFluxMensuel> historique = flux.getOrDefault(compte.getId(), List.of());
+                    List<CompteTresorerieDto.PointTresorerieDto> points = historique.stream()
+                            .skip(Math.max(0, historique.size() - nbMois))
+                            .map(f -> new CompteTresorerieDto.PointTresorerieDto(f.annee(), f.mois(), bd(f.tresorerieCumulee())))
+                            .toList();
+                    return new CompteTresorerieDto(compte.getId(), compte.getLibelle(), points);
+                })
+                .toList();
+    }
+
+    /** Charge, pour tous les membres actifs du foyer, l'id de leur compte primaire
+     *  configuré (absent de la map = aucun primaire, mode "legacy"). */
+    private Map<UUID, UUID> chargerPrimairesParMembre(UUID foyerId) {
+        Map<UUID, UUID> primaires = new HashMap<>();
+        for (CompteMembre cm : compteMembreRepo.findAllByCompte_Foyer_IdAndEstPrimaireTrue(foyerId)) {
+            primaires.put(cm.getMembre().getId(), cm.getCompte().getId());
+        }
+        return primaires;
     }
 
     /** Invalide tout le cache (appelé après toute modification). */

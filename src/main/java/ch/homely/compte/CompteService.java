@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -94,14 +95,28 @@ public class CompteService {
                     "Un ou plusieurs membres demandés sont invalides, inactifs ou n'appartiennent pas à ce foyer.");
         }
 
-        // En édition : conserver les membres déjà rattachés qui sont devenus inactifs
-        Set<Membre> inactifsExistants = c.getMembres().stream()
-                .filter(m -> !m.isActif())
+        // Rattachements existants indexés par membre
+        Map<UUID, CompteMembre> existantsParMembreId = c.getCompteMembres().stream()
+                .collect(Collectors.toMap(cm -> cm.getMembre().getId(), cm -> cm));
+
+        // En édition : conserver les membres déjà rattachés qui sont devenus inactifs (avec leur drapeau primaire)
+        Set<CompteMembre> inactifsExistants = c.getCompteMembres().stream()
+                .filter(cm -> !cm.getMembre().isActif())
                 .collect(Collectors.toSet());
 
-        Set<Membre> nouveauxMembres = new HashSet<>(actifsTrouves);
-        nouveauxMembres.addAll(inactifsExistants);
-        c.setMembres(nouveauxMembres);
+        Set<CompteMembre> nouveauxRattachements = new HashSet<>(inactifsExistants);
+        for (Membre m : actifsTrouves) {
+            CompteMembre existant = existantsParMembreId.get(m.getId());
+            if (existant != null) {
+                // Rattachement déjà présent : on le garde tel quel (préserve estPrimaire)
+                nouveauxRattachements.add(existant);
+            } else {
+                nouveauxRattachements.add(new CompteMembre(c, m));
+            }
+        }
+
+        c.getCompteMembres().clear();
+        c.getCompteMembres().addAll(nouveauxRattachements);
     }
 
     private Compte trouver(UUID foyerId, UUID compteId) {
@@ -110,10 +125,14 @@ public class CompteService {
     }
 
     private CompteDto toDto(Compte c) {
-        Set<UUID> membreIds = c.getMembres().stream()
-                .map(Membre::getId)
+        Set<UUID> membreIds = c.getCompteMembres().stream()
+                .map(cm -> cm.getMembre().getId())
+                .collect(Collectors.toSet());
+        Set<UUID> membresPrimaireIds = c.getCompteMembres().stream()
+                .filter(CompteMembre::isEstPrimaire)
+                .map(cm -> cm.getMembre().getId())
                 .collect(Collectors.toSet());
         return new CompteDto(c.getId(), c.getLibelle(),
-                c.getSoldeInitial(), c.getDevise(), c.isActif(), membreIds);
+                c.getSoldeInitial(), c.getDevise(), c.isActif(), membreIds, membresPrimaireIds);
     }
 }
