@@ -5,6 +5,7 @@ import { TagModule } from 'primeng/tag';
 import { DividerModule } from 'primeng/divider';
 import { MontantPipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
+import { TagComponent } from '../tag/tag.component';
 
 /** Zones du taux d'effort — bornes 60/75/90 (cf. spec indicateur 04). */
 export type TauxEffortZone = 'CONFORTABLE' | 'CORRECT' | 'TENDU' | 'SATURE';
@@ -42,7 +43,7 @@ export interface TauxEffortCardData {
 @Component({
   selector: 'app-taux-effort-card',
   standalone: true,
-  imports: [CommonModule, CardModule, TagModule, DividerModule, MontantPipe],
+  imports: [CommonModule, CardModule, TagModule, DividerModule, MontantPipe, TagComponent],
   templateUrl: './taux-effort-card.component.html',
   styleUrl: './taux-effort-card.component.scss',
 })
@@ -135,7 +136,7 @@ export class TauxEffortCardComponent {
   readonly message = computed(() => this.messageMap()[this.zone()]);
 
   readonly titre = computed(() => this.afficherNom()
-    ? `${this.t.projection.effortCardTitrePrefixe} ${this.data().membre.nom}`
+    ? this.t.projection.effortCardTitrePrefixe
     : this.t.projection.effortCardTitreSansNom);
 
   readonly ariaLabel = computed(() => {

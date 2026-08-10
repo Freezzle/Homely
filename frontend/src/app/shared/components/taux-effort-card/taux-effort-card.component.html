@@ -2,7 +2,12 @@
   <ng-template #header>
     <div class="card-head">
       <div>
-        <h3 class="card-title">{{ titre() }}</h3>
+        <h3 class="card-title">
+          {{ titre() }}
+          @if (afficherNom()) {
+            <app-tag [couleur]="data().membre.couleur" [texte]="data().membre.nom" />
+          }
+        </h3>
         <p class="card-subtitle">{{ t.projection.effortCardSousTitre }}</p>
       </div>
       @if (data().revenusTotal > 0) {
