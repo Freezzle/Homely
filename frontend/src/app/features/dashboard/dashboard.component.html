@@ -60,128 +60,39 @@
                 </div>
             </p-card>
 
-            @if (tauxEffortCardsAnnee().length) {
-                <div class="flex flex-wrap gap-4">
-                    @for (carte of tauxEffortCardsAnnee(); track carte.membre.id) {
-                        <div class="flex-1 min-w-[280px]">
-                            <app-taux-effort-card [data]="carte" [afficherNom]="!estModeMembre()"/>
-                        </div>
-                    }
-                </div>
-            }
+            <app-dashboard-section
+                    [title]="t.dashboard.groupeCommentSePasseCetteAnnee"
+                    [count]="commentSePasseIndicateursAnnee().length"
+                    countColor="info">
+                @for (item of commentSePasseIndicateursAnnee(); track item.indicator.key) {
+                    <app-indicator-card
+                            [icon]="item.indicator.icon"
+                            [iconColor]="item.indicator.iconColor"
+                            [title]="item.indicator.title"
+                            [subtitle]="item.indicator.subtitle ?? ''"
+                            [info]="item.indicator.info ?? ''"
+                            [infoColor]="item.indicator.infoColor ?? null"
+                            [infoSubtitle]="item.indicator.infoSubtitle ?? ''"
+                            (cardClick)="ouvrirIndicateur(t.dashboard.groupeCommentSePasseCetteAnnee, item.indicator, item.data)"/>
+                }
+            </app-dashboard-section>
 
-            <app-tab-group [value]="ongletAnnee()" (valueChange)="onAnneeTabChange($event)">
-                <app-tab-panel value="recap" [label]="t.dashboard.recapitulatifs">
-                    <div class="flex flex-col gap-4">
-                        <div class="flex flex-wrap gap-3 justify-center">
-                            <p-selectbutton
-                                    [options]="vueDecompositionOptions"
-                                    [ngModel]="vueDecomposition()"
-                                    (ngModelChange)="vueDecomposition.set($event)"
-                                    optionLabel="label"
-                                    optionValue="value"
-                                    [allowEmpty]="false"/>
-                        </div>
-
-                        <app-carte-bilan
-                                [variante]="carteAnneeConfig().variante"
-                                [nom]="carteAnneeConfig().nom"
-                                [sousTitre]="carteAnneeConfig().sousTitre"
-                                [couleur]="carteAnneeConfig().couleur"
-                                [initiales]="carteAnneeConfig().initiales"
-                                [montantPrincipal]="carteAnneeConfig().montantPrincipal"
-                                [devise]="deviseBase()"
-                                [lignes]="carteAnneeConfig().lignes"
-                                [tauxEffort]="carteAnneeConfig().tauxEffort"/>
-                    </div>
-                </app-tab-panel>
-
-                <app-tab-panel value="graphiques" [label]="t.dashboard.graphiques">
-                    <div class="flex flex-col gap-4">
-                        <div class="flex flex-wrap gap-3 justify-center">
-                            <p-selectbutton
-                                    [options]="vueGraphiqueAnnuelOptions"
-                                    [ngModel]="vueGraphiqueAnnuel()"
-                                    (ngModelChange)="vueGraphiqueAnnuel.set($event)"
-                                    optionLabel="label"
-                                    optionValue="value"
-                                    [allowEmpty]="false"/>
-                        </div>
-
-                        @switch (vueGraphiqueAnnuel()) {
-                            @case ('flux') {
-                                <div>
-                                    <h3 class="m-0 mb-1 text-sm font-semibold">{{ t.dashboard.fluxMensuel }}</h3>
-                                    <p class="m-0 mb-2 text-xs text-surface-500">{{ t.dashboard.fluxMensuelDescription }}</p>
-                                    <div class="relative flex h-56 sm:h-64 md:h-[280px] w-full overflow-hidden">
-                                        <p-chart type="bar" [data]="$any(mixedChartData())"
-                                                 [options]="$any(mixedChartOptions)" class="w-full block"/>
-                                    </div>
-                                    <p class="m-0 text-xs text-surface-500">{{ t.dashboard.cliquezBarre }}</p>
-                                </div>
-                            }
-                            @case ('tresorerie') {
-                                <div>
-                                    <h3 class="m-0 mb-1 text-sm font-semibold">{{ t.dashboard.tresorerieTitle }}</h3>
-                                    <p class="m-0 mb-2 text-xs text-surface-500">{{ t.dashboard.tresoCumuleeDescription }}</p>
-                                    <div class="relative flex h-56 sm:h-64 md:h-[280px] w-full overflow-hidden">
-                                        <p-chart type="line" [data]="$any(tresorerieCumuleeData())"
-                                                 [options]="$any(tresorerieCumuleeOptions)" class="w-full block"/>
-                                    </div>
-                                </div>
-                            }
-                            @case ('prevuVsReel') {
-                                <div>
-                                    <h3 class="m-0 mb-1 text-sm font-semibold">{{ t.dashboard.prevuVsReel }}</h3>
-                                    <p class="m-0 mb-2 text-xs text-surface-500">{{ t.dashboard.prevuVsReelDescription }}</p>
-                                    <div class="relative flex h-56 sm:h-64 md:h-[280px] w-full overflow-hidden">
-                                        <p-chart type="line" [data]="$any(prevuVsReelData())"
-                                                 [options]="$any(prevuVsReelOptions)" class="w-full block"/>
-                                    </div>
-                                </div>
-                            }
-                            @case ('matrice') {
-                                <div>
-                                    <h3 class="m-0 mb-1 text-sm font-semibold">{{ t.dashboard.matriceBudgetaire }}</h3>
-                                    <p class="m-0 mb-2 text-xs text-surface-500">{{ t.dashboard.matriceBudgetaireDescription }}</p>
-                                    <app-matrice-budgetaire [postes]="postesMatriceAnnee()" [devise]="deviseBase()"
-                                                            [labels]="matriceLabels()"
-                                                            [chargement]="matriceChargement()"/>
-                                </div>
-                            }
-                        }
-                    </div>
-                </app-tab-panel>
-
-                <app-tab-panel value="events" [label]="t.dashboard.ceQuiChange">
-                    @if (evenementsAnnee().length) {
-                        <app-event-grid
-                                [items]="evenementsAnnee()"
-                                [devise]="deviseBase()"
-                                (select)="ouvrirMoisDepuisTimeline($event)"/>
-                    } @else {
-                        <p class="m-0 text-surface-500">{{ t.dashboard.aucunEvenement }}</p>
-                    }
-                </app-tab-panel>
-
-                <app-tab-panel value="objectifs" [label]="t.dashboard.objectifs">
-                    @if (objectifsRendus().length) {
-                        <div class="flex flex-col gap-3">
-                            @for (objectif of objectifsRendus(); track objectif.id) {
-                                <app-objective-progress
-                                        emoji="🎯"
-                                        [name]="objectif.nom"
-                                        [status]="objectif.statusLabel"
-                                        [severity]="objectif.severity"
-                                        [pct]="objectif.pct"
-                                        [meta]="objectif.meta"/>
-                            }
-                        </div>
-                    } @else {
-                        <p class="m-0 text-surface-500">{{ t.commun.aucunResultat }}</p>
-                    }
-                </app-tab-panel>
-            </app-tab-group>
+            <app-dashboard-section
+                    [title]="t.dashboard.groupePourAllerPlusLoin"
+                    [count]="pourAllerPlusLoinIndicateursAnnee().length"
+                    countColor="info">
+                @for (item of pourAllerPlusLoinIndicateursAnnee(); track item.indicator.key) {
+                    <app-indicator-card
+                                [icon]="item.indicator.icon"
+                                [iconColor]="item.indicator.iconColor"
+                                [title]="item.indicator.title"
+                                [subtitle]="item.indicator.subtitle ?? ''"
+                                [info]="item.indicator.info ?? ''"
+                                [infoColor]="item.indicator.infoColor ?? null"
+                                [infoSubtitle]="item.indicator.infoSubtitle ?? ''"
+                                (cardClick)="ouvrirIndicateur(t.dashboard.groupePourAllerPlusLoin, item.indicator, item.data)"/>
+                }
+            </app-dashboard-section>
         } @else if (vue() === 'mois' && ventilations()) {
             <p-card>
                 <div class="flex flex-col gap-3">
@@ -193,100 +104,39 @@
                 </div>
             </p-card>
 
-            @if (tauxEffortCards().length) {
-                <div class="flex flex-wrap gap-4">
-                    @for (carte of tauxEffortCards(); track carte.membre.id) {
-                        <div class="flex-1 min-w-[280px]">
-                            <app-taux-effort-card [data]="carte" [afficherNom]="!estModeMembre()"/>
-                        </div>
-                    }
-                </div>
-            }
-
-            <app-tab-group [value]="ongletMois()" (valueChange)="onMoisTabChange($event)">
-                <app-tab-panel value="recap" [label]="t.dashboard.recapitulatif">
-                    <div class="flex flex-col gap-4">
-                        <div class="flex flex-wrap gap-3 justify-center">
-                            <p-selectbutton
-                                    [options]="vueDecompositionOptions"
-                                    [ngModel]="vueDecomposition()"
-                                    (ngModelChange)="vueDecomposition.set($event)"
-                                    optionLabel="label"
-                                    optionValue="value"
-                                    [allowEmpty]="false"/>
-                        </div>
-
-                        <app-carte-bilan
-                                [variante]="carteMoisConfig().variante"
-                                [nom]="carteMoisConfig().nom"
-                                [sousTitre]="carteMoisConfig().sousTitre"
-                                [couleur]="carteMoisConfig().couleur"
-                                [initiales]="carteMoisConfig().initiales"
-                                [montantPrincipal]="carteMoisConfig().montantPrincipal"
-                                [devise]="deviseBase()"
-                                [lignes]="carteMoisConfig().lignes"
-                                [tauxEffort]="carteMoisConfig().tauxEffort"
-                                [prorataPct]="carteMoisConfig().prorataPct"/>
-                    </div>
-                </app-tab-panel>
-
-                <app-tab-panel value="echeances" [label]="t.dashboard.echeances">
-                    @if (echeancesMois().length) {
-                        <div class="flex flex-col gap-3">
-                            @for (objectif of echeancesMois(); track objectif.id) {
-                                <app-objective-progress
-                                        emoji="🎯"
-                                        [name]="objectif.nom"
-                                        [status]="objectif.statusLabel"
-                                        [severity]="objectif.severity"
-                                        [pct]="objectif.pct"
-                                        [meta]="objectif.meta"/>
-                            }
-                        </div>
-                    } @else {
-                        <p class="m-0 text-surface-500">{{ t.dashboard.aucuneEcheance }}</p>
-                    }
-                </app-tab-panel>
-
-                <app-tab-panel value="event" [label]="t.dashboard.evenement">
-                    @if (evenementsMois().length) {
-                        <app-event-grid
-                                [items]="evenementsMois()"
-                                [devise]="deviseBase()"
-                                (select)="ouvrirMoisDepuisTimeline($event)"/>
-                    } @else {
-                        <p class="m-0 text-surface-500">{{ t.dashboard.aucunEvenement }}</p>
-                    }
-                </app-tab-panel>
-
-                <app-tab-panel value="objectifs" [label]="t.dashboard.objectifs">
-                    @if (objectifsRendus().length) {
-                        <div class="flex flex-col gap-3">
-                            @for (objectif of objectifsRendus(); track objectif.id) {
-                                <app-objective-progress
-                                        emoji="🎯"
-                                        [name]="objectif.nom"
-                                        [status]="objectif.statusLabel"
-                                        [severity]="objectif.severity"
-                                        [pct]="objectif.pct"
-                                        [meta]="objectif.meta"/>
-                            }
-                        </div>
-                    } @else {
-                        <p class="m-0 text-surface-500">{{ t.commun.aucunResultat }}</p>
-                    }
-                </app-tab-panel>
-
-                @if (afficherOngletComptes()) {
-                    <app-tab-panel value="comptes" [label]="t.dashboard.comptes">
-                        <app-comptes-membre-recap
-                                [recaps]="comptesRecapDto()"
-                                [tresoreries]="comptesTresorerieDto()"
-                                [devise]="deviseBase()"
-                                [chargement]="comptesRecapChargement()"/>
-                    </app-tab-panel>
+            <app-dashboard-section
+                    [title]="t.dashboard.groupeCommentSePasseCeMois"
+                    [count]="commentSePasseIndicateursMois().length"
+                    countColor="info">
+                @for (item of commentSePasseIndicateursMois(); track item.indicator.key) {
+                    <app-indicator-card
+                            [icon]="item.indicator.icon"
+                            [iconColor]="item.indicator.iconColor"
+                            [title]="item.indicator.title"
+                            [subtitle]="item.indicator.subtitle ?? ''"
+                            [info]="item.indicator.info ?? ''"
+                            [infoColor]="item.indicator.infoColor ?? null"
+                            [infoSubtitle]="item.indicator.infoSubtitle ?? ''"
+                            (cardClick)="ouvrirIndicateur(t.dashboard.groupeCommentSePasseCeMois, item.indicator, item.data)"/>
                 }
-            </app-tab-group>
+            </app-dashboard-section>
+
+            <app-dashboard-section
+                    [title]="t.dashboard.groupePourAllerPlusLoin"
+                    [count]="pourAllerPlusLoinIndicateursMois().length"
+                    countColor="info">
+                @for (item of pourAllerPlusLoinIndicateursMois(); track item.indicator.key) {
+                    <app-indicator-card
+                                [icon]="item.indicator.icon"
+                                [iconColor]="item.indicator.iconColor"
+                                [title]="item.indicator.title"
+                                [subtitle]="item.indicator.subtitle ?? ''"
+                                [info]="item.indicator.info ?? ''"
+                                [infoColor]="item.indicator.infoColor ?? null"
+                                [infoSubtitle]="item.indicator.infoSubtitle ?? ''"
+                                (cardClick)="ouvrirIndicateur(t.dashboard.groupePourAllerPlusLoin, item.indicator, item.data)"/>
+                }
+            </app-dashboard-section>
         }
     </main>
 
@@ -297,3 +147,8 @@
                 [(selection)]="pageNavSelectionForBinding"/>
     }
 </div>
+
+<!-- Hors de la grille 2 colonnes ci-dessus (sinon il en devient le 3e élément et décale
+     app-page-nav) ; p-drawer est un overlay position:fixed, sa position dans le DOM
+     n'a pas d'impact visuel tant qu'il n'est pas lui-même un participant de layout. -->
+<app-indicator-drawer/>

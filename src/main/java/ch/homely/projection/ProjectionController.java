@@ -102,7 +102,7 @@ public class ProjectionController {
     }
 
     /** Récapitulatif mensuel de trésorerie par compte (dashboard, vue membre) : virements
-     *  entrants simulés, entrées/sorties échues, solde restant, indicateur d'insuffisance. */
+     * entrants simulés, entrées/sorties échues, solde restant. */
     @GetMapping("/comptes-recap")
     public List<CompteRecapMensuelDto> comptesRecap(@PathVariable UUID foyerId,
                                                      @PathVariable UUID scenarioId,
@@ -111,18 +111,5 @@ public class ProjectionController {
                                                      @RequestParam UUID membreId) {
         multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
         return projectionService.recapComptesMembre(foyerId, scenarioId, annee, mois, membreId);
-    }
-
-    /** Timeline de trésorerie cumulée par compte (dashboard, vue membre) sur {@code nbMois}
-     *  mois, mois courant et 2 mois futurs inclus (par défaut 6 : M-3..M+2). */
-    @GetMapping("/comptes-tresorerie")
-    public List<CompteTresorerieDto> comptesTresorerie(@PathVariable UUID foyerId,
-                                                        @PathVariable UUID scenarioId,
-                                                        @RequestParam int annee,
-                                                        @RequestParam int mois,
-                                                        @RequestParam UUID membreId,
-                                                        @RequestParam(defaultValue = "6") int nbMois) {
-        multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
-        return projectionService.tresorerieComptesMembre(foyerId, scenarioId, annee, mois, membreId, nbMois);
     }
 }

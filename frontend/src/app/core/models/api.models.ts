@@ -258,12 +258,4 @@ export interface CompteRecapMensuelDto {
   sortiesEchues: number;
   virementsSortants: number;
   soldeRestant: number;
-  insuffisant: boolean;
-  montantManquant: number;
-}
-export interface PointTresorerieDto { annee: number; mois: number; tresorerieCumulee: number; }
-export interface CompteTresorerieDto {
-  compteId: string;
-  libelleCompte: string;
-  points: PointTresorerieDto[];
 }

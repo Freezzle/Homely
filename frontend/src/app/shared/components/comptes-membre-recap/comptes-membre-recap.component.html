@@ -2,45 +2,42 @@
   <p class="m-0 text-xs text-surface-500">{{ t.dashboard.comptesDescription }}</p>
 
   @if (chargement()) {
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+    <div class="flex flex-col gap-4">
       @for (i of [1, 2, 3]; track i) {
-        <p-skeleton height="260px" borderRadius="12px"/>
+        <p-skeleton height="180px" borderRadius="12px"/>
       }
     </div>
   } @else if (cartes().length) {
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="flex flex-col gap-4">
       @for (carte of cartes(); track carte.compteId) {
         <p-card styleClass="compte-recap-card h-full">
           <div class="flex flex-col gap-3 h-full">
             <div class="flex items-center justify-between gap-2">
               <h3 class="m-0 text-sm font-bold truncate">{{ carte.libelle }}</h3>
-              @if (carte.insuffisant) {
-                <p-tag [value]="t.dashboard.comptesInsuffisant" severity="danger" icon="pi pi-exclamation-triangle"/>
-              }
             </div>
 
-            <div class="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
-              <div class="flex flex-col gap-0.5">
-                <span class="text-[11px] uppercase tracking-wide text-surface-500 font-semibold">{{ t.dashboard.comptesVirementsEntrants }}</span>
+            <div class="flex flex-col gap-1.5 text-sm">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-surface-500">{{ t.dashboard.comptesVirementsEntrants }}</span>
                 <span class="font-semibold text-primary">{{ carte.virementsEntrants | montant:devise() }}</span>
               </div>
-              <div class="flex flex-col gap-0.5">
-                <span class="text-[11px] uppercase tracking-wide text-surface-500 font-semibold">{{ t.dashboard.comptesEntrees }}</span>
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-surface-500">{{ t.dashboard.comptesEntrees }}</span>
                 <span class="font-semibold" style="color: var(--p-green-500)">{{ carte.entrees | montant:devise() }}</span>
               </div>
-              <div class="flex flex-col gap-0.5">
-                <span class="text-[11px] uppercase tracking-wide text-surface-500 font-semibold">{{ t.dashboard.comptesSortiesPlanifiees }}</span>
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-surface-500">{{ t.dashboard.comptesSortiesPlanifiees }}</span>
                 <span class="font-semibold text-surface-600">{{ carte.sortiesPlanifiees | montant:devise() }}</span>
               </div>
-              <div class="flex flex-col gap-0.5">
-                <span class="text-[11px] uppercase tracking-wide text-surface-500 font-semibold">{{ t.dashboard.comptesSortiesEchues }}</span>
-                <span class="font-semibold" [style.color]="carte.insuffisant ? 'var(--p-red-500)' : 'var(--p-orange-500)'">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-surface-500">{{ t.dashboard.comptesSortiesEchues }}</span>
+                <span class="font-semibold" style="color: var(--p-orange-500)">
                   {{ carte.sortiesEchues | montant:devise() }}
                 </span>
               </div>
               @if (carte.virementsSortants > 0) {
-                <div class="flex flex-col gap-0.5">
-                  <span class="text-[11px] uppercase tracking-wide text-surface-500 font-semibold">{{ t.dashboard.comptesVirementsSortants }}</span>
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-surface-500">{{ t.dashboard.comptesVirementsSortants }}</span>
                   <span class="font-semibold text-surface-600">{{ carte.virementsSortants | montant:devise() }}</span>
                 </div>
               }
@@ -51,19 +48,6 @@
               <span class="text-base font-extrabold" [style.color]="carte.soldeRestant < 0 ? 'var(--p-red-500)' : 'var(--p-green-600)'">
                 {{ carte.soldeRestant | montant:devise() }}
               </span>
-            </div>
-
-            @if (carte.insuffisant) {
-              <p class="m-0 text-xs font-medium" style="color: var(--p-red-500)">
-                {{ carte.messageAVirer }}
-              </p>
-            }
-
-            <div class="mt-auto pt-1">
-              <p class="m-0 mb-1 text-[11px] font-semibold text-surface-500">{{ t.dashboard.comptesTimelineTitre }}</p>
-              <div class="relative h-32 sm:h-36 w-full">
-                <p-chart type="line" [data]="$any(carte.chartData)" [options]="$any(chartOptions)" class="w-full block"/>
-              </div>
             </div>
           </div>
         </p-card>

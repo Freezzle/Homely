@@ -1,12 +1,9 @@
-﻿import { CommonModule } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { Component, computed, effect, inject, input, numberAttribute, signal, untracked } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
-import { ChartModule } from 'primeng/chart';
-import { SelectButtonModule } from 'primeng/selectbutton';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TagModule } from 'primeng/tag';
 import { ContexteService } from '../../core/services/contexte.service';
@@ -19,7 +16,6 @@ import {
   CategorieDto,
   CompteDto,
   CompteRecapMensuelDto,
-  CompteTresorerieDto,
   EvenementDto,
   MembreDto,
   ModeComptabilisation,
@@ -38,7 +34,7 @@ import { localeDeLangue } from '../../core/i18n/locale.util';
 import { ViewportService } from '../../core/services/viewport.service';
 import { creerChargementReactif } from '../../core/utils/reference-data.util';
 import { parseIsoDateLocal } from '../../core/utils/date.util';
-import { CarteBilanComponent, LigneDecomposition, MembreTagInfo } from '../../shared/components/carte-bilan/carte-bilan.component';
+import { LigneDecomposition, MembreTagInfo } from '../../shared/components/carte-bilan/carte-bilan.component';
 import { TauxEffortCardComponent, TauxEffortCardData } from '../../shared/components/taux-effort-card/taux-effort-card.component';
 import { KpiChipRowComponent } from '../../shared/components/kpi-chip-row/kpi-chip-row.component';
 import { KpiChip } from '../../shared/components/kpi-chip/kpi-chip.component';
@@ -50,9 +46,23 @@ import { StatGridComponent, StatGridStatusTag, StatItem } from '../../shared/com
 import { TabGroupComponent } from '../../shared/components/tab-group/tab-group.component';
 import { TabPanelComponent } from '../../shared/components/tab-group/tab-panel.component';
 import { TimelineItem } from '../../shared/components/timeline/timeline.component';
-import { EventGridComponent } from '../../shared/components/event-grid/event-grid.component';
-import { MatriceBudgetaireComponent, MatriceBudgetaireLabels } from '../../shared/components/matrice-budgetaire/matrice-budgetaire.component';
-import { ComptesMembreRecapComponent } from '../../shared/components/comptes-membre-recap/comptes-membre-recap.component';
+import { MatriceBudgetaireLabels } from '../../shared/components/matrice-budgetaire/matrice-budgetaire.component';
+import { DashboardSectionComponent } from './shared/components/dashboard-section/dashboard-section.component';
+import { IndicatorCardComponent } from './shared/components/indicator-card/indicator-card.component';
+import { IndicatorDrawerComponent } from './shared/components/indicator-drawer/indicator-drawer.component';
+import { IndicatorDrawerService } from './shared/services/indicator-drawer.service';
+import { Indicator } from './shared/models/indicator.model';
+import { tauxEffortMembreIndicator } from './indicators/taux-effort-membre/taux-effort-membre.indicator';
+import { ventilationPostesIndicator } from './indicators/ventilation-postes/ventilation-postes.indicator';
+import { VentilationPostesDrawerData } from './indicators/ventilation-postes/ventilation-postes-drawer-content.component';
+import { evolutionGraphiqueIndicator } from './indicators/evolution-graphique/evolution-graphique.indicator';
+import { EvolutionGraphiqueDrawerData } from './indicators/evolution-graphique/evolution-graphique-drawer-content.component';
+import { postesAOptimiserIndicator } from './indicators/postes-a-optimiser/postes-a-optimiser.indicator';
+import { PostesAOptimiserDrawerData } from './indicators/postes-a-optimiser/postes-a-optimiser-drawer-content.component';
+import { evenementsIndicator } from './indicators/evenements/evenements.indicator';
+import { EvenementsDrawerData } from './indicators/evenements/evenements-drawer-content.component';
+import { virementsComptesIndicator } from './indicators/virements-comptes/virements-comptes.indicator';
+import { VirementsComptesDrawerData } from './indicators/virements-comptes/virements-comptes-drawer-content.component';
 
 type StatutObjectif = 'DANS_LES_TEMPS' | 'EN_RETARD' | 'ATTEINT';
 type DashboardTimelineItem = TimelineItem & { mois: number };
@@ -68,14 +78,10 @@ const ZERO_AGREGAT: { revenus: number; charges: number; reserves: number; soldeD
   standalone: true,
   imports: [
     CommonModule,
-    FormsModule,
     ButtonModule,
     CardModule,
-    ChartModule,
-    SelectButtonModule,
     SkeletonModule,
     TagModule,
-    CarteBilanComponent,
     TauxEffortCardComponent,
     KpiChipRowComponent,
 
@@ -86,9 +92,9 @@ const ZERO_AGREGAT: { revenus: number; charges: number; reserves: number; soldeD
     StatGridComponent,
     TabGroupComponent,
     TabPanelComponent,
-    EventGridComponent,
-    MatriceBudgetaireComponent,
-    ComptesMembreRecapComponent,
+    DashboardSectionComponent,
+    IndicatorCardComponent,
+    IndicatorDrawerComponent,
   ],
   templateUrl: './dashboard.component.html',
 })
@@ -103,6 +109,7 @@ export class DashboardComponent {
   private readonly decomp = inject(DecompositionService);
   protected readonly viewport = inject(ViewportService);
   private readonly router = inject(Router);
+  private readonly indicatorDrawer = inject(IndicatorDrawerService);
 
   readonly t = this.i18n.translations();
   readonly deviseBase = this.contexte.deviseBase;
@@ -146,8 +153,8 @@ export class DashboardComponent {
   });
 
   readonly vue = computed<'annee' | 'mois'>(() => this.moisSelectionne() !== undefined ? 'mois' : 'annee');
-  readonly ongletAnnee = signal('recap');
-  readonly ongletMois = signal('recap');
+  readonly ongletAnnee = signal('objectifs');
+  readonly ongletMois = signal('echeances');
   readonly vueDecomposition = signal<'CATEGORIE' | 'TYPE_POSTE' | 'COMPTE'>('TYPE_POSTE');
   readonly pageNavSelectionForBinding = signal<PageNavSelection>({ mode: 'annee' });
 
@@ -155,16 +162,6 @@ export class DashboardComponent {
     { label: this.t.projection.vueTypePoste, value: 'TYPE_POSTE' },
     { label: this.t.projection.vueCategorie, value: 'CATEGORIE' },
     { label: this.t.projection.vueCompte, value: 'COMPTE' },
-  ];
-
-  /** Graphique actuellement affiché dans l'onglet "Graphiques" de la vue annuelle. */
-  readonly vueGraphiqueAnnuel = signal<'flux' | 'tresorerie' | 'prevuVsReel' | 'matrice'>('flux');
-
-  readonly vueGraphiqueAnnuelOptions = [
-    { label: this.t.dashboard.fluxMensuel, value: 'flux' },
-    { label: this.t.dashboard.tresorerieTitle, value: 'tresorerie' },
-    { label: this.t.dashboard.prevuVsReel, value: 'prevuVsReel' },
-    { label: this.t.dashboard.matriceBudgetaire, value: 'matrice' },
   ];
 
   /** Titre affiché en en-tête : nom du foyer ou nom du membre sélectionné. */
@@ -281,13 +278,201 @@ export class DashboardComponent {
     this.filtrerCartesSelonSujet(this.mapperTauxEffortCards(this._tauxEffortAnnuel.donnees())),
   );
 
+  /** Section dashboard "Taux d'effort par membre" (vue mois) — une carte cliquable par
+   *  membre, réutilisant les mêmes données que `<app-taux-effort-card>` déjà affichées
+   *  plus haut. Le clic ouvre le drawer partagé avec la carte détaillée en contenu. */
+  readonly tauxEffortIndicateursMois = computed(() =>
+    this.tauxEffortCards().map((data) => ({ indicator: tauxEffortMembreIndicator(data, this.t), data })),
+  );
+
+  /** Variante annuelle de la section "Taux d'effort" (vue année). Masquée en vue foyer
+   *  agrégée (`sujet().mode === 'foyer'`) : sur l'année, l'indicateur par membre n'a de
+   *  sens que consulté depuis le dashboard d'un membre précis. */
+  readonly tauxEffortIndicateursAnnee = computed(() =>
+    this.estModeMembre() ? this.tauxEffortCardsAnnee().map((data) => ({ indicator: tauxEffortMembreIndicator(data, this.t), data })) : [],
+  );
+
+  /** Payload signaux transmis au drawer "Événements" — `layout` fige le rendu (groupé pour
+   *  l'année, à plat pour le mois où tous les items partagent le même "when"). */
+  private readonly evenementsDataMois = computed<EvenementsDrawerData>(() => ({
+    items: this.evenementsMois,
+    devise: this.deviseBase,
+    layout: 'flat',
+    onSelect: (item) => this.ouvrirMoisDepuisTimeline(item),
+  }));
+
+  private readonly evenementsDataAnnee = computed<EvenementsDrawerData>(() => ({
+    items: this.evenementsAnnee,
+    devise: this.deviseBase,
+    layout: 'grouped',
+    onSelect: (item) => this.ouvrirMoisDepuisTimeline(item),
+  }));
+
+  /** Indicateur "Les événements du mois" — reprend le contenu de l'onglet "Événement" dans
+   *  le drawer (liste plate, sans le retirer de l'onglet d'origine). */
+  readonly evenementsIndicateurMois = computed(() => ({
+    indicator: evenementsIndicator('evenements-mois', this.t.dashboard.indicateurEvenementsMoisTitre, this.evenementsMois().length, this.t),
+    data: this.evenementsDataMois(),
+  }));
+
+  /** Variante annuelle — reprend le contenu de l'onglet "Ce qui change" (rendu groupé
+   *  inchangé) dans le drawer. */
+  readonly evenementsIndicateurAnnee = computed(() => ({
+    indicator: evenementsIndicator('evenements-annee', this.t.dashboard.indicateurEvenementsAnneeTitre, this.evenementsAnnee().length, this.t),
+    data: this.evenementsDataAnnee(),
+  }));
+
+  /** Payload signaux transmis au drawer "Virements des comptes". */
+  private readonly virementsComptesData = computed<VirementsComptesDrawerData>(() => ({
+    recaps: this.comptesRecapDto,
+    devise: this.deviseBase,
+    chargement: this.comptesRecapChargement,
+  }));
+
+  /** Indicateur "Virements des comptes" (mois + vue membre uniquement, mêmes données que
+   *  l'onglet "Comptes") — `null` si non applicable (vue foyer ou vue année). */
+  readonly virementsComptesIndicateur = computed(() => {
+    if (!this.afficherOngletComptes()) return null;
+    const recaps = this.comptesRecapDto();
+    const totalSortants = recaps.reduce((somme, r) => somme + r.virementsSortants, 0);
+    return {
+      indicator: virementsComptesIndicator(recaps, this.formatMontant(totalSortants), this.t),
+      data: this.virementsComptesData(),
+    };
+  });
+
+  /** Section "Comment se passe ce mois" : Taux d'effort par membre + Événements du mois +
+   *  Virements des comptes (si applicable — vue membre uniquement). */
+  readonly commentSePasseIndicateursMois = computed(() => {
+    const virements = this.virementsComptesIndicateur();
+    return [
+      ...this.tauxEffortIndicateursMois(),
+      this.evenementsIndicateurMois(),
+      ...(virements ? [virements] : []),
+    ];
+  });
+
+  /** Section "Comment se passe cette année" : Taux d'effort par membre (vue membre
+   *  uniquement) + Événements de l'année. */
+  readonly commentSePasseIndicateursAnnee = computed(() => [
+    ...this.tauxEffortIndicateursAnnee(),
+    this.evenementsIndicateurAnnee(),
+  ]);
+
+  /** Ouvre le drawer partagé pour l'indicateur cliqué (tous les indicateurs du dashboard
+   *  utilisent cette méthode générique), avec les données déjà résolues en payload —
+   *  chaque indicateur déclare son propre composant de contenu (`indicator.drawerContent`). */
+  ouvrirIndicateur(sectionLabel: string, indicator: Indicator, data: unknown): void {
+    this.indicatorDrawer.open({
+      sectionLabel,
+      title: indicator.title,
+      content: indicator.drawerContent,
+      data,
+    });
+  }
+
+  /** Payload signaux transmis au drawer "Ventilations des postes" (vue mois) — voir
+   *  `VentilationPostesDrawerData` : références de signaux, pas de snapshot, pour que le
+   *  selectbutton reste réactif sans dupliquer `carteMoisConfig`/`vueDecomposition`. */
+  private readonly ventilationPostesDataMois = computed<VentilationPostesDrawerData>(() => ({
+    vueDecomposition: this.vueDecomposition,
+    vueDecompositionOptions: this.vueDecompositionOptions,
+    carteConfig: this.carteMoisConfig,
+    devise: this.deviseBase,
+  }));
+
+  private readonly ventilationPostesDataAnnee = computed<VentilationPostesDrawerData>(() => ({
+    vueDecomposition: this.vueDecomposition,
+    vueDecompositionOptions: this.vueDecompositionOptions,
+    carteConfig: this.carteAnneeConfig,
+    devise: this.deviseBase,
+  }));
+
+  /** Indicateur "Ventilations des postes" (vue mois) — reprend le contenu de l'onglet
+   *  "Récapitulatifs" dans le drawer, sans le retirer de l'onglet d'origine. */
+  readonly ventilationPostesIndicateurMois = computed(() => ({
+    indicator: ventilationPostesIndicator(
+      'ventilation-postes-mois',
+      this.agregatMoisCourant().soldeDisponible,
+      this.formatMontant(this.agregatMoisCourant().soldeDisponible),
+      this.t,
+    ),
+    data: this.ventilationPostesDataMois(),
+  }));
+
+  /** Variante annuelle de l'indicateur "Ventilations des postes" (vue année). */
+  readonly ventilationPostesIndicateurAnnee = computed(() => ({
+    indicator: ventilationPostesIndicator(
+      'ventilation-postes-annee',
+      this.agregatAnneeCourant().soldeDisponible,
+      this.formatMontant(this.agregatAnneeCourant().soldeDisponible),
+      this.t,
+    ),
+    data: this.ventilationPostesDataAnnee(),
+  }));
+
+  /** Payload signaux transmis au drawer "Évolution graphique" (annuel uniquement). */
+  private readonly evolutionGraphiqueData = computed<EvolutionGraphiqueDrawerData>(() => ({
+    mixedChartData: this.mixedChartData,
+    mixedChartOptions: this.mixedChartOptions,
+    tresorerieCumuleeData: this.tresorerieCumuleeData,
+    tresorerieCumuleeOptions: this.tresorerieCumuleeOptions,
+    prevuVsReelData: this.prevuVsReelData,
+    prevuVsReelOptions: this.prevuVsReelOptions,
+    labels: {
+      fluxMensuel: this.t.dashboard.fluxMensuel,
+      fluxMensuelDescription: this.t.dashboard.fluxMensuelDescription,
+      cliquezBarre: this.t.dashboard.cliquezBarre,
+      tresorerieTitle: this.t.dashboard.tresorerieTitle,
+      tresoCumuleeDescription: this.t.dashboard.tresoCumuleeDescription,
+      prevuVsReel: this.t.dashboard.prevuVsReel,
+      prevuVsReelDescription: this.t.dashboard.prevuVsReelDescription,
+    },
+  }));
+
+  /** Indicateur "Évolution graphique" (annuel uniquement — pas d'onglet Graphiques en vue
+   *  mensuelle) — reprend les 3 graphiques de l'onglet "Graphiques", empilés verticalement
+   *  dans le drawer au lieu du switch. La matrice budgétaire n'y figure pas (indicateur
+   *  séparé "Postes à optimiser"). */
+  readonly evolutionGraphiqueIndicateur = computed(() => ({
+    indicator: evolutionGraphiqueIndicator(this.t),
+    data: this.evolutionGraphiqueData(),
+  }));
+
+  /** Payload signaux transmis au drawer "Postes à optimiser" (annuel uniquement). */
+  private readonly postesAOptimiserData = computed<PostesAOptimiserDrawerData>(() => ({
+    postes: this.postesMatriceAnnee,
+    devise: this.deviseBase,
+    labels: this.matriceLabels,
+    chargement: this.matriceChargement,
+  }));
+
+  /** Indicateur "Postes à optimiser" (annuel uniquement) — enveloppe la matrice budgétaire
+   *  sortie de l'onglet "Graphiques" ; info = nombre de postes avec un score ≥ 35. */
+  readonly postesAOptimiserIndicateur = computed(() => ({
+    indicator: postesAOptimiserIndicator(this.postesMatriceAnnee(), this.t),
+    data: this.postesAOptimiserData(),
+  }));
+
+  /** Section "Pour aller plus loin" (vue mois) : seule "Ventilations des postes" y figure
+   *  (les graphiques et la matrice n'existent qu'en vue annuelle). */
+  readonly pourAllerPlusLoinIndicateursMois = computed(() => [this.ventilationPostesIndicateurMois()]);
+
+  /** Section "Pour aller plus loin" (vue année) : les 3 indicateurs. */
+  readonly pourAllerPlusLoinIndicateursAnnee = computed(() => [
+    this.ventilationPostesIndicateurAnnee(),
+    this.evolutionGraphiqueIndicateur(),
+    this.postesAOptimiserIndicateur(),
+  ]);
+
   /** Onglet "Comptes" (récap mensuel de trésorerie par compte) : uniquement en vue mois
-   *  ET vue membre — le fetch est lazy (déclenché seulement quand l'onglet est ouvert),
-   *  et scopé au membre courant côté serveur (accès + agrégation). */
+   *  ET vue membre, scopé au membre courant côté serveur (accès + agrégation). Le fetch
+   *  n'est plus gaté sur l'onglet actif (chargé dès la vue mois/membre) car l'indicateur
+   *  "Virements des comptes" a besoin de la donnée résolue même onglet fermé. */
   readonly afficherOngletComptes = computed(() => this.sujet().mode === 'membre');
 
   private readonly _comptesRecapCle = computed<{ foyerId: string; scenarioId: string; annee: number; mois: number; membreId: string } | null>(() => {
-    if (this.ongletMois() !== 'comptes') return null;
+    if (!this.afficherOngletComptes()) return null;
     const ventCle = this._ventilationsMoisCle();
     const s = this.sujet();
     return ventCle && s.mode === 'membre' ? { ...ventCle, membreId: s.membreId } : null;
@@ -299,13 +484,7 @@ export class DashboardComponent {
 
   readonly comptesRecapDto = computed<CompteRecapMensuelDto[]>(() => this._comptesRecap.donnees() ?? []);
 
-  private readonly _comptesTresorerie = creerChargementReactif(this._comptesRecapCle, ({ foyerId, scenarioId, annee, mois, membreId }) =>
-    this.projSvc.comptesTresorerie(foyerId, scenarioId, annee, mois, membreId),
-  );
-
-  readonly comptesTresorerieDto = computed<CompteTresorerieDto[]>(() => this._comptesTresorerie.donnees() ?? []);
-
-  readonly comptesRecapChargement = computed(() => this._comptesRecap.chargement() || this._comptesTresorerie.chargement());
+  readonly comptesRecapChargement = computed(() => this._comptesRecap.chargement());
 
   private mapperTauxEffortCards(dtos: TauxEffortMembreDto[] | null | undefined): TauxEffortCardData[] {
     return (dtos ?? []).map((dto) => ({

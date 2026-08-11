@@ -1,45 +1,84 @@
-@for (group of groups(); track $index) {
-  <section class="eg-section">
-    <header class="eg-header">
-      <span class="eg-when">{{ group.when }}</span>
-      <span class="eg-header-rule" aria-hidden="true"></span>
-      <span class="eg-count">{{ group.items.length }}</span>
-    </header>
+@if (layout() === 'flat') {
+  <div class="eg-flat-list">
+    @for (item of itemsAPlat(); track $index) {
+      <button type="button" class="eg-card" (click)="onSelect(item)">
+        <div class="eg-card-head">
+          <i
+            class="pi eg-card-icon"
+            [ngClass]="['pi-' + (item.icon ?? 'circle'), 'eg-icon-' + (item.iconVariant ?? 'info')]"
+            aria-hidden="true"></i>
+          <span class="eg-card-title">{{ item.title }}</span>
+        </div>
 
-    <div class="eg-grid">
-      @for (item of group.items; track $index) {
-        <button type="button" class="eg-card" (click)="onSelect(item)">
-          <div class="eg-card-head">
-            <i
-              class="pi eg-card-icon"
-              [ngClass]="['pi-' + (item.icon ?? 'circle'), 'eg-icon-' + (item.iconVariant ?? 'info')]"
-              aria-hidden="true"></i>
-            <span class="eg-card-title">{{ item.title }}</span>
-          </div>
-
-          <div class="eg-card-amount truncate">
-            @if (item.montantApresLabel) {
-              <div class="eg-revision">
-                <span class="eg-avant">{{ item.montantAvantLabel }}</span>
-                <i class="pi pi-arrow-right" aria-hidden="true"></i>
-                <span
-                  class="eg-impact"
-                  [class.pos]="item.favorable === true"
-                  [class.neg]="item.favorable === false">{{ item.montantApresLabel }}</span>
-              </div>
-            } @else if (impactLabel(item); as impact) {
+        <div class="eg-card-amount truncate">
+          @if (item.montantApresLabel) {
+            <div class="eg-revision">
+              <span class="eg-avant">{{ item.montantAvantLabel }}</span>
+              <i class="pi pi-arrow-right" aria-hidden="true"></i>
               <span
                 class="eg-impact"
                 [class.pos]="item.favorable === true"
-                [class.neg]="item.favorable === false">{{ impact }}</span>
-            }
-          </div>
-
-          @if (item.montantSecondaire) {
-            <div class="eg-secondaire">{{ item.montantSecondaire }}</div>
+                [class.neg]="item.favorable === false">{{ item.montantApresLabel }}</span>
+            </div>
+          } @else if (impactLabel(item); as impact) {
+            <span
+              class="eg-impact"
+              [class.pos]="item.favorable === true"
+              [class.neg]="item.favorable === false">{{ impact }}</span>
           }
-        </button>
-      }
-    </div>
-  </section>
+        </div>
+
+        @if (item.montantSecondaire) {
+          <div class="eg-secondaire">{{ item.montantSecondaire }}</div>
+        }
+      </button>
+    }
+  </div>
+} @else {
+  @for (group of groups(); track $index) {
+    <section class="eg-section">
+      <header class="eg-header">
+        <span class="eg-when">{{ group.when }}</span>
+        <span class="eg-header-rule" aria-hidden="true"></span>
+        <span class="eg-count">{{ group.items.length }}</span>
+      </header>
+
+      <div class="eg-grid">
+        @for (item of group.items; track $index) {
+          <button type="button" class="eg-card" (click)="onSelect(item)">
+            <div class="eg-card-head">
+              <i
+                class="pi eg-card-icon"
+                [ngClass]="['pi-' + (item.icon ?? 'circle'), 'eg-icon-' + (item.iconVariant ?? 'info')]"
+                aria-hidden="true"></i>
+              <span class="eg-card-title">{{ item.title }}</span>
+            </div>
+
+            <div class="eg-card-amount truncate">
+              @if (item.montantApresLabel) {
+                <div class="eg-revision">
+                  <span class="eg-avant">{{ item.montantAvantLabel }}</span>
+                  <i class="pi pi-arrow-right" aria-hidden="true"></i>
+                  <span
+                    class="eg-impact"
+                    [class.pos]="item.favorable === true"
+                    [class.neg]="item.favorable === false">{{ item.montantApresLabel }}</span>
+                </div>
+              } @else if (impactLabel(item); as impact) {
+                <span
+                  class="eg-impact"
+                  [class.pos]="item.favorable === true"
+                  [class.neg]="item.favorable === false">{{ impact }}</span>
+              }
+            </div>
+
+            @if (item.montantSecondaire) {
+              <div class="eg-secondaire">{{ item.montantSecondaire }}</div>
+            }
+          </button>
+        }
+      </div>
+    </section>
+  }
 }
+

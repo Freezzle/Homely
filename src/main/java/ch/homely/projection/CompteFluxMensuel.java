@@ -14,13 +14,10 @@ import java.util.UUID;
  * @param virementsSortants montant que la part du membre sur ce compte doit fournir ce
  *                          mois pour financer ses propres postes ventilés ailleurs, dont ce compte est le primaire désigné
  * @param soldeRestant      entrees + virementsEntrants − sortiesEchues − virementsSortants
- * @param tresorerieCumulee part du membre dans soldeInitial(compte) (répartie à parts égales
- *                          entre co-titulaires) + Σ de ses soldeRestant mensuels depuis
- *                          l'origine du scénario jusqu'à ce mois inclus
  */
 record CompteFluxMensuel(
         UUID compteId, int annee, int mois,
         double entrees, double sortiesPlanifiees, double sortiesEchues,
         double virementsEntrants, double virementsSortants,
-        double soldeRestant, double tresorerieCumulee
+        double soldeRestant
 ) {}

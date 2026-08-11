@@ -29,8 +29,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 
 /**
- * Tests d'intégration pour les endpoints de récapitulatif mensuel par compte du dashboard
- * (GET .../projection/comptes-recap et .../projection/comptes-tresorerie).
+ * Tests d'intégration pour l'endpoint de récapitulatif mensuel par compte du dashboard
+ * (GET .../projection/comptes-recap).
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
@@ -76,21 +76,18 @@ class ComptesRecapIT {
         assertThat(c.get("sortiesEchues").asDouble()).isCloseTo(1200.0, within(0.01)); // échu en janvier (ancre)
         // soldeRestant = virements(100) + entrees(5000) - sortiesEchues(1200) = 3900
         assertThat(c.get("soldeRestant").asDouble()).isCloseTo(3900.0, within(0.01));
-        assertThat(c.get("insuffisant").asBoolean()).isFalse();
-        assertThat(c.get("montantManquant").asDouble()).isCloseTo(0.0, within(0.01));
 
         // Mois sans échéance (février) : sortiesEchues = 0 (la charge D=12 n'échoit qu'en janvier,
-        // son mois d'ancrage) ; sortiesPlanifiees reste mensualisée (100), pas d'insuffisance.
+        // son mois d'ancrage) ; sortiesPlanifiees reste mensualisée (100).
         List<JsonNode> recapFevrier = comptesRecap(token, foyerId, scenarioId, 2025, 2, membreId);
         JsonNode cFevrier = recapFevrier.get(0);
         assertThat(cFevrier.get("sortiesEchues").asDouble()).isCloseTo(0.0, within(0.01));
         assertThat(cFevrier.get("sortiesPlanifiees").asDouble()).isCloseTo(100.0, within(0.01));
-        assertThat(cFevrier.get("insuffisant").asBoolean()).isFalse();
     }
 
     @Test
-    @DisplayName("Insuffisance détectée quand les sorties échues dépassent virements + entrées")
-    void insuffisanceDetectee() throws Exception {
+    @DisplayName("Sorties échues dépassant virements + entrées : solde restant négatif")
+    void soldeRestantNegatifQuandSortiesDepassent() throws Exception {
         String token = creerEtLogin("recap_insuffisant@test.ch");
         String foyerId = creerFoyer(token, "Foyer Insuffisant");
         String membreId = premierMembreId(token, foyerId);
@@ -111,68 +108,12 @@ class ComptesRecapIT {
         JsonNode c = recap.get(0);
         assertThat(c.get("virementsEntrants").asDouble()).isCloseTo(100.0, within(0.01));
         assertThat(c.get("sortiesEchues").asDouble()).isCloseTo(1200.0, within(0.01));
-        assertThat(c.get("insuffisant").asBoolean()).isTrue();
         double soldeRestant = c.get("soldeRestant").asDouble();
-        double manquant = c.get("montantManquant").asDouble();
         assertThat(soldeRestant).isCloseTo(-1000.0, within(0.01)); // 100 + 100 - 1200
-        assertThat(manquant).isCloseTo(1000.0, within(0.01));
     }
 
     @Test
-    @DisplayName("Mois déficitaire absorbé par la trésorerie cumulée du compte : pas d'insuffisance signalée")
-    void deficitAbsorbeParTresorerieCumulee() throws Exception {
-        String token = creerEtLogin("recap_buffer@test.ch");
-        String foyerId = creerFoyer(token, "Foyer Buffer");
-        String membreId = premierMembreId(token, foyerId);
-        String scenarioId = creerScenario(token, foyerId, membreId);
-        // Solde initial confortable : peut encaisser un mois déficitaire sans passer sous zéro.
-        String compteId = creerCompte(token, foyerId, membreId, "Compte épargne", 5000);
-
-        String catRevenu = creerCategorie(token, foyerId, "Petit revenu", "REVENU");
-        String catReserve = creerCategorie(token, foyerId, "3e pilier", "RESERVE");
-
-        creerPoste(token, foyerId, scenarioId, catRevenu, "REVENU", "2025-01-01", null, 100, 1, "MENSUALISE", membreId, compteId);
-        // Réserve annuelle 1200 (D=12, ancre janvier) : soldeRestant janvier = 100+100-1200 = -1000,
-        // mais le solde initial (5000) suffit à l'encaisser -> trésorerie cumulée reste positive.
-        creerPoste(token, foyerId, scenarioId, catReserve, "RESERVE", "2025-01-01", null, 1200, 12, "MENSUALISE", membreId, compteId);
-
-        List<JsonNode> recap = comptesRecap(token, foyerId, scenarioId, 2025, 1, membreId);
-        JsonNode c = recap.get(0);
-        assertThat(c.get("soldeRestant").asDouble()).isCloseTo(-1000.0, within(0.01));
-        // Trésorerie cumulée = 5000 - 1000 = 4000 > 0 -> pas d'insuffisance malgré le mois négatif.
-        assertThat(c.get("insuffisant").asBoolean()).isFalse();
-        assertThat(c.get("montantManquant").asDouble()).isCloseTo(0.0, within(0.01));
-    }
-
-    @Test
-    @DisplayName("Timeline trésorerie : chaîne solde initial + soldes restants mensuels sur nbMois, mois courant et 2 mois futurs inclus")
-    void timelineTresorerieChainee() throws Exception {
-        String token = creerEtLogin("treso_ok@test.ch");
-        String foyerId = creerFoyer(token, "Foyer Treso");
-        String membreId = premierMembreId(token, foyerId);
-        String scenarioId = creerScenario(token, foyerId, membreId);
-        String compteId = creerCompte(token, foyerId, membreId, "Compte treso", 1000);
-
-        String catRevenu = creerCategorie(token, foyerId, "Salaire", "REVENU");
-        creerPoste(token, foyerId, scenarioId, catRevenu, "REVENU", "2025-01-01", null, 500, 1, "MENSUALISE", membreId, compteId);
-
-        List<JsonNode> treso = comptesTresorerie(token, foyerId, scenarioId, 2025, 3, membreId, 6);
-        assertThat(treso).hasSize(1);
-        List<JsonNode> points = new ArrayList<>();
-        treso.get(0).get("points").forEach(points::add);
-        // Fenêtre demandée mars (M-3..M+2) = Jan..Mai, mais scenario ne commence qu'en
-        // janvier -> 5 points dispo (nbMois=6 borné par l'historique disponible).
-        assertThat(points).hasSize(5);
-        assertThat(points.get(0).get("tresorerieCumulee").asDouble()).isCloseTo(1500.0, within(0.01)); // Jan : 1000 + 500
-        assertThat(points.get(1).get("tresorerieCumulee").asDouble()).isCloseTo(2000.0, within(0.01)); // Fev
-        assertThat(points.get(2).get("tresorerieCumulee").asDouble()).isCloseTo(2500.0, within(0.01)); // Mar (mois demandé)
-        assertThat(points.get(3).get("tresorerieCumulee").asDouble()).isCloseTo(3000.0, within(0.01)); // Avr (futur)
-        assertThat(points.get(4).get("tresorerieCumulee").asDouble()).isCloseTo(3500.0, within(0.01)); // Mai (futur)
-    }
-
-
-    @Test
-    @DisplayName("Compte primaire configuré : comble le manque de trésorerie ce mois (topUp), pas d'insuffisance")
+    @DisplayName("Compte primaire configuré : comble le manque de trésorerie ce mois (topUp)")
     void comblementViaComptePrimaire() throws Exception {
         String token = creerEtLogin("primaire_topup@test.ch");
         String foyerId = creerFoyer(token, "Foyer Primaire TopUp");
@@ -192,15 +133,13 @@ class ComptesRecapIT {
         JsonNode cible = trouverCompte(recap, compteCible);
         JsonNode primaire = trouverCompte(recap, comptePrimaireId);
 
-        // virementsEntrants = base(100) + topUp(1100) = 1200 -> soldeRestant = 0, plus insuffisant
+        // virementsEntrants = base(100) + topUp(1100) = 1200 -> soldeRestant = 0
         assertThat(cible.get("virementsEntrants").asDouble()).isCloseTo(1200.0, within(0.01));
         assertThat(cible.get("soldeRestant").asDouble()).isCloseTo(0.0, within(0.01));
-        assertThat(cible.get("insuffisant").asBoolean()).isFalse();
 
         // Le primaire fournit exactement ce virement en sortant
         assertThat(primaire.get("virementsSortants").asDouble()).isCloseTo(1200.0, within(0.01));
         assertThat(primaire.get("soldeRestant").asDouble()).isCloseTo(-1200.0, within(0.01));
-        assertThat(primaire.get("insuffisant").asBoolean()).isTrue();
     }
 
     @Test
@@ -247,8 +186,8 @@ class ComptesRecapIT {
     }
 
     @Test
-    @DisplayName("Le compte primaire lui-même peut devenir insuffisant s'il ne peut pas tout financer")
-    void comptePrimaireLuiMemeInsuffisant() throws Exception {
+    @DisplayName("Le compte primaire lui-même peut avoir un solde restant négatif s'il ne peut pas tout financer")
+    void comptePrimaireLuiMemeDeficitaire() throws Exception {
         String token = creerEtLogin("primaire_insuffisant@test.ch");
         String foyerId = creerFoyer(token, "Foyer Primaire Insuffisant");
         String membreId = premierMembreId(token, foyerId);
@@ -270,13 +209,10 @@ class ComptesRecapIT {
         JsonNode commun = trouverCompte(recap, compteCommun);
 
         assertThat(commun.get("soldeRestant").asDouble()).isCloseTo(0.0, within(0.01));
-        assertThat(commun.get("insuffisant").asBoolean()).isFalse();
 
-        // Le primaire encaisse 3000 mais doit sortir 3500 -> insuffisant de 500
+        // Le primaire encaisse 3000 mais doit sortir 3500 -> solde restant négatif de 500
         assertThat(primaire.get("virementsSortants").asDouble()).isCloseTo(3500.0, within(0.01));
         assertThat(primaire.get("soldeRestant").asDouble()).isCloseTo(-500.0, within(0.01));
-        assertThat(primaire.get("insuffisant").asBoolean()).isTrue();
-        assertThat(primaire.get("montantManquant").asDouble()).isCloseTo(500.0, within(0.01));
     }
 
     @Test
@@ -344,7 +280,7 @@ class ComptesRecapIT {
     }
 
     @Test
-    @DisplayName("Accès inter-foyers refusé (403) sur comptes-recap et comptes-tresorerie")
+    @DisplayName("Accès inter-foyers refusé (403) sur comptes-recap")
     void accesInterFoyersRefuse() {
         String tokenA = creerEtLogin("recap_a@test.ch");
         String foyerAId = creerFoyer(tokenA, "Foyer A Recap");
@@ -357,14 +293,6 @@ class ComptesRecapIT {
         assertThatThrownBy(() -> client.get()
                 .uri("/api/foyers/" + foyerAId + "/scenarios/" + scenarioId
                         + "/projection/comptes-recap?annee=2025&mois=1&membreId=" + membreAId)
-                .header("Authorization", "Bearer " + tokenB)
-                .retrieve().toBodilessEntity())
-                .isInstanceOfSatisfying(HttpClientErrorException.class,
-                        ex -> assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
-
-        assertThatThrownBy(() -> client.get()
-                .uri("/api/foyers/" + foyerAId + "/scenarios/" + scenarioId
-                        + "/projection/comptes-tresorerie?annee=2025&mois=1&membreId=" + membreAId)
                 .header("Authorization", "Bearer " + tokenB)
                 .retrieve().toBodilessEntity())
                 .isInstanceOfSatisfying(HttpClientErrorException.class,
@@ -605,22 +533,6 @@ class ComptesRecapIT {
             String body = client.get()
                     .uri("/api/foyers/" + foyerId + "/scenarios/" + scenarioId
                             + "/projection/comptes-recap?annee=" + annee + "&mois=" + mois + "&membreId=" + membreId)
-                    .header("Authorization", "Bearer " + token)
-                    .retrieve().body(String.class);
-            JsonNode arr = MAPPER.readTree(body);
-            List<JsonNode> result = new ArrayList<>();
-            arr.forEach(result::add);
-            return result;
-        } catch (Exception e) { throw new RuntimeException(e); }
-    }
-
-    private List<JsonNode> comptesTresorerie(String token, String foyerId, String scenarioId, int annee, int mois,
-                                              String membreId, int nbMois) {
-        try {
-            String body = client.get()
-                    .uri("/api/foyers/" + foyerId + "/scenarios/" + scenarioId
-                            + "/projection/comptes-tresorerie?annee=" + annee + "&mois=" + mois
-                            + "&membreId=" + membreId + "&nbMois=" + nbMois)
                     .header("Authorization", "Bearer " + token)
                     .retrieve().body(String.class);
             JsonNode arr = MAPPER.readTree(body);

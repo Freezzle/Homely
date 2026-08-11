@@ -27,11 +27,6 @@ import java.util.UUID;
  * @param virementsSortants    montant que la part du membre sur ce compte doit fournir ce mois pour
  *                             financer ses propres postes ventilés sur d'autres comptes dont celui-ci est son primaire
  * @param soldeRestant         entrees + virementsEntrants − sortiesEchues − virementsSortants
- * @param insuffisant          {@code true} si la trésorerie cumulée du compte (buffer des mois
- *                             précédents inclus) devient négative ce mois — un mois déficitaire
- *                             absorbé par l'épargne accumulée n'est pas signalé comme insuffisant
- * @param montantManquant      montant supplémentaire à virer sur ce compte pour ramener sa
- *                             trésorerie cumulée à zéro si {@code insuffisant} (0 sinon)
  */
 public record CompteRecapMensuelDto(
         UUID compteId,
@@ -41,7 +36,5 @@ public record CompteRecapMensuelDto(
         BigDecimal sortiesPlanifiees,
         BigDecimal sortiesEchues,
         BigDecimal virementsSortants,
-        BigDecimal soldeRestant,
-        boolean insuffisant,
-        BigDecimal montantManquant
+        BigDecimal soldeRestant
 ) {}

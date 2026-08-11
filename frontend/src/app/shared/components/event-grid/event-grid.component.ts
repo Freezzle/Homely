@@ -17,10 +17,21 @@ interface EventGridGroup {
 export class EventGridComponent {
   readonly items = input.required<TimelineItem[]>();
   readonly devise = input<string>('CHF');
+  /** `'grouped'` (défaut) : sections par date (`when`), comme dans l'onglet d'origine.
+   *  `'flat'` : liste simple à une colonne, sans en-tête ni compteur — utilisé quand tous
+   *  les items partagent le même `when` (ex. drawer "Événements" en vue mensuelle), pour
+   *  éviter une en-tête de section redondante. */
+  readonly layout = input<'grouped' | 'flat'>('grouped');
   readonly select = output<TimelineItem>();
 
   protected readonly groups = computed<EventGridGroup[]>(() =>
     this.regrouperConsecutifs(this.items().filter((item) => this.estAffichable(item)))
+  );
+
+  /** Items affichables à plat (mode `'flat'`), triés tels que reçus (déjà ordonnés par
+   *  l'appelant), sans regroupement par date. */
+  protected readonly itemsAPlat = computed<TimelineItem[]>(() =>
+    this.items().filter((item) => this.estAffichable(item))
   );
 
   protected impactLabel(item: TimelineItem): string | null {

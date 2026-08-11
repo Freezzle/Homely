@@ -35,14 +35,14 @@ import java.util.*;
  * </ul>
  *
  * <p><b>Vue membre</b> : le résultat exposé ({@link CompteFluxMensuel}) est <b>scopé
- * au membre demandé</b> — chaque montant (entrées, sorties, virements, solde restant,
- * trésorerie cumulée) ne reflète que sa propre part sur le compte, pas le flux de
- * caisse réel total du compte (qui regrouperait tous les co-titulaires). Le manque de
- * trésorerie ("topUp") reste calculé au niveau du compte entier pour rester
- * physiquement correct, mais seule la part du membre demandé dans ce comblement est
- * restituée. La trésorerie cumulée par membre est initialisée en répartissant le
- * solde initial du compte à parts égales entre ses co-titulaires (approximation en
- * attendant une vraie vue "foyer" regroupant le flux total du compte).</p>
+ * au membre demandé</b> — chaque montant (entrées, sorties, virements, solde restant)
+ * ne reflète que sa propre part sur le compte, pas le flux de caisse réel total du
+ * compte (qui regrouperait tous les co-titulaires). Le manque de trésorerie ("topUp")
+ * reste calculé au niveau du compte entier (trésorerie cumulée totale du compte, tous
+ * co-titulaires confondus) pour rester physiquement correct, mais cette trésorerie
+ * cumulée totale n'est qu'un résultat intermédiaire interne — jamais exposée — et sert
+ * uniquement à déterminer, mois après mois, les virements entrants/sortants simulés ;
+ * seule la part du membre demandé dans ce comblement est restituée.</p>
  */
 final class ComptesFluxSimulateur {
 
@@ -71,14 +71,10 @@ final class ComptesFluxSimulateur {
 
         Set<UUID> comptesActifsIds = new HashSet<>();
         Map<UUID, Double> cumulTotalParCompte = new LinkedHashMap<>();
-        Map<UUID, Double> cumulMembreParCompte = new LinkedHashMap<>();
         Map<UUID, List<CompteFluxMensuel>> resultat = new LinkedHashMap<>();
         for (Compte c : tousComptes) {
             comptesActifsIds.add(c.getId());
-            double soldeInitial = c.getSoldeInitial().doubleValue();
-            cumulTotalParCompte.put(c.getId(), soldeInitial);
-            int nbTitulaires = Math.max(1, c.getMembres().size());
-            cumulMembreParCompte.put(c.getId(), soldeInitial / nbTitulaires);
+            cumulTotalParCompte.put(c.getId(), c.getSoldeInitial().doubleValue());
             resultat.put(c.getId(), new ArrayList<>());
         }
 
@@ -86,7 +82,7 @@ final class ComptesFluxSimulateur {
         int m = 1;
         while (y < anneeCible || (y == anneeCible && m <= moisCible)) {
             simulerMois(params, tousComptes, comptesActifsIds, primairesParMembre, membreCible,
-                    cumulTotalParCompte, cumulMembreParCompte, resultat, y, m);
+                    cumulTotalParCompte, resultat, y, m);
             if (m == 12) { m = 1; y++; } else { m++; }
         }
 
@@ -96,7 +92,7 @@ final class ComptesFluxSimulateur {
     private static void simulerMois(
             ParametresScenario params, List<Compte> tousComptes, Set<UUID> comptesActifsIds,
             Map<UUID, UUID> primairesParMembre, UUID membreCible,
-            Map<UUID, Double> cumulTotalParCompte, Map<UUID, Double> cumulMembreParCompte,
+            Map<UUID, Double> cumulTotalParCompte,
             Map<UUID, List<CompteFluxMensuel>> resultat, int annee, int mois) {
 
         VentilationsCompteDetail detail = MoteurCalcul.ventilationsCompteMembreDetail(params, annee, mois);
@@ -210,8 +206,6 @@ final class ComptesFluxSimulateur {
             double virementsSortants = virementsSortantsMembreParCompte.get(compteId);
 
             double soldeRestant = entrees + virementsEntrants - sortiesEchues - virementsSortants;
-            double cumulApres = cumulMembreParCompte.get(compteId) + soldeRestant;
-            cumulMembreParCompte.put(compteId, cumulApres);
 
             // Trésorerie totale du compte (tous co-titulaires) : gardée uniquement pour
             // alimenter correctement le comblement des mois suivants, jamais exposée.
@@ -221,7 +215,7 @@ final class ComptesFluxSimulateur {
 
             resultat.get(compteId).add(new CompteFluxMensuel(
                     compteId, annee, mois, entrees, sortiesPlanifiees, sortiesEchues,
-                    virementsEntrants, virementsSortants, soldeRestant, cumulApres));
+                    virementsEntrants, virementsSortants, soldeRestant));
         }
     }
 }
