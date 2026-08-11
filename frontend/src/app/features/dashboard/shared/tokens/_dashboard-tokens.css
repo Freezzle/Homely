@@ -1,0 +1,39 @@
+/*
+ * Tokens du dashboard (cartes d'indicateurs, sections, drawer).
+ *
+ * Contrairement au guide d'implémentation d'origine, ces variables ne sont PAS des
+ * couleurs hex figées : elles sont mappées sur les variables PrimeNG déjà exposées par
+ * le thème de l'app (preset Soho, voir app.config.ts) afin de rester cohérentes avec
+ * le reste de l'UI et de fonctionner nativement en dark mode (`.dark` sur <html>).
+ * Il n'y a pas de token "membre" ici : la couleur d'un membre est déjà dynamique
+ * (dto.couleurMembre / membre.couleur) et s'applique en style inline là où nécessaire.
+ */
+:root {
+  /* Fonds */
+  --dash-bg: var(--p-surface-50);
+  --dash-card: var(--p-content-background);
+  --dash-line: var(--p-surface-200);
+  --dash-line-2: var(--p-surface-100);
+
+  /* Encre */
+  --dash-ink: var(--p-text-color);
+  --dash-ink-2: var(--p-text-color);
+  --dash-ink-3: var(--p-text-muted-color);
+
+  /* Sémantique */
+  --dash-pos: var(--p-green-600);
+  --dash-pos-bg: color-mix(in srgb, var(--p-green-500) 15%, transparent);
+  --dash-warn: var(--p-yellow-600);
+  --dash-warn-bg: color-mix(in srgb, var(--p-yellow-500) 18%, transparent);
+  --dash-alert: var(--p-orange-600);
+  --dash-alert-bg: color-mix(in srgb, var(--p-orange-500) 15%, transparent);
+  --dash-neg: var(--p-red-600);
+  --dash-neg-bg: color-mix(in srgb, var(--p-red-500) 15%, transparent);
+  --dash-info: var(--p-primary-color);
+  --dash-info-bg: color-mix(in srgb, var(--p-primary-color) 15%, transparent);
+
+  /* Radius / espacement */
+  --dash-radius-card: 12px;
+  --dash-radius-item: 6px;
+  --dash-radius-pill: 999px;
+}

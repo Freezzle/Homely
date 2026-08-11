@@ -1,0 +1,25 @@
+@if (data(); as d) {
+  <div class="flex flex-col gap-4">
+    <div class="flex flex-wrap gap-3 justify-center">
+      <p-selectbutton
+              [options]="d.vueDecompositionOptions"
+              [ngModel]="d.vueDecomposition()"
+              (ngModelChange)="d.vueDecomposition.set($event)"
+              optionLabel="label"
+              optionValue="value"
+              [allowEmpty]="false"/>
+    </div>
+
+    <app-carte-bilan
+            [variante]="d.carteConfig().variante"
+            [nom]="d.carteConfig().nom"
+            [sousTitre]="d.carteConfig().sousTitre"
+            [couleur]="d.carteConfig().couleur"
+            [initiales]="d.carteConfig().initiales"
+            [montantPrincipal]="d.carteConfig().montantPrincipal"
+            [devise]="d.devise()"
+            [lignes]="d.carteConfig().lignes"
+            [tauxEffort]="d.carteConfig().tauxEffort"
+            [prorataPct]="d.carteConfig().prorataPct"/>
+  </div>
+}

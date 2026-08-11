@@ -1,0 +1,28 @@
+@if (data(); as d) {
+  <div class="flex flex-col gap-6">
+    <div>
+      <h3 class="m-0 mb-1 text-sm font-semibold">{{ d.labels.fluxMensuel }}</h3>
+      <p class="m-0 mb-2 text-xs text-surface-500">{{ d.labels.fluxMensuelDescription }}</p>
+      <div class="relative flex h-56 sm:h-64 md:h-[280px] w-full overflow-hidden">
+        <p-chart type="bar" [data]="$any(d.mixedChartData())" [options]="$any(d.mixedChartOptions)" class="w-full block"/>
+      </div>
+      <p class="m-0 text-xs text-surface-500">{{ d.labels.cliquezBarre }}</p>
+    </div>
+
+    <div>
+      <h3 class="m-0 mb-1 text-sm font-semibold">{{ d.labels.tresorerieTitle }}</h3>
+      <p class="m-0 mb-2 text-xs text-surface-500">{{ d.labels.tresoCumuleeDescription }}</p>
+      <div class="relative flex h-56 sm:h-64 md:h-[280px] w-full overflow-hidden">
+        <p-chart type="line" [data]="$any(d.tresorerieCumuleeData())" [options]="$any(d.tresorerieCumuleeOptions)" class="w-full block"/>
+      </div>
+    </div>
+
+    <div>
+      <h3 class="m-0 mb-1 text-sm font-semibold">{{ d.labels.prevuVsReel }}</h3>
+      <p class="m-0 mb-2 text-xs text-surface-500">{{ d.labels.prevuVsReelDescription }}</p>
+      <div class="relative flex h-56 sm:h-64 md:h-[280px] w-full overflow-hidden">
+        <p-chart type="line" [data]="$any(d.prevuVsReelData())" [options]="$any(d.prevuVsReelOptions)" class="w-full block"/>
+      </div>
+    </div>
+  </div>
+}

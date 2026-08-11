@@ -1,0 +1,14 @@
+<div class="dashboard-section">
+  <div class="dashboard-section__head">
+    <span class="dashboard-section__title">{{ title() }}</span>
+    <span class="dashboard-section__rule"></span>
+    @if (count() !== null) {
+      <span class="dashboard-section__count" [attr.data-color]="countColor()">
+        {{ count() }}
+      </span>
+    }
+  </div>
+  <div class="dashboard-section__list">
+    <ng-content />
+  </div>
+</div>

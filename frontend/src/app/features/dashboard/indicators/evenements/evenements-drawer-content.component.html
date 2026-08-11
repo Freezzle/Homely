@@ -1,0 +1,11 @@
+@if (data(); as d) {
+  @if (d.items().length) {
+    <app-event-grid
+            [items]="d.items()"
+            [devise]="d.devise()"
+            [layout]="d.layout"
+            (select)="d.onSelect($event)"/>
+  } @else {
+    <p class="m-0 text-surface-500">{{ t.dashboard.aucunEvenement }}</p>
+  }
+}

@@ -1,0 +1,7 @@
+@if (data(); as d) {
+  <app-matrice-budgetaire
+          [postes]="d.postes()"
+          [devise]="d.devise()"
+          [labels]="d.labels()"
+          [chargement]="d.chargement()"/>
+}

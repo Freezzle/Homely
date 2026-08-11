@@ -1,0 +1,6 @@
+@if (data(); as d) {
+  <app-comptes-membre-recap
+          [recaps]="d.recaps()"
+          [devise]="d.devise()"
+          [chargement]="d.chargement()"/>
+}

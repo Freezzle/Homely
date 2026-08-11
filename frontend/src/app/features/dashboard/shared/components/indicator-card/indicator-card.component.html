@@ -1,0 +1,25 @@
+<div class="indicator-card" (click)="cardClick.emit()" (keyup.enter)="cardClick.emit()" tabindex="0" role="button">
+  <div class="indicator-card__icon" [attr.data-color]="iconColor()">
+    <i [class]="icon()"></i>
+  </div>
+
+  <div class="indicator-card__body">
+    <div class="indicator-card__title">{{ title() }}</div>
+    @if (subtitle()) {
+      <div class="indicator-card__subtitle">{{ subtitle() }}</div>
+    }
+  </div>
+
+  <div class="indicator-card__right">
+    <!-- Contenu par défaut : info + infoSubtitle. Peut être remplacé par une projection riche. -->
+    <ng-content select="[card-info]">
+      <div class="indicator-card__info" [attr.data-color]="infoColor()">{{ info() }}</div>
+    </ng-content>
+
+    @if (infoSubtitle()) {
+      <div class="indicator-card__info-subtitle">{{ infoSubtitle() }}</div>
+    }
+  </div>
+
+  <span class="indicator-card__chevron">›</span>
+</div>

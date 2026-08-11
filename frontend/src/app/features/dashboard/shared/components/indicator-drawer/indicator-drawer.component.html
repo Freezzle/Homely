@@ -1,0 +1,32 @@
+<p-drawer
+        [visible]="drawer.isOpen()"
+        (visibleChange)="onVisibleChange($event)"
+        position="right"
+        [modal]="true"
+        [showCloseIcon]="false"
+        styleClass="indicator-drawer">
+
+    <div class="indicator-drawer__head">
+        <div class="indicator-drawer__heading">
+            <div class="indicator-drawer__label">{{ drawer.sectionLabel() }}</div>
+            <h2 class="indicator-drawer__title">{{ drawer.title() }}</h2>
+        </div>
+        <button
+                type="button"
+                class="indicator-drawer__close"
+                (click)="drawer.close()"
+                aria-label="Fermer">
+            <i class="pi pi-times"></i>
+        </button>
+    </div>
+
+    <div class="indicator-drawer__body">
+        @if (drawer.content(); as contentCmp) {
+            <ng-container *ngComponentOutlet="contentCmp; inputs: contentInputs()" />
+        }
+    </div>
+
+    <div class="indicator-drawer__foot">
+        <button pButton severity="secondary" (click)="drawer.close()">Fermer</button>
+    </div>
+</p-drawer>

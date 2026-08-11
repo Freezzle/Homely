@@ -1,0 +1,26 @@
+.dashboard-section {
+  &__head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 4px 6px;
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--dash-ink-3); font-weight: 700;
+  }
+  &__title { flex-shrink: 0; }
+  &__rule { flex: 1; height: 1px; background: var(--dash-line); }
+  &__count {
+    padding: 2px 6px; border-radius: var(--dash-radius-pill);
+    font-size: 9px; font-weight: 700;
+    background: var(--dash-line-2); color: var(--dash-ink-2);
+
+    &[data-color="warn"] { background: var(--dash-alert-bg); color: var(--dash-alert); }
+    &[data-color="pos"]  { background: var(--dash-pos-bg);   color: var(--dash-pos); }
+    &[data-color="info"] { background: var(--dash-info-bg);  color: var(--dash-info); }
+  }
+
+  &__list {
+    background: var(--dash-card);
+    border: 1px solid var(--dash-line);
+    border-radius: var(--dash-radius-card);
+    overflow: hidden;
+  }
+}
