@@ -59,7 +59,13 @@ export class SidebarMenuComponent {
             })),
           ],
         }
-      : { label: this.t.nav.dashboard, icon: 'pi pi-chart-line', route: `${dashboardBase}/foyer` };
+      : {
+          label: this.t.nav.dashboard,
+          icon: 'pi pi-chart-line',
+          // Cas mono-membre : le menu s'appelle toujours "Tableau de bord", mais pointe
+          // directement sur le dashboard du membre unique (et non celui du foyer).
+          route: membres.length === 1 ? `${dashboardBase}/${membres[0].id}` : `${dashboardBase}/foyer`,
+        };
 
     const sections: NavSection[] = [
       {

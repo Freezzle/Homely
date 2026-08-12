@@ -138,11 +138,17 @@ export class DashboardComponent {
 
   /** Si `sujetId` ne correspond à aucun membre connu du foyer (une fois les membres
    *  chargés), on redirige silencieusement vers la vue foyer plutôt que d'afficher une
-   *  page vide/incohérente. */
+   *  page vide/incohérente. La vue "foyer" n'a de sens qu'à partir de 2 membres : en
+   *  mono-membre, on force systématiquement le dashboard du membre unique. */
   private readonly _redirectSiSujetInvalideEffect = effect(() => {
     const id = this.sujetId();
     const membres = this.membres();
-    if (id === 'foyer' || membres.length === 0) return;
+    if (membres.length === 0) return;
+    if (membres.length === 1) {
+      if (id !== membres[0].id) untracked(() => this.naviguerVersSujet(membres[0].id));
+      return;
+    }
+    if (id === 'foyer') return;
     if (membres.some((m) => m.id === id)) return;
     untracked(() => this.naviguerVersSujet('foyer'));
   });
