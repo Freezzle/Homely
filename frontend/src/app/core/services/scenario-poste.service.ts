@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { ScenarioDto, ScenarioRequest, PosteDto, PosteRequest, PosteRevisionRequest, PosteRevisionResponse,
          PosteClotureRequest, PosteDecalerDateEffetRequest, PosteDecalerDateEffetResponse,
          PosteActionGroupeeRequest, PosteSuppressionGroupeeRequest, PostePositionneDto,
+         BesoinsPlaisirsDto,
          ObjectifDto, ObjectifRequest, RepartitionPeriodeDto, RepartitionPeriodeRequest } from '../models/api.models';
 
 @Injectable({ providedIn: 'root' })
@@ -68,15 +69,29 @@ export class PosteService {
       `${this.base(foyerId, scenarioId)}/supprimer-groupe`, req
     );
   }
-  /** Matrice budgétaire "Nécessité vs Priorité d'action" (dashboard annuel) : postes
-   *  déjà filtrés (non obsolètes, dédupliqués par chaîne de révisions) et positionnés
-   *  (scores 0-100, poids du montant, quadrant) côté serveur. Si `membreId` est fourni,
-   *  ne renvoie que les postes qui le concernent. */
-  matriceBudgetaire(foyerId: string, scenarioId: string, annee: number, membreId?: string) {
+  /** Matrice budgétaire "Nécessité vs Priorité d'action" (dashboard annuel et mensuel) :
+   *  postes déjà filtrés (non obsolètes, dédupliqués par chaîne de révisions) et
+   *  positionnés (scores 0-100, poids du montant, quadrant) côté serveur. `mois` absent
+   *  -> cumul annuel ; sinon ne considère que ce mois (postes actifs ce mois-là,
+   *  montant réel de ce seul mois). Si `membreId` est fourni, ne renvoie que les postes
+   *  qui le concernent. */
+  matriceBudgetaire(foyerId: string, scenarioId: string, annee: number, mois?: number, membreId?: string) {
     const params: Record<string, string | number> = { annee };
+    if (mois !== undefined) { params['mois'] = mois; }
     if (membreId) { params['membreId'] = membreId; }
     return this.http.get<PostePositionneDto[]>(
       `${this.base(foyerId, scenarioId)}/matrice-budgetaire`, { params }
+    );
+  }
+  /** Indicateur dashboard "Plaisirs vs Besoins" : répartition des charges pour la
+   *  période demandée. `mois` absent -> cumul annuel ; sinon uniquement ce mois. Si
+   *  `membreId` est fourni, ne compte que la quote-part effective du membre. */
+  besoinsPlaisirs(foyerId: string, scenarioId: string, annee: number, mois?: number, membreId?: string) {
+    const params: Record<string, string | number> = { annee };
+    if (mois !== undefined) { params['mois'] = mois; }
+    if (membreId) { params['membreId'] = membreId; }
+    return this.http.get<BesoinsPlaisirsDto>(
+      `${this.base(foyerId, scenarioId)}/besoins-plaisirs`, { params }
     );
   }
 }

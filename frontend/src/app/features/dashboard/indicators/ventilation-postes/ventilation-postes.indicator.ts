@@ -22,6 +22,7 @@ export function ventilationPostesIndicator(
     icon: 'pi pi-chart-pie',
     iconColor: 'gray',
     title: t.dashboard.indicateurVentilationPostesTitre,
+    subtitle: t.dashboard.indicateurVentilationPostesSousTitre,
     info: soldeRestantFormate,
     infoColor,
     infoSubtitle: t.dashboard.soldeRestant,

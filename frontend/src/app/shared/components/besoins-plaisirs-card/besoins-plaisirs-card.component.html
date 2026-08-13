@@ -1,0 +1,58 @@
+<p-card>
+  <div class="status-row status-row-end">
+    @if (montantTotal() > 0) {
+      <p-tag [value]="labelMap()[zoneBudget()]" [severity]="severityMap[zoneBudget()]"></p-tag>
+    } @else {
+      <p-tag [value]="t.dashboard.besoinsPlaisirsNA" severity="secondary"></p-tag>
+    }
+  </div>
+
+  @if (montantTotal() > 0) {
+      <div class="espace-budget">
+        <span class="espace-budget-label">{{ t.dashboard.besoinsPlaisirsEspaceBudget }}</span>
+        <app-metric-bar
+          [segments]="barSegments()"
+          [leadLabel]="t.dashboard.besoinsPlaisirsRevenusTotal"
+          [leadValue]="data().revenusTotal | montant : data().devise" />
+      </div>
+
+      <div class="breakdown">
+        <span>{{ t.dashboard.besoinsPlaisirsBesoins }}&nbsp;: <strong>{{ data().montantBesoins | montant : data().devise }}</strong></span>
+        <span>{{ t.dashboard.besoinsPlaisirsPlaisirs }}&nbsp;: <strong>{{ data().montantPlaisirs | montant : data().devise }}</strong></span>
+      </div>
+
+      <p class="zone-message" [class.zone-message-eleve]="zoneBudget() === 'ELEVE'">{{ message() }}</p>
+
+      <p-divider />
+
+      <div class="postes-besoins">
+        <span class="postes-besoins-titre">{{ t.dashboard.besoinsPlaisirsListeTitre }}</span>
+        @if (data().postesBesoins.length === 0) {
+          <span class="postes-besoins-vide">{{ t.dashboard.besoinsPlaisirsListeVide }}</span>
+        } @else {
+          <ul class="postes-besoins-liste" role="list">
+            @for (poste of data().postesBesoins; track poste.description + poste.montant) {
+              <li class="poste-besoin-row">
+                <span class="poste-besoin-necessite">
+                  <i class="pi pi-heart-fill"
+                     [class.text-surface-400]="poste.necessite === 1"
+                     [class.text-blue-400]="poste.necessite === 2"
+                     [class.text-amber-500]="poste.necessite === 4"
+                     [class.text-red-500]="poste.necessite === 5"
+                     [attr.title]="poste.necessite"
+                     aria-hidden="true"></i>
+                </span>
+                <span class="poste-besoin-description">{{ poste.description }}</span>
+                <span class="poste-besoin-montant">{{ poste.montant | montant : data().devise }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+  } @else {
+    <div class="na-block">
+      <span class="na-value">{{ t.dashboard.besoinsPlaisirsNA }}</span>
+      <span class="na-reason">{{ t.dashboard.besoinsPlaisirsNaRaison }}</span>
+    </div>
+  }
+</p-card>

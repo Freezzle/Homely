@@ -135,10 +135,6 @@ export class TauxEffortCardComponent {
 
   readonly message = computed(() => this.messageMap()[this.zone()]);
 
-  readonly titre = computed(() => this.afficherNom()
-    ? this.t.projection.effortCardTitrePrefixe
-    : this.t.projection.effortCardTitreSansNom);
-
   readonly ariaLabel = computed(() => {
     const d = this.data();
     const nom = d.membre.nom;

@@ -1,0 +1,21 @@
+@if (data(); as d) {
+  <div class="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 mb-4">
+    <app-metric-ring
+            [segments]="d.ringSegments()"
+            [centerValue]="d.ringCenterValue()"
+            [centerLabel]="d.ringCenterLabel"/>
+  </div>
+
+  @if (d.moisARisque().length) {
+    <ul class="m-0 p-0 flex flex-col justify-center gap-2 list-none">
+      @for (item of d.moisARisque(); track item.label) {
+        <li class="flex items-center justify-between gap-3 py-1">
+          <span>{{ item.label }}</span>
+          <span class="font-bold" style="color: var(--p-red-500)">{{ item.soldeDisponible | montant: d.devise() }}</span>
+        </li>
+      }
+    </ul>
+  } @else {
+    <p class="m-0 text-surface-500 flex justify-center">{{ t.dashboard.indicateurMoisARisqueAucun }}</p>
+  }
+}

@@ -2,24 +2,14 @@
   display: block;
 }
 
-.card-head {
+// Ligne de statut en tête de corps de carte (tag membre + badge de zone) — remplace
+// l'ancien en-tête de `p-card` (redondant avec le titre déjà affiché par le drawer).
+.status-row {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
-  padding: 1rem 1rem;
-}
-
-.card-title {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.card-subtitle {
-  margin: 2px 0 0;
-  font-size: 12px;
-  color: var(--text-color-secondary);
+  margin-bottom: 0.75rem;
 }
 
 .gauge-section {

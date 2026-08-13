@@ -15,6 +15,7 @@ export function evolutionGraphiqueIndicator(t: AppTranslations): Indicator {
     icon: 'pi pi-chart-line',
     iconColor: 'gray',
     title: t.dashboard.indicateurEvolutionGraphiqueTitre,
+    subtitle: t.dashboard.indicateurEvolutionGraphiqueSousTitre,
     info: String(NOMBRE_GRAPHIQUES),
     infoColor: 'gray',
     infoSubtitle: t.dashboard.indicateurEvolutionGraphiqueInfoSousTitre,

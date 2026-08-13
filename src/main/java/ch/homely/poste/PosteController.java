@@ -1,5 +1,6 @@
 package ch.homely.poste;
 
+import ch.homely.poste.dto.BesoinsPlaisirsDto;
 import ch.homely.poste.dto.PosteActionGroupeeRequest;
 import ch.homely.poste.dto.PosteClotureRequest;
 import ch.homely.poste.dto.PosteDecalerDateEffetRequest;
@@ -27,12 +28,15 @@ public class PosteController {
     private final PosteService posteService;
     private final PosteValidator posteValidator;
     private final MatriceBudgetaireService matriceBudgetaireService;
+    private final BesoinsPlaisirsService besoinsPlaisirsService;
 
     public PosteController(PosteService posteService, PosteValidator posteValidator,
-                            MatriceBudgetaireService matriceBudgetaireService) {
+                            MatriceBudgetaireService matriceBudgetaireService,
+                            BesoinsPlaisirsService besoinsPlaisirsService) {
         this.posteService = posteService;
         this.posteValidator = posteValidator;
         this.matriceBudgetaireService = matriceBudgetaireService;
+        this.besoinsPlaisirsService = besoinsPlaisirsService;
     }
 
     @InitBinder("posteRequest")
@@ -51,16 +55,35 @@ public class PosteController {
         return posteService.obtenir(foyerId, scenarioId, posteId);
     }
 
-    /** Postes "à optimiser en priorité" (dashboard annuel) : postes CHARGE/RESERVE non
-     *  obsolètes de l'année, dédupliqués par chaîne de révisions, classés par score
-     *  unique (0-100) et tronqués aux {@value MatriceBudgetaireService#TOP_N} premiers —
-     *  tout calculé côté serveur. Si {@code membreId} est fourni, ne renvoie que les
-     *  postes qui le concernent. */
+    /** Postes "à optimiser en priorité" (dashboard annuel et mensuel) : postes
+     *  CHARGE/RESERVE non obsolètes de la période, dédupliqués par chaîne de révisions,
+     *  classés par score unique (0-100) et tronqués aux
+     *  {@value MatriceBudgetaireService#TOP_N} premiers — tout calculé côté serveur. Si
+     *  {@code mois} est fourni, ne considère que ce mois (postes actifs ce mois-là,
+     *  montant réel de ce seul mois) ; sinon cumule les 12 mois de {@code annee}. Si
+     *  {@code membreId} est fourni, ne renvoie que les postes qui le concernent. */
     @GetMapping("/matrice-budgetaire")
     public List<PostePositionneDto> matriceBudgetaire(@PathVariable UUID foyerId, @PathVariable UUID scenarioId,
                                                         @RequestParam int annee,
+                                                        @RequestParam(required = false) Integer mois,
                                                         @RequestParam(required = false) UUID membreId) {
-        return matriceBudgetaireService.calculer(foyerId, scenarioId, annee, membreId);
+        return mois != null
+                ? matriceBudgetaireService.calculerMois(foyerId, scenarioId, annee, mois, membreId)
+                : matriceBudgetaireService.calculerAnnee(foyerId, scenarioId, annee, membreId);
+    }
+
+    /** Indicateur dashboard "Plaisirs vs Besoins" : répartition des charges (necessite
+     *  1-3 = Plaisirs, 4-5 = Besoins) sur la période demandée. {@code mois} absent ⇒
+     *  cumul annuel ; sinon uniquement ce mois. Si {@code membreId} est fourni, ne
+     *  compte que la quote-part effective du membre. */
+    @GetMapping("/besoins-plaisirs")
+    public BesoinsPlaisirsDto besoinsPlaisirs(@PathVariable UUID foyerId, @PathVariable UUID scenarioId,
+                                               @RequestParam int annee,
+                                               @RequestParam(required = false) Integer mois,
+                                               @RequestParam(required = false) UUID membreId) {
+        return mois != null
+                ? besoinsPlaisirsService.calculerMois(foyerId, scenarioId, annee, mois, membreId)
+                : besoinsPlaisirsService.calculerAnnee(foyerId, scenarioId, annee, membreId);
     }
 
     @PostMapping

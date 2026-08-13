@@ -1,25 +1,19 @@
 <p-card [attr.aria-label]="ariaLabel()">
-  <ng-template #header>
-    <div class="card-head">
-      <div>
-        <h3 class="card-title">
-          {{ titre() }}
-          @if (afficherNom()) {
-            <app-tag [couleur]="data().membre.couleur" [texte]="data().membre.nom" />
-          }
-        </h3>
-        <p class="card-subtitle">{{ t.projection.effortCardSousTitre }}</p>
-      </div>
-      @if (data().revenusTotal > 0) {
-        <p-tag
-          [value]="labelMap()[zone()]"
-          [severity]="severityMap[zone()]">
-        </p-tag>
-      } @else {
-        <p-tag [value]="t.projection.effortCardZoneNA" severity="secondary"></p-tag>
-      }
-    </div>
-  </ng-template>
+  <div class="status-row">
+    @if (afficherNom()) {
+      <app-tag [couleur]="data().membre.couleur" [texte]="data().membre.nom" />
+    } @else {
+      <span></span>
+    }
+    @if (data().revenusTotal > 0) {
+      <p-tag
+        [value]="labelMap()[zone()]"
+        [severity]="severityMap[zone()]">
+      </p-tag>
+    } @else {
+      <p-tag [value]="t.projection.effortCardZoneNA" severity="secondary"></p-tag>
+    }
+  </div>
 
   @if (data().revenusTotal > 0) {
     <div>

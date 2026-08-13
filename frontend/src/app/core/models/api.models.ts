@@ -141,6 +141,22 @@ export interface PostePositionneDto {
   score: number; rang: number;
 }
 
+// ── Indicateur dashboard "Plaisirs vs Besoins" ──
+// Répartition des charges (nécessité 1-3 = Plaisirs, 4-5 = Besoins) — voir
+// BesoinsPlaisirsService. Le taux de plaisirs est calculé côté frontend, pas ici.
+export interface PosteBesoinDto {
+  id: string;
+  description: string;
+  necessite: number;
+  montant: number;
+}
+
+export interface BesoinsPlaisirsDto {
+  montantBesoins: number;
+  montantPlaisirs: number;
+  postesBesoins: PosteBesoinDto[];
+}
+
 // ── Actions groupées sur postes ────────────────────────────────────────────
 export type ChampGroupable = 'CATEGORIE' | 'IMPORTANCE' | 'POTENTIEL_OPTIMISATION';
 

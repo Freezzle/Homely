@@ -13,8 +13,6 @@ import { ObjectifService, PosteService } from '../../core/services/scenario-post
 import { DecompositionService, VentilationLike } from '../../core/services/decomposition.service';
 import {
   AggregatDto,
-  CategorieDto,
-  CompteDto,
   CompteRecapMensuelDto,
   EvenementDto,
   MembreDto,
@@ -22,8 +20,6 @@ import {
   ObjectifDto,
   PosteDto,
   PostePositionneDto,
-  ProjectionAnnuelleDto,
-  ScenarioDto,
   TauxEffortMembreDto,
   TypeCategorie,
   TypePoste,
@@ -35,16 +31,13 @@ import { ViewportService } from '../../core/services/viewport.service';
 import { creerChargementReactif } from '../../core/utils/reference-data.util';
 import { parseIsoDateLocal } from '../../core/utils/date.util';
 import { LigneDecomposition, MembreTagInfo } from '../../shared/components/carte-bilan/carte-bilan.component';
-import { TauxEffortCardComponent, TauxEffortCardData } from '../../shared/components/taux-effort-card/taux-effort-card.component';
-import { KpiChipRowComponent } from '../../shared/components/kpi-chip-row/kpi-chip-row.component';
+import { TauxEffortCardData } from '../../shared/components/taux-effort-card/taux-effort-card.component';
 import { KpiChip } from '../../shared/components/kpi-chip/kpi-chip.component';
-import { MetricRingComponent, MetricRingSegment } from '../../shared/components/metric-ring/metric-ring.component';
+import { MetricRingSegment } from '../../shared/components/metric-ring/metric-ring.component';
 import { MetricBarComponent, MetricBarSegment } from '../../shared/components/metric-bar/metric-bar.component';
-import { ObjectiveProgressComponent, ObjectiveProgressSeverity } from '../../shared/components/objective-progress/objective-progress.component';
+import { ObjectiveProgressSeverity } from '../../shared/components/objective-progress/objective-progress.component';
 import { PageNavComponent, PageNavMonthSummary, PageNavSelection } from '../../shared/components/page-nav/page-nav.component';
-import { StatGridComponent, StatGridStatusTag, StatItem } from '../../shared/components/stat-grid/stat-grid.component';
-import { TabGroupComponent } from '../../shared/components/tab-group/tab-group.component';
-import { TabPanelComponent } from '../../shared/components/tab-group/tab-panel.component';
+import { StatGridStatusTag } from '../../shared/components/stat-grid/stat-grid.component';
 import { TimelineItem } from '../../shared/components/timeline/timeline.component';
 import { MatriceBudgetaireLabels } from '../../shared/components/matrice-budgetaire/matrice-budgetaire.component';
 import { DashboardSectionComponent } from './shared/components/dashboard-section/dashboard-section.component';
@@ -63,6 +56,12 @@ import { evenementsIndicator } from './indicators/evenements/evenements.indicato
 import { EvenementsDrawerData } from './indicators/evenements/evenements-drawer-content.component';
 import { virementsComptesIndicator } from './indicators/virements-comptes/virements-comptes.indicator';
 import { VirementsComptesDrawerData } from './indicators/virements-comptes/virements-comptes-drawer-content.component';
+import { besoinsPlaisirsIndicator } from './indicators/besoins-plaisirs/besoins-plaisirs.indicator';
+import { BesoinsPlaisirsCardData } from '../../shared/components/besoins-plaisirs-card/besoins-plaisirs-card.component';
+import { moisARisqueIndicator } from './indicators/mois-a-risque/mois-a-risque.indicator';
+import { MoisARisqueDrawerData, MoisARisqueItem } from './indicators/mois-a-risque/mois-a-risque-drawer-content.component';
+import { ChartModule } from 'primeng/chart';
+import { KpiChipRowComponent } from '../../shared/components/kpi-chip-row/kpi-chip-row.component';
 
 type StatutObjectif = 'DANS_LES_TEMPS' | 'EN_RETARD' | 'ATTEINT';
 type DashboardTimelineItem = TimelineItem & { mois: number };
@@ -82,19 +81,13 @@ const ZERO_AGREGAT: { revenus: number; charges: number; reserves: number; soldeD
     CardModule,
     SkeletonModule,
     TagModule,
-    TauxEffortCardComponent,
-    KpiChipRowComponent,
-
-    MetricRingComponent,
     MetricBarComponent,
-    ObjectiveProgressComponent,
     PageNavComponent,
-    StatGridComponent,
-    TabGroupComponent,
-    TabPanelComponent,
     DashboardSectionComponent,
     IndicatorCardComponent,
     IndicatorDrawerComponent,
+    ChartModule,
+    KpiChipRowComponent,
   ],
   templateUrl: './dashboard.component.html',
 })
@@ -238,7 +231,7 @@ export class DashboardComponent {
    *  calculé côté serveur par `MatriceBudgetaireService`, ce composant ne fait plus que
    *  transmettre les données reçues au composant partagé `app-matrice-budgetaire`. */
   private readonly _matriceBudgetaire = creerChargementReactif(this._evenementsCle, ({ foyerId, scenarioId, annee, membreId }) =>
-    this.posteSvc.matriceBudgetaire(foyerId, scenarioId, annee, membreId),
+    this.posteSvc.matriceBudgetaire(foyerId, scenarioId, annee, undefined, membreId),
   );
 
   readonly postesMatriceAnnee = computed<PostePositionneDto[]>(() => this._matriceBudgetaire.donnees() ?? []);
@@ -358,9 +351,10 @@ export class DashboardComponent {
     ];
   });
 
-  /** Section "Comment se passe cette année" : Taux d'effort par membre (vue membre
-   *  uniquement) + Événements de l'année. */
+  /** Section "Comment se passe cette année" : Mois à risque (anneau + compteur) + Taux
+   *  d'effort par membre (vue membre uniquement) + Événements de l'année. */
   readonly commentSePasseIndicateursAnnee = computed(() => [
+    this.moisARisqueIndicateurAnnee(),
     ...this.tauxEffortIndicateursAnnee(),
     this.evenementsIndicateurAnnee(),
   ]);
@@ -417,6 +411,82 @@ export class DashboardComponent {
     data: this.ventilationPostesDataAnnee(),
   }));
 
+  /** Clé de chargement "Postes à optimiser" (vue mois) — mêmes coordonnées que
+   *  `_ventilationsMoisCle`, avec en plus le membre courant (undefined = foyer entier,
+   *  quote-part 1 côté serveur — voir `MatriceBudgetaireService`). */
+  private readonly _matriceBudgetaireMoisCle = computed<{ foyerId: string; scenarioId: string; annee: number; mois: number; membreId?: string } | null>(() => {
+    const cle = this._ventilationsMoisCle();
+    const s = this.sujet();
+    return cle ? { ...cle, membreId: s.mode === 'membre' ? s.membreId : undefined } : null;
+  });
+
+  /** Matrice budgétaire scopée au mois courant (dashboard mensuel) : mêmes postes
+   *  filtrés/positionnés que la variante annuelle (`postesMatriceAnnee`), mais calculés
+   *  côté serveur uniquement sur le mois sélectionné (postes actifs ce mois-là, montant
+   *  réel de ce seul mois — pas annualisé). */
+  private readonly _matriceBudgetaireMois = creerChargementReactif(this._matriceBudgetaireMoisCle, ({ foyerId, scenarioId, annee, mois, membreId }) =>
+    this.posteSvc.matriceBudgetaire(foyerId, scenarioId, annee, mois, membreId),
+  );
+
+  readonly postesMatriceMois = computed<PostePositionneDto[]>(() => this._matriceBudgetaireMois.donnees() ?? []);
+
+  readonly matriceMoisChargement = computed(() => this._matriceBudgetaireMois.chargement());
+
+  /** Clé de chargement "Plaisirs vs Besoins" (vue mois) — mêmes coordonnées que
+   *  `_ventilationsMoisCle`, avec en plus le membre courant (undefined = foyer entier,
+   *  quote-part 1 côté serveur — voir `BesoinsPlaisirsService`). */
+  private readonly _besoinsPlaisirsMoisCle = computed<{ foyerId: string; scenarioId: string; annee: number; mois: number; membreId?: string } | null>(() => {
+    const cle = this._ventilationsMoisCle();
+    const s = this.sujet();
+    return cle ? { ...cle, membreId: s.mode === 'membre' ? s.membreId : undefined } : null;
+  });
+
+  private readonly _besoinsPlaisirsMois = creerChargementReactif(this._besoinsPlaisirsMoisCle, ({ foyerId, scenarioId, annee, mois, membreId }) =>
+    this.posteSvc.besoinsPlaisirs(foyerId, scenarioId, annee, mois, membreId),
+  );
+
+  /** Variante annuelle — mêmes coordonnées que `_projectionAnnuelleCle`. */
+  private readonly _besoinsPlaisirsAnneeCle = computed<{ foyerId: string; scenarioId: string; annee: number; membreId?: string } | null>(() => {
+    const cle = this._projectionAnnuelleCle();
+    const s = this.sujet();
+    return cle ? { ...cle, membreId: s.mode === 'membre' ? s.membreId : undefined } : null;
+  });
+
+  private readonly _besoinsPlaisirsAnnee = creerChargementReactif(this._besoinsPlaisirsAnneeCle, ({ foyerId, scenarioId, annee, membreId }) =>
+    this.posteSvc.besoinsPlaisirs(foyerId, scenarioId, annee, undefined, membreId),
+  );
+
+  /** Payload "Plaisirs vs Besoins" (vue mois) — `revenusTotal` réutilise
+   *  `agregatMoisCourant()` déjà auto-scopé foyer/membre, pas de nouvel appel. */
+  private readonly besoinsPlaisirsDataMois = computed<BesoinsPlaisirsCardData>(() => ({
+    montantBesoins: this._besoinsPlaisirsMois.donnees()?.montantBesoins ?? 0,
+    montantPlaisirs: this._besoinsPlaisirsMois.donnees()?.montantPlaisirs ?? 0,
+    revenusTotal: this.agregatMoisCourant().revenus,
+    devise: this.deviseBase(),
+    postesBesoins: this._besoinsPlaisirsMois.donnees()?.postesBesoins ?? [],
+  }));
+
+  private readonly besoinsPlaisirsDataAnnee = computed<BesoinsPlaisirsCardData>(() => ({
+    montantBesoins: this._besoinsPlaisirsAnnee.donnees()?.montantBesoins ?? 0,
+    montantPlaisirs: this._besoinsPlaisirsAnnee.donnees()?.montantPlaisirs ?? 0,
+    revenusTotal: this.agregatAnneeCourant().revenus,
+    devise: this.deviseBase(),
+    postesBesoins: this._besoinsPlaisirsAnnee.donnees()?.postesBesoins ?? [],
+  }));
+
+  /** Indicateur "Plaisirs vs Besoins" (vue mois) — auto-scopé foyer/membre comme
+   *  "Ventilations des postes", pas de duplication de carte par membre. */
+  readonly besoinsPlaisirsIndicateurMois = computed(() => ({
+    indicator: besoinsPlaisirsIndicator('besoins-plaisirs-mois', this.besoinsPlaisirsDataMois(), this.t),
+    data: this.besoinsPlaisirsDataMois(),
+  }));
+
+  /** Variante annuelle de l'indicateur "Plaisirs vs Besoins" (vue année). */
+  readonly besoinsPlaisirsIndicateurAnnee = computed(() => ({
+    indicator: besoinsPlaisirsIndicator('besoins-plaisirs-annee', this.besoinsPlaisirsDataAnnee(), this.t),
+    data: this.besoinsPlaisirsDataAnnee(),
+  }));
+
   /** Payload signaux transmis au drawer "Évolution graphique" (annuel uniquement). */
   private readonly evolutionGraphiqueData = computed<EvolutionGraphiqueDrawerData>(() => ({
     mixedChartData: this.mixedChartData,
@@ -445,7 +515,7 @@ export class DashboardComponent {
     data: this.evolutionGraphiqueData(),
   }));
 
-  /** Payload signaux transmis au drawer "Postes à optimiser" (annuel uniquement). */
+  /** Payload signaux transmis au drawer "Postes à optimiser" (vue année). */
   private readonly postesAOptimiserData = computed<PostesAOptimiserDrawerData>(() => ({
     postes: this.postesMatriceAnnee,
     devise: this.deviseBase,
@@ -453,22 +523,44 @@ export class DashboardComponent {
     chargement: this.matriceChargement,
   }));
 
-  /** Indicateur "Postes à optimiser" (annuel uniquement) — enveloppe la matrice budgétaire
+  /** Indicateur "Postes à optimiser" (vue année) — enveloppe la matrice budgétaire
    *  sortie de l'onglet "Graphiques" ; info = nombre de postes avec un score ≥ 35. */
   readonly postesAOptimiserIndicateur = computed(() => ({
-    indicator: postesAOptimiserIndicator(this.postesMatriceAnnee(), this.t),
+    indicator: postesAOptimiserIndicator('postes-a-optimiser-annee', this.postesMatriceAnnee(), this.t),
     data: this.postesAOptimiserData(),
   }));
 
-  /** Section "Pour aller plus loin" (vue mois) : seule "Ventilations des postes" y figure
-   *  (les graphiques et la matrice n'existent qu'en vue annuelle). */
-  readonly pourAllerPlusLoinIndicateursMois = computed(() => [this.ventilationPostesIndicateurMois()]);
+  /** Payload signaux transmis au drawer "Postes à optimiser" (vue mois) — mêmes postes
+   *  que la variante annuelle, mais calculés côté serveur sur le seul mois sélectionné. */
+  private readonly postesAOptimiserDataMois = computed<PostesAOptimiserDrawerData>(() => ({
+    postes: this.postesMatriceMois,
+    devise: this.deviseBase,
+    labels: this.matriceLabels,
+    chargement: this.matriceMoisChargement,
+  }));
 
-  /** Section "Pour aller plus loin" (vue année) : les 3 indicateurs. */
+  /** Indicateur "Postes à optimiser" (vue mois) — mêmes postes CHARGE/RESERVE actifs ce
+   *  mois-là uniquement (montant réel du mois, pas annualisé) ; info = nombre de postes
+   *  avec un score ≥ 35. */
+  readonly postesAOptimiserIndicateurMois = computed(() => ({
+    indicator: postesAOptimiserIndicator('postes-a-optimiser-mois', this.postesMatriceMois(), this.t),
+    data: this.postesAOptimiserDataMois(),
+  }));
+
+  /** Section "Pour aller plus loin" (vue mois) : "Ventilations des postes", "Postes à
+   *  optimiser" et "Plaisirs vs Besoins" (les graphiques n'existent qu'en vue annuelle). */
+  readonly pourAllerPlusLoinIndicateursMois = computed(() => [
+    this.ventilationPostesIndicateurMois(),
+    this.postesAOptimiserIndicateurMois(),
+    this.besoinsPlaisirsIndicateurMois(),
+  ]);
+
+  /** Section "Pour aller plus loin" (vue année) : les 4 indicateurs. */
   readonly pourAllerPlusLoinIndicateursAnnee = computed(() => [
     this.ventilationPostesIndicateurAnnee(),
     this.evolutionGraphiqueIndicateur(),
     this.postesAOptimiserIndicateur(),
+    this.besoinsPlaisirsIndicateurAnnee(),
   ]);
 
   /** Onglet "Comptes" (récap mensuel de trésorerie par compte) : uniquement en vue mois
@@ -980,41 +1072,40 @@ export class DashboardComponent {
     };
   }
 
-  annualKpis = computed<KpiChip[]>(() => {
-    const mois = this.moisAgregatsCourant();
-    const objectifs = this.objectifsRendus();
-    const nbAtteints = objectifs.filter((objectif) => objectif.statut === 'ATTEINT').length;
-    const soldeMedian = this.soldeDisponibleMedianRobuste(mois);
+  /** KPI chips affichés sous le graphique "revenus vs charges+réserves" en haut de la vue
+   *  annuelle : totaux annuels + différence de trésorerie vs l'an passé. Remplace
+   *  l'ancien `app-stat-grid` (mois à risque déplacé vers son propre indicator-card, taux
+   *  de réserve/solde retirés). */
+  readonly kpisAnneeTop = computed<KpiChip[]>(() => {
+    const total = this.agregatAnneeCourant();
+    const diffTresorerie = this.differenceTresorerieAnnuelle();
     return [
       {
-        label: this.t.dashboard.soldeMedianRobuste,
-        value: soldeMedian !== null ? this.formatMontant(soldeMedian) : '-',
-        hint: this.t.dashboard.soldeMedianRobusteHint,
-        color: soldeMedian === null ? undefined : soldeMedian >= 0 ? 'var(--p-emerald-500)' : 'var(--p-red-500)',
+        label: this.t.dashboard.revenuTotalAnnuel,
+        value: this.formatMontant(total.revenus),
+        color: 'var(--p-primary-color)',
       },
       {
-        label: this.t.dashboard.tresorerieCumulee,
-        value: this.formatMontant(this.tresorerieCumuleeFin()),
-        hint: String(this.annee()),
+        label: this.t.dashboard.chargesTotalesAnnuelles,
+        value: this.formatMontant(total.charges),
+        color: 'var(--p-red-500)',
       },
       {
-        label: this.t.dashboard.nbObjectifs,
-        value: objectifs.length,
-        hint: `${nbAtteints}/${objectifs.length || 0}`,
+        label: this.t.dashboard.reservesTotalesAnnuelles,
+        value: this.formatMontant(total.reserves),
+        color: 'var(--p-blue-500)',
+      },
+      {
+        label: this.t.dashboard.differenceTresorerieAnPasse,
+        value: diffTresorerie !== null
+          ? `${diffTresorerie >= 0 ? '+' : ''}${this.formatMontant(diffTresorerie)}`
+          : '-',
+        color: diffTresorerie === null
+          ? undefined
+          : diffTresorerie >= 0 ? 'var(--p-emerald-500)' : 'var(--p-red-500)',
       },
     ];
   });
-
-  /** Moyenne du solde disponible sur 10 des 12 mois de l'année, en retirant le pire
-   *  et le meilleur mois (médiane robuste) — donne une vision moins sensible aux
-   *  extrêmes ponctuels que la moyenne brute sur 12 mois. `null` si moins de 3 mois
-   *  disponibles (donnée pas encore chargée). */
-  private soldeDisponibleMedianRobuste(mois: AggregatDto[]): number | null {
-    if (mois.length < 3) return null;
-    const soldes = [...mois.map((m) => m.soldeDisponible)].sort((a, b) => a - b);
-    const sansExtremes = soldes.slice(1, -1);
-    return sansExtremes.reduce((sum, valeur) => sum + valeur, 0) / sansExtremes.length;
-  }
 
   readonly kpiMois = computed<KpiChip[]>(() => {
     const echeances = this.echeancesMois();
@@ -1051,52 +1142,102 @@ export class DashboardComponent {
     return `${positifs}-${negatifs}`;
   });
 
-  readonly statsAnnee = computed<StatItem[]>(() => {
-    const total = this.agregatAnneeCourant();
+  /** Liste des mois de l'année dont le solde disponible est sous le seuil de risque
+   *  (500), utilisée par l'indicateur "Mois à risque" (carte + drawer). */
+  readonly moisARisqueListe = computed<MoisARisqueItem[]>(() =>
+    this.moisAgregatsCourant()
+      .map((item, index) => ({ label: this.t.mois[index] ?? String(index + 1), soldeDisponible: item.soldeDisponible }))
+      .filter((item) => item.soldeDisponible < 500),
+  );
+
+  /** Payload signaux transmis au drawer "Mois à risque". */
+  private readonly moisARisqueData = computed<MoisARisqueDrawerData>(() => ({
+    ringSegments: this.ringSegmentsAnnee,
+    ringCenterValue: this.ringCenterAnnee,
+    ringCenterLabel: this.t.dashboard.moisPosVsNeg,
+    moisARisque: this.moisARisqueListe,
+    devise: this.deviseBase,
+  }));
+
+  /** Indicateur "Mois à risque" (vue année uniquement) — reprend l'anneau "mois positifs
+   *  vs négatifs" (compact, projeté en `[card-info]` par le template) et le compteur de
+   *  mois sous le seuil de risque, auparavant portés par le `app-metric-ring`/`app-stat-grid`
+   *  du haut de la vue annuelle. */
+  readonly moisARisqueIndicateurAnnee = computed(() => ({
+    indicator: moisARisqueIndicator(this.moisARisqueListe().length, this.t),
+    data: this.moisARisqueData(),
+  }));
+
+  /** Graphique annuel "revenus vs charges+réserves" — 2 lignes mensuelles, remplace
+   *  l'anneau + stat-grid en haut de la vue annuelle (voir `kpisAnneeTop` pour les totaux
+   *  annuels affichés en dessous). */
+  readonly revenusChargesReservesChartData = computed(() => {
     const mois = this.moisAgregatsCourant();
-    const tauxReserve = total.revenus > 0 ? (total.reserves / total.revenus) * 100 : 0;
-    const tauxSolde = total.revenus > 0 ? (total.soldeDisponible / total.revenus) * 100 : 0;
-    const moisSousSeuil = mois.filter((item) => item.soldeDisponible < 500).length;
-    const diffTresorerie = this.differenceTresorerieAnnuelle();
-    return [
-      {
-        label: this.t.dashboard.moisSousSeuilRisque,
-        value: String(moisSousSeuil),
-        color: moisSousSeuil > 0 ? 'var(--p-red-500)' : 'var(--p-emerald-500)',
-      },
-      {
-        label: this.t.dashboard.tauxDeReserve,
-        value: `${this.formatPct(tauxReserve)} %`,
-        color: tauxReserve >= 0 ? 'var(--p-emerald-500)' : 'var(--p-red-500)',
-      },
-      {
-        label: this.t.dashboard.tauxDeSolde,
-        value: `${this.formatPct(tauxSolde)} %`,
-        color: tauxSolde >= 0 ? 'var(--p-emerald-500)' : 'var(--p-red-500)',
-      },
-      {
-        label: this.t.dashboard.differenceTresorerieAnPasse,
-        value: diffTresorerie !== null
-          ? `${diffTresorerie >= 0 ? '+' : ''}${this.formatMontant(diffTresorerie)}`
-          : '-',
-        color: diffTresorerie === null
-          ? undefined
-          : diffTresorerie >= 0 ? 'var(--p-emerald-500)' : 'var(--p-red-500)',
-      },
-    ];
+    if (!mois.length) return {};
+    return {
+      labels: this.t.mois,
+      datasets: [
+        {
+          type: 'line',
+          label: this.t.projection.revenus,
+          // Couleurs codées en dur : Chart.js dessine sur un <canvas>, qui ne résout pas
+          // les CSS custom properties (var(--p-xxx)) passées comme couleur — même
+          // convention que `buildChartData` ci-dessous. Aligné sur --p-emerald-500
+          // (couleur "positive" du reste du dashboard : anneau, ligne revenus du flux
+          // mensuel).
+          borderColor: '#3BBFA1',
+          backgroundColor: '#3BBFA1',
+          data: mois.map((m) => m.revenus),
+          tension: 0.3,
+          fill: false,
+          pointRadius: 4,
+          borderWidth: 2,
+        },
+        {
+          type: 'line',
+          label: this.t.dashboard.chargesEtReserves,
+          // Aligné sur --p-red-500 (couleur "danger" du reste du dashboard).
+          borderColor: '#EF5350',
+          backgroundColor: '#EF5350',
+          data: mois.map((m) => m.charges + m.reserves),
+          tension: 0.3,
+          fill: false,
+          pointRadius: 4,
+          borderWidth: 2,
+        },
+      ],
+    };
   });
 
-  readonly statusAnnee = computed<StatGridStatusTag>(() => {
-    const total = this.agregatAnneeCourant();
-    const moisNegatifs = this.moisAgregatsCourant().filter((item) => item.soldeDisponible < 0).length;
-    if (total.soldeDisponible < 0) {
-      return { value: this.t.dashboard.statutDeficitaire, severity: 'danger' };
-    }
-    if (moisNegatifs >= 4) {
-      return { value: this.t.dashboard.statutASurveiller, severity: 'warn' };
-    }
-    return { value: this.t.dashboard.statutExcedentaire, severity: 'success' };
-  });
+  readonly revenusChargesReservesChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: true, position: 'bottom' as const },
+      tooltip: {
+        mode: 'index',
+        intersect: false,
+        callbacks: {
+          label: (ctx: { dataset: { label?: string }; parsed: { y: number } }) =>
+            `${ctx.dataset.label}: ${this.formatMontant(ctx.parsed.y)}`,
+        },
+      },
+    },
+    scales: {
+      x: { grid: { display: false } },
+      y: {
+        ticks: { callback: (v: unknown) => this.fmtCompact(Number(v)) },
+        grid: { color: 'rgba(128,128,128,0.08)' },
+      },
+    },
+    onClick: (_event: unknown, elements: { index: number }[]) => {
+      const index = elements?.[0]?.index;
+      if (index !== undefined) {
+        this.ouvrirMoisNumero(index + 1);
+      }
+    },
+  };
 
   readonly postesActifsMois = computed(() => {
     const mois = this.moisSelectionne();
@@ -1121,10 +1262,8 @@ export class DashboardComponent {
 
   // Note : `nature` (EFFECTIF|ESTIMATION) est purement descriptif côté moteur (doc 01
   // §3) — il n'exclut aucune charge du total réel (`charges` = somme de toutes les
-  // contributions, quelle que soit la nature). Les « charges fixes » doivent donc
-  // inclure TOUTES les charges (comme le récapitulatif serveur) ; `margeVariable`
-  // n'est qu'un indicateur ± additionnel de l'incertitude sur les postes ESTIMATION,
-  // pas une soustraction du montant central de ces postes.
+  // contributions, quelle que soit la nature). Les « charges fixes » incluent donc
+  // TOUTES les charges (comme le récapitulatif serveur).
   readonly chargesSuresMois = computed(() => {
     const s = this.sujet();
     const mois = this.moisSelectionne() ?? 1;
@@ -1137,24 +1276,10 @@ export class DashboardComponent {
       }, 0);
   });
 
-  readonly margeVariableMois = computed(() => {
-    const s = this.sujet();
-    const mois = this.moisSelectionne() ?? 1;
-    return this.postesActifsMois()
-      .filter((poste) => poste.type === 'CHARGE' && poste.nature === 'ESTIMATION')
-      .reduce((sum, poste) => {
-        const montant = Math.abs(this.decomp.contributionMois(poste, this.annee(), mois)) * ((poste.estimPourcentage ?? 0) / 100);
-        const q = s.mode === 'membre' ? this.quotePartMembrePoste(poste, s.membreId, this.annee(), mois) : 1;
-        return sum + montant * q;
-      }, 0);
-  });
-
-  /** Segments labellisés de la barre mensuelle (remplace l'ancien anneau) : mêmes
-   *  valeurs/couleurs que l'anneau précédent. `p-meterGroup` affiche nativement
-   *  chaque libellé avec son pourcentage (pas de montant affiché). */
+  /** Segments labellisés de la barre mensuelle : chaque libellé est affiché avec son
+   *  montant (voir `displayMode="montant"` sur `app-metric-bar`, section vue "mois"). */
   readonly barSegmentsMois = computed<MetricBarSegment[]>(() => {
     const rav = this.agregatMoisCourant().soldeDisponible;
-    const marge = this.margeVariableMois();
     const reserves = this.agregatMoisCourant().reserves;
     return [
       {
@@ -1163,18 +1288,13 @@ export class DashboardComponent {
         color: 'var(--p-red-400)',
       },
       {
-        label: this.t.dashboard.margeVariable,
-        value: marge * 2,
-        color: 'var(--p-red-200)',
-      },
-      {
         label: this.t.dashboard.reserves,
         value: reserves,
         color: 'var(--p-blue-400)',
       },
       {
         label: this.t.dashboard.resteAVivre,
-        value: Math.max(rav - marge, 0),
+        value: Math.max(rav, 0),
         color: 'var(--p-emerald-500)',
       },
     ];
@@ -1186,12 +1306,8 @@ export class DashboardComponent {
 
   readonly statusMois = computed<StatGridStatusTag>(() => {
     const rav = this.agregatMoisCourant().soldeDisponible;
-    const marge = this.margeVariableMois();
     if (rav < 0) {
       return { value: this.t.dashboard.statutDeficitaire, severity: 'danger' };
-    }
-    if (rav - marge < 0) {
-      return { value: this.t.dashboard.statutASurveiller, severity: 'warn' };
     }
     return { value: this.t.dashboard.statutEquilibre, severity: 'success' };
   });
@@ -1568,8 +1684,8 @@ export class DashboardComponent {
   }
 
   /** Quote-part effective (0-1) d'un membre sur un poste, pour un mois donné — miroir
-   *  fidèle de `MoteurCalcul.quotePartEffective` (backend), utilisé uniquement pour les
-   *  segments de l'anneau (`chargesSuresMois`/`margeVariableMois`) : cette agrégation
+   *  fidèle de `MoteurCalcul.quotePartEffective` (backend), utilisé uniquement pour le
+   *  segment de la barre mensuelle (`chargesSuresMois`) : cette agrégation
    *  n'est pas encore exposée telle quelle par le backend (voir docs/03 §2.3 — dette
    *  assumée en attendant une extension du moteur avec vecteurs golden). */
   private quotePartMembrePoste(poste: PosteDto, membreId: string, annee: number, mois: number): number {

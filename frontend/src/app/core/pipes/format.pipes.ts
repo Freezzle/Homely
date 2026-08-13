@@ -1,4 +1,4 @@
-import { Pipe, PipeTransform, inject } from '@angular/core';
+import { Injectable, Pipe, PipeTransform, inject } from '@angular/core';
 import { ContexteService } from '../services/contexte.service';
 import { TranslateService } from '@ngx-translate/core';
 import { localeDeLangue } from '../i18n/locale.util';
@@ -8,6 +8,7 @@ import { localeDeLangue } from '../i18n/locale.util';
  * Usage : {{ valeur | montant }} ou {{ valeur | montant:'EUR' }}
  */
 @Pipe({ name: 'montant', standalone: true, pure: false })
+@Injectable({ providedIn: 'root' })
 export class MontantPipe implements PipeTransform {
   private contexte = inject(ContexteService);
   private translate = inject(TranslateService);

@@ -85,8 +85,21 @@ public class MatriceBudgetaireService {
         this.multiTenant = multiTenant;
     }
 
+    /** Variante annuelle : cumule les 12 mois de l'année {@code annee}. */
     @Transactional(readOnly = true)
-    public List<PostePositionneDto> calculer(UUID foyerId, UUID scenarioId, int annee, UUID membreId) {
+    public List<PostePositionneDto> calculerAnnee(UUID foyerId, UUID scenarioId, int annee, UUID membreId) {
+        return calculer(foyerId, scenarioId, annee, 1, 12, membreId);
+    }
+
+    /** Variante mensuelle : ne considère que le mois {@code mois} de l'année {@code annee} —
+     *  postes actifs ce mois-là uniquement, montant réel de ce seul mois (pas annualisé). */
+    @Transactional(readOnly = true)
+    public List<PostePositionneDto> calculerMois(UUID foyerId, UUID scenarioId, int annee, int mois, UUID membreId) {
+        return calculer(foyerId, scenarioId, annee, mois, mois, membreId);
+    }
+
+    private List<PostePositionneDto> calculer(UUID foyerId, UUID scenarioId, int annee, int moisDebut, int moisFin,
+                                               UUID membreId) {
         multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
 
         List<PosteDto> tousLesPostes = posteService.lister(foyerId, scenarioId);
@@ -98,7 +111,7 @@ public class MatriceBudgetaireService {
         List<PosteDto> candidats = tousLesPostes.stream()
                 .filter(p -> p.type() == TypePoste.CHARGE || p.type() == TypePoste.RESERVE)
                 .filter(p -> !estObsolete(p, aujourdhui))
-                .filter(p -> estActifSurAnnee(p, annee))
+                .filter(p -> estActifSurPeriode(p, annee, moisDebut, moisFin))
                 .toList();
 
         // Un seul représentant par chaîne de révisions : celui avec le plus de mois
@@ -123,27 +136,33 @@ public class MatriceBudgetaireService {
         List<PosteDto> filtresMembre = representants;
         if (membreId != null) {
             filtresMembre = representants.stream()
-                    .filter(p -> concerneMembreSurAnnee(p, postesCalculParId.get(p.id()), membreId, annee, params))
+                    .filter(p -> concerneMembreSurPeriode(p, postesCalculParId.get(p.id()), membreId, annee,
+                            moisDebut, moisFin, params))
                     .toList();
         }
 
         List<PosteEntree> entrees = filtresMembre.stream()
                 .map(p -> new PosteEntree(p.id(), p.description(), p.type(), p.montantMensualise(),
-                        montantAnnuelReel(postesCalculParId.get(p.id()), membreId, annee, params),
+                        montantReel(postesCalculParId.get(p.id()), membreId, annee, moisDebut, moisFin, params),
                         p.importance(), p.potentielOptimisation()))
                 .toList();
 
         return classerEntrees(entrees);
     }
 
-    /** Montant annuel <b>réel</b> pour l'année sélectionnée : somme des contributions
-     *  mensuelles effectives (respectant la fenêtre de validité, la périodicité et le
-     *  prorata du poste — {@link MoteurCalcul#contribution}), pondérée par la quote-part
-     *  effective du membre le cas échéant ({@code membreId == null} → foyer entier, quote-part 1). */
-    private BigDecimal montantAnnuelReel(PosteCalcul posteCalcul, UUID membreId, int annee, ParametresScenario params) {
+    /** Montant <b>réel</b> pour la période {@code [moisDebut, moisFin]} de l'année
+     *  sélectionnée : somme des contributions mensuelles effectives (respectant la
+     *  fenêtre de validité, la périodicité et le prorata du poste — {@link
+     *  MoteurCalcul#contribution}), pondérée par la quote-part effective du membre le
+     *  cas échéant ({@code membreId == null} → foyer entier, quote-part 1). Pour la
+     *  variante annuelle, {@code moisDebut == 1} et {@code moisFin == 12} (mensuel x 12
+     *  équivalent) ; pour la variante mensuelle, {@code moisDebut == moisFin} (un seul
+     *  mois, pas annualisé). */
+    private BigDecimal montantReel(PosteCalcul posteCalcul, UUID membreId, int annee, int moisDebut, int moisFin,
+                                    ParametresScenario params) {
         if (posteCalcul == null) return BigDecimal.ZERO;
         double total = 0.0;
-        for (int mois = 1; mois <= 12; mois++) {
+        for (int mois = moisDebut; mois <= moisFin; mois++) {
             double contribution = MoteurCalcul.contribution(posteCalcul, annee, mois);
             if (contribution == 0.0) continue;
             if (membreId != null) {
@@ -169,11 +188,15 @@ public class MatriceBudgetaireService {
         return debutOk && finOk;
     }
 
-    private boolean estActifSurAnnee(PosteDto poste, int annee) {
-        LocalDate debutAnnee = LocalDate.of(annee, 1, 1);
-        LocalDate finAnnee = LocalDate.of(annee, 12, 31);
-        boolean debutOk = poste.debut() == null || !poste.debut().isAfter(finAnnee);
-        boolean finOk = poste.fin() == null || !poste.fin().isBefore(debutAnnee);
+    /** Vrai si {@code poste} est actif sur au moins un jour de la période
+     *  {@code [moisDebut, moisFin]} de {@code annee} — {@code moisDebut == 1} et
+     *  {@code moisFin == 12} pour la variante annuelle, {@code moisDebut == moisFin}
+     *  pour la variante mensuelle. */
+    private boolean estActifSurPeriode(PosteDto poste, int annee, int moisDebut, int moisFin) {
+        LocalDate debutPeriode = LocalDate.of(annee, moisDebut, 1);
+        LocalDate finPeriode = LocalDate.of(annee, moisFin, 1).plusMonths(1).minusDays(1);
+        boolean debutOk = poste.debut() == null || !poste.debut().isAfter(finPeriode);
+        boolean finOk = poste.fin() == null || !poste.fin().isBefore(debutPeriode);
         return debutOk && finOk;
     }
 
@@ -215,12 +238,13 @@ public class MatriceBudgetaireService {
         return count;
     }
 
-    /** Vrai si {@code poste} concerne le membre sur au moins un mois de l'année (quote-part
-     *  effective &gt; 0), en ne testant que les mois où le poste est actif. */
-    private boolean concerneMembreSurAnnee(PosteDto poste, PosteCalcul posteCalcul, UUID membreId, int annee,
-                                            ParametresScenario params) {
+    /** Vrai si {@code poste} concerne le membre sur au moins un mois de la période
+     *  {@code [moisDebut, moisFin]} (quote-part effective &gt; 0), en ne testant que les
+     *  mois où le poste est actif. */
+    private boolean concerneMembreSurPeriode(PosteDto poste, PosteCalcul posteCalcul, UUID membreId, int annee,
+                                              int moisDebut, int moisFin, ParametresScenario params) {
         if (posteCalcul == null) return false;
-        for (int mois = 1; mois <= 12; mois++) {
+        for (int mois = moisDebut; mois <= moisFin; mois++) {
             if (!estActifSurMois(poste, annee, mois)) continue;
             double quotePart = MoteurCalcul.quotePartEffective(
                     posteCalcul, membreId, annee, mois, params.periodesDefaut(), params.membres().size());
@@ -236,7 +260,7 @@ public class MatriceBudgetaireService {
      *
      * @param montantAnnuel montant annuel <b>réel</b> déjà calculé (prorata de la fenêtre
      *                       de validité + quote-part membre le cas échéant) — voir
-     *                       {@link #montantAnnuelReel}. Ce n'est volontairement pas
+     *                       {@link #montantReel}. Ce n'est volontairement pas
      *                       {@code montantMensuel * 12} : un poste actif seulement quelques
      *                       mois dans l'année, ou dont seule une part revient au membre
      *                       consulté, ne doit pas peser comme un montant plein-année. */

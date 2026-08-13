@@ -16,8 +16,9 @@ export interface PostesAOptimiserDrawerData {
 
 /**
  * Contenu du drawer pour l'indicateur "Postes à optimiser" : enveloppe fine autour du
- * composant partagé `<app-matrice-budgetaire>`, sorti de l'onglet "Graphiques" annuel (mais
- * toujours présent dans cet onglet — même source de données, second point d'accès).
+ * composant partagé `<app-matrice-budgetaire>`. Réutilisé pour les variantes annuelle et
+ * mensuelle du dashboard — même composant, données déjà scopées à la bonne période par
+ * l'appelant.
  */
 @Component({
   selector: 'app-postes-a-optimiser-drawer-content',

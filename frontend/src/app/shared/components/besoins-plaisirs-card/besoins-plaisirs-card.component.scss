@@ -1,0 +1,160 @@
+:host {
+  display: block;
+}
+
+// Ligne de statut en tête de corps de carte (badge de zone) — remplace l'ancien
+// en-tête de `p-card` (redondant avec le titre déjà affiché par le drawer).
+.status-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+
+  &.status-row-end {
+    justify-content: flex-end;
+  }
+}
+
+.besoins-plaisirs-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.budget-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.15rem;
+
+  strong {
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--p-emerald-500);
+  }
+
+  &.budget-stat-eleve strong {
+    color: var(--p-red-500);
+  }
+}
+
+.budget-stat-label {
+  font-size: 0.8rem;
+  color: var(--text-color-secondary);
+}
+
+.ring-block {
+  display: flex;
+  justify-content: center;
+}
+
+.espace-budget {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.espace-budget-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-color-secondary);
+}
+
+.breakdown {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5em;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  margin-top: 0.75rem;
+
+  strong { font-weight: 600; }
+}
+
+// Conseil affiché sous la ventilation — même convention que `TauxEffortCardComponent` :
+// fond doux par défaut, plus appuyé (rouge léger) quand la zone est "élevée".
+.zone-message {
+  margin: 0.75rem 0 0 0;
+  padding: 0.5rem 0.625rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  background: color-mix(in srgb, var(--p-emerald-500) 10%, transparent);
+  color: var(--text-color);
+
+  &.zone-message-eleve {
+    background: color-mix(in srgb, var(--p-red-500) 10%, transparent);
+  }
+}
+
+.na-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 8px 0;
+
+  .na-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-color-secondary);
+  }
+
+  .na-reason {
+    font-size: 12px;
+    color: var(--text-color-secondary);
+    margin-top: 4px;
+  }
+}
+
+.postes-besoins {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.postes-besoins-titre {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-color-secondary);
+}
+
+.postes-besoins-vide {
+  font-size: 0.75rem;
+  color: var(--text-color-secondary);
+}
+
+.postes-besoins-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.poste-besoin-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.poste-besoin-necessite {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.poste-besoin-description {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.poste-besoin-montant {
+  flex: 0 0 auto;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
