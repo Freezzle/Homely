@@ -49,7 +49,7 @@
             }
         } @else if (vue() === 'annee' && projectionAnnuelle() && ventilationAnnuelle()) {
             <p-card>
-                <p-chart type="line" [data]="$any(revenusChargesReservesChartData())" [options]="$any(revenusChargesReservesChartOptions)" class="w-full block" style="height: 280px"/>
+                <p-chart type="line" [data]="$any(revenusChargesReservesChartData())" [options]="$any(revenusChargesReservesChartOptions)" class="w-full block"/>
                 <app-kpi-chip-row [items]="kpisAnneeTop()"/>
             </p-card>
 
@@ -89,13 +89,10 @@
         } @else if (vue() === 'mois' && ventilations()) {
             <p-card>
                 <div class="flex flex-col gap-3">
-                    <p-tag [value]="statusMois().value" [severity]="statusMois().severity" class="self-start"/>
                     <app-metric-bar
-                            [leadLabel]="revenusMoisLabel()"
-                            [leadValue]="revenusMoisValeur()"
                             [segments]="barSegmentsMois()"
-                            displayMode="montant"
                             [devise]="deviseBase()"/>
+                    <app-kpi-chip-row [items]="kpisMoisTop()"/>
                 </div>
             </p-card>
 

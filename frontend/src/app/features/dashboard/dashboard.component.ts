@@ -5,7 +5,6 @@ import { forkJoin } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { SkeletonModule } from 'primeng/skeleton';
-import { TagModule } from 'primeng/tag';
 import { ContexteService } from '../../core/services/contexte.service';
 import { ProjectionService } from '../../core/services/projection.service';
 import { CategorieService, CompteService } from '../../core/services/referentiel.service';
@@ -37,7 +36,6 @@ import { MetricRingSegment } from '../../shared/components/metric-ring/metric-ri
 import { MetricBarComponent, MetricBarSegment } from '../../shared/components/metric-bar/metric-bar.component';
 import { ObjectiveProgressSeverity } from '../../shared/components/objective-progress/objective-progress.component';
 import { PageNavComponent, PageNavMonthSummary, PageNavSelection } from '../../shared/components/page-nav/page-nav.component';
-import { StatGridStatusTag } from '../../shared/components/stat-grid/stat-grid.component';
 import { TimelineItem } from '../../shared/components/timeline/timeline.component';
 import { MatriceBudgetaireLabels } from '../../shared/components/matrice-budgetaire/matrice-budgetaire.component';
 import { DashboardSectionComponent } from './shared/components/dashboard-section/dashboard-section.component';
@@ -80,7 +78,6 @@ const ZERO_AGREGAT: { revenus: number; charges: number; reserves: number; soldeD
     ButtonModule,
     CardModule,
     SkeletonModule,
-    TagModule,
     MetricBarComponent,
     PageNavComponent,
     DashboardSectionComponent,
@@ -616,7 +613,10 @@ export class DashboardComponent {
    *  trésorerie de fin d'année avec l'an passé. `null` si hors vue annuelle ou si
    *  l'année précédente est antérieure au début du scénario (pas de données). */
   private readonly _projectionAnneePrecedenteCle = computed<{ foyerId: string; scenarioId: string; annee: number } | null>(() => {
-    if (this.vue() !== 'annee') return null;
+    // Chargée aussi en vue "mois" quand le mois sélectionné est janvier : nécessaire
+    // pour calculer `differenceTresorerieMois` (comparaison vs décembre de l'an passé).
+    const enJanvier = this.vue() === 'mois' && this.moisSelectionne() === 1;
+    if (this.vue() !== 'annee' && !enJanvier) return null;
     const ref = this._refCle();
     const scenario = this.contexte.scenarioCourant();
     const anneePrecedente = this.annee() - 1;
@@ -1107,6 +1107,41 @@ export class DashboardComponent {
     ];
   });
 
+  /** KPI chips affichés sous la barre de statut mensuelle : revenus/charges/réserves du
+   *  mois sélectionné + différence de trésorerie vs le mois précédent. Les montants
+   *  affichés ici remplacent ceux auparavant portés par la barre `app-metric-bar`, qui
+   *  n'affiche désormais plus que des taux (voir `barSegmentsMois`/le template). */
+  readonly kpisMoisTop = computed<KpiChip[]>(() => {
+    const agregat = this.agregatMoisCourant();
+    const diffTresorerie = this.differenceTresorerieMois();
+    return [
+      {
+        label: this.t.projection.revenus,
+        value: this.formatMontant(agregat.revenus),
+        color: 'var(--p-secondary-color)',
+      },
+      {
+        label: this.t.projection.charges,
+        value: this.formatMontant(agregat.charges),
+        color: 'var(--p-red-500)',
+      },
+      {
+        label: this.t.projection.reserves,
+        value: this.formatMontant(agregat.reserves),
+        color: 'var(--p-blue-500)',
+      },
+      {
+        label: this.t.dashboard.differenceTresorerieMoisPasse,
+        value: diffTresorerie !== null
+          ? `${diffTresorerie >= 0 ? '+' : ''}${this.formatMontant(diffTresorerie)}`
+          : '-',
+        color: diffTresorerie === null
+          ? undefined
+          : diffTresorerie >= 0 ? 'var(--p-green-500)' : 'var(--p-red-500)',
+      },
+    ];
+  });
+
   readonly kpiMois = computed<KpiChip[]>(() => {
     const echeances = this.echeancesMois();
     const evenements = this.evenementsMois();
@@ -1190,20 +1225,20 @@ export class DashboardComponent {
           data: mois.map((m) => m.revenus),
           tension: 0.3,
           fill: false,
-          pointRadius: 4,
-          borderWidth: 2,
+          pointRadius: 2,
+          borderWidth: 1,
         },
         {
           type: 'line',
           label: this.t.dashboard.chargesEtReserves,
           // Aligné sur --p-red-500 (couleur "danger" du reste du dashboard).
           borderColor: '#EF5350',
-          backgroundColor: '#EF5350',
+          backgroundColor: 'rgb(239 83 80 / 0.59)',
           data: mois.map((m) => m.charges + m.reserves),
           tension: 0.3,
-          fill: false,
-          pointRadius: 4,
-          borderWidth: 2,
+          fill: true,
+          pointRadius: 2,
+          borderWidth: 1,
         },
       ],
     };
@@ -1298,18 +1333,6 @@ export class DashboardComponent {
         color: 'var(--p-emerald-500)',
       },
     ];
-  });
-
-  readonly revenusMoisLabel = computed(() => this.t.dashboard.revenusMois);
-
-  readonly revenusMoisValeur = computed(() => this.formatMontant(this.agregatMoisCourant().revenus));
-
-  readonly statusMois = computed<StatGridStatusTag>(() => {
-    const rav = this.agregatMoisCourant().soldeDisponible;
-    if (rav < 0) {
-      return { value: this.t.dashboard.statutDeficitaire, severity: 'danger' };
-    }
-    return { value: this.t.dashboard.statutEquilibre, severity: 'success' };
   });
 
   readonly tresorerieCumuleeValeurs = computed(() => this.calculerTresorerieCumulee(this.moisAgregatsCourant()));
@@ -1467,6 +1490,25 @@ export class DashboardComponent {
     const finPrecedente = this.tresorerieFinAnneePrecedente();
     if (finPrecedente === null) return null;
     return this.tresorerieCumuleeFin() - finPrecedente;
+  });
+
+  /** Différence entre le solde disponible ("reste à vivre") du mois sélectionné et
+   *  celui du mois précédent (décembre de l'an passé si le mois sélectionné est
+   *  janvier) — se base sur le solde disponible mensuel, pas sur la trésorerie
+   *  cumulée (contrairement à `differenceTresorerieAnnuelle`). `null` si le mois
+   *  précédent n'est pas disponible (janvier de la première année du scénario, ou en
+   *  cours de chargement). */
+  readonly differenceTresorerieMois = computed<number | null>(() => {
+    const mois = this.moisSelectionne();
+    if (mois === undefined) return null;
+    const soldeCourant = this.agregatMoisCourant().soldeDisponible;
+    if (mois === 1) {
+      const precedente = this.moisAgregatsAnneePrecedente();
+      if (!precedente.length) return null;
+      return soldeCourant - precedente[precedente.length - 1].soldeDisponible;
+    }
+    const moisPrecedent = this.moisAgregatsCourant()[mois - 2];
+    return moisPrecedent ? soldeCourant - moisPrecedent.soldeDisponible : null;
   });
 
   private statutObjectif(objectif: ObjectifDto): StatutObjectif {
