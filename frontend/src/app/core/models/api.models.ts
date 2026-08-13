@@ -223,6 +223,86 @@ export interface ObjectifRequest {
   compteId: string;
 }
 
+// ── Argent de poche ───────────────────────────────────────────────────────────
+export type ModePolitiqueArgentPoche = 'VARIABLE' | 'FIXE';
+export type SourceArgentPoche = 'ALLOCATION' | 'POLITIQUE' | 'AUCUNE';
+
+export interface PolitiqueArgentPocheDto {
+  id: string;
+  scenarioId: string;
+  membreId: string;
+  compteId: string;
+  nom: string;
+  /** Mois de début inclus, format ISO "YYYY-MM". */
+  dateDebut: string;
+  /** Mois de fin inclus, format ISO "YYYY-MM" ou `null` (politique ouverte). */
+  dateFin?: string;
+  mode: ModePolitiqueArgentPoche;
+  socle?: number;
+  pourcentage?: number;
+  plafond?: number;
+  montantFixe?: number;
+}
+export interface PolitiqueArgentPocheRequest {
+  membreId: string;
+  compteId: string;
+  nom: string;
+  dateDebut: string;
+  dateFin?: string;
+  mode: ModePolitiqueArgentPoche;
+  socle?: number;
+  pourcentage?: number;
+  plafond?: number;
+  montantFixe?: number;
+}
+
+export interface AllocationArgentPocheDto {
+  id: string;
+  scenarioId: string;
+  membreId: string;
+  compteId: string;
+  mois: string;
+  montant: number;
+  raison?: string;
+}
+export interface AllocationArgentPocheRequest {
+  membreId: string;
+  compteId: string;
+  mois: string;
+  montant: number;
+  raison?: string;
+}
+
+export interface ResolutionArgentPocheDto {
+  montant: number;
+  source: SourceArgentPoche;
+  politiqueId?: string;
+  allocationId?: string;
+  rav: number;
+}
+
+/** RàV brut d'un membre pour un mois — indépendant de toute politique/allocation
+ *  persistée (voir {@link RavBrutMoisDto} côté backend). Utilisé pour l'aperçu
+ *  "6 prochains mois" de la popin politique. */
+export interface RavBrutMoisDto {
+  mois: number;
+  rav: number;
+}
+
+export interface ResolutionArgentPocheMembreMoisDto {
+  membreId: string;
+  montant: number;
+  source: SourceArgentPoche;
+}
+
+/** Résolution d'argent de poche agrégée à l'échelle du foyer pour un mois —
+ *  somme des résolutions de tous les membres actifs du scénario. */
+export interface ResolutionArgentPocheFoyerMoisDto {
+  mois: number;
+  total: number;
+  parMembre: ResolutionArgentPocheMembreMoisDto[];
+}
+
 // ── Projection ────────────────────────────────────────────────────────────────
 export interface AggregatDto { revenus: number; charges: number; reserves: number; soldeDisponible: number; }
 export interface MoisDto { numero: number; agregat: AggregatDto; }

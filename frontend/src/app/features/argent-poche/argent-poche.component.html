@@ -1,0 +1,280 @@
+<p-confirmdialog />
+
+<div class="flex flex-col gap-4">
+  <!-- ── En-tête ─────────────────────────────────────────── -->
+  <div class="flex items-center gap-4">
+    <h1 class="text-2xl font-bold flex-1">{{ t.argentPoche.titre }}</h1>
+    @if (contexte.estEditor()) {
+      <div>
+        <p-button icon="pi pi-plus" [label]="t.commun.creer" (click)="menuCreation.toggle($event)" />
+        <p-menu #menuCreation [popup]="true" [model]="creationMenuItems" appendTo="body" />
+      </div>
+    }
+  </div>
+
+  <!-- ── Regroupement + filtres ──────────────────────────── -->
+  <div class="grid gap-2 lg:grid-cols-3">
+    <app-select
+      [ngModel]="regroupement()"
+      (ngModelChange)="regroupement.set($event)"
+      [options]="regroupementOptions"
+      optionLabel="label"
+      optionValue="value"
+      class="w-full text-sm" />
+
+    <app-multi-select
+      [ngModel]="filtreTypes()"
+      (ngModelChange)="filtreTypes.set($event)"
+      [options]="filtreTypeOptions"
+      optionLabel="label"
+      optionValue="value"
+      [label]="t.argentPoche.filtreType"
+      [showClear]="true"
+      class="w-full text-sm" />
+
+    <app-multi-select
+      [ngModel]="filtreMembreIds()"
+      (ngModelChange)="filtreMembreIds.set($event)"
+      [options]="membres()"
+      optionLabel="nom"
+      optionValue="id"
+      [label]="t.argentPoche.filtreMembres"
+      [showClear]="true"
+      class="w-full text-sm" />
+  </div>
+
+  <!-- ── État chargement (skeletons) ──────────────────────── -->
+  @if (chargementListe()) {
+    <div class="flex flex-col gap-2">
+      @for (_ of [1, 2, 3]; track $index) {
+        <div class="flex items-center gap-3 px-4 py-3 rounded-xl border border-surface-200
+              dark:border-surface-700 bg-white dark:bg-surface-900">
+          <div class="flex-1 flex flex-col gap-2">
+            <p-skeleton width="35%" height="1rem" />
+            <p-skeleton width="55%" height="0.75rem" />
+          </div>
+          <p-skeleton width="90px" height="1.25rem" class="shrink-0" />
+          <p-skeleton width="36px" height="2rem" class="shrink-0 rounded-lg" />
+        </div>
+      }
+    </div>
+
+    <!-- ── État vide ────────────────────────────────────────── -->
+  } @else if (itemsAvecSeparateurs().length === 0) {
+    <div class="flex flex-col items-center justify-center gap-3 py-16
+          rounded-xl border border-dashed border-surface-300 dark:border-surface-700
+          bg-surface-50 dark:bg-surface-900 text-surface-400">
+      <i class="pi pi-inbox text-5xl opacity-30"></i>
+      <span class="text-sm">{{ t.argentPoche.aucunResultat }}</span>
+    </div>
+
+    <!-- ── Liste de lignes ──────────────────────────────────── -->
+  } @else {
+    <div class="flex flex-col gap-2">
+      @for (item of itemsAvecSeparateurs(); track $index) {
+
+        @if (isSeparator(item)) {
+          <!-- ── Séparateur de groupe ── -->
+          <div class="text-xs font-bold uppercase tracking-wider bg-surface-700 text-surface-0
+              px-3 pt-3 pb-3 select-none">
+            {{ item.separator }}
+          </div>
+
+        } @else {
+          @let i = asItem(item);
+          <div class="grid gap-3 px-4 py-2.5 md:py-2 grid-cols-[minmax(0,1fr)_auto]
+              border-y border-r border-l border-surface-200 dark:border-surface-700
+              bg-white dark:bg-surface-900 hover:shadow-sm transition-all duration-300">
+
+            <!-- Colonne 1 : contenu -->
+            <div class="min-w-0 flex flex-col gap-1.5 md:gap-1">
+              <!-- Ligne 1 : identité (gauche) · montant (droite sur desktop) -->
+              <div class="grid gap-1 md:gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                <div class="min-w-0 flex items-center gap-2 flex-wrap">
+                  <span class="font-medium leading-snug wrap-break-word">{{ i.libellePrincipal }}</span>
+                  <p-tag [value]="t.argentPoche.typeOptions[i._type]" severity="secondary"
+                         class="text-[10px] py-0.5 shrink-0" />
+                  @if (i._type === 'POLITIQUE') {
+                    <p-tag [value]="modeLabel(i)" [rounded]="true"
+                           [severity]="modeSeverity(i)"
+                           class="text-[10px] py-0.5 shrink-0" />
+                  }
+                </div>
+                <div class="min-w-0 flex items-center flex-wrap gap-x-2 gap-y-1 text-sm md:justify-end">
+                  <span class="font-semibold whitespace-nowrap">{{ i.montantLibelle }}</span>
+                </div>
+              </div>
+
+              <!-- Ligne 2 : période/mois + membre (gauche) · compte (droite sur desktop) -->
+              <div class="grid gap-1 md:gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                <div class="min-w-0 flex items-center flex-wrap gap-2 text-sm text-surface-500 dark:text-surface-400">
+                  <span class="flex items-center gap-1 min-w-0">
+                    <i class="pi pi-calendar text-xs text-surface-400"></i>
+                    <span class="truncate">{{ i.libelleSecondaire }}</span>
+                  </span>
+                  @if (i.membre) {
+                    <p-tag [value]="i.membre.nom"
+                           [style]="{ 'background-color': i.membre.couleur, color: '#fff' }"
+                           class="text-xs py-1 px-2 border-none max-w-full" />
+                  }
+                </div>
+                <div class="flex items-center flex-wrap gap-1 text-sm text-surface-500 dark:text-surface-400 md:justify-end">
+                  {{ i.compteLibelle }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Colonne 2 : actions -->
+            <div class="flex items-center justify-end shrink-0">
+              @if (contexte.estEditor()) {
+                <p-button icon="pi pi-cog" [rounded]="true" [text]="true" severity="secondary" size="small"
+                          [ariaLabel]="t.commun.actions" [pTooltip]="t.commun.actions"
+                          (click)="menuActions.toggle($event)" />
+                <p-menu #menuActions [popup]="true" [model]="actionItemsFor(i)" appendTo="body" />
+              }
+            </div>
+          </div>
+        }
+      }
+    </div>
+  }
+</div>
+
+<!-- ── Dialog : politique ──────────────────────────────────────────────────── -->
+<p-dialog [(visible)]="dialogPolitiqueVisible"
+          [header]="politiqueEnEdition ? t.commun.modifier : t.argentPoche.creerPolitique"
+          [modal]="true" class="w-full max-w-lg">
+  <form [formGroup]="formPolitique" class="flex flex-col gap-4 pt-2">
+
+    <!-- Section 1 : qui / combien -->
+    <div class="flex flex-col gap-3">
+      <h3 class="text-sm font-semibold text-surface-500 uppercase tracking-wide">
+        {{ t.argentPoche.sections.quiCombien }}
+      </h3>
+      <app-input-text [label]="t.argentPoche.champs.nom" [required]="true" formControlName="nom" />
+      <div class="grid grid-cols-2 gap-3">
+        <app-select [label]="t.argentPoche.champs.membre" [required]="true"
+                    formControlName="membreId" [options]="membres()"
+                    optionLabel="nom" optionValue="id" />
+        <app-select [label]="t.argentPoche.champs.compte" [required]="true"
+                    formControlName="compteId" [options]="comptes()"
+                    optionLabel="libelle" optionValue="id" />
+      </div>
+    </div>
+
+    <!-- Section 2 : quand -->
+    <div class="flex flex-col gap-3">
+      <h3 class="text-sm font-semibold text-surface-500 uppercase tracking-wide">
+        {{ t.argentPoche.sections.quand }}
+      </h3>
+      <div class="grid grid-cols-2 gap-3">
+        <app-date-picker [label]="t.argentPoche.champs.dateDebut" [required]="true"
+                         formControlName="dateDebut" view="month" dateFormat="mm/yy" />
+        <app-date-picker [label]="t.argentPoche.champs.dateFin"
+                         formControlName="dateFin" view="month" dateFormat="mm/yy"
+                         [showButtonBar]="true" [hint]="t.argentPoche.champs.dateFinAide" />
+      </div>
+    </div>
+
+    <!-- Section 3 : formule -->
+    <div class="flex flex-col gap-3">
+      <h3 class="text-sm font-semibold text-surface-500 uppercase tracking-wide">
+        {{ t.argentPoche.sections.formule }}
+      </h3>
+      <app-select-button formControlName="mode" [options]="modeOptions"
+                         optionLabel="label" optionValue="value" />
+
+      @if (formPolitique.get('mode')?.value === 'VARIABLE') {
+        <div class="grid grid-cols-3 gap-3">
+          <app-input-number [label]="t.argentPoche.champs.socle" formControlName="socle"
+                            mode="decimal" [minFractionDigits]="0" />
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-medium text-surface-600 dark:text-surface-300">
+              {{ t.argentPoche.champs.pourcentage }} ({{ formPolitique.get('pourcentage')?.value ?? 0 }} %)
+            </label>
+            <p-slider formControlName="pourcentage" [min]="0" [max]="100" [step]="1" />
+          </div>
+          <app-input-number [label]="t.argentPoche.champs.plafond" formControlName="plafond"
+                            mode="decimal" [minFractionDigits]="0" />
+        </div>
+      } @else {
+        <app-input-number [label]="t.argentPoche.champs.montantFixe" [required]="true"
+                          formControlName="montantFixe" mode="decimal" [minFractionDigits]="2" />
+      }
+    </div>
+
+    <!-- Section 4 : aperçu 6 prochains mois -->
+    <div class="flex flex-col gap-3">
+      <h3 class="text-sm font-semibold text-surface-500 uppercase tracking-wide">
+        {{ t.argentPoche.sections.apercu }}
+      </h3>
+      @if (!formPolitique.get('membreId')?.value) {
+        <p class="text-sm text-surface-400">{{ t.argentPoche.apercu.selectionnerMembre }}</p>
+      } @else if (chargementApercuPolitique()) {
+        <p-skeleton height="140px" />
+      } @else {
+        <div class="flex flex-col gap-3">
+          @for (ligne of apercuPolitique(); track ligne.moisLibelle) {
+            <div class="flex items-center gap-3">
+              <div class="flex flex-col w-24 shrink-0">
+                <span class="text-sm font-medium">{{ ligne.moisLibelle }}</span>
+                <span class="text-xs text-surface-400 tabular-nums">{{ ligne.rav | montant }}</span>
+              </div>
+              <p-metergroup class="flex-1" [value]="ligne.meterItems" [max]="ligne.meterMax">
+                <ng-template #label></ng-template>
+              </p-metergroup>
+              <span class="text-sm font-semibold tabular-nums w-24 text-right shrink-0"
+                    [style.color]="ligne.couleurCss">
+                {{ ligne.montant | montant }}
+              </span>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </form>
+
+  <ng-template #footer>
+    <p-button [label]="t.commun.annuler" severity="secondary"
+              (click)="dialogPolitiqueVisible = false" />
+    <p-button [label]="t.commun.enregistrer" (click)="enregistrerPolitique()"
+              [disabled]="formPolitique.invalid" />
+  </ng-template>
+</p-dialog>
+
+<!-- ── Dialog : allocation ─────────────────────────────────────────────────── -->
+<p-dialog [(visible)]="dialogAllocationVisible"
+          [header]="allocationEnEdition ? t.commun.modifier : t.argentPoche.creerAllocation"
+          [modal]="true" class="w-full max-w-md">
+  <form [formGroup]="formAllocation" class="flex flex-col gap-4 pt-2">
+    <div class="grid grid-cols-2 gap-3">
+      <app-select [label]="t.argentPoche.champs.membre" [required]="true"
+                  formControlName="membreId" [options]="membres()"
+                  optionLabel="nom" optionValue="id" />
+      <app-date-picker [label]="t.argentPoche.champs.mois" [required]="true"
+                       formControlName="mois" view="month" dateFormat="mm/yy" />
+    </div>
+    <app-select [label]="t.argentPoche.champs.compte" [required]="true"
+                formControlName="compteId" [options]="comptes()"
+                optionLabel="libelle" optionValue="id" />
+
+    @if (resolution(); as r) {
+      <p-message severity="info" [closable]="false">
+        {{ t.argentPoche.source[r.source] }} · <b>{{ r.montant | montant }}</b>
+      </p-message>
+    }
+
+    <div class="grid grid-cols-2 gap-3">
+      <app-input-number [label]="t.argentPoche.champs.montant" [required]="true"
+                        formControlName="montant" mode="decimal" [minFractionDigits]="2" />
+      <app-input-text [label]="t.argentPoche.champs.raison" formControlName="raison" />
+    </div>
+  </form>
+
+  <ng-template #footer>
+    <p-button [label]="t.commun.annuler" severity="secondary"
+              (click)="dialogAllocationVisible = false" />
+    <p-button [label]="t.commun.enregistrer" (click)="enregistrerAllocation()"
+              [disabled]="formAllocation.invalid" />
+  </ng-template>
+</p-dialog>

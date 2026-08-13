@@ -144,3 +144,34 @@
      app-page-nav) ; p-drawer est un overlay position:fixed, sa position dans le DOM
      n'a pas d'impact visuel tant qu'il n'est pas lui-même un participant de layout. -->
 <app-indicator-drawer/>
+
+<!-- PR6.b — Action rapide "Argent de poche" depuis le KPI du dashboard mensuel :
+     membre + mois verrouillés (affichés en lecture seule), seuls le compte, le
+     montant et la raison sont éditables. -->
+<p-dialog [(visible)]="dialogArgentPocheVisible"
+          [header]="t.dashboard.argentPocheMois"
+          [modal]="true" class="w-full max-w-md">
+  <form [formGroup]="formAllocationArgentPoche" class="flex flex-col gap-4 pt-2">
+    <div class="flex items-center gap-2 text-sm text-surface-500">
+      <i class="pi pi-user"></i>{{ titrePage() }}
+      <span class="mx-1">·</span>
+      <i class="pi pi-calendar"></i>{{ periodeLabel() }}
+    </div>
+    <app-select [label]="t.argentPoche.champs.compte" [required]="true"
+                formControlName="compteId" [options]="comptes()"
+                optionLabel="libelle" optionValue="id"/>
+    <div class="grid grid-cols-2 gap-3">
+      <app-input-number [label]="t.argentPoche.champs.montant" [required]="true"
+                        formControlName="montant" mode="decimal" [minFractionDigits]="2"/>
+      <app-input-text [label]="t.argentPoche.champs.raison" formControlName="raison"/>
+    </div>
+  </form>
+
+  <ng-template #footer>
+    <p-button [label]="t.commun.annuler" severity="secondary"
+              (click)="dialogArgentPocheVisible = false"/>
+    <p-button [label]="t.commun.enregistrer" (click)="enregistrerAllocationArgentPoche()"
+              [disabled]="formAllocationArgentPoche.invalid"/>
+  </ng-template>
+</p-dialog>
+

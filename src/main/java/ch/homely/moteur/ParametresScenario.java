@@ -15,6 +15,8 @@ import java.util.UUID;
  * @param taux                taux de conversion vers deviseBase {devise → tauxVersBase}
  * @param postes              liste des postes du scénario
  * @param membres             liste des identifiants de membres actifs (période ouverte)
+ * @param argentDePoche       fournisseur du montant d'argent de poche par membre/mois ;
+ *                            {@link ArgentDePocheProvider#AUCUN} par défaut (aucun impact)
  */
 public record ParametresScenario(
         String deviseBase,
@@ -24,5 +26,35 @@ public record ParametresScenario(
         List<RepartitionPeriodeCalcul> periodesDefaut,
         Map<String, Double> taux,
         List<PosteCalcul> postes,
-        List<UUID> membres
-) {}
+        List<UUID> membres,
+        ArgentDePocheProvider argentDePoche
+) {
+    /**
+     * Constructeur canonique — normalise {@code argentDePoche == null} vers
+     * {@link ArgentDePocheProvider#AUCUN} pour garantir qu'aucun appel du moteur
+     * ne rencontre un provider nul.
+     */
+    public ParametresScenario {
+        if (argentDePoche == null) {
+            argentDePoche = ArgentDePocheProvider.AUCUN;
+        }
+    }
+
+    /**
+     * Constructeur de compatibilité (avant l'introduction de l'argent de poche) —
+     * utilisé par les vecteurs golden et par tout appelant qui n'a pas besoin
+     * du provider. Délègue au canonique avec {@link ArgentDePocheProvider#AUCUN}.
+     */
+    public ParametresScenario(
+            String deviseBase,
+            int anneeDepart,
+            double tresorerieInitiale,
+            int horizonAnnees,
+            List<RepartitionPeriodeCalcul> periodesDefaut,
+            Map<String, Double> taux,
+            List<PosteCalcul> postes,
+            List<UUID> membres) {
+        this(deviseBase, anneeDepart, tresorerieInitiale, horizonAnnees,
+             periodesDefaut, taux, postes, membres, ArgentDePocheProvider.AUCUN);
+    }
+}

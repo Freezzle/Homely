@@ -7,6 +7,7 @@ import ch.homely.compte.CompteRepository;
 import ch.homely.membre.Membre;
 import ch.homely.membre.MembreRepository;
 import ch.homely.moteur.*;
+import ch.homely.poche.ArgentDePocheProviderJpa;
 import ch.homely.poste.NaturePoste;
 import ch.homely.poste.Poste;
 import ch.homely.poste.PosteRepository;
@@ -49,11 +50,13 @@ public class ProjectionService {
     private final RepartitionPeriodeRepository periodeRepo;
     private final MembreRepository         membreRepo;
     private final CompteMembreRepository   compteMembreRepo;
+    private final ArgentDePocheProviderJpa.ArgentDePocheProviderFactory argentPocheFactory;
 
     public ProjectionService(ScenarioRepository scenarioRepo, PosteRepository posteRepo,
                              TauxChangeRepository tauxRepo, CompteRepository compteRepo,
                              RepartitionPeriodeRepository periodeRepo, MembreRepository membreRepo,
-                             CompteMembreRepository compteMembreRepo) {
+                             CompteMembreRepository compteMembreRepo,
+                             ArgentDePocheProviderJpa.ArgentDePocheProviderFactory argentPocheFactory) {
         this.scenarioRepo = scenarioRepo;
         this.posteRepo    = posteRepo;
         this.tauxRepo     = tauxRepo;
@@ -61,6 +64,7 @@ public class ProjectionService {
         this.periodeRepo  = periodeRepo;
         this.membreRepo   = membreRepo;
         this.compteMembreRepo = compteMembreRepo;
+        this.argentPocheFactory = argentPocheFactory;
     }
 
     // ── T8.1 ─────────────────────────────────────────────────────────────────
@@ -222,7 +226,7 @@ public class ProjectionService {
         return new ParametresScenario(
                 params.deviseBase(), params.anneeDepart(), params.tresorerieInitiale(),
                 params.horizonAnnees(), params.periodesDefaut(), params.taux(),
-                postesPireCas, params.membres());
+                postesPireCas, params.membres(), params.argentDePoche());
     }
 
     private TauxEffortMembreDto toTauxEffortDto(UUID membreId, Membre membre, AggregatMensuel normal, AggregatMensuel pireCas) {
@@ -496,7 +500,8 @@ public class ProjectionService {
                 scenario.getAnneeDepart(),
                 scenario.getTresorerieInitiale().doubleValue(),
                 scenario.getHorizonAnnees(),
-                periodesCalcul, taux, postesCalc, membres);
+                periodesCalcul, taux, postesCalc, membres,
+                argentPocheFactory.pourScenario(scenarioId));
     }
 
     private PosteCalcul mapperPoste(Poste p, Poste pVent, String deviseBase) {

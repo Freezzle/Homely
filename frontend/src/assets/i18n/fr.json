@@ -21,6 +21,7 @@
     "reserves": "Réserves",
     "scenarios": "Scénarios",
     "objectifs": "Objectifs (travaux)",
+    "argentPoche": "Argent de poche",
     "referentiels": "Référentiels",
     "comptes": "Comptes",
     "categories": "Catégories",
@@ -431,6 +432,13 @@
     "matriceBadgeNecessite": "Nécessité : {{n}}/5",
     "matriceBadgeOptimisable": "Optimisable : {{n}}/5",
     "matriceScoreTooltip": "Score : {{n}}/100",
+    "argentPocheMois": "Argent de poche",
+    "argentPocheMoisHint": "{{source}}",
+    "argentPocheAnnee": "Argent de poche",
+    "argentPocheAnneeHint": "{{mois}} mois configurés",
+    "gererArgentPoche": "Gérer l'argent de poche",
+    "creerArgentPoche": "Créer une allocation ce mois",
+    "modifierArgentPoche": "Modifier l'allocation de ce mois",
     "previsuRevenu": "Revenus prévus",
     "previsuMensualise": "Charges + réserves prévues",
     "reelEcheances": "Charges+Réserves réels (échéances)",
@@ -446,15 +454,18 @@
     "moisSousSeuilRisque": "Mois à risque (solde bas)",
     "differenceTresorerieAnPasse": "Diff. année passée",
     "differenceTresorerieMoisPasse": "Diff. du mois passé",
+    "comparaisonMoisPasseTitre": "Comparaison du mois passé",
+    "comparaisonAnneePasseeTitre": "Comparaison de l'année passée",
+    "comparaisonInfoSousTitre": "reste à vivre",
     "indicateurMoisARisqueTitre": "Mois à risque",
     "indicateurMoisARisqueSousTitre": "Le nombre de mois à risque",
     "indicateurMoisARisqueInfoSousTitre": "mois à risque",
     "indicateurMoisARisqueAucun": "Aucun mois à risque cette année.",
-    "revenuTotalAnnuel": "Revenu total (année)",
-    "chargesTotalesAnnuelles": "Charges totales (année)",
-    "reservesTotalesAnnuelles": "Réserves totales (année)",
-    "chargesEtReserves": "Charges + réserves",
-    "chargesSures": "Charges fixes",
+    "revenuTotalAnnuel": "Revenu total",
+    "chargesTotalesAnnuelles": "Charges totales",
+    "reservesTotalesAnnuelles": "Réserves totales",
+    "chargesEtReservesEtArgentdePoche": "Charges + réserves + argent de poche",
+    "chargesSures": "Charges",
     "reserves": "Réserves",
     "fourchetteDuMois": "Fourchette du reste à vivre",
     "nbObjectifs": "Objectifs",
@@ -654,6 +665,78 @@
       "archiver": "Archiver"
     },
     "actionAVenir": "Fonctionnalité à venir."
+  },
+  "argentPoche": {
+    "titre": "Argent de poche",
+    "onglets": {
+      "politiques": "Politiques récurrentes",
+      "allocations": "Allocations ponctuelles"
+    },
+    "creerPolitique": "Nouvelle politique",
+    "creerAllocation": "Nouvelle allocation",
+    "aucunePolitique": "Aucune politique définie.",
+    "aucuneAllocation": "Aucune allocation ponctuelle.",
+    "aucunResultat": "Aucun élément ne correspond aux filtres actifs.",
+    "allocationSansRaison": "Allocation ponctuelle",
+    "regroupementOptions": {
+      "MEMBRE": "Par membre",
+      "TYPE": "Par type",
+      "MOIS_DEBUT": "Par mois de début"
+    },
+    "typeOptions": {
+      "POLITIQUE": "Politique récurrente",
+      "ALLOCATION": "Allocation ponctuelle"
+    },
+    "filtreType": "Filtre par type",
+    "filtreMembres": "Filtre par membre",
+    "champs": {
+      "nom": "Nom",
+      "membre": "Membre",
+      "compte": "Compte crédité",
+      "dateDebut": "À partir de",
+      "dateFin": "Jusqu'à (inclus)",
+      "dateFinAide": "Laisser vide pour une politique ouverte.",
+      "mode": "Mode",
+      "socle": "Socle garanti",
+      "pourcentage": "Pourcentage du RàV",
+      "plafond": "Plafond mensuel",
+      "montantFixe": "Montant fixe",
+      "mois": "Mois",
+      "montant": "Montant",
+      "raison": "Motif (optionnel)"
+    },
+    "modes": {
+      "VARIABLE": "Variable",
+      "FIXE": "Montant fixe"
+    },
+    "sections": {
+      "quiCombien": "Qui et combien",
+      "quand": "Période d'application",
+      "formule": "Formule de calcul",
+      "apercu": "Aperçu des 6 prochains mois"
+    },
+    "apercu": {
+      "colonneMois": "Mois",
+      "colonneRav": "RàV du mois",
+      "colonneMontant": "Argent de poche",
+      "selectionnerMembre": "Sélectionne un membre pour afficher l'aperçu."
+    },
+    "resume": {
+      "variable": "{{pourcentage}} % du RàV (min {{socle}}, plafonné à {{plafond}}).",
+      "fixe": "{{montant}} chaque mois."
+    },
+    "source": {
+      "ALLOCATION": "Allocation ponctuelle",
+      "POLITIQUE": "Politique récurrente",
+      "AUCUNE": "Aucune configuration"
+    },
+    "erreurs": {
+      "modeFixeMontantRequis": "Le mode fixe exige un montant.",
+      "modeVariableChampsRequis": "Le mode variable exige socle, pourcentage et plafond.",
+      "plafondInferieurSocle": "Le plafond doit être supérieur ou égal au socle.",
+      "chevauchement": "Cette période chevauche une politique existante pour ce membre.",
+      "allocationDoublon": "Une allocation existe déjà pour ce membre et ce mois."
+    }
   },
   "mois": [
     "Janvier",

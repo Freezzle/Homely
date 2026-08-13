@@ -418,7 +418,16 @@ public class MoteurCalcul {
                 case RESERVE -> reserves += contrib;
             }
         }
-        return new AggregatMensuel(revenus, charges, reserves, revenus - charges - reserves);
+        // Argent de poche : nouvel élément qui réduit directement le solde disponible
+        // du membre, alimenté par le provider externe (par défaut
+        // {@link ArgentDePocheProvider#AUCUN} ⇒ 0 CHF, comportement inchangé). Il n'est
+        // PAS compté comme une réserve — les réserves restent celles des postes de type
+        // RESERVE uniquement. La formule reçoit le RàV *avant* retrait
+        // (revenus − charges − réserves), sinon la définition serait récursive.
+        double ravBrut = revenus - charges - reserves;
+        double poche = params.argentDePoche().montant(membreId, annee, mois, ravBrut);
+        if (poche < 0) poche = 0;
+        return new AggregatMensuel(revenus, charges, reserves, ravBrut - poche);
     }
 
     /**

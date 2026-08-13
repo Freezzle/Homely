@@ -1,14 +1,18 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, effect, inject, input, numberAttribute, signal, untracked } from '@angular/core';
 import { Router } from '@angular/router';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { SkeletonModule } from 'primeng/skeleton';
+import { DialogModule } from 'primeng/dialog';
+import { MessageService } from 'primeng/api';
 import { ContexteService } from '../../core/services/contexte.service';
 import { ProjectionService } from '../../core/services/projection.service';
 import { CategorieService, CompteService } from '../../core/services/referentiel.service';
 import { ObjectifService, PosteService } from '../../core/services/scenario-poste.service';
+import { AllocationArgentPocheService, ResolutionArgentPocheService } from '../../core/services/argent-poche.service';
 import { DecompositionService, VentilationLike } from '../../core/services/decomposition.service';
 import {
   AggregatDto,
@@ -23,6 +27,7 @@ import {
   TypeCategorie,
   TypePoste,
   VentilationAggregatDto,
+  ResolutionArgentPocheFoyerMoisDto,
 } from '../../core/models/api.models';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { localeDeLangue } from '../../core/i18n/locale.util';
@@ -38,6 +43,7 @@ import { ObjectiveProgressSeverity } from '../../shared/components/objective-pro
 import { PageNavComponent, PageNavMonthSummary, PageNavSelection } from '../../shared/components/page-nav/page-nav.component';
 import { TimelineItem } from '../../shared/components/timeline/timeline.component';
 import { MatriceBudgetaireLabels } from '../../shared/components/matrice-budgetaire/matrice-budgetaire.component';
+import { SelectComponent, InputNumberComponent, InputTextComponent, DatePickerComponent } from '../../shared/components/form-fields';
 import { DashboardSectionComponent } from './shared/components/dashboard-section/dashboard-section.component';
 import { IndicatorCardComponent } from './shared/components/indicator-card/indicator-card.component';
 import { IndicatorDrawerComponent } from './shared/components/indicator-drawer/indicator-drawer.component';
@@ -58,6 +64,8 @@ import { besoinsPlaisirsIndicator } from './indicators/besoins-plaisirs/besoins-
 import { BesoinsPlaisirsCardData } from '../../shared/components/besoins-plaisirs-card/besoins-plaisirs-card.component';
 import { moisARisqueIndicator } from './indicators/mois-a-risque/mois-a-risque.indicator';
 import { MoisARisqueDrawerData, MoisARisqueItem } from './indicators/mois-a-risque/mois-a-risque-drawer-content.component';
+import { comparaisonPeriodeIndicator } from './indicators/comparaison-periode/comparaison-periode.indicator';
+import { ComparaisonPeriodeDrawerData } from './indicators/comparaison-periode/comparaison-periode-drawer-content.component';
 import { ChartModule } from 'primeng/chart';
 import { KpiChipRowComponent } from '../../shared/components/kpi-chip-row/kpi-chip-row.component';
 
@@ -75,9 +83,11 @@ const ZERO_AGREGAT: { revenus: number; charges: number; reserves: number; soldeD
   standalone: true,
   imports: [
     CommonModule,
+    ReactiveFormsModule,
     ButtonModule,
     CardModule,
     SkeletonModule,
+    DialogModule,
     MetricBarComponent,
     PageNavComponent,
     DashboardSectionComponent,
@@ -85,6 +95,10 @@ const ZERO_AGREGAT: { revenus: number; charges: number; reserves: number; soldeD
     IndicatorDrawerComponent,
     ChartModule,
     KpiChipRowComponent,
+    SelectComponent,
+    InputNumberComponent,
+    InputTextComponent,
+    DatePickerComponent,
   ],
   templateUrl: './dashboard.component.html',
 })
@@ -96,10 +110,14 @@ export class DashboardComponent {
   private readonly compteSvc = inject(CompteService);
   private readonly posteSvc = inject(PosteService);
   private readonly objectifSvc = inject(ObjectifService);
+  private readonly argentPocheSvc = inject(ResolutionArgentPocheService);
+  private readonly allocationArgentPocheSvc = inject(AllocationArgentPocheService);
   private readonly decomp = inject(DecompositionService);
   protected readonly viewport = inject(ViewportService);
   private readonly router = inject(Router);
   private readonly indicatorDrawer = inject(IndicatorDrawerService);
+  private readonly fb = inject(FormBuilder);
+  private readonly toast = inject(MessageService);
 
   readonly t = this.i18n.translations();
   readonly deviseBase = this.contexte.deviseBase;
@@ -235,6 +253,106 @@ export class DashboardComponent {
 
   readonly matriceChargement = computed(() => this._matriceBudgetaire.chargement());
 
+  /**
+   * PR5 — Résolution mensuelle de l'argent de poche sur les 12 mois de l'année
+   * courante, chargée uniquement en <b>mode membre</b> (l'argent de poche n'a
+   * pas de sens agrégé au niveau du foyer). Un seul aller-retour réseau grâce à
+   * l'endpoint {@code /resolution-annee} — pas de N+1. La resource s'annule
+   * automatiquement au changement de foyer/scenario/année/membre via
+   * {@link creerChargementReactif}.
+   */
+  private readonly _argentPocheCle = computed<{ foyerId: string; scenarioId: string; annee: number; membreId: string } | null>(() => {
+    const ref = this._refCle();
+    const s = this.sujet();
+    return ref && s.mode === 'membre' ? { ...ref, annee: this.annee(), membreId: s.membreId } : null;
+  });
+
+  private readonly _argentPoche = creerChargementReactif(this._argentPocheCle, ({ foyerId, scenarioId, annee, membreId }) =>
+    this.argentPocheSvc.resoudreAnnee(foyerId, scenarioId, membreId, annee),
+  );
+
+  /** Résolutions 12 mois (janvier=index 0). Vide en mode foyer. */
+  readonly argentPocheMois = computed(() => this._argentPoche.donnees() ?? []);
+
+  /** Résolution du mois sélectionné (mode mois + membre) — `null` sinon. */
+  readonly argentPocheMoisCourant = computed(() => {
+    const mois = this.moisSelectionne();
+    const items = this.argentPocheMois();
+    return mois !== undefined && items[mois - 1] ? items[mois - 1] : null;
+  });
+
+  /** Total annuel d'argent de poche (mode membre uniquement). */
+  readonly argentPocheTotalAnnuel = computed(() =>
+    this.argentPocheMois().reduce((sum, r) => sum + (r.montant ?? 0), 0),
+  );
+
+  /** Nombre de mois avec au moins une politique/allocation configurée. */
+  readonly argentPocheMoisConfigures = computed(() =>
+    this.argentPocheMois().filter((r) => r.source !== 'AUCUNE').length,
+  );
+
+  /** Clé de chargement de l'argent de poche de l'année N-1 (mode membre uniquement) —
+   *  nécessaire pour l'indicateur "Comparaison" (diff annuelle) et le cas janvier de la
+   *  diff mensuelle. Même garde-fou que `_projectionAnneePrecedenteCle` (pas d'année
+   *  antérieure au début du scénario). */
+  private readonly _argentPocheAnneePrecedenteCle = computed<{ foyerId: string; scenarioId: string; annee: number; membreId: string } | null>(() => {
+    const enJanvier = this.vue() === 'mois' && this.moisSelectionne() === 1;
+    if (this.vue() !== 'annee' && !enJanvier) return null;
+    const ref = this._refCle();
+    const s = this.sujet();
+    const scenario = this.contexte.scenarioCourant();
+    const anneePrecedente = this.annee() - 1;
+    if (!ref || s.mode !== 'membre' || !scenario || anneePrecedente < scenario.anneeDepart) return null;
+    return { ...ref, annee: anneePrecedente, membreId: s.membreId };
+  });
+
+  private readonly _argentPocheAnneePrecedente = creerChargementReactif(this._argentPocheAnneePrecedenteCle, ({ foyerId, scenarioId, annee, membreId }) =>
+    this.argentPocheSvc.resoudreAnnee(foyerId, scenarioId, membreId, annee),
+  );
+
+  /** Résolutions 12 mois de l'année précédente (mode membre uniquement). Vide sinon. */
+  readonly argentPocheMoisAnneePrecedente = computed(() => this._argentPocheAnneePrecedente.donnees() ?? []);
+
+  /** Total annuel d'argent de poche de l'année précédente (mode membre uniquement). */
+  readonly argentPocheTotalAnneePrecedente = computed(() =>
+    this.argentPocheMoisAnneePrecedente().reduce((sum, r) => sum + (r.montant ?? 0), 0),
+  );
+
+  /**
+   * PR6.d — Agrégat foyer de l'argent de poche : total de tous les membres,
+   * chargé uniquement en <b>mode foyer</b> (en mode membre, `argentPocheMois`
+   * ci-dessus suffit). Un seul aller-retour réseau grâce à
+   * `/resolution-foyer-annee` (boucle serveur, pas de N+1).
+   */
+  private readonly _argentPocheFoyerCle = computed<{ foyerId: string; scenarioId: string; annee: number } | null>(() => {
+    const ref = this._refCle();
+    return ref && this.sujet().mode === 'foyer' ? { ...ref, annee: this.annee() } : null;
+  });
+
+  private readonly _argentPocheFoyer = creerChargementReactif(this._argentPocheFoyerCle, ({ foyerId, scenarioId, annee }) =>
+    this.argentPocheSvc.resoudreFoyerAnnee(foyerId, scenarioId, annee),
+  );
+
+  /** Totaux mensuels foyer (janvier=index 0). Vide en mode membre. */
+  readonly argentPocheFoyerMois = computed(() => this._argentPocheFoyer.donnees() ?? []);
+
+  /** Total mensuel foyer du mois sélectionné (mode mois + foyer) — `null` sinon. */
+  readonly argentPocheFoyerMoisCourant = computed<ResolutionArgentPocheFoyerMoisDto | null>(() => {
+    const mois = this.moisSelectionne();
+    const items = this.argentPocheFoyerMois();
+    return mois !== undefined && items[mois - 1] ? items[mois - 1] : null;
+  });
+
+  /** Total annuel foyer d'argent de poche (mode foyer uniquement). */
+  readonly argentPocheFoyerTotalAnnuel = computed(() =>
+    this.argentPocheFoyerMois().reduce((sum, r) => sum + (r.total ?? 0), 0),
+  );
+
+  /** Nombre de mois avec au moins une configuration (un membre) sur le foyer. */
+  readonly argentPocheFoyerMoisConfigures = computed(() =>
+    this.argentPocheFoyerMois().filter((r) => r.total > 0).length,
+  );
+
   private readonly _ventilationsMoisCle = computed<{ foyerId: string; scenarioId: string; annee: number; mois: number } | null>(() => {
     const ref = this._refCle();
     const mois = this.moisSelectionne();
@@ -337,24 +455,29 @@ export class DashboardComponent {
     };
   });
 
-  /** Section "Comment se passe ce mois" : Taux d'effort par membre + Événements du mois +
-   *  Virements des comptes (si applicable — vue membre uniquement). */
+  /** Section "Comment se passe ce mois" : Comparaison du mois passé + Taux d'effort par
+   *  membre + Événements du mois + Virements des comptes (si applicable — vue membre
+   *  uniquement). */
   readonly commentSePasseIndicateursMois = computed(() => {
     const virements = this.virementsComptesIndicateur();
     return [
+      this.comparaisonPeriodeIndicateurMois(),
       ...this.tauxEffortIndicateursMois(),
       this.evenementsIndicateurMois(),
       ...(virements ? [virements] : []),
     ];
   });
 
-  /** Section "Comment se passe cette année" : Mois à risque (anneau + compteur) + Taux
-   *  d'effort par membre (vue membre uniquement) + Événements de l'année. */
+  /** Section "Comment se passe cette année" : Comparaison de l'année passée + Mois à
+   *  risque (anneau + compteur) + Taux d'effort par membre (vue membre uniquement) +
+   *  Événements de l'année. */
   readonly commentSePasseIndicateursAnnee = computed(() => [
+    this.comparaisonPeriodeIndicateurAnnee(),
     this.moisARisqueIndicateurAnnee(),
     ...this.tauxEffortIndicateursAnnee(),
     this.evenementsIndicateurAnnee(),
   ]);
+
 
   /** Ouvre le drawer partagé pour l'indicateur cliqué (tous les indicateurs du dashboard
    *  utilisent cette méthode générique), avec les données déjà résolues en payload —
@@ -1032,54 +1155,70 @@ export class DashboardComponent {
     },
   };
 
-  /** Graphique de flux mensuel (revenus/charges/réserves), scopé au sujet courant. */
-  mixedChartData = computed(() => this.buildChartData(this.moisAgregatsCourant()));
+  /** Graphique de flux mensuel (revenus/charges/réserves), scopé au sujet courant. En
+   *  mode membre, l'argent de poche est ajouté comme une charge supplémentaire (3e barre
+   *  empilée) — elle n'est pas comptée dans les réserves côté moteur, mais réduit bien
+   *  le reste à vivre (voir `barSegmentsMois` / `MoteurCalcul.aggregatMembreMoisInterne`).
+   *  En mode foyer (PR6.d), même traitement avec le total agrégé de tous les membres. */
+  mixedChartData = computed(() => this.buildChartData(
+    this.moisAgregatsCourant(),
+    this.estModeMembre()
+      ? this.argentPocheMois().map((r) => r.montant ?? 0)
+      : this.argentPocheFoyerMois().map((r) => r.total ?? 0),
+  ));
 
-  private buildChartData(mois: AggregatDto[]): object {
+  private buildChartData(mois: AggregatDto[], argentPocheMontants: number[]): object {
     if (!mois.length) return {};
-    return {
-      labels: this.t.mois,
-      datasets: [
-        {
-          type: 'line',
-          label: this.t.projection.revenus,
-          // Aligné sur --p-emerald-500 (couleur du solde disponible dans l'anneau mensuel).
-          borderColor: '#3BBFA1',
-          backgroundColor: '#3BBFA1',
-          data: mois.map((m) => m.revenus),
-          tension: 0.3,
-          fill: false,
-          pointRadius: 4,
-          borderWidth: 1,
-        },
-        {
-          type: 'bar',
-          label: this.t.projection.charges,
-          // Aligné sur --p-red-400 (couleur des charges fixes dans l'anneau mensuel).
-          backgroundColor: '#EF5350',
-          data: mois.map((m) => m.charges),
-          stack: 'depenses',
-        },
-        {
-          type: 'bar',
-          label: this.t.projection.reserves,
-          // Aligné sur --p-blue-400 (couleur des réserves dans l'anneau mensuel).
-          backgroundColor: '#42A5F5',
-          data: mois.map((m) => m.reserves),
-          stack: 'depenses',
-        },
-      ],
-    };
+    const datasets: object[] = [
+      {
+        type: 'line',
+        label: this.t.projection.revenus,
+        // Aligné sur --p-emerald-500 (couleur du solde disponible dans l'anneau mensuel).
+        borderColor: '#3BBFA1',
+        backgroundColor: '#3BBFA1',
+        data: mois.map((m) => m.revenus),
+        tension: 0.3,
+        fill: false,
+        pointRadius: 4,
+        borderWidth: 1,
+      },
+      {
+        type: 'bar',
+        label: this.t.projection.charges,
+        // Aligné sur --p-red-400 (couleur des charges fixes dans l'anneau mensuel).
+        backgroundColor: '#EF5350',
+        data: mois.map((m) => m.charges),
+        stack: 'depenses',
+      },
+      {
+        type: 'bar',
+        label: this.t.projection.reserves,
+        // Aligné sur --p-blue-400 (couleur des réserves dans l'anneau mensuel).
+        backgroundColor: '#42A5F5',
+        data: mois.map((m) => m.reserves),
+        stack: 'depenses',
+      },
+    ];
+    if (argentPocheMontants.length) {
+      datasets.push({
+        type: 'bar',
+        label: this.t.dashboard.argentPocheMois,
+        // Aligné sur --p-amber-500 (couleur de l'argent de poche dans les chips/barre).
+        backgroundColor: '#FFB300',
+        data: mois.map((_, i) => argentPocheMontants[i] ?? 0),
+        stack: 'depenses',
+      });
+    }
+    return { labels: this.t.mois, datasets };
   }
 
   /** KPI chips affichés sous le graphique "revenus vs charges+réserves" en haut de la vue
-   *  annuelle : totaux annuels + différence de trésorerie vs l'an passé. Remplace
-   *  l'ancien `app-stat-grid` (mois à risque déplacé vers son propre indicator-card, taux
-   *  de réserve/solde retirés). */
+   *  annuelle : totaux annuels. La différence de trésorerie vs l'an passé est désormais
+   *  portée par l'indicateur "Comparaison de l'année passée" (carte + drawer, voir
+   *  `comparaisonPeriodeIndicateurAnnee`) et non plus par un chip ici. */
   readonly kpisAnneeTop = computed<KpiChip[]>(() => {
     const total = this.agregatAnneeCourant();
-    const diffTresorerie = this.differenceTresorerieAnnuelle();
-    return [
+    const chips: KpiChip[] = [
       {
         label: this.t.dashboard.revenuTotalAnnuel,
         value: this.formatMontant(total.revenus),
@@ -1095,26 +1234,36 @@ export class DashboardComponent {
         value: this.formatMontant(total.reserves),
         color: 'var(--p-blue-500)',
       },
-      {
-        label: this.t.dashboard.differenceTresorerieAnPasse,
-        value: diffTresorerie !== null
-          ? `${diffTresorerie >= 0 ? '+' : ''}${this.formatMontant(diffTresorerie)}`
-          : '-',
-        color: diffTresorerie === null
-          ? undefined
-          : diffTresorerie >= 0 ? 'var(--p-emerald-500)' : 'var(--p-red-500)',
-      },
     ];
+    // PR6.d — Argent de poche agrégée : en mode foyer, total de tous les
+    // membres (bouton "Gérer" navigue vers l'écran dédié — pas d'édition
+    // unitaire possible sur un agrégat). En mode membre : total du membre.
+    if (this.estModeMembre() && this.argentPocheMoisConfigures() > 0) {
+      chips.push({
+        label: this.t.dashboard.argentPocheAnnee,
+        value: this.formatMontant(this.argentPocheTotalAnnuel()),
+        color: 'var(--p-amber-500)',
+        hint: this.i18n.instant('dashboard.argentPocheAnneeHint', { mois: this.argentPocheMoisConfigures() }),
+      });
+    } else if (!this.estModeMembre() && this.argentPocheFoyerMoisConfigures() > 0) {
+      chips.push({
+        label: this.t.dashboard.argentPocheAnnee,
+        value: this.formatMontant(this.argentPocheFoyerTotalAnnuel()),
+        color: 'var(--p-amber-500)',
+        hint: this.i18n.instant('dashboard.argentPocheAnneeHint', { mois: this.argentPocheFoyerMoisConfigures() }),
+        action: { icon: 'pi pi-cog', ariaLabel: this.t.dashboard.gererArgentPoche, onClick: () => this.naviguerVersArgentPoche() },
+      });
+    }
+    return chips;
   });
 
   /** KPI chips affichés sous la barre de statut mensuelle : revenus/charges/réserves du
-   *  mois sélectionné + différence de trésorerie vs le mois précédent. Les montants
-   *  affichés ici remplacent ceux auparavant portés par la barre `app-metric-bar`, qui
-   *  n'affiche désormais plus que des taux (voir `barSegmentsMois`/le template). */
+   *  mois sélectionné. La différence de trésorerie vs le mois passé est désormais portée
+   *  par l'indicateur "Comparaison du mois passé" (carte + drawer, voir
+   *  `comparaisonPeriodeIndicateurMois`) et non plus par un chip ici. */
   readonly kpisMoisTop = computed<KpiChip[]>(() => {
     const agregat = this.agregatMoisCourant();
-    const diffTresorerie = this.differenceTresorerieMois();
-    return [
+    const chips: KpiChip[] = [
       {
         label: this.t.projection.revenus,
         value: this.formatMontant(agregat.revenus),
@@ -1130,16 +1279,38 @@ export class DashboardComponent {
         value: this.formatMontant(agregat.reserves),
         color: 'var(--p-blue-500)',
       },
-      {
-        label: this.t.dashboard.differenceTresorerieMoisPasse,
-        value: diffTresorerie !== null
-          ? `${diffTresorerie >= 0 ? '+' : ''}${this.formatMontant(diffTresorerie)}`
-          : '-',
-        color: diffTresorerie === null
-          ? undefined
-          : diffTresorerie >= 0 ? 'var(--p-green-500)' : 'var(--p-red-500)',
-      },
     ];
+    // PR6.b — Argent de poche du mois : toujours affiché en mode membre
+    // (même sans configuration, montant 0) pour exposer la fonctionnalité,
+    // avec une action rapide contextuelle (créer/modifier l'allocation du
+    // mois affiché, membre + mois verrouillés). En mode foyer : total agrégé
+    // avec bouton "Gérer" (pas d'édition unitaire sur un agrégat).
+    const poche = this.argentPocheMoisCourant();
+    if (this.estModeMembre()) {
+      const source = poche?.source ?? 'AUCUNE';
+      chips.push({
+        label: this.t.dashboard.argentPocheMois,
+        value: this.formatMontant(poche?.montant ?? 0),
+        color: 'var(--p-amber-500)',
+        hint: this.t.argentPoche.source[source],
+        action: {
+          icon: source === 'ALLOCATION' ? 'pi pi-pencil' : 'pi pi-plus',
+          ariaLabel: source === 'ALLOCATION' ? this.t.dashboard.modifierArgentPoche : this.t.dashboard.creerArgentPoche,
+          onClick: () => this.ouvrirActionArgentPoche(),
+        },
+      });
+    } else {
+      const pocheFoyer = this.argentPocheFoyerMoisCourant();
+      if (pocheFoyer && pocheFoyer.total > 0) {
+        chips.push({
+          label: this.t.dashboard.argentPocheMois,
+          value: this.formatMontant(pocheFoyer.total),
+          color: 'var(--p-amber-500)',
+          action: { icon: 'pi pi-cog', ariaLabel: this.t.dashboard.gererArgentPoche, onClick: () => this.naviguerVersArgentPoche() },
+        });
+      }
+    }
+    return chips;
   });
 
   readonly kpiMois = computed<KpiChip[]>(() => {
@@ -1205,10 +1376,16 @@ export class DashboardComponent {
 
   /** Graphique annuel "revenus vs charges+réserves" — 2 lignes mensuelles, remplace
    *  l'anneau + stat-grid en haut de la vue annuelle (voir `kpisAnneeTop` pour les totaux
-   *  annuels affichés en dessous). */
+   *  annuels affichés en dessous). En mode membre, l'argent de poche mensuel est ajouté
+   *  à la série "Charges + réserves" (elle n'est pas comptée comme une réserve côté
+   *  moteur, mais réduit le reste à vivre — cf. `barSegmentsMois`). En mode foyer
+   *  (PR6.d), même traitement avec le total agrégé de tous les membres. */
   readonly revenusChargesReservesChartData = computed(() => {
     const mois = this.moisAgregatsCourant();
     if (!mois.length) return {};
+    const argentPoche: number[] = this.estModeMembre()
+      ? this.argentPocheMois().map((r) => r.montant ?? 0)
+      : this.argentPocheFoyerMois().map((r) => r.total ?? 0);
     return {
       labels: this.t.mois,
       datasets: [
@@ -1230,11 +1407,11 @@ export class DashboardComponent {
         },
         {
           type: 'line',
-          label: this.t.dashboard.chargesEtReserves,
+          label: this.t.dashboard.chargesEtReservesEtArgentdePoche,
           // Aligné sur --p-red-500 (couleur "danger" du reste du dashboard).
           borderColor: '#EF5350',
           backgroundColor: 'rgb(239 83 80 / 0.59)',
-          data: mois.map((m) => m.charges + m.reserves),
+          data: mois.map((m, i) => m.charges + m.reserves + (argentPoche[i] ?? 0)),
           tension: 0.3,
           fill: true,
           pointRadius: 2,
@@ -1243,6 +1420,7 @@ export class DashboardComponent {
       ],
     };
   });
+
 
   readonly revenusChargesReservesChartOptions = {
     responsive: true,
@@ -1312,10 +1490,22 @@ export class DashboardComponent {
   });
 
   /** Segments labellisés de la barre mensuelle : chaque libellé est affiché avec son
-   *  montant (voir `displayMode="montant"` sur `app-metric-bar`, section vue "mois"). */
+   *  montant (voir `displayMode="montant"` sur `app-metric-bar`, section vue "mois").
+   *  L'argent de poche (mode membre + configuré, ou total foyer agrégé en mode foyer)
+   *  est déjà déduite du reste à vivre côté moteur (`soldeDisponible`), sans être
+   *  comptée dans les réserves — voir `MoteurCalcul.aggregatMembreMoisInterne`. Elle
+   *  est donc simplement affichée ici comme un segment à part, à titre informatif,
+   *  sans nouvelle soustraction. */
   readonly barSegmentsMois = computed<MetricBarSegment[]>(() => {
     const rav = this.agregatMoisCourant().soldeDisponible;
     const reserves = this.agregatMoisCourant().reserves;
+    let argentDePoche = 0;
+    if (this.estModeMembre()) {
+      const poche = this.argentPocheMoisCourant();
+      argentDePoche = poche && poche.source !== 'AUCUNE' ? poche.montant : 0;
+    } else {
+      argentDePoche = this.argentPocheFoyerMoisCourant()?.total ?? 0;
+    }
     return [
       {
         label: this.t.dashboard.chargesSures,
@@ -1327,6 +1517,11 @@ export class DashboardComponent {
         value: reserves,
         color: 'var(--p-blue-400)',
       },
+      ...(argentDePoche > 0 ? [{
+        label: this.t.dashboard.argentPocheMois,
+        value: argentDePoche,
+        color: 'var(--p-amber-500)',
+      }] : []),
       {
         label: this.t.dashboard.resteAVivre,
         value: Math.max(rav, 0),
@@ -1334,6 +1529,7 @@ export class DashboardComponent {
       },
     ];
   });
+
 
   readonly tresorerieCumuleeValeurs = computed(() => this.calculerTresorerieCumulee(this.moisAgregatsCourant()));
 
@@ -1510,6 +1706,99 @@ export class DashboardComponent {
     const moisPrecedent = this.moisAgregatsCourant()[mois - 2];
     return moisPrecedent ? soldeCourant - moisPrecedent.soldeDisponible : null;
   });
+
+  /** Diff d'un champ d'agrégat (revenus/charges/reserves) entre le mois sélectionné et le
+   *  mois précédent (décembre de l'an passé si janvier) — même logique que
+   *  `differenceTresorerieMois` mais généralisée à n'importe quel champ. Utilisé par
+   *  l'indicateur "Comparaison du mois passé". */
+  private diffChampMois(champ: 'revenus' | 'charges' | 'reserves'): number | null {
+    const mois = this.moisSelectionne();
+    if (mois === undefined) return null;
+    const valeurCourante = this.agregatMoisCourant()[champ];
+    if (mois === 1) {
+      const precedente = this.moisAgregatsAnneePrecedente();
+      if (!precedente.length) return null;
+      return valeurCourante - precedente[precedente.length - 1][champ];
+    }
+    const moisPrecedent = this.moisAgregatsCourant()[mois - 2];
+    return moisPrecedent ? valeurCourante - moisPrecedent[champ] : null;
+  }
+
+  /** Diff d'un champ d'agrégat (revenus/charges/reserves) entre le total de l'année
+   *  courante et le total de l'année précédente — même logique que
+   *  `differenceTresorerieAnnuelle` mais généralisée à n'importe quel champ. Utilisé par
+   *  l'indicateur "Comparaison de l'année passée". */
+  private diffChampAnnuel(champ: 'revenus' | 'charges' | 'reserves'): number | null {
+    const precedente = this.moisAgregatsAnneePrecedente();
+    if (!precedente.length) return null;
+    const totalPrecedent = precedente.reduce((sum, m) => sum + m[champ], 0);
+    return this.agregatAnneeCourant()[champ] - totalPrecedent;
+  }
+
+  readonly diffRevenusMois = computed<number | null>(() => this.diffChampMois('revenus'));
+  readonly diffChargesMois = computed<number | null>(() => this.diffChampMois('charges'));
+  readonly diffReservesMois = computed<number | null>(() => this.diffChampMois('reserves'));
+  readonly diffRevenusAnnee = computed<number | null>(() => this.diffChampAnnuel('revenus'));
+  readonly diffChargesAnnee = computed<number | null>(() => this.diffChampAnnuel('charges'));
+  readonly diffReservesAnnee = computed<number | null>(() => this.diffChampAnnuel('reserves'));
+
+  /** Diff de l'argent de poche du mois sélectionné vs le mois précédent (mode membre
+   *  uniquement) — `null` en mode foyer ou si le mois précédent n'est pas disponible. */
+  readonly diffArgentPocheMois = computed<number | null>(() => {
+    if (!this.estModeMembre()) return null;
+    const mois = this.moisSelectionne();
+    if (mois === undefined) return null;
+    const montantCourant = this.argentPocheMoisCourant()?.montant ?? 0;
+    if (mois === 1) {
+      const precedente = this.argentPocheMoisAnneePrecedente();
+      if (!precedente.length) return null;
+      return montantCourant - (precedente[precedente.length - 1]?.montant ?? 0);
+    }
+    const moisPrecedent = this.argentPocheMois()[mois - 2];
+    return moisPrecedent ? montantCourant - (moisPrecedent.montant ?? 0) : null;
+  });
+
+  /** Diff de l'argent de poche total de l'année courante vs l'année précédente (mode
+   *  membre uniquement) — `null` en mode foyer ou si l'année précédente n'est pas
+   *  disponible (première année du scénario). */
+  readonly diffArgentPocheAnnee = computed<number | null>(() => {
+    if (!this.estModeMembre() || this._argentPocheAnneePrecedenteCle() === null) return null;
+    return this.argentPocheTotalAnnuel() - this.argentPocheTotalAnneePrecedente();
+  });
+
+  /** Payload signaux transmis au drawer "Comparaison" (mois). */
+  private readonly comparaisonPeriodeDataMois = computed<ComparaisonPeriodeDrawerData>(() => ({
+    diffPrincipal: this.differenceTresorerieMois,
+    diffRevenus: this.diffRevenusMois,
+    diffCharges: this.diffChargesMois,
+    diffReserves: this.diffReservesMois,
+    diffArgentPoche: this.estModeMembre() ? this.diffArgentPocheMois : null,
+    devise: this.deviseBase,
+  }));
+
+  /** Payload signaux transmis au drawer "Comparaison" (année). */
+  private readonly comparaisonPeriodeDataAnnee = computed<ComparaisonPeriodeDrawerData>(() => ({
+    diffPrincipal: this.differenceTresorerieAnnuelle,
+    diffRevenus: this.diffRevenusAnnee,
+    diffCharges: this.diffChargesAnnee,
+    diffReserves: this.diffReservesAnnee,
+    diffArgentPoche: this.estModeMembre() ? this.diffArgentPocheAnnee : null,
+    devise: this.deviseBase,
+  }));
+
+  /** Indicateur "Comparaison du mois passé" (vue mois) — remplace l'ancien chip "Diff. du
+   *  mois passé" auparavant porté par `kpisMoisTop`. */
+  readonly comparaisonPeriodeIndicateurMois = computed(() => ({
+    indicator: comparaisonPeriodeIndicator('comparaison-mois', 'mois', this.differenceTresorerieMois(), (v) => this.formatMontant(v), this.t),
+    data: this.comparaisonPeriodeDataMois(),
+  }));
+
+  /** Indicateur "Comparaison de l'année passée" (vue année) — remplace l'ancien chip
+   *  "Diff. année passée" auparavant porté par `kpisAnneeTop`. */
+  readonly comparaisonPeriodeIndicateurAnnee = computed(() => ({
+    indicator: comparaisonPeriodeIndicator('comparaison-annee', 'annee', this.differenceTresorerieAnnuelle(), (v) => this.formatMontant(v), this.t),
+    data: this.comparaisonPeriodeDataAnnee(),
+  }));
 
   private statutObjectif(objectif: ObjectifDto): StatutObjectif {
     if (objectif.progression >= 1) return 'ATTEINT';
@@ -1858,4 +2147,86 @@ export class DashboardComponent {
       solde: agregat.soldeDisponible,
     }));
   });
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // PR6.b/6.d — Action rapide "Argent de poche" depuis le KPI du dashboard mensuel
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /** Navigue vers l'écran de gestion dédié — utilisé par le bouton "Gérer
+   *  l'argent de poche" du KPI en mode foyer (pas d'édition unitaire possible
+   *  sur un agrégat de tous les membres). */
+  private naviguerVersArgentPoche(): void {
+    const foyerId = this.contexte.foyerId();
+    if (!foyerId) return;
+    void this.router.navigate(['/f', foyerId, 'argent-poche']);
+  }
+
+  dialogArgentPocheVisible = false;
+  private _allocationArgentPocheEnEditionId: string | null = null;
+
+  formAllocationArgentPoche = this.fb.group({
+    compteId: [null as string | null, Validators.required],
+    montant: [0, [Validators.required, Validators.min(0.01)]],
+    raison: [''],
+  });
+
+  /**
+   * Ouvre la popin d'allocation ponctuelle pour le membre + mois actuellement
+   * affichés (verrouillés — non éditables ici, contrairement à l'écran de
+   * gestion dédié) : édition si une allocation existe déjà ce mois-là,
+   * création sinon (montant pré-rempli avec la valeur actuellement affichée,
+   * qu'elle vienne d'une politique en vigueur ou de zéro).
+   */
+  ouvrirActionArgentPoche(): void {
+    const foyerId = this.contexte.foyerId();
+    const scenarioId = this.contexte.scenarioId();
+    const poche = this.argentPocheMoisCourant();
+    if (!foyerId || !scenarioId || !poche) return;
+
+    if (poche.source === 'ALLOCATION' && poche.allocationId) {
+      this._allocationArgentPocheEnEditionId = poche.allocationId;
+      this.formAllocationArgentPoche.reset({ compteId: null, montant: poche.montant, raison: '' });
+      this.dialogArgentPocheVisible = true;
+      this.allocationArgentPocheSvc.obtenir(foyerId, scenarioId, poche.allocationId).subscribe({
+        next: a => this.formAllocationArgentPoche.setValue({
+          compteId: a.compteId, montant: a.montant, raison: a.raison ?? '',
+        }),
+        error: () => { this.dialogArgentPocheVisible = false; },
+      });
+    } else {
+      this._allocationArgentPocheEnEditionId = null;
+      this.formAllocationArgentPoche.reset({ compteId: null, montant: poche.montant, raison: '' });
+      this.dialogArgentPocheVisible = true;
+    }
+  }
+
+  enregistrerAllocationArgentPoche(): void {
+    const foyerId = this.contexte.foyerId();
+    const scenarioId = this.contexte.scenarioId();
+    const membre = this.membreCourant();
+    const mois = this.moisSelectionne();
+    const v = this.formAllocationArgentPoche.getRawValue();
+    if (!foyerId || !scenarioId || !membre || mois === undefined || !v.compteId) return;
+
+    const req = {
+      membreId: membre.id,
+      compteId: v.compteId,
+      mois: `${this.annee()}-${String(mois).padStart(2, '0')}`,
+      montant: v.montant!,
+      raison: v.raison || undefined,
+    };
+    const enregistrement$ = this._allocationArgentPocheEnEditionId
+      ? this.allocationArgentPocheSvc.modifier(foyerId, scenarioId, this._allocationArgentPocheEnEditionId, req)
+      : this.allocationArgentPocheSvc.creer(foyerId, scenarioId, req);
+    enregistrement$.subscribe({
+      next: () => {
+        this.dialogArgentPocheVisible = false;
+        this.toast.add({ severity: 'success', summary: this.t.commun.succes });
+        this._argentPoche.recharger();
+      },
+      error: (err) => {
+        this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message });
+      },
+    });
+  }
 }

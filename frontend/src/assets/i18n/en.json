@@ -21,6 +21,7 @@
     "reserves": "Savings",
     "scenarios": "Scenarios",
     "objectifs": "Goals (under construction)",
+    "argentPoche": "Pocket money",
     "referentiels": "Reference data",
     "comptes": "Accounts",
     "categories": "Categories",
@@ -431,6 +432,13 @@
     "matriceBadgeNecessite": "Necessity: {{n}}/5",
     "matriceBadgeOptimisable": "Optimizable: {{n}}/5",
     "matriceScoreTooltip": "Score: {{n}}/100",
+    "argentPocheMois": "Pocket money",
+    "argentPocheMoisHint": "{{source}}",
+    "argentPocheAnnee": "Pocket money",
+    "argentPocheAnneeHint": "{{mois}} months set",
+    "gererArgentPoche": "Manage pocket money",
+    "creerArgentPoche": "Create an allocation this month",
+    "modifierArgentPoche": "Edit this month's allocation",
     "previsuRevenu": "Planned income",
     "previsuMensualise": "Planned expenses + savings",
     "reelEcheances": "Actual Expenses+Savings (due dates)",
@@ -446,15 +454,18 @@
     "moisSousSeuilRisque": "Risky months (low balance)",
     "differenceTresorerieAnPasse": "Cash diff. last year",
     "differenceTresorerieMoisPasse": "Cash diff. last month",
+    "comparaisonMoisPasseTitre": "Comparison to last month",
+    "comparaisonAnneePasseeTitre": "Comparison to last year",
+    "comparaisonInfoSousTitre": "money left to live on",
     "indicateurMoisARisqueTitre": "Risky months",
     "indicateurMoisARisqueSousTitre": "The number of risky months",
     "indicateurMoisARisqueInfoSousTitre": "risky months",
     "indicateurMoisARisqueAucun": "No risky months this year.",
-    "revenuTotalAnnuel": "Total income (year)",
-    "chargesTotalesAnnuelles": "Total expenses (year)",
-    "reservesTotalesAnnuelles": "Total savings (year)",
-    "chargesEtReserves": "Expenses + savings",
-    "chargesSures": "Fixed expenses",
+    "revenuTotalAnnuel": "Total income",
+    "chargesTotalesAnnuelles": "Total expenses",
+    "reservesTotalesAnnuelles": "Total savings",
+    "chargesEtReservesEtArgentdePoche": "Expenses + savings + pocket money",
+    "chargesSures": "Expenses",
     "reserves": "Savings",
     "fourchetteDuMois": "Range for money left to live on",
     "nbObjectifs": "Goals",
@@ -654,6 +665,78 @@
       "archiver": "Archive"
     },
     "actionAVenir": "Feature coming soon."
+  },
+  "argentPoche": {
+    "titre": "Pocket money",
+    "onglets": {
+      "politiques": "Recurring policies",
+      "allocations": "One-off allowances"
+    },
+    "creerPolitique": "New policy",
+    "creerAllocation": "New allowance",
+    "aucunePolitique": "No policy defined.",
+    "aucuneAllocation": "No one-off allowance.",
+    "aucunResultat": "No item matches the active filters.",
+    "allocationSansRaison": "One-off allowance",
+    "regroupementOptions": {
+      "MEMBRE": "By member",
+      "TYPE": "By type",
+      "MOIS_DEBUT": "By start month"
+    },
+    "typeOptions": {
+      "POLITIQUE": "Recurring policy",
+      "ALLOCATION": "One-off allowance"
+    },
+    "filtreType": "Filter by type",
+    "filtreMembres": "Filter by member",
+    "champs": {
+      "nom": "Name",
+      "membre": "Member",
+      "compte": "Credited account",
+      "dateDebut": "From",
+      "dateFin": "Until (included)",
+      "dateFinAide": "Leave empty for an open-ended policy.",
+      "mode": "Mode",
+      "socle": "Guaranteed base",
+      "pourcentage": "Percentage of remaining balance",
+      "plafond": "Monthly cap",
+      "montantFixe": "Fixed amount",
+      "mois": "Month",
+      "montant": "Amount",
+      "raison": "Reason (optional)"
+    },
+    "modes": {
+      "VARIABLE": "Variable",
+      "FIXE": "Fixed amount"
+    },
+    "sections": {
+      "quiCombien": "Who and how much",
+      "quand": "Applicable period",
+      "formule": "Calculation formula",
+      "apercu": "Preview of the next 6 months"
+    },
+    "apercu": {
+      "colonneMois": "Month",
+      "colonneRav": "Available balance",
+      "colonneMontant": "Pocket money",
+      "selectionnerMembre": "Select a member to display the preview."
+    },
+    "resume": {
+      "variable": "{{pourcentage}}% of available balance (min {{socle}}, capped at {{plafond}}).",
+      "fixe": "{{montant}} every month."
+    },
+    "source": {
+      "ALLOCATION": "One-off allowance",
+      "POLITIQUE": "Recurring policy",
+      "AUCUNE": "No configuration"
+    },
+    "erreurs": {
+      "modeFixeMontantRequis": "Fixed mode requires an amount.",
+      "modeVariableChampsRequis": "Variable mode requires base, percentage and cap.",
+      "plafondInferieurSocle": "Cap must be greater than or equal to base.",
+      "chevauchement": "This period overlaps an existing policy for this member.",
+      "allocationDoublon": "An allowance already exists for this member and month."
+    }
   },
   "mois": [
     "January",

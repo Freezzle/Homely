@@ -78,6 +78,10 @@ export const routes: Routes = [
             loadComponent: () => import('./features/objectifs/objectifs.component').then(m => m.ObjectifsComponent),
           },
           {
+            path: 'argent-poche',
+            loadComponent: () => import('./features/argent-poche/argent-poche.component').then(m => m.ArgentPocheComponent),
+          },
+          {
             path: 'referentiels/membres',
             loadComponent: () => import('./features/referentiels/membres/membres.component').then(m => m.MembresComponent),
           },
