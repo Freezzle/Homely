@@ -81,8 +81,8 @@ export class SidebarMenuComponent {
           { label: this.t.nav.revenus,   icon: 'pi pi-arrow-down', route: `${base}/revenus` },
           { label: this.t.nav.charges,   icon: 'pi pi-arrow-up',   route: `${base}/charges` },
           { label: this.t.nav.reserves,  icon: 'pi pi-wallet',     route: `${base}/reserves` },
-          { label: this.t.nav.objectifs, icon: 'pi pi-flag',       route: `${base}/objectifs` },
           { label: this.t.nav.argentPoche, icon: 'pi pi-money-bill', route: `${base}/argent-poche` },
+          { label: this.t.nav.objectifs, icon: 'pi pi-flag',       route: `${base}/objectifs` },
         ],
       },
       {

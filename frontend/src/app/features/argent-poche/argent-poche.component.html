@@ -92,29 +92,29 @@
               <div class="grid gap-1 md:gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
                 <div class="min-w-0 flex items-center gap-2 flex-wrap">
                   <span class="font-medium leading-snug wrap-break-word">{{ i.libellePrincipal }}</span>
-                  <p-tag [value]="modeLabel(i)" [severity]="typeSeverity(i)"
-                         class="text-[10px] py-0.5 shrink-0" />
                 </div>
                 <div class="min-w-0 flex items-center flex-wrap gap-x-2 gap-y-1 text-sm md:justify-end">
                   <span class="font-semibold whitespace-nowrap">{{ i.montantLibelle }}</span>
                 </div>
               </div>
 
-              <!-- Ligne 2 : période/mois + membre (gauche) · compte (droite sur desktop) -->
+              <!-- Ligne 2 : période/mois + membre+compte (gauche) · périodicité (droite sur desktop) -->
               <div class="grid gap-1 md:gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
                 <div class="min-w-0 flex items-center flex-wrap gap-2 text-sm text-surface-500 dark:text-surface-400">
                   <span class="flex items-center gap-1 min-w-0">
                     <i class="pi pi-calendar text-xs text-surface-400"></i>
                     <span class="truncate">{{ i.libelleSecondaire }}</span>
                   </span>
-                  @if (i.membre) {
-                    <p-tag [value]="i.membre.nom"
-                           [style]="{ 'background-color': i.membre.couleur, color: '#fff' }"
+                  @let membreCompte = membreCompteLabel(i);
+                  @if (membreCompte) {
+                    <p-tag [value]="membreCompte.label"
+                           [style]="{ 'background-color': membreCompte.couleur, color: membreCompte.couleurTexte }"
                            class="text-xs py-1 px-2 border-none max-w-full" />
                   }
                 </div>
-                <div class="flex items-center flex-wrap gap-1 text-sm text-surface-500 dark:text-surface-400 md:justify-end">
-                  {{ i.compteLibelle }}
+                <div class="flex items-center flex-wrap gap-1 text-sm md:justify-end">
+                    <p-tag [value]="modeLabel(i)" [severity]="typeSeverity(i)"
+                           class="text-[10px] py-0.5 shrink-0" />
                 </div>
               </div>
             </div>

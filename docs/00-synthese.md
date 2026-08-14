@@ -26,9 +26,12 @@ gestion du réalisé/import bancaire. Détails : [`README.md`](README.md) §1-2.
 | **Périodes de répartition** (prorata variable dans le temps) | ✅ Complet | `RepartitionPeriode`/`RepartitionPeriodePart`, classification `AUTO`/`REVERSE_AUTO`/`CUSTOM` par poste |
 | **Postes budgétaires** (revenus/charges/réserves) | ✅ Complet | CRUD + cycle de vie avancé : révision de montant chaînée (`posteOrigineId`), annulation, décalage de fenêtre, clôture/réactivation |
 | **Objectifs d'épargne** | ✅ Complet | Compte obligatoire, progression/épargne requise calculées |
-| **Moteur de calcul** (lissage, périodicité, fenêtres, prorata N membres, multi-devises, trésorerie chaînée, événements) | ✅ Complet | Module `moteur` pur (aucune dépendance Spring/JPA/horloge), fidèle à [doc 01](01-business-rules-engine.md) ; inclut désormais la détection d'événements budgétaires (DEBUT/FIN/REVISION, `MoteurCalcul#evenements`) |
-| **Projections** (annuelle, mensuelle, trésorerie, événements, aperçu poste) | ✅ Complet | Endpoints réels : `annuelle`, `annuelle-complete`, `tresorerie`, `mensuelle`, `evenements`, `postes/{id}/apercu` |
+| **Moteur de calcul** (lissage, périodicité, fenêtres, prorata N membres, multi-devises, trésorerie chaînée, événements, argent de poche) | ✅ Complet | Module `moteur` pur (aucune dépendance Spring/JPA/horloge), fidèle à [doc 01](01-business-rules-engine.md) ; événements budgétaires (`MoteurCalcul#evenements`) et retrait de l'argent de poche du solde disponible (`ArgentDePocheProvider`, doc 01 §9) |
+| **Argent de poche** (politiques récurrentes + allocations ponctuelles) | ✅ Complet | Package `poche/` ; résolution `allocation > politique > 0` ; alimente le solde disponible et l'indicateur taux d'effort ; écran dédié + widget dashboard |
+| **Projections** (annuelle, mensuelle, trésorerie, événements, aperçu poste, taux d'effort) | ✅ Complet | Endpoints réels : `annuelle`, `annuelle-complete`, `tresorerie`, `mensuelle`, `evenements`, `postes/{id}/apercu`, `taux-effort` (avec argent de poche) |
 | **Tableau de bord** (foyer + par membre, frise d'événements) | ✅ Complet | Écran unifié `DashboardComponent` (route `dashboard/:sujetId/:annee/:mois?`) — remplace les anciens écrans séparés dashboard-annuel/dashboard-mensuel ; sujet = foyer ou membre |
+| **Poste — enrichissements descriptifs** (`moment=INCONNU`, `importance`, `potentiel_optimisation`) | ✅ Complet | Champs descriptifs (échelle 1-5 pour les deux derniers), sans impact sur le moteur |
+| **Compte primaire par membre** | ✅ Complet | `compte_membre.est_primaire` (un seul par membre, contrainte unique partielle) — source des virements de comblement |
 | **Patrimoine / net worth** | ❌ **Non implémenté** | Aucune notion d'actif patrimonial (supprimée) ; aucun endpoint/service de calcul de patrimoine net, aucun écran dédié |
 | **Comparaison de scénarios** | ❌ **Non implémenté** | Aucun endpoint ni écran côte-à-côte multi-scénarios |
 | **Pagination/tri des listes API** | ❌ **Non implémenté** | Toutes les listes renvoient un tableau JSON brut |
@@ -52,13 +55,17 @@ ch.homely
 ├── taux/           TauxChange + CRUD
 ├── scenario/       Scenario, RepartitionPeriode/Part, RepartitionDefaut (legacy),
 │                   ScenarioService (dupliquer/definirReference), RepartitionPeriodeController
-├── poste/          Poste (+ posteOrigineId), RepartitionPoste, VentilationCompte,
-│                   PosteValidator, PosteService (reviser/annuler/decaler/cloturer/reactiver)
+├── poste/          Poste (+ posteOrigineId, moment=INCONNU, importance, potentiel_optimisation),
+│                   RepartitionPoste, VentilationCompte, PosteValidator,
+│                   PosteService (reviser/annuler/decaler/cloturer/reactiver)
 ├── objectif/       Objectif (compte obligatoire) + calculs progression/épargne requise
+├── poche/          ★ PolitiqueArgentPoche, AllocationArgentPoche, ArgentPocheService
+│                   (résolution allocation > politique > 0), ArgentPocheController
 ├── moteur/         ★ MoteurCalcul (pur, records immuables) — cœur du calcul budgétaire,
-│                   inclut la détection d'événements budgétaires (`evenements`)
+│                   inclut la détection d'événements budgétaires (`evenements`) et le
+│                   retrait de l'argent de poche du solde disponible (`ArgentDePocheProvider`)
 └── projection/     ProjectionService (cache Caffeine) + ProjectionController (annuelle,
-                    tresorerie, mensuelle, evenements) + ProjectionExtraController
+                    tresorerie, mensuelle, evenements, taux-effort) + ProjectionExtraController
                     (aperçu poste — comparaison de scénarios NON implémentée)
 ```
 
@@ -81,7 +88,14 @@ ch.homely
 | V13 | Suppression de la colonne `ordre` sur membre/compte/categorie/actif |
 | V14 | Suppression de la table legacy `repartition_defaut` |
 | V15 | Suppression de la notion d'actif patrimonial (table `actif`, `objectif.actif_id`) ; `objectif.compte_id` devient obligatoire |
-| V16 | Second foyer de démonstration « Foyer Berthoud » (anonymisé : prénoms, libellés et montants ±5-15 % modifiés) — 2 membres, 8 comptes, 20 catégories, 1 scénario de référence avec périodes de répartition, postes et ventilations |
+| V16 | Second foyer de démonstration « Foyer Berthoud » (anonymisé) — 2 membres, 8 comptes, 20 catégories, 1 scénario de référence |
+| V17 | `poste.moment` accepte `INCONNU` (date de paiement non connue, impose `MENSUALISE`) |
+| V18 | `poste.importance` (1-5, descriptif, défaut 3) |
+| V19 | `poste.potentiel_optimisation` (1-5, descriptif, défaut 3) |
+| V20 | `membre.compte_primaire_id` (compte primaire, v1 — colonne unique sur `membre`) |
+| V21 | Compte primaire déplacé vers `compte_membre.est_primaire` (un compte peut être primaire pour plusieurs co-titulaires ; un membre a au plus un primaire) ; suppression de `membre.compte_primaire_id` |
+| V22 | `politique_argent_poche` (mode VARIABLE : socle/pourcentage/plafond, ou FIXE : montant_fixe) |
+| V23 | `allocation_argent_poche` (montant ponctuel par membre/mois, unique par `(scenario, membre, mois)`) |
 
 Détails endpoints : [doc 04](04-api-spec.md). Détails schéma : [doc 02](02-domain-and-data-model.md).
 
@@ -90,9 +104,10 @@ Détails endpoints : [doc 04](04-api-spec.md). Détails schéma : [doc 02](02-do
 ```
 frontend/src/app
 ├── core/        guards (auth), interceptors (jwt refresh, date), services (ContexteService,
-│                I18nService…), pipes (montant/date/pct/périodicité), constants, models
+│                I18nService, ArgentPocheService…), pipes (montant/date/pct/périodicité), constants, models
 ├── shared/      composants réutilisables (carte-bilan, tag, tab-group, page-nav,
-│                metric-ring, stat-grid, kpi-chip-row, event-grid, objective-progress)
+│                metric-ring, stat-grid, kpi-chip(-row), event-grid, objective-progress,
+│                taux-effort-card [jauge charges+réserves(+argent de poche)])
 ├── shell/       topbar, sidebar-menu (dashboard foyer + par membre), foyer-scenario-switcher
 └── features/
     ├── auth/            login, register
@@ -100,8 +115,9 @@ frontend/src/app
     ├── referentiels/     membres, comptes, categories, taux
     ├── scenarios/        scenarios-liste, repartition-periodes
     ├── postes/           postes-liste (revenus/charges/réserves — composant unique paramétré)
+    ├── argent-poche/      politiques + allocations (CRUD) par membre/scénario
     ├── dashboard/         DashboardComponent unifié (sujet foyer/membre × vue annuelle/mensuelle,
-    │                      pilotée par l'URL) + guards de redirection/rétrocompat
+    │                      pilotée par l'URL) + guards de redirection/rétrocompat + widget argent de poche
     ├── objectifs/         cartes + progression
     └── parametres/        paramètres foyer, acces (invitations, OWNER)
 ```
@@ -122,38 +138,19 @@ Tailwind `^4.3.2`, `@ngx-translate/core` `^18.0.0`, Chart.js `^4.4.7`.
 - CORS restreint par `CORS_ORIGINS`. Erreurs uniformisées (`GlobalExceptionHandler` →
   `ApiError` + code métier). Détails : [doc 03 §3](03-architecture.md), [doc 04 §2-3](04-api-spec.md).
 
-## 6. Écarts documentation ↔ code (constat de cette cartographie)
+## 6. Écarts documentation ↔ code (état courant)
 
-| Écart | Avant | Après correction | Documents mis à jour |
-|---|---|---|---|
-| Patrimoine (T8.4) | Marqué fait dans le backlog | Marqué non fait ; endpoint/écran absents | 04 §9.4, 05 §3.5, 06 T8.4/T10.6 |
-| Comparaison scénarios (T8.5) | Marqué fait dans le backlog | Marqué non fait ; endpoint/écran absents | 04 §9.5, 05 §3.4, 06 T8.5/T10.3 |
-| Duplication de scénario (T7.3) | Marqué non fait | En réalité implémenté | 06 T7.3 |
-| Pagination (T5.2) | Marqué en cours | En réalité non commencé | 03 §9, 04 §1/§7, 06 T5.2 |
-| Chemin `repartition-periodes` | Documenté | Chemin réel = `.../periodes` | 04 §6.2 |
-| Poste `:dupliquer` | Documenté comme existant | N'existe pas | 04 §7 |
-| Cycle de vie du poste (révision/clôture/décalage) | Non documenté | Documenté (implémenté) | 02, 04 §7.0-bis, 06 T7.8 |
-| Périodes de répartition | Peu détaillé | Détaillé (implémenté) | 02, 04 §6.2, 06 T7.7 |
-| `compte_membre` (N-N) | Non documenté | Documenté (implémenté) | 02, 06 T7.9 |
-| PrimeNG version | Documentée 21.1.x, migration « à planifier » | Réellement 22.0.x, migration déjà faite | README racine, docs/README, 03 §6, 05 §4.7, 06 T0.2 |
-| Script `dev.ps1` | Documenté dans README racine | N'existe pas ; seul `run-ng.ps1` (wrapper `ng`) existe | README racine |
-| Colonnes `ordre` (membre/compte/categorie/actif) | Documentées | Supprimées en V13 (tri automatique) | 02, 05 §3.7 |
-| Tests unitaires frontend | Implicitement attendus | 0 fichier `.spec.ts` | 03 §8, 05 §6, 06 T11.5 |
-| CI GitHub Actions | Tâche ouverte (cohérent) | Confirmé absent | 03 §8, 06 T0.4/T11.6 |
+> Cette liste doit tendre vers **vide** : elle n'énumère que les écarts encore ouverts au
+> moment de la dernière cartographie. Les écarts déjà corrigés dans une passe précédente
+> sont retirés (voir l'historique git de ce fichier au besoin, pas dupliqué ici).
 
-## 6-bis. Écarts documentation ↔ code (cartographie suivante — code évolué depuis §6)
-
-> Le code a continué d'évoluer après la cartographie du §6 (moteur d'événements +
-> refonte du dashboard) sans que docs 00/01/02/04/05/06 soient mis à jour en conséquence
-> (doc 03 avait déjà partiellement suivi, voir son §2.2 « Exemple vécu »). Corrigé par
-> cette passe :
-
-| Écart | Avant | Après correction | Documents mis à jour |
-|---|---|---|---|
-| Moteur — événements budgétaires (`MoteurCalcul#evenements`, `TypeEvenement`) | Non documenté | Documenté (règle + tests golden `MoteurEvenementsTest`) | 01 §8-ter |
-| Endpoint `GET .../projection/evenements` | Non documenté | Documenté (params `annee`/`membreId`, DTO, tri) | 04 §9.3-bis, 06 T8.8 |
-| Dashboard unifié (route `dashboard/:sujetId/:annee/:mois?`, sujet foyer/membre) | Documenté comme deux écrans séparés `dashboard-annuel`/`dashboard-mensuel` | Réécrit : écran unique `DashboardComponent`, tableau de bord **par membre** (nouveau), frise d'événements, composants partagés (`tab-group`, `page-nav`, `metric-ring`, `stat-grid`, `kpi-chip-row`, `event-grid`) | 05 §2, §3.1, §4.0 ; 00 §2/§4 ; 06 T10.4/T10.5/T10.9 fusionnées en T10.11 ; 03 (arbre `dashboard/`, `shared/`) |
-| Migration `V16__seed_foyer_exemple.sql` (second foyer démo « Berthoud ») | Non documentée | Documentée (tableau migrations, historique) | 00 §3, 02 §4, 06 T6.3 |
+| Écart | État |
+|---|---|
+| Patrimoine / net worth | ❌ Non implémenté (endpoint/écran absents) |
+| Comparaison de scénarios | ❌ Non implémenté (endpoint/écran absents) |
+| Pagination/tri des listes API | ❌ Non implémenté (listes renvoyées en tableau JSON brut) |
+| CI GitHub Actions | ❌ Non implémenté (pas de `.github/workflows/*.yml`) |
+| Tests unitaires frontend | ❌ Non implémenté (0 fichier `.spec.ts`) |
 
 ## 7. Comment naviguer la documentation
 

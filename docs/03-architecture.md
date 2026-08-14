@@ -44,9 +44,10 @@ ch.homely
 ├── scenario/          # Scenario, RepartitionPeriode (+RepartitionDefaut legacy), duplication
 ├── poste/             # Poste, RepartitionPoste, VentilationCompte, NaturePoste, révisions
 ├── objectif/          # Objectif
+├── poche/             # PolitiqueArgentPoche, AllocationArgentPoche, résolution (doc 01 §13)
 ├── moteur/            # ★ MoteurCalcul (pur) + projection réelle/mensualisée
 └── projection/        # endpoints réels : annuelle / annuelle-complete / tresorerie /
-                       #   mensuelle / evenements / apercu poste (patrimoine et
+                       #   mensuelle / evenements / taux-effort / apercu poste (patrimoine et
                        #   comparaison ne sont PAS implémentés à ce jour — voir docs/06 T8.4/T8.5)
 ```
 
@@ -71,33 +72,21 @@ Chaque feature : `controller` (REST) → `service` (métier/validation) → `rep
 
 ### 2.3 Logique métier : toujours côté backend, jamais dupliquée côté frontend
 - **Règle** : tout calcul dérivé des règles métier (quote-part effective, proratisation,
-  filtrage "ce poste concerne-t-il ce membre", agrégats, conversions de devises, etc.)
-  doit être calculé **une seule fois, dans le backend** (idéalement dans `moteur`, ou
-  dans `projection`/le service concerné en réutilisant une fonction déjà testée de
-  `moteur`) et exposé tel quel via DTO. Le frontend ne fait qu'**afficher** des valeurs
-  déjà calculées ; il ne doit pas ré-implémenter une formule métier en TypeScript.
-- **Pourquoi** : toute logique dupliquée en Angular (ex. répartition CUSTOM/AUTO/
-  REVERSE_AUTO, `periodeActive`) doit rester en synchronisation manuelle avec
-  `MoteurCalcul` — source d'incohérences silencieuses et de bugs difficiles à détecter
-  (deux implémentations qui divergent discrètement).
-- **Exemple vécu (à ne pas reproduire)** : lors de l'ajout du tableau de bord par membre,
-  la quote-part effective d'un événement budgétaire (`/evenements`) avait d'abord été
-  recalculée côté Angular (`DecompositionService.quotePartEffectivePoste`, copie de
-  `MoteurCalcul.quotePartEffective`). Corrigé en ajoutant un paramètre `membreId` à
-  `GET .../projection/evenements` : le backend filtre désormais les événements
-  non pertinents (quote-part ≤ 0) et renvoie des montants déjà proratisés + le champ
-  `EvenementDto.quotePart` (uniquement pour l'affichage, ex. "part 33 %"). Le frontend
-  ne fait plus qu'utiliser ces valeurs.
-- **Dette connue / exception assumée** : le calcul des segments "reste à vivre" de
-  l'anneau du dashboard (`chargesSuresMois`/`margeVariableMois`, filtrage + quote-part
-  par poste et par membre) reste dupliqué côté frontend
-  (`DecompositionService.quotePartEffectivePoste`), car une vraie migration
-  nécessiterait une nouvelle agrégation au niveau du moteur (avec vecteurs golden
-  test-first, règle d'or §1) qui n'a pas encore été spécifiée/validée. À migrer dès
-  qu'une évolution du moteur touchant cette zone sera entreprise.
-- **Avant d'écrire une formule métier dans un composant/service Angular**, vérifiez
-  d'abord si un endpoint existant peut la porter, ou si l'endpoint peut être étendu
-  (nouveau paramètre + champ DTO) plutôt que de la reproduire côté client.
+  filtrage "ce poste concerne-t-il ce membre", agrégats, conversions de devises, argent
+  de poche, etc.) doit être calculé **une seule fois, côté backend** (idéalement dans
+  `moteur`, ou dans le service concerné en réutilisant une fonction déjà testée de
+  `moteur`) et exposé tel quel via DTO. Le frontend **affiche**, il ne ré-implémente
+  jamais une formule métier en TypeScript — sinon les deux implémentations divergent
+  silencieusement au fil du temps.
+
+| Cas | Statut | Détail |
+|---|---|---|
+| Quote-part effective des événements (`/evenements`) | ✅ Corrigé | Recalculée un temps côté Angular (`DecompositionService`), migrée vers un paramètre `membreId` backend qui filtre/proratise et renvoie `EvenementDto.quotePart` (affichage uniquement) |
+| Segments "reste à vivre" de l'anneau dashboard (`chargesSuresMois`/`margeVariableMois`) | ⚠️ Dette assumée | Reste dupliqué côté frontend (`DecompositionService.quotePartEffectivePoste`) — migration vers le moteur pas encore spécifiée/validée (vecteurs golden requis, règle d'or §1). À migrer à la prochaine évolution touchant cette zone |
+
+**Avant d'écrire une formule métier dans un composant/service Angular**, vérifier
+d'abord si un endpoint existant peut la porter, ou l'étendre (nouveau paramètre + champ
+DTO), plutôt que de la reproduire côté client.
 
 ## 3. Sécurité & authentification
 
@@ -183,7 +172,8 @@ src/app/
 ├── core/            # guards, interceptors (jwt, date), services (ContexteService,
                      #   I18nService…), pipes (montant/date Intl), constants, models, utils
 ├── shared/          # composants réutilisables (carte-bilan, tag, tab-group, page-nav,
-│                    # metric-ring, stat-grid, kpi-chip-row, event-grid, objective-progress), utils
+│                    # metric-ring, stat-grid, kpi-chip(-row), event-grid, objective-progress,
+│                    # taux-effort-card), utils
 ├── shell/            # topbar, sidebar-menu, foyer-scenario-switcher
 └── features/
     ├── auth/            # login, register
@@ -191,9 +181,10 @@ src/app/
     ├── referentiels/    # membres, comptes, categories, taux
     ├── scenarios/       # scenarios-liste, repartition-periodes
     ├── postes/          # postes-liste (revenus/charges/réserves, même composant réutilisé)
+    ├── argent-poche/     # politiques + allocations d'argent de poche (CRUD)
     ├── dashboard/        # DashboardComponent unifié (sujet foyer/membre, vue annuelle/mensuelle
     │                     # pilotée par l'URL) + redirect-current-year.guard (redirection année
-    │                     # courante + rétrocompat anciennes URLs)
+    │                     # courante + rétrocompat anciennes URLs) + widget argent de poche
     ├── objectifs/        # objectifs (cartes + progression)
     └── parametres/       # paramètres foyer, acces (gestion des invitations, OWNER)
 ```

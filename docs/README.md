@@ -45,6 +45,11 @@ test dérivés des vraies données** y figurent : le moteur DOIT les reproduire 
   postes ; duplication et comparaison côte à côte.
 - **Objectifs / projets d'épargne** : montant cible, échéance, compte rattaché,
   suivi de progression.
+- **Argent de poche** : par membre et scénario, une `PolitiqueArgentPoche` récurrente
+  (socle + % du surplus plafonné, ou montant fixe) et/ou des `AllocationArgentPoche`
+  ponctuelles (un mois précis, prioritaires sur la politique) réduisent directement le
+  **solde disponible** calculé par le moteur. Purement prévisionnel (aucune dépense
+  réelle suivie). Voir [doc 01 §13](01-business-rules-engine.md#13-argent-de-poche--impact-sur-le-solde-disponible).
 
 ## 3. Stack technique
 
@@ -106,6 +111,15 @@ d'abord les tests depuis les vecteurs fournis, puis implémenter jusqu'au vert.
   frise chronologique des événements budgétaires, onglets récap/graphiques/échéances/objectifs.
 - Second foyer de démonstration (« Foyer Berthoud », anonymisé) en plus du foyer Charmillot.
 - `run-ng.ps1` : wrapper local pour lancer le frontend Angular (`ng serve`).
+- **Argent de poche** : `PolitiquePoche`/`AllocationSurMesure` (CRUD complet), résolution
+  (`allocation > politique > 0`) intégrée au moteur (soustraite du solde disponible via
+  `ArgentDePocheProvider`) et à l'indicateur **taux d'effort** (jauge "charges + réserves
+  + argent de poche"), écran dédié + widget dashboard par membre.
+- **Enrichissements poste** : `moment = INCONNU` (date de paiement non connue, impose
+  `MENSUALISE`), `importance` et `potentiel_optimisation` (échelle 1-5, descriptifs,
+  sans impact sur le moteur).
+- **Compte primaire par membre** (`compte_membre.est_primaire`) : compte source des
+  virements de comblement, un seul par membre.
 
 **Non implémenté à ce jour** (malgré une mention antérieure « fait » dans le backlog,
 corrigée par la cartographie `docs/00`) :
@@ -117,44 +131,25 @@ corrigée par la cartographie `docs/00`) :
 
 ## 4-ter. Règle permanente pour l'agent : maintenir la documentation à jour
 
-> **Toute tâche de développement (nouvelle fonctionnalité, correction, refactor,
-> changement de dépendance) doit se terminer par une revue et, si nécessaire, une mise à
-> jour des documents concernés dans `/docs`.** Ne pas attendre une demande explicite de
-> « cartographie » pour le faire : c'est une étape normale de la Definition of Done (voir
-> [doc 06](06-backlog-and-tasks.md)).
+> **Toute tâche de développement doit se terminer par une mise à jour des documents
+> concernés dans `/docs`**, dans la même PR (pas de PR « doc » séparée). Ne pas attendre
+> une demande explicite de « cartographie ».
 
-Concrètement, à la fin de chaque tâche, l'agent doit se demander :
+Checklist à la fin de chaque tâche :
 
-1. **Le moteur ou le modèle de domaine a changé ?** → mettre à jour
-   [`docs/01-business-rules-engine.md`](01-business-rules-engine.md) (règles/vecteurs) et/ou
-   [`docs/02-domain-and-data-model.md`](02-domain-and-data-model.md) (entités, schéma SQL,
-   nouvelle migration Flyway à lister).
-2. **L'architecture, la sécurité ou la stack ont changé ?** (nouvelle dépendance montée de
-   version, nouveau mécanisme de cache/auth, CI ajoutée…) → mettre à jour
-   [`docs/03-architecture.md`](03-architecture.md).
-3. **Un endpoint a été ajouté/modifié/supprimé ?** → mettre à jour
-   [`docs/04-api-spec.md`](04-api-spec.md) (méthode, path, DTO, codes d'erreur).
-4. **Un écran, une route ou un composant Angular a été ajouté/modifié/supprimé ?** →
-   mettre à jour [`docs/05-frontend-spec.md`](05-frontend-spec.md).
-5. **Une tâche du backlog est terminée, démarrée, ou son statut réel diffère de ce qui est
-   écrit ?** → mettre à jour la case `[ ]`/`[~]`/`[x]` correspondante dans
-   [`docs/06-backlog-and-tasks.md`](06-backlog-and-tasks.md). **Ne jamais cocher une tâche
-   sans avoir vérifié que le code correspondant existe réellement** (voir l'incident
-   corrigé par `docs/00-synthese.md` : des tâches avaient été marquées `[x]` sans code
-   associé — patrimoine, comparaison de scénarios).
-6. **Un écart entre la doc et le code a été introduit ou corrigé ?** → répercuter dans le
-   tableau « Écarts documentation ↔ code » de [`docs/00-synthese.md`](00-synthese.md),
-   et/ou dans la section « État actuel » ci-dessus (§4-bis).
+| Changement | Doc(s) à mettre à jour |
+|---|---|
+| Moteur ou modèle de domaine | [01](01-business-rules-engine.md) (règles/vecteurs), [02](02-domain-and-data-model.md) (entités, schéma, migration Flyway) |
+| Architecture, sécurité, stack | [03](03-architecture.md) |
+| Endpoint ajouté/modifié/supprimé | [04](04-api-spec.md) |
+| Écran/route/composant Angular | [05](05-frontend-spec.md) |
+| Statut réel d'une tâche du backlog | [06](06-backlog-and-tasks.md) — ne jamais cocher `[x]` sans avoir vérifié que le code existe |
+| Écart doc ↔ code introduit ou corrigé | [00](00-synthese.md) §6 |
 
-Règles pratiques :
-- Documenter **l'état réel du code**, pas l'intention — si une fonctionnalité est
-  partiellement faite, le dire explicitement plutôt que cocher `[x]` par optimisme.
-- Une mise à jour de doc peut être un simple paragraphe ou une ligne de tableau ; pas
-  besoin de réécrire un document entier pour un petit changement.
-- En cas de doute sur l'ampleur de la mise à jour nécessaire, préférer une note courte
-  mais exacte à une omission.
-- Ces mises à jour de documentation font partie de la même PR que le code — pas une PR
-  séparée « doc » à faire « plus tard ».
+Règles pratiques : documenter **l'état réel du code**, pas l'intention (dire
+explicitement si une fonctionnalité est partielle) ; une mise à jour peut être une
+simple ligne de tableau, pas besoin de réécrire tout un document ; en cas de doute,
+préférer une note courte mais exacte à une omission.
 
 ## 5. Glossaire / langage ubiquitaire
 
@@ -184,6 +179,9 @@ Utiliser **ces termes** (FR) de façon cohérente dans le code, les entités et 
 | **Solde disponible** | `Revenus − Charges − Réserves` pour un mois/une année | `soldeDisponible` |
 | **Trésorerie chaînée** | Solde de trésorerie de début d'année = tréso initiale + cumul des soldes annuels précédents | `tresorerieDebutAnnee` |
 | **Objectif** | Cible d'épargne (montant, échéance, compte rattaché) | `Objectif` |
+| **Argent de poche** | Montant mensuel résolu pour un membre, retranché du solde disponible ; prévisionnel uniquement | `ArgentPocheService#resoudre` |
+| **Politique d'argent de poche** | Règle récurrente sur une période : socle + % du surplus (plafonné) ou montant fixe | `PolitiqueArgentPoche` |
+| **Allocation sur mesure** | Montant ponctuel pour un membre/mois précis, prioritaire sur la politique | `AllocationArgentPoche` |
 
 ## 6. Données d'origine (contexte)
 

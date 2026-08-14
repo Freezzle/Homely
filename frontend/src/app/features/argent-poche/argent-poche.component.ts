@@ -142,7 +142,7 @@ export class ArgentPocheComponent {
 
   // ── Liste unique : regroupement + filtres (façon PostesListeComponent) ──────
   readonly regroupement = signal<'MEMBRE' | 'TYPE' | 'MOIS_DEBUT'>('MEMBRE');
-  readonly filtreTypes = signal<TypeArgentPoche[]>(['POLITIQUE', 'ALLOCATION']);
+  readonly filtreTypes = signal<TypeArgentPoche[]>([]);
   readonly filtreMembreIds = signal<string[]>([]);
 
   readonly regroupementOptions = [
@@ -414,6 +414,31 @@ export class ArgentPocheComponent {
     typeSeverity(item: ArgentPocheAffiche): 'info' | 'warn' {
         return item._type === 'ALLOCATION' ? 'warn' : 'info';
     }
+
+  /** Tag combiné "Membre · Compte" (sur le modèle de {@code membresAffichesPoste}
+   *  dans {@code PostesListeComponent}), coloré avec la couleur du membre. */
+  membreCompteLabel(item: ArgentPocheAffiche): { label: string; couleur: string; couleurTexte: string } | null {
+    if (!item.membre) return null;
+    const couleur = this.normaliserCouleur(item.membre.couleur);
+    const label = item.compteLibelle ? `${item.membre.nom} · ${item.compteLibelle}` : item.membre.nom;
+    return { label, couleur, couleurTexte: this.couleurTexteContraste(couleur) };
+  }
+
+  normaliserCouleur(couleur?: string): string {
+    if (!couleur) return '#64748b';
+    return couleur.startsWith('#') ? couleur : `#${couleur}`;
+  }
+
+  // Lisibilité minimale des tags, quelle que soit la couleur du membre.
+  couleurTexteContraste(hexColor: string): string {
+    const hex = hexColor.replace('#', '');
+    if (hex.length !== 6 || /[^0-9a-f]/i.test(hex)) return '#ffffff';
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const luminance = (0.299 * r) + (0.587 * g) + (0.114 * b);
+    return luminance > 170 ? '#111827' : '#ffffff';
+  }
 
   readonly chargementListe = computed(() => this.chargementPolitiques() || this.chargementAllocations());
 

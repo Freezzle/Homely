@@ -725,8 +725,8 @@
       "selectionnerMembre": "Sélectionne un membre pour afficher l'aperçu."
     },
     "resume": {
-      "variable": "{{pourcentage}} % du RàV (min {{socle}}, plafonné à {{plafond}}).",
-      "fixe": "{{montant}} chaque mois."
+      "variable": "{{pourcentage}}% du RàV (min {{socle}}, plafonné à {{plafond}}).",
+      "fixe": "{{montant}}"
     },
     "source": {
       "ALLOCATION": "Allocation ponctuelle",

@@ -6,11 +6,11 @@ import { localeDeLangue } from '../i18n/locale.util';
  * (révision, clôture, historique) qui partagent ce format d'affichage.
  */
 export function formatPeriodeMois(v: string | null | undefined, locale: string): string {
-  if (!v) return '–';
+  if (!v) return '...';
   try {
     const [year, month] = v.split('-');
     const d = new Date(+year, +month - 1, 1);
-    return new Intl.DateTimeFormat(locale, { month: 'short', year: 'numeric' }).format(d);
+    return new Intl.DateTimeFormat(locale, { month: 'numeric', year: 'numeric' }).format(d);
   } catch { return v; }
 }
 

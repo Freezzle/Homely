@@ -78,11 +78,14 @@ Compte bancaire du foyer. Champs : `id`, `foyerId`, `libelle`,
 de référence — utilisé par le module patrimoine), `devise` (défaut = deviseBase),
 `actif`. *(la colonne `ordre` a été supprimée en V13 ; tri automatique par libellé.)*
 
-Relation N-N avec `Membre` via la table de liaison `compte_membre`. Un compte appartient à
-**1..N membres**. Lors de la création ou modification, seuls les membres **actifs** peuvent
-être rattachés. Si un membre devient inactif après coup, le rattachement est conservé, mais
-il ne peut plus être sélectionné dans les nouveaux postes. Un compte **ne peut pas être créé
-sans au moins un membre** (422 `COMPTE_SANS_MEMBRE`).
+Relation N-N avec `Membre` via la table de liaison `compte_membre` (colonne `estPrimaire`,
+V20/V21). Un compte appartient à **1..N membres**. Lors de la création ou modification,
+seuls les membres **actifs** peuvent être rattachés. Si un membre devient inactif après
+coup, le rattachement est conservé, mais il ne peut plus être sélectionné dans les
+nouveaux postes. Un compte **ne peut pas être créé sans au moins un membre** (422
+`COMPTE_SANS_MEMBRE`). Un membre a **au plus un** compte primaire (le compte source des
+virements de comblement, contrainte unique partielle sur `compte_membre`) ; un même
+compte peut être primaire pour plusieurs co-titulaires.
 
 ### Categorie
 Classification d'un poste. Champs : `id`, `foyerId`, `libelle`, `typePoste` (REVENU |
@@ -129,13 +132,18 @@ Ligne budgétaire récurrente. Champs :
 (nullable, `ON DELETE SET NULL` depuis V11),
 `montant` (décimal ≥ 0), `devise` (défaut = deviseBase), `periodiciteMois` (int **≥ 0** ;
 0 = ponctuel one-shot), `debut` (date null), `fin` (date null), `mode` (MENSUALISE |
-PERIODIQUE), `moment` (DEBUT_PERIODE | FIN_PERIODE), `nature` (EFFECTIF | ESTIMATION,
-descriptif), `estimPourcentage` (NUMERIC(3,1), nullable — obligatoire si nature=ESTIMATION,
-null si nature=EFFECTIF ; représente la plage de variation ± du montant, ex. 10.0 signifie
-montant peut varier de montant×0.90 à montant×1.10), `typeRepartition` (AUTO | REVERSE_AUTO
-| CUSTOM, défaut AUTO), `ordre`, `posteOrigineId` (UUID nullable, `ON DELETE SET NULL`
-depuis V12 — référence le poste dont celui-ci est issu par révision de montant),
-`dateCreation`, `dateModification`.
+PERIODIQUE), `moment` (DEBUT_PERIODE | FIN_PERIODE | INCONNU — depuis V17, date de
+paiement effective non connue, impose `mode=MENSUALISE`), `nature` (EFFECTIF |
+ESTIMATION, descriptif), `estimPourcentage` (NUMERIC(3,1), nullable — obligatoire si
+nature=ESTIMATION, null si nature=EFFECTIF ; représente la plage de variation ± du
+montant, ex. 10.0 signifie montant peut varier de montant×0.90 à montant×1.10),
+`importance` (int 1-5, depuis V18, descriptif — 1 = non vital, 5 = vital, défaut 3),
+`potentielOptimisation` (int 1-5, depuis V19, descriptif — 1 = non optimisable, 5 = très
+optimisable, défaut 3), `typeRepartition` (AUTO | REVERSE_AUTO | CUSTOM, défaut AUTO),
+`ordre`, `posteOrigineId` (UUID nullable, `ON DELETE SET NULL` depuis V12 — référence le
+poste dont celui-ci est issu par révision de montant), `dateCreation`, `dateModification`.
+`importance` et `potentielOptimisation` sont **purement descriptifs** : aucun impact sur
+le moteur de calcul (doc 01).
 
 **Cycle de vie réel (`PosteController`/`PosteService`)** : au-delà du CRUD classique, un
 poste peut être **révisé** (`POST .../reviser-montant` crée un nouveau poste chaîné via
@@ -172,23 +180,40 @@ Cible d'épargne. Champs : `id`, `scenarioId`, `libelle`, `categorieProjetId` (F
 Categorie type PROJET, null), `montantCible` (décimal), `echeance` (date), `compteId`
 (obligatoire, le support de l'objectif), `dateCreation`.
 
+### PolitiqueArgentPoche
+Politique récurrente d'argent de poche, par `membreId` et `scenarioId` (V22). Champs :
+`id`, `scenarioId`, `membreId`, `compteId` (compte crédité chaque mois), `nom`,
+`dateDebut`/`dateFin` (mois, `dateFin` null = politique ouverte), `mode` (VARIABLE |
+FIXE), `socle`/`pourcentage`/`plafond` (mode VARIABLE), `montantFixe` (mode FIXE).
+Formule et impact sur le solde disponible : [doc 01 §13](01-business-rules-engine.md#13-argent-de-poche--impact-sur-le-solde-disponible).
+**Chevauchements interdits, trous autorisés** entre les politiques d'un même membre
+(validation en service, pas en SQL — bornes nullables).
+
+### AllocationArgentPoche
+Allocation ponctuelle d'argent de poche pour un `(scenarioId, membreId, mois)` précis
+(V23), prioritaire sur toute `PolitiqueArgentPoche`. Champs : `id`, `scenarioId`,
+`membreId`, `compteId`, `mois`, `montant` (décimal ≥ 0), `raison` (note libre,
+nullable). Contrainte d'unicité `(scenarioId, membreId, mois)`. Aucune règle de
+continuité (point isolé dans le temps).
+
 ## 3. Énumérations
 
 ```
-TypePoste            = REVENU | CHARGE | RESERVE
-TypeCategorie        = REVENU | CHARGE | RESERVE | PROJET
-ModeComptabilisation = MENSUALISE | PERIODIQUE
-MomentPeriode        = DEBUT_PERIODE | FIN_PERIODE
-NaturePoste          = EFFECTIF | ESTIMATION
-TypeRepartition      = AUTO | REVERSE_AUTO | CUSTOM
-RoleFoyer            = OWNER | EDITOR | VIEWER
+TypePoste                 = REVENU | CHARGE | RESERVE
+TypeCategorie             = REVENU | CHARGE | RESERVE | PROJET
+ModeComptabilisation      = MENSUALISE | PERIODIQUE
+MomentPeriode             = DEBUT_PERIODE | FIN_PERIODE | INCONNU
+NaturePoste               = EFFECTIF | ESTIMATION
+TypeRepartition           = AUTO | REVERSE_AUTO | CUSTOM
+RoleFoyer                 = OWNER | EDITOR | VIEWER
+ModePolitiqueArgentPoche  = VARIABLE | FIXE
 ```
 
 Correspondance des libellés Excel → enums (à respecter dans le seed) :
 - Mode : `mensualisé` → `MENSUALISE`, `périodique` → `PERIODIQUE`.
 - Moment : `début périodicité` → `DEBUT_PERIODE`, `fin périodicité` → `FIN_PERIODE`.
 
-## 4. Schéma SQL (PostgreSQL) — état consolidé après V1→V15 (V16 = données seed uniquement, aucun changement de schéma)
+## 4. Schéma SQL (PostgreSQL) — état consolidé après V1→V23 (V16 = données seed uniquement, aucun changement de schéma)
 
 > Conventions : `snake_case`, PK `uuid` (`gen_random_uuid()`), montants `NUMERIC(15,2)`,
 > taux `NUMERIC(10,6)`, `TIMESTAMPTZ` pour les dates système, `DATE` pour les dates métier.
@@ -261,13 +286,18 @@ CREATE TABLE compte (
 CREATE INDEX idx_compte_foyer ON compte (foyer_id);
 
 -- ── Relation N-N compte ↔ membre ────────────────────────────────────────────
+-- Note : `est_primaire` (V20/V21) remplace l'ancienne colonne membre.compte_primaire_id.
 CREATE TABLE compte_membre (
-  compte_id UUID NOT NULL REFERENCES compte(id) ON DELETE CASCADE,
-  membre_id UUID NOT NULL REFERENCES membre(id) ON DELETE CASCADE,
+  compte_id    UUID    NOT NULL REFERENCES compte(id) ON DELETE CASCADE,
+  membre_id    UUID    NOT NULL REFERENCES membre(id) ON DELETE CASCADE,
+  est_primaire BOOLEAN NOT NULL DEFAULT FALSE,
   CONSTRAINT pk_compte_membre PRIMARY KEY (compte_id, membre_id)
 );
 CREATE INDEX idx_compte_membre_compte ON compte_membre (compte_id);
 CREATE INDEX idx_compte_membre_membre ON compte_membre (membre_id);
+-- Un seul compte primaire par membre :
+CREATE UNIQUE INDEX idx_compte_membre_primaire_unique
+  ON compte_membre (membre_id) WHERE est_primaire;
 
 -- ── Catégories de postes ─────────────────────────────────────────────────────
 -- Note : la colonne `systeme` (bool) a été supprimée en V6.
@@ -355,10 +385,12 @@ CREATE TABLE poste (
   mode              VARCHAR(16)   NOT NULL DEFAULT 'MENSUALISE'
                     CHECK (mode IN ('MENSUALISE','PERIODIQUE')),
   moment            VARCHAR(16)   NOT NULL DEFAULT 'DEBUT_PERIODE'
-                    CHECK (moment IN ('DEBUT_PERIODE','FIN_PERIODE')),
+                    CHECK (moment IN ('DEBUT_PERIODE','FIN_PERIODE','INCONNU')),  -- INCONNU depuis V17
   nature            VARCHAR(16)   NOT NULL DEFAULT 'EFFECTIF'
                     CHECK (nature IN ('EFFECTIF','ESTIMATION')),
   estim_pourcentage NUMERIC(3,1),          -- NULL si nature=EFFECTIF, obligatoire si ESTIMATION
+  importance             INT NOT NULL DEFAULT 3 CHECK (importance BETWEEN 1 AND 5),             -- V18, descriptif
+  potentiel_optimisation INT NOT NULL DEFAULT 3 CHECK (potentiel_optimisation BETWEEN 1 AND 5),  -- V19, descriptif
   type_repartition  VARCHAR(16)   NOT NULL DEFAULT 'AUTO'
                     CHECK (type_repartition IN ('AUTO','REVERSE_AUTO','CUSTOM')),
   ordre             INT           NOT NULL DEFAULT 0,
@@ -404,24 +436,53 @@ CREATE TABLE objectif (
   date_creation       TIMESTAMPTZ   NOT NULL DEFAULT now()
 );
 CREATE INDEX idx_objectif_scenario ON objectif (scenario_id);
+
+-- ── Argent de poche — politique récurrente (V22) ────────────────────────────
+CREATE TABLE politique_argent_poche (
+  id            UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+  scenario_id   UUID          NOT NULL REFERENCES scenario(id) ON DELETE CASCADE,
+  membre_id     UUID          NOT NULL REFERENCES membre(id) ON DELETE CASCADE,
+  compte_id     UUID          NOT NULL REFERENCES compte(id),
+  nom           VARCHAR(160)  NOT NULL,
+  date_debut    DATE          NOT NULL,
+  date_fin      DATE,
+  mode          VARCHAR(16)   NOT NULL CHECK (mode IN ('VARIABLE','FIXE')),
+  socle         NUMERIC(15,2),
+  pourcentage   NUMERIC(5,2),
+  plafond       NUMERIC(15,2),
+  montant_fixe  NUMERIC(15,2),
+  date_creation TIMESTAMPTZ   NOT NULL DEFAULT now(),
+  date_modif    TIMESTAMPTZ   NOT NULL DEFAULT now(),
+  CONSTRAINT chk_politique_poche_periode CHECK (date_fin IS NULL OR date_fin >= date_debut),
+  CONSTRAINT chk_politique_poche_mode_variable CHECK (mode <> 'VARIABLE' OR
+    (socle IS NOT NULL AND socle >= 0 AND pourcentage BETWEEN 0 AND 100 AND plafond >= socle)),
+  CONSTRAINT chk_politique_poche_mode_fixe CHECK (mode <> 'FIXE' OR montant_fixe >= 0)
+);
+CREATE INDEX idx_politique_poche_scenario_membre
+  ON politique_argent_poche (scenario_id, membre_id, date_debut);
+
+-- ── Argent de poche — allocation ponctuelle (V23) ───────────────────────────
+CREATE TABLE allocation_argent_poche (
+  id            UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+  scenario_id   UUID          NOT NULL REFERENCES scenario(id) ON DELETE CASCADE,
+  membre_id     UUID          NOT NULL REFERENCES membre(id) ON DELETE CASCADE,
+  compte_id     UUID          NOT NULL REFERENCES compte(id),
+  mois          DATE          NOT NULL,
+  montant       NUMERIC(15,2) NOT NULL CHECK (montant >= 0),
+  raison        VARCHAR(255),
+  date_creation TIMESTAMPTZ   NOT NULL DEFAULT now(),
+  date_modif    TIMESTAMPTZ   NOT NULL DEFAULT now(),
+  CONSTRAINT uq_allocation_poche_scenario_membre_mois UNIQUE (scenario_id, membre_id, mois)
+);
+CREATE INDEX idx_allocation_poche_scenario_mois ON allocation_argent_poche (scenario_id, mois);
 ```
 
-> Migrations appliquées : V1 (schéma initial) → V2 (seed démo) → V3 (token_refresh) →
-> V4 (seed réel) → V5 (poste.nature) → V6 (suppression categorie.systeme) →
-> V7 (repartition_periode + type_repartition) → V8 (compte_membre, suppression
-> compte.type et poste.compte_source) → V9 (nettoyage ventilations à 0%) →
-> V10 (poste.estim_pourcentage — plage de variation ± pour les postes ESTIMATION) →
-> **V11** (poste.categorie_id passe en `ON DELETE SET NULL`, pour ne pas bloquer la
-> suppression d'une catégorie) → **V12** (poste.poste_origine_id — chaînage des
-> révisions de montant planifiées, `ON DELETE SET NULL`) → **V13** (suppression de la
-> colonne `ordre` sur membre/compte/categorie/actif — tri désormais automatique côté
-> application, par libellé/nom) → **V14** (suppression de la table legacy
-> `repartition_defaut`) → **V15** (suppression de la notion d'actif patrimonial : table
-> `actif` supprimée, `objectif.actif_id` retiré, `objectif.compte_id` devient
-> obligatoire) → **V16** (second foyer de démonstration « Foyer Berthoud », anonymisé :
-> 2 membres, 8 comptes, 20 catégories, 1 scénario de référence avec périodes de
-> répartition/postes/ventilations — données modifiées ±5-15 % par rapport à la source
-> réelle, jamais reproduites au centime).
+> Migrations V1→V16 : voir [doc 00 §3](00-synthese.md) (tableau complet). Depuis V16 :
+> **V17** (`poste.moment` accepte `INCONNU`) → **V18** (`poste.importance`, 1-5,
+> descriptif) → **V19** (`poste.potentiel_optimisation`, 1-5, descriptif) → **V20**
+> (`membre.compte_primaire_id`, remplacée par V21) → **V21** (compte primaire déplacé
+> vers `compte_membre.est_primaire`, contrainte unique partielle par membre) →
+> **V22** (`politique_argent_poche`) → **V23** (`allocation_argent_poche`).
 >
 > Migration V10 : postes existants avec `nature='ESTIMATION'` reçoivent automatiquement
 > `estim_pourcentage = 10.0` (valeur par défaut). Postes `EFFECTIF` conservent `NULL`.

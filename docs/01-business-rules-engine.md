@@ -371,6 +371,58 @@ Pour la projection réelle, les lignes `D > 1` se lisent comme si le `Mode` éta
 lissé (`montant / D`) même en vue réelle, car aucune date de paiement effective n'est
 connue. Les lignes `D == 1` restent inchangées.
 
+## 13. Argent de poche — impact sur le solde disponible
+
+Module **nouveau** (absent de l'Excel), purement prévisionnel : aucune dépense réelle
+n'est saisie ou suivie. Pour un `(membre, mois)` donné, le moteur retranche un montant
+d'argent de poche du **solde disponible brut** (`ravBrut = revenus − charges − réserves`,
+§4/§5) :
+
+```
+poche         = ArgentDePocheProvider.montant(membre, année, mois, ravBrut)  ≥ 0 (clampé)
+soldeDisponible = ravBrut − poche
+```
+
+Le `ArgentDePocheProvider` (interface du moteur pur) est fourni par la couche service
+(`ArgentPocheService`) ; sa valeur par défaut `ArgentDePocheProvider.AUCUN` renvoie
+toujours `0` — **aucun impact si aucune politique/allocation n'est configurée**
+(rétro-compatibilité totale avec les vecteurs golden §8-bis).
+
+**Résolution du montant** (priorité, pour un membre et un mois donnés) :
+```
+1. Une AllocationArgentPoche existe pour ce membre/mois ?  → on l'utilise telle quelle.
+2. Sinon, une PolitiqueArgentPoche est active ce mois-là ?  → on applique sa formule.
+3. Sinon                                                    → 0 CHF.
+```
+
+**Formule d'une `PolitiqueArgentPoche`** — deux modes exclusifs :
+```
+# Mode VARIABLE (socle + % du surplus, plafonné)
+socleEffectif = socle                                (toujours versé intégralement)
+surplus       = max(0, ravBrut − socle)
+bonus         = surplus × pourcentage / 100
+poche         = min(socleEffectif + bonus, plafond)
+
+# Mode FIXE
+poche         = montantFixe
+```
+Dans les deux modes, `soldeDisponible` peut devenir négatif (découvert assumé, pas un
+bug) — l'argent de poche est versé même si le solde brut ne le couvre pas.
+
+**Continuité des politiques** : pour un membre donné, l'ensemble de ses
+`PolitiqueArgentPoche` ne doit **jamais se chevaucher** dans le temps (validation en
+service) ; des trous sont autorisés (mois sans politique ⇒ 0 CHF sauf allocation). Cette
+règle ne s'applique **pas** aux `AllocationArgentPoche` (montants ponctuels indépendants).
+
+**Indicateur "taux d'effort"** (`ProjectionService#tauxEffort`) : expose en plus une
+3ᵉ jauge "charges + réserves + argent de poche" (`argentPocheTotal`/
+`argentPocheTotalPireCas` dans `TauxEffortMembreDto`, doc 04) — vision plus complète de
+l'effort réel d'un membre, l'argent de poche n'étant pas un poste.
+
+Tests golden : `ArgentPocheServiceFormuleTest` (formule/résolution pures),
+`MoteurCalculArgentPocheTest` (impact sur `soldeDisponible`), `ArgentPocheApiTest`
+(bout en bout via l'API).
+
 ---
 
 ## 8-bis. Vecteurs de test (golden)

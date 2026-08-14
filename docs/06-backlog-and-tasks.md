@@ -128,18 +128,11 @@ Format des tâches : `T<epic>.<n>`.
 - [x] **T7.5** Nature de poste (`EFFECTIF`/`ESTIMATION`) + migration `V5__poste_nature.sql`.
   *Accept.* : valeur par défaut `EFFECTIF`, modifiable en création/édition de poste.
 - [x] **T7.6** Pourcentage d'estimation (`estimPourcentage`) + migration `V10__poste_estim_pourcentage.sql`.
-  *Objectif* : permettre de saisir une plage de variation ±% sur les postes `ESTIMATION`.
-  *Accept.* :
-  - Colonne `estim_pourcentage NUMERIC(3,1)` ajoutée, nullable (null = EFFECTIF).
-  - Postes existants avec `nature='ESTIMATION'` migrés à 10.0 % automatiquement.
-  - Validation backend (via `PosteValidator`) : obligatoire si ESTIMATION → 422
-    `ESTIMATION_POURCENTAGE_REQUIS` ; nul si EFFECTIF.
-  - UI : section conditionnelle (visible uniquement si ESTIMATION) avec `p-inputnumber`
-    (min=0, max=100, 1 décimale, suffixe %). Auto-peuplage à 10 % EFFECTIF→ESTIMATION ;
-    remise à null ESTIMATION→EFFECTIF.
-  - Liste postes : badge Nature affiche « Estimation ± X.X% » (formaté 1 décimale).
-  - Champ descriptif : le moteur ne l'utilise pas dans les projections (réservé usage futur
-    de stress-test / plage min–max).
+  *Objectif* : plage de variation ±% sur les postes `ESTIMATION`, purement descriptive
+  (moteur ne l'utilise pas dans les projections, réservé au stress-test "pire cas" —
+  voir `taux-effort`, doc 04 §9.3-ter). *Accept.* : colonne nullable (obligatoire si
+  ESTIMATION, 422 `ESTIMATION_POURCENTAGE_REQUIS` sinon) ; postes existants migrés à
+  10.0 % ; UI section conditionnelle avec auto-peuplage/remise à null selon la nature.
 - [x] **T7.7** Périodes de répartition (`RepartitionPeriode`/`RepartitionPeriodePart`,
   migration `V7__repartition_periode.sql`) : remplace `RepartitionDefaut` (conservée en
   legacy) par des fenêtres temporelles de quotes-parts, classification `AUTO` /
@@ -156,6 +149,21 @@ Format des tâches : `T<epic>.<n>`.
   suppression de `compte.type` et `poste.compte_source`. *Accept.* : création/édition de
   compte sans membre actif rattaché → 422 `COMPTE_SANS_MEMBRE`. **Non documenté avant
   cette cartographie.**
+- [x] **T7.10** Enrichissements descriptifs du poste — `moment=INCONNU` (`V17`, date de
+  paiement effective non connue, impose `MENSUALISE`), `importance` (`V18`, 1-5),
+  `potentielOptimisation` (`V19`, 1-5). *Accept.* : aucun impact sur le moteur (doc 01) ;
+  défauts 3/3 pour les postes existants. **Non documenté avant cette cartographie.**
+- [x] **T7.11** Compte primaire par membre (`V20` colonne unique sur `membre`, remplacée
+  par `V21` : `compte_membre.est_primaire`, un compte peut être primaire pour plusieurs
+  co-titulaires, un membre a au plus un primaire). *Accept.* : contrainte unique partielle
+  vérifiée. **Non documenté avant cette cartographie.**
+- [x] **T7.12** Argent de poche — `PolitiqueArgentPoche` (`V22`, mode VARIABLE
+  socle+%+plafond ou FIXE) et `AllocationArgentPoche` (`V23`, ponctuelle par
+  `(scenario, membre, mois)`, prioritaire sur la politique). CRUD complet
+  (`ArgentPocheController`/`Service`), résolution `allocation > politique > 0` intégrée
+  au moteur (retrait du solde disponible, doc 01 §13). *Accept.* : `ArgentPocheServiceFormuleTest`,
+  `MoteurCalculArgentPocheTest`, `ArgentPocheApiTest` verts ; chevauchement de politiques
+  → 422 ; doublon d'allocation → 409. **Non documenté avant cette cartographie.**
 
 ---
 
@@ -184,6 +192,10 @@ Format des tâches : `T<epic>.<n>`.
   et [doc 04 §9.3-bis](04-api-spec.md). *Accept.* : `MoteurEvenementsTest` vert (chaînes de
   révision, fin décalée au mois suivant, aucune échéance intermédiaire pour les postes
   périodiques). **Non documenté avant cette cartographie.**
+- [x] **T8.9** `projection/taux-effort[-annuel]` — indicateur taux d'effort par membre
+  (normal + pire cas ESTIMATION), incluant l'argent de poche (`argentPocheTotal`/
+  `argentPocheTotalPireCas`, doc 01 §13). *Accept.* : voir [doc 04 §9.3-ter](04-api-spec.md).
+  **Non documenté avant cette cartographie.**
 
 ---
 
@@ -229,6 +241,11 @@ Format des tâches : `T<epic>.<n>`.
   implémenté). La notion d'actif patrimonial a été **supprimée** (voir T7.4) ; ce module
   ne portera donc que sur les comptes. Repassé de `[x]` à `[ ]`.
 - [x] **T10.7** **Objectifs** : cartes + barres de progression + formulaire.
+- [x] **T10.12** **Argent de poche** (`/argent-poche`, `ArgentPocheComponent`) : CRUD
+  politiques (aperçu "6 prochains mois" via `rav-brut`) et allocations. Widget/indicateur
+  `taux-effort-membre` intégré au dashboard (`app-taux-effort-card`, jauge "+ argent de
+  poche") + action rapide depuis le KPI "argent de poche du mois". *Accept.* : voir
+  [doc 05 §3.9](05-frontend-spec.md). **Non documenté avant cette cartographie.**
 
 ---
 

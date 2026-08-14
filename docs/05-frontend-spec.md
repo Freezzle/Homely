@@ -68,6 +68,7 @@ réactifs dans tous les composants abonnés.
   ├── /revenus | /charges | /reserves
   ├── /scenarios
   ├── /objectifs
+  ├── /argent-poche                       (politiques + allocations, par membre/scénario)
   ├── /referentiels/(membres|comptes|categories|taux)
   ├── /parametres
   └── /acces                            (indépendant de /parametres)
@@ -145,6 +146,16 @@ affichée (année seule, ou "Mois Année").
 §8-ter](01-business-rules-engine.md)) : liste les débuts/fins/révisions de postes de
 l'année (ou du mois filtré), scopés au sujet courant via `?membreId=`. Cliquer un
 événement (`(select)`) navigue vers le mois correspondant.
+
+**Indicateurs enrichis** (`features/dashboard/indicators/`, un dossier par indicateur —
+`.indicator.ts` + `-drawer-content.component` ouvert au clic pour le détail) : greffés
+sur l'écran unifié, incluent notamment `taux-effort-membre` (jauges "charges + réserves"
+et "charges + réserves **+ argent de poche**" via `app-taux-effort-card`, alimentées par
+`GET .../projection/taux-effort[-annuel]`, [doc 04 §9.3-ter](04-api-spec.md)),
+`mois-a-risque`, `postes-a-optimiser`, `besoins-plaisirs`, `comparaison-periode`,
+`evolution-graphique`, `ventilation-postes`, `virements-comptes` (architecture détaillée
+hors périmètre de cette passe de documentation). Le KPI "argent de poche du mois" du
+dashboard mensuel (par membre) ouvre une action rapide vers `/argent-poche` (voir §3.9).
 
 ### 3.2 (fusionné avec §3.1 — voir ci-dessus)
 
@@ -322,6 +333,20 @@ Composant unique `PostesListeComponent` paramétré par `type` via `input<TypePo
 - Le propriétaire ne peut pas se retirer lui-même (boutons cachés pour les lignes de rôle
   `OWNER`).
 
+### 3.9 Argent de poche
+
+`/argent-poche` (`ArgentPocheComponent`) — gestion par membre/scénario des politiques
+récurrentes et allocations ponctuelles (voir [doc 01 §13](01-business-rules-engine.md#13-argent-de-poche--impact-sur-le-solde-disponible),
+[doc 04 §9-bis](04-api-spec.md)) :
+
+- **Politiques** (`p-table`) : nom · membre · période (début/fin) · mode (VARIABLE/FIXE)
+  · paramètres (socle/%/plafond ou montant fixe). Formulaire dialog avec aperçu "6
+  prochains mois" calculé côté client à partir du RàV brut (`GET .../rav-brut`) et des
+  valeurs du formulaire en cours d'édition (pas encore enregistrées).
+- **Allocations** (`p-table`) : membre · mois · montant · raison. Formulaire dialog
+  simple (une exception ponctuelle, prioritaire sur toute politique active ce mois-là).
+- Actions d'écriture masquées pour `VIEWER`.
+
 ## 4. Composants & pratiques transverses
 
 ### 4.0 Composants partagés du dashboard (`shared/components/`)
@@ -343,6 +368,9 @@ propre (agrégats reçus en `@Input`, calculés côté service/backend) :
   (réutilisé dashboard + écran Objectifs §3.6).
 - `carte-bilan` (`CarteBilanComponent`) : carte de synthèse (bilan foyer/membre, lignes de
   décomposition), déjà existante avant la refonte.
+- `taux-effort-card` (`TauxEffortCardComponent`) : jauges "charges + réserves" (normal /
+  pire cas) et "charges + réserves + argent de poche" (§3.1, indicateur
+  `taux-effort-membre`).
 
 ### 4.1 Graphiques
 - `p-chart` (Chart.js). Palette de couleurs synchronisée avec `membre.couleur` pour la

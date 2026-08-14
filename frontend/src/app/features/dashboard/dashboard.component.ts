@@ -461,7 +461,6 @@ export class DashboardComponent {
   readonly commentSePasseIndicateursMois = computed(() => {
     const virements = this.virementsComptesIndicateur();
     return [
-      this.comparaisonPeriodeIndicateurMois(),
       ...this.tauxEffortIndicateursMois(),
       this.evenementsIndicateurMois(),
       ...(virements ? [virements] : []),
@@ -472,7 +471,6 @@ export class DashboardComponent {
    *  risque (anneau + compteur) + Taux d'effort par membre (vue membre uniquement) +
    *  Événements de l'année. */
   readonly commentSePasseIndicateursAnnee = computed(() => [
-    this.comparaisonPeriodeIndicateurAnnee(),
     this.moisARisqueIndicateurAnnee(),
     ...this.tauxEffortIndicateursAnnee(),
     this.evenementsIndicateurAnnee(),
@@ -670,6 +668,7 @@ export class DashboardComponent {
   /** Section "Pour aller plus loin" (vue mois) : "Ventilations des postes", "Postes à
    *  optimiser" et "Plaisirs vs Besoins" (les graphiques n'existent qu'en vue annuelle). */
   readonly pourAllerPlusLoinIndicateursMois = computed(() => [
+    this.comparaisonPeriodeIndicateurMois(),
     this.ventilationPostesIndicateurMois(),
     this.postesAOptimiserIndicateurMois(),
     this.besoinsPlaisirsIndicateurMois(),
@@ -677,6 +676,7 @@ export class DashboardComponent {
 
   /** Section "Pour aller plus loin" (vue année) : les 4 indicateurs. */
   readonly pourAllerPlusLoinIndicateursAnnee = computed(() => [
+    this.comparaisonPeriodeIndicateurAnnee(),
     this.ventilationPostesIndicateurAnnee(),
     this.evolutionGraphiqueIndicateur(),
     this.postesAOptimiserIndicateur(),

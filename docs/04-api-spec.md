@@ -433,6 +433,29 @@ lorsqu'on navigue effectivement sur le dashboard d'un mois précis.
 }
 ```
 
+### 9.3-ter Taux d'effort (indicateur, dashboard)
+
+`GET …/scenarios/{scenarioId}/projection/taux-effort?annee=2026&mois=6` (mensuel) ou
+`.../taux-effort-annuel?annee=2026` (somme des 12 mois). Rôle minimal : `VIEWER`. Réponse
+— une entrée par membre, normal + "pire cas" (postes CHARGE/RESERVE `ESTIMATION` à leur
+variation maximale) :
+```json
+[
+  {
+    "membreId": "uuid", "nomMembre": "Dylan", "couleurMembre": "#...",
+    "revenusTotal": 6380.00,
+    "chargesTotal": 3000.15, "reservesTotal": 237.80,
+    "chargesTotalPireCas": 3300.16, "reservesTotalPireCas": 237.80,
+    "argentPocheTotal": 500.00, "argentPocheTotalPireCas": 500.00
+  }
+]
+```
+`argentPocheTotal`/`argentPocheTotalPireCas` : argent de poche résolu pour ce membre
+(doc 01 §13) — **n'est pas un poste**, donc absent de `chargesTotal`/`reservesTotal` ;
+alimente côté frontend une 3ᵉ jauge "charges + réserves + argent de poche" (vision plus
+complète de l'effort réel). Le taux d'effort (%) et la zone (Confortable/Correct/
+Tendu/Saturé) sont calculés côté frontend à partir de ces champs bruts.
+
 ### 9.3-bis Événements budgétaires (frise chronologique)
 
 `GET …/scenarios/{scenarioId}/projection/evenements?annee=2026&membreId={membreId?}`
@@ -517,6 +540,34 @@ Réponse alignée par année pour un graphe multi-séries :
   ]
 }
 ```
+
+## 9-bis. Argent de poche (niveau scénario)
+
+`/api/foyers/{foyerId}/scenarios/{scenarioId}/argent-poche` — voir
+[doc 01 §13](01-business-rules-engine.md#13-argent-de-poche--impact-sur-le-solde-disponible)
+pour la formule et [doc 02](02-domain-and-data-model.md) pour le schéma.
+
+| Méthode | Path | Rôle min. | Description |
+|---|---|---|---|
+| GET/POST | `/politiques` (+`?membreId=`) | VIEWER / EDITOR | Liste / création d'une `PolitiqueArgentPoche` |
+| GET/PUT/DELETE | `/politiques/{id}` | VIEWER / EDITOR | Lecture / modification / suppression |
+| GET/POST | `/allocations` (+`?membreId=`) | VIEWER / EDITOR | Liste / création d'une `AllocationArgentPoche` |
+| GET/PUT/DELETE | `/allocations/{id}` | VIEWER / EDITOR | Lecture / modification / suppression |
+| GET | `/resolution?membreId=&mois=YYYY-MM` | VIEWER | Montant résolu pour un `(membre, mois)` + source (`ALLOCATION`/`POLITIQUE`/`AUCUNE`) |
+| GET | `/resolution-annee?membreId=&annee=` | VIEWER | Résolution des 12 mois d'une année pour un membre (1 seul appel) |
+| GET | `/rav-brut?membreId=&annee=` | VIEWER | RàV **brut** (avant retrait de poche) des 12 mois — aperçu client d'une politique en cours d'édition, indépendant des données persistées |
+| GET | `/resolution-foyer-annee?annee=` | VIEWER | Résolution agrégée (somme tous membres) des 12 mois — widget dashboard mode foyer |
+
+Corps `PolitiqueArgentPocheRequest`/`Dto` : `{membreId, compteId, nom, dateDebut, dateFin?,
+mode: "VARIABLE"|"FIXE", socle?, pourcentage?, plafond?, montantFixe?}`.
+Corps `AllocationArgentPocheRequest`/`Dto` : `{membreId, compteId, mois, montant, raison?}`.
+Réponse `ResolutionArgentPocheDto` : `{montant, source, politiqueId?, allocationId?, rav}`.
+
+Codes d'erreur spécifiques (voir [`CodesErreur`](../src/main/java/ch/homely/commun/CodesErreur.java)) :
+`ARGENT_POCHE_POLITIQUE_CHEVAUCHEMENT` (422, chevauchement de politiques pour un même
+membre), `ARGENT_POCHE_ALLOCATION_DOUBLON` (409, doublon `(scenario, membre, mois)`),
+`ARGENT_POCHE_MODE_FIXE_MONTANT_REQUIS`/`ARGENT_POCHE_MODE_VARIABLE_PARAMS_REQUIS`,
+`ARGENT_POCHE_PLAFOND_INFERIEUR_SOCLE`, `ARGENT_POCHE_PERIODE_INVALIDE` (422).
 
 ## 10. Notes d'implémentation
 
