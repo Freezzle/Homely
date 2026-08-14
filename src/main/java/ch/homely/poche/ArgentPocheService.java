@@ -90,7 +90,7 @@ public class ArgentPocheService {
         if (alloc.isPresent()) {
             AllocationArgentPoche a = alloc.get();
             return ResolutionArgentPoche.parAllocation(
-                    a.getMontant().doubleValue(), a.getId(), ravBrut);
+                    a.getMontant().doubleValue(), a.getId(), a.getCompte().getId(), ravBrut);
         }
 
         Optional<PolitiqueArgentPoche> pol = politiqueRepo
@@ -98,7 +98,7 @@ public class ArgentPocheService {
         if (pol.isPresent()) {
             PolitiqueArgentPoche p = pol.get();
             double montant = calculerFormule(p, ravBrut);
-            return ResolutionArgentPoche.parPolitique(montant, p.getId(), ravBrut);
+            return ResolutionArgentPoche.parPolitique(montant, p.getId(), p.getCompte().getId(), ravBrut);
         }
 
         return ResolutionArgentPoche.aucune(ravBrut);

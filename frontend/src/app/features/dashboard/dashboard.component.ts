@@ -712,6 +712,8 @@ export class DashboardComponent {
       reservesTotal: dto.reservesTotal,
       chargesTotalPireCas: dto.chargesTotalPireCas,
       reservesTotalPireCas: dto.reservesTotalPireCas,
+      argentPocheTotal: dto.argentPocheTotal,
+      argentPocheTotalPireCas: dto.argentPocheTotalPireCas,
     }));
   }
 
@@ -895,7 +897,7 @@ export class DashboardComponent {
     charges: { id: string; libelle: string; montant: number }[];
     reserves: { id: string; libelle: string; montant: number }[];
   }): LigneDecomposition[] {
-    return this.decomp.construireDecomposition(detail, this.objectifs());
+    return this.decomp.construireDecomposition(detail, this.objectifs(), this.argentPocheMontantMoisSujet());
   }
 
   /** Montant d'une catégorie pour le sujet courant (mois sélectionné) : agrégat foyer
@@ -950,6 +952,23 @@ export class DashboardComponent {
 
   readonly tauxEffort = computed(() => this.decomp.tauxEffort(this.agregatMoisCourant()));
 
+  /** Montant d'argent de poche déjà déduit du RàV pour le sujet courant (membre ou
+   *  foyer agrégé), pour le mois sélectionné — voir `MoteurCalcul.aggregatMembreMoisInterne`.
+   *  Réutilisé par les décompositions "Résumé"/"Catégorie" (ligne dédiée, couleur or) et
+   *  par `barSegmentsMois`, pour ne pas dupliquer la logique de résolution de source. */
+  readonly argentPocheMontantMoisSujet = computed(() => {
+    if (this.estModeMembre()) {
+      const poche = this.argentPocheMoisCourant();
+      return poche && poche.source !== 'AUCUNE' ? poche.montant : 0;
+    }
+    return this.argentPocheFoyerMoisCourant()?.total ?? 0;
+  });
+
+  /** Équivalent annuel de `argentPocheMontantMoisSujet`, pour les vues "année". */
+  readonly argentPocheMontantAnneeSujet = computed(() =>
+    this.estModeMembre() ? this.argentPocheTotalAnnuel() : this.argentPocheFoyerTotalAnnuel(),
+  );
+
   readonly categoriesParType = computed(() => {
     const categories = this.categories();
     const makeList = (type: TypeCategorie) =>
@@ -993,9 +1012,10 @@ export class DashboardComponent {
     const ventilations = this.ventilations();
     if (!ventilations) return [];
     const s = this.sujet();
+    const poche = this.argentPocheMontantMoisSujet();
     return s.mode === 'membre'
-      ? this.decomp.construireCascadeDecomposition(s.membreId, this.agregatMoisCourant(), ventilations, this.membres().length)
-      : this.decomp.foyerCascadeDecomposition(ventilations, this.membres());
+      ? this.decomp.construireCascadeDecomposition(s.membreId, this.agregatMoisCourant(), ventilations, this.membres().length, poche)
+      : this.decomp.foyerCascadeDecomposition(ventilations, this.membres(), poche);
   });
 
   readonly foyerLignesActuelles = computed(() => {
@@ -1032,7 +1052,7 @@ export class DashboardComponent {
       revenus: makeList('REVENU'),
       charges: makeList('CHARGE'),
       reserves: makeList('RESERVE'),
-    }, this.objectifs());
+    }, this.objectifs(), this.argentPocheMontantAnneeSujet());
   });
 
   readonly foyerCompteDecompositionAnnuel = computed<LigneDecomposition[]>(() => {
@@ -1057,9 +1077,10 @@ export class DashboardComponent {
     const ventilation = this.ventilationAnnuelle();
     if (!ventilation) return [];
     const s = this.sujet();
+    const poche = this.argentPocheMontantAnneeSujet();
     return s.mode === 'membre'
-      ? this.decomp.construireCascadeDecomposition(s.membreId, this.agregatAnneeCourant(), ventilation, this.membres().length)
-      : this.decomp.foyerCascadeDecomposition(ventilation, this.membres());
+      ? this.decomp.construireCascadeDecomposition(s.membreId, this.agregatAnneeCourant(), ventilation, this.membres().length, poche)
+      : this.decomp.foyerCascadeDecomposition(ventilation, this.membres(), poche);
   });
 
   readonly foyerLignesActuellesAnnuel = computed(() => {
@@ -1499,13 +1520,7 @@ export class DashboardComponent {
   readonly barSegmentsMois = computed<MetricBarSegment[]>(() => {
     const rav = this.agregatMoisCourant().soldeDisponible;
     const reserves = this.agregatMoisCourant().reserves;
-    let argentDePoche = 0;
-    if (this.estModeMembre()) {
-      const poche = this.argentPocheMoisCourant();
-      argentDePoche = poche && poche.source !== 'AUCUNE' ? poche.montant : 0;
-    } else {
-      argentDePoche = this.argentPocheFoyerMoisCourant()?.total ?? 0;
-    }
+    const argentDePoche = this.argentPocheMontantMoisSujet();
     return [
       {
         label: this.t.dashboard.chargesSures,

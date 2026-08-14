@@ -8,6 +8,8 @@ import ch.homely.membre.Membre;
 import ch.homely.membre.MembreRepository;
 import ch.homely.moteur.*;
 import ch.homely.poche.ArgentDePocheProviderJpa;
+import ch.homely.poche.ArgentPocheService;
+import ch.homely.poche.ResolutionArgentPoche;
 import ch.homely.poste.NaturePoste;
 import ch.homely.poste.Poste;
 import ch.homely.poste.PosteRepository;
@@ -30,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -51,12 +54,14 @@ public class ProjectionService {
     private final MembreRepository         membreRepo;
     private final CompteMembreRepository   compteMembreRepo;
     private final ArgentDePocheProviderJpa.ArgentDePocheProviderFactory argentPocheFactory;
+    private final ArgentPocheService argentPocheService;
 
     public ProjectionService(ScenarioRepository scenarioRepo, PosteRepository posteRepo,
                              TauxChangeRepository tauxRepo, CompteRepository compteRepo,
                              RepartitionPeriodeRepository periodeRepo, MembreRepository membreRepo,
                              CompteMembreRepository compteMembreRepo,
-                             ArgentDePocheProviderJpa.ArgentDePocheProviderFactory argentPocheFactory) {
+                             ArgentDePocheProviderJpa.ArgentDePocheProviderFactory argentPocheFactory,
+                             ArgentPocheService argentPocheService) {
         this.scenarioRepo = scenarioRepo;
         this.posteRepo    = posteRepo;
         this.tauxRepo     = tauxRepo;
@@ -65,6 +70,7 @@ public class ProjectionService {
         this.membreRepo   = membreRepo;
         this.compteMembreRepo = compteMembreRepo;
         this.argentPocheFactory = argentPocheFactory;
+        this.argentPocheService = argentPocheService;
     }
 
     // ── T8.1 ─────────────────────────────────────────────────────────────────
@@ -119,14 +125,25 @@ public class ProjectionService {
         AggregatMensuel agFoyer = MoteurCalcul.aggregatFoyerMois(params, annee, mois);
         VentilationsDto.AggregatDto agregat = toVentAggregatDto(agFoyer);
 
-        // Agrégat par membre du mois
+        // Agrégat par membre du mois + résolution argent de poche (montant + compte
+        // crédité) pour fusion ultérieure dans la ventilation par compte — l'argent de
+        // poche n'étant pas un poste, le moteur pur (`MoteurCalcul.ventilations`) ne le
+        // voit jamais. Le RàV brut nécessaire à la formule est simplement
+        // revenus − charges − réserves de l'agrégat déjà calculé (poche n'affecte que
+        // `soldeDisponible`, jamais ces trois composantes — voir
+        // `MoteurCalcul.aggregatMembreMoisInterne`).
         Map<UUID, VentilationsDto.AggregatDto> parMembre = new LinkedHashMap<>();
         Map<UUID, VentilationsDto.SplitDto> parMembreSplit = new LinkedHashMap<>();
+        Map<UUID, ResolutionArgentPoche> pocheParMembre = new LinkedHashMap<>();
         for (UUID membreId : params.membres()) {
             AggregatMensuel ag = MoteurCalcul.aggregatMembreMois(params, membreId, annee, mois);
             parMembre.put(membreId, toVentAggregatDto(ag));
             SplitPersoPartageMensuel split = MoteurCalcul.aggregatMembreMoisSplit(params, membreId, annee, mois);
             parMembreSplit.put(membreId, toVentSplitDto(split));
+
+            double ravBrut = ag.revenus() - ag.charges() - ag.reserves();
+            pocheParMembre.put(membreId,
+                    argentPocheService.resoudre(scenarioId, membreId, YearMonth.of(annee, mois), ravBrut));
         }
 
         // Ventilations par catégorie, par catégorie/membre et par compte/membre
@@ -137,7 +154,8 @@ public class ProjectionService {
                 .collect(Collectors.toMap(Map.Entry::getKey,
                         e -> e.getValue().entrySet().stream()
                                 .collect(Collectors.toMap(Map.Entry::getKey, ie -> bd(ie.getValue())))));
-        Map<UUID, Map<UUID, BigDecimal>> parCM = v.parCompteMembre().entrySet().stream()
+        Map<UUID, Map<UUID, Double>> parCompteMembreBrut = fusionnerArgentPocheDansComptes(v.parCompteMembre(), pocheParMembre);
+        Map<UUID, Map<UUID, BigDecimal>> parCM = parCompteMembreBrut.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey,
                         e -> e.getValue().entrySet().stream()
                                 .collect(Collectors.toMap(Map.Entry::getKey, ie -> bd(ie.getValue())))));
@@ -166,7 +184,9 @@ public class ProjectionService {
         for (UUID membreId : params.membres()) {
             AggregatMensuel normal  = MoteurCalcul.aggregatMembreMois(params, membreId, annee, mois);
             AggregatMensuel pireCas = MoteurCalcul.aggregatMembreMois(paramsPireCas, membreId, annee, mois);
-            resultat.add(toTauxEffortDto(membreId, membresParId.get(membreId), normal, pireCas));
+            double poche = argentPocheMontant(params, membreId, annee, mois, normal);
+            double pochePireCas = argentPocheMontant(paramsPireCas, membreId, annee, mois, pireCas);
+            resultat.add(toTauxEffortDto(membreId, membresParId.get(membreId), normal, pireCas, poche, pochePireCas));
         }
         return resultat;
     }
@@ -188,11 +208,16 @@ public class ProjectionService {
         for (UUID membreId : params.membres()) {
             AggregatMensuel normal  = AggregatMensuel.zero();
             AggregatMensuel pireCas = AggregatMensuel.zero();
+            double poche = 0, pochePireCas = 0;
             for (int m = 1; m <= 12; m++) {
-                normal  = normal.plus(MoteurCalcul.aggregatMembreMois(params, membreId, annee, m));
-                pireCas = pireCas.plus(MoteurCalcul.aggregatMembreMois(paramsPireCas, membreId, annee, m));
+                AggregatMensuel agNormalMois  = MoteurCalcul.aggregatMembreMois(params, membreId, annee, m);
+                AggregatMensuel agPireCasMois = MoteurCalcul.aggregatMembreMois(paramsPireCas, membreId, annee, m);
+                normal  = normal.plus(agNormalMois);
+                pireCas = pireCas.plus(agPireCasMois);
+                poche        += argentPocheMontant(params, membreId, annee, m, agNormalMois);
+                pochePireCas += argentPocheMontant(paramsPireCas, membreId, annee, m, agPireCasMois);
             }
-            resultat.add(toTauxEffortDto(membreId, membresParId.get(membreId), normal, pireCas));
+            resultat.add(toTauxEffortDto(membreId, membresParId.get(membreId), normal, pireCas, poche, pochePireCas));
         }
         return resultat;
     }
@@ -229,7 +254,8 @@ public class ProjectionService {
                 postesPireCas, params.membres(), params.argentDePoche());
     }
 
-    private TauxEffortMembreDto toTauxEffortDto(UUID membreId, Membre membre, AggregatMensuel normal, AggregatMensuel pireCas) {
+    private TauxEffortMembreDto toTauxEffortDto(UUID membreId, Membre membre, AggregatMensuel normal, AggregatMensuel pireCas,
+                                                double argentPoche, double argentPochePireCas) {
         return new TauxEffortMembreDto(
                 membreId,
                 membre != null ? membre.getNom() : null,
@@ -238,7 +264,23 @@ public class ProjectionService {
                 bd(normal.charges()),
                 bd(normal.reserves()),
                 bd(pireCas.charges()),
-                bd(pireCas.reserves()));
+                bd(pireCas.reserves()),
+                bd(argentPoche),
+                bd(argentPochePireCas));
+    }
+
+    /**
+     * Résout le montant d'argent de poche d'un membre pour un mois donné (indicateur
+     * 04 — 3ᵉ jauge "charges + réserves + argent de poche"). Réutilise exactement le
+     * même provider ({@code params.argentDePoche()}) et la même formule de RàV brut
+     * que {@code MoteurCalcul.aggregatMembreMoisInterne} — aucune nouvelle règle de
+     * calcul, seulement une exposition du montant déjà utilisé en interne pour réduire
+     * {@code soldeDisponible}.
+     */
+    private double argentPocheMontant(ParametresScenario params, UUID membreId, int annee, int mois, AggregatMensuel agMois) {
+        double ravBrut = agMois.revenus() - agMois.charges() - agMois.reserves();
+        double poche = params.argentDePoche().montant(membreId, annee, mois, ravBrut);
+        return Math.max(0, poche);
     }
 
     /**
@@ -266,8 +308,19 @@ public class ProjectionService {
             agFoyer = agFoyer.plus(MoteurCalcul.aggregatFoyerMois(params, annee, m));
 
             for (UUID membreId : params.membres()) {
-                parMembre.merge(membreId, MoteurCalcul.aggregatMembreMois(params, membreId, annee, m), AggregatMensuel::plus);
+                AggregatMensuel agMembreMois = MoteurCalcul.aggregatMembreMois(params, membreId, annee, m);
+                parMembre.merge(membreId, agMembreMois, AggregatMensuel::plus);
                 parMembreSplit.merge(membreId, MoteurCalcul.aggregatMembreMoisSplit(params, membreId, annee, m), this::plusSplit);
+
+                // Argent de poche du mois : n'est pas un poste, absent de
+                // `MoteurCalcul.ventilations` — fusionné ici dans `parCM` sur le compte
+                // crédité (même RàV brut = revenus − charges − réserves qu'en mensuel).
+                double ravBrut = agMembreMois.revenus() - agMembreMois.charges() - agMembreMois.reserves();
+                ResolutionArgentPoche poche = argentPocheService.resoudre(scenarioId, membreId, YearMonth.of(annee, m), ravBrut);
+                if (poche.compteId() != null && poche.montant() > 0) {
+                    parCM.computeIfAbsent(poche.compteId(), k -> new LinkedHashMap<>())
+                            .merge(membreId, poche.montant(), Double::sum);
+                }
             }
 
             Ventilations v = MoteurCalcul.ventilations(params, annee, m);
@@ -310,6 +363,27 @@ public class ProjectionService {
                 a.revenusPerso() + b.revenusPerso(), a.revenusPartage() + b.revenusPartage(),
                 a.chargesPerso() + b.chargesPerso(), a.chargesPartage() + b.chargesPartage(),
                 a.reservesPerso() + b.reservesPerso(), a.reservesPartage() + b.reservesPartage());
+    }
+
+    /**
+     * Fusionne l'argent de poche résolu par membre (montant + compte crédité) dans la
+     * ventilation par compte/membre issue du moteur (`v.parCompteMembre()`, qui ne
+     * connaît que les postes). Retourne une nouvelle map mutable, sans modifier
+     * l'original — un membre sans politique/allocation active (source
+     * {@code AUCUNE}, `compteId` null) ne modifie rien, comportement strictement
+     * inchangé.
+     */
+    private Map<UUID, Map<UUID, Double>> fusionnerArgentPocheDansComptes(
+            Map<UUID, Map<UUID, Double>> parCompteMembre,
+            Map<UUID, ResolutionArgentPoche> pocheParMembre) {
+        Map<UUID, Map<UUID, Double>> resultat = new LinkedHashMap<>();
+        parCompteMembre.forEach((compteId, memMap) -> resultat.put(compteId, new LinkedHashMap<>(memMap)));
+        pocheParMembre.forEach((membreId, poche) -> {
+            if (poche.compteId() == null || poche.montant() <= 0) return;
+            resultat.computeIfAbsent(poche.compteId(), k -> new LinkedHashMap<>())
+                    .merge(membreId, poche.montant(), Double::sum);
+        });
+        return resultat;
     }
 
     private VentilationAnnuelleDto.AggregatDto toVentAnnuelleAggregatDto(AggregatMensuel ag) {
@@ -415,7 +489,7 @@ public class ProjectionService {
 
         Map<UUID, UUID> primairesParMembre = chargerPrimairesParMembre(foyerId);
         Map<UUID, List<CompteFluxMensuel>> flux = ComptesFluxSimulateur.simuler(
-                params, tousComptes, primairesParMembre, membreId, annee, mois);
+                params, tousComptes, primairesParMembre, membreId, annee, mois, argentPocheService, scenarioId);
 
         List<CompteRecapMensuelDto> resultat = new ArrayList<>();
         for (Compte compte : comptesMembre) {

@@ -32,6 +32,11 @@ export interface TauxEffortCardData {
    *  à sa variation maximale. Toujours ≥ tauxEffort ; égal si aucun poste ESTIMATION. */
   chargesTotalPireCas: number;
   reservesTotalPireCas: number;
+  /** Argent de poche résolu pour ce membre (n'est pas un poste, absent de
+   *  chargesTotal/reservesTotal) — alimente la 3ᵉ jauge "charges + réserves + argent
+   *  de poche", une vision plus complète de l'effort réel. */
+  argentPocheTotal: number;
+  argentPocheTotalPireCas: number;
 }
 
 /**
@@ -96,6 +101,25 @@ export class TauxEffortCardComponent {
   readonly tauxEffortAffiche = computed(() => Math.min(this.tauxEffort(), 100));
   /** Position visuelle du marqueur pire cas, plafonnée à 100 %. */
   readonly tauxEffortPireCasAffiche = computed(() => Math.min(this.tauxEffortPireCas(), 100));
+
+  /** Taux d'effort "charges + réserves + argent de poche" — vision la plus complète de
+   *  l'effort réel du membre, incluant l'argent de poche qui n'est pas un poste. */
+  readonly tauxEffortAvecPoche = computed(() => {
+    const d = this.data();
+    if (d.revenusTotal <= 0) return 0;
+    return ((d.chargesTotal + d.reservesTotal + d.argentPocheTotal) / d.revenusTotal) * 100;
+  });
+
+  /** Pire cas du taux d'effort "charges + réserves + argent de poche". */
+  readonly tauxEffortAvecPochePireCas = computed(() => {
+    const d = this.data();
+    if (d.revenusTotal <= 0) return 0;
+    return ((d.chargesTotalPireCas + d.reservesTotalPireCas + d.argentPocheTotalPireCas) / d.revenusTotal) * 100;
+  });
+
+  /** Largeur/position visuelles plafonnées à 100 % pour la jauge "charges + réserves + argent de poche". */
+  readonly tauxEffortAvecPocheAffiche = computed(() => Math.min(this.tauxEffortAvecPoche(), 100));
+  readonly tauxEffortAvecPochePireCasAffiche = computed(() => Math.min(this.tauxEffortAvecPochePireCas(), 100));
 
   /** Zone de la jauge "charges + réserves" — sert aussi au badge de la carte et à l'aria-label. */
   readonly zone = computed<TauxEffortZone>(() => TauxEffortCardComponent.zoneDe(this.tauxEffort()));

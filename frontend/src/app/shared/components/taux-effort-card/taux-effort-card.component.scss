@@ -70,6 +70,15 @@
   &.zone-rouge  { background: var(--p-red-500); }
 }
 
+// Jauge "argent de poche" — couleur or fixe (cohérent avec la teinte utilisée pour
+// les lignes "Argent de poche" du résumé/catégorie/compte du dashboard), plutôt que
+// les zones sémantiques des deux autres jauges : distingue visuellement cette 3ᵉ
+// vision (charges + réserves + argent de poche) comme une extension informative,
+// pas un nouveau seuil d'alerte.
+.gauge-fill-poche {
+  background: var(--p-amber-500, #f59e0b);
+}
+
 .gauge-worst {
   position: absolute;
   top: -3px;

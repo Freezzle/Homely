@@ -208,6 +208,11 @@ export interface TauxEffortMembreDto {
   reservesTotal: number;
   chargesTotalPireCas: number;
   reservesTotalPireCas: number;
+  /** Argent de poche résolu pour ce membre (n'est pas un poste, absent de
+   *  chargesTotal/reservesTotal) — alimente la 3ᵉ jauge "charges + réserves + argent
+   *  de poche" de `<app-taux-effort-card>`. */
+  argentPocheTotal: number;
+  argentPocheTotalPireCas: number;
 }
 
 // ── Objectifs ─────────────────────────────────────────────────────────────────

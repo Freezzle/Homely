@@ -90,11 +90,14 @@ export class DecompositionService {
     revenus: { id: string; libelle: string; montant: number }[];
     charges: { id: string; libelle: string; montant: number }[];
     reserves: { id: string; libelle: string; montant: number }[];
-  }, objectifs: ObjectifDto[]): LigneDecomposition[] {
+  }, objectifs: ObjectifDto[], argentDePoche = 0): LigneDecomposition[] {
     return [
       ...detail.revenus.map(r => ({ id: r.id, libelle: r.libelle, montantAbs: r.montant, signe: 1 as const, type: 'REVENU' as const })),
       ...detail.charges.map(r => ({ id: r.id, libelle: r.libelle, montantAbs: r.montant, signe: -1 as const, type: 'CHARGE' as const })),
       ...detail.reserves.map(r => ({ id: r.id, libelle: this.libelleCategorie(r, objectifs), montantAbs: r.montant, signe: -1 as const, type: 'RESERVE' as const })),
+      ...(argentDePoche >= 0.005
+        ? [{ id: 'argent-poche', libelle: this.t.dashboard.argentPocheCategorieLigne, montantAbs: argentDePoche, signe: -1 as const, type: 'ARGENT_POCHE' as const }]
+        : []),
     ];
   }
 
@@ -116,9 +119,9 @@ export class DecompositionService {
    * (`VentilationSplitDto`) : jusqu'à 6 lignes (revenus perso./partagés, charges
    * perso./partagées, réserves perso./partagées). Les lignes à 0 sont omises.
    */
-  cascadeDecompositionDepuisSplit(split: VentilationSplitDto): LigneDecomposition[] {
+  cascadeDecompositionDepuisSplit(split: VentilationSplitDto, argentDePoche = 0): LigneDecomposition[] {
     const rows: LigneDecomposition[] = [];
-    const push = (id: string, libelle: string, montant: number, signe: 1 | -1, type: 'REVENU' | 'CHARGE' | 'RESERVE') => {
+    const push = (id: string, libelle: string, montant: number, signe: 1 | -1, type: 'REVENU' | 'CHARGE' | 'RESERVE' | 'ARGENT_POCHE') => {
       if (Math.abs(montant) >= 0.005) rows.push({ id, libelle, montantAbs: montant, signe, type });
     };
 
@@ -128,32 +131,42 @@ export class DecompositionService {
     push('chg-partage', this.t.projection.chargesPartagees,     split.chargesPartage,   -1, 'CHARGE');
     push('res-perso',   this.t.projection.reservesPersonnelles, split.reservesPerso,    -1, 'RESERVE');
     push('res-partage', this.t.projection.reservesPartagees,    split.reservesPartage,  -1, 'RESERVE');
+    push('argent-poche', this.t.dashboard.argentPochePersoLigne, argentDePoche,         -1, 'ARGENT_POCHE');
 
     return rows;
   }
 
-  /** Décomposition « cascade » foyer/membre en mode mono-membre : 3 lignes agrégées. */
-  cascadeDecompositionTotal(ag: VentilationAggregatDto): LigneDecomposition[] {
-    return [
+  /** Décomposition « cascade » foyer/membre en mode mono-membre : 3 lignes agrégées,
+   *  plus l'argent de poche du sujet courant (mois/année) si non nul. */
+  cascadeDecompositionTotal(ag: VentilationAggregatDto, argentDePoche = 0): LigneDecomposition[] {
+    const rows: LigneDecomposition[] = [
       { id: 'revenus',  libelle: this.t.projection.revenus,  montantAbs: ag.revenus,  signe: 1, type: 'REVENU' },
       { id: 'charges',  libelle: this.t.projection.charges,  montantAbs: ag.charges,  signe: -1, type: 'CHARGE' },
       { id: 'reserves', libelle: this.t.projection.reserves, montantAbs: ag.reserves, signe: -1, type: 'RESERVE' },
     ];
+    if (argentDePoche >= 0.005) {
+      rows.push({ id: 'argent-poche', libelle: this.t.dashboard.argentPochePersoLigne, montantAbs: argentDePoche, signe: -1, type: 'ARGENT_POCHE' });
+    }
+    return rows;
   }
 
   /**
    * Décomposition « cascade » pour un membre : perso/partagé (`v.parMembreSplit`) si
-   * multi-membres, sinon totaux agrégés.
+   * multi-membres, sinon totaux agrégés. `argentDePoche` (déjà déduit du RàV côté
+   * moteur, cf. `MoteurCalcul.aggregatMembreMoisInterne`) est ajouté comme ligne
+   * supplémentaire, purement informative, pour que la somme des lignes affichées
+   * corresponde au solde disponible affiché.
    */
-  construireCascadeDecomposition(membreId: string, ag: VentilationAggregatDto, v: VentilationLike, nbMembres: number): LigneDecomposition[] {
-    if (nbMembres <= 1) return this.cascadeDecompositionTotal(ag);
+  construireCascadeDecomposition(membreId: string, ag: VentilationAggregatDto, v: VentilationLike, nbMembres: number, argentDePoche = 0): LigneDecomposition[] {
+    if (nbMembres <= 1) return this.cascadeDecompositionTotal(ag, argentDePoche);
     const split = v.parMembreSplit?.[membreId];
-    return split ? this.cascadeDecompositionDepuisSplit(split) : this.cascadeDecompositionTotal(ag);
+    return split ? this.cascadeDecompositionDepuisSplit(split, argentDePoche) : this.cascadeDecompositionTotal(ag, argentDePoche);
   }
 
-  /** Décomposition « cascade » foyer multi-membres : somme des splits perso/partagé de tous les membres. */
-  foyerCascadeDecomposition(v: VentilationLike, membres: MembreDto[]): LigneDecomposition[] {
-    if (membres.length <= 1) return this.cascadeDecompositionTotal(v.agregat);
+  /** Décomposition « cascade » foyer multi-membres : somme des splits perso/partagé de
+   *  tous les membres, plus l'argent de poche agrégé du foyer (`argentDePoche`). */
+  foyerCascadeDecomposition(v: VentilationLike, membres: MembreDto[], argentDePoche = 0): LigneDecomposition[] {
+    if (membres.length <= 1) return this.cascadeDecompositionTotal(v.agregat, argentDePoche);
 
     const total: VentilationSplitDto = {
       revenusPerso: 0, revenusPartage: 0,
@@ -170,7 +183,7 @@ export class DecompositionService {
       total.reservesPerso   += split.reservesPerso;
       total.reservesPartage += split.reservesPartage;
     }
-    return this.cascadeDecompositionDepuisSplit(total);
+    return this.cascadeDecompositionDepuisSplit(total, argentDePoche);
   }
 
   /** Période de répartition du scénario couvrant le mois/année donnés, pour un membre. */

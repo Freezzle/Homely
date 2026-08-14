@@ -14,8 +14,9 @@ export interface MembreTagInfo { membreId: string; label: string; couleur: strin
 /** Une ligne de décomposition (revenu/charge/réserve, catégorie, type de poste ou compte). */
 export interface LigneDecomposition {
   id: string; libelle: string; montantAbs: number; signe: 1 | -1;
-  /** Type de poste d'origine — permet un style dédié (ex. réserve affichée en bleu). */
-  type?: 'REVENU' | 'CHARGE' | 'RESERVE';
+  /** Type de poste d'origine — permet un style dédié (ex. réserve affichée en bleu,
+   *  argent de poche affiché en or). */
+  type?: 'REVENU' | 'CHARGE' | 'RESERVE' | 'ARGENT_POCHE';
   tags?: MembreTagInfo[];
 }
 

@@ -32,7 +32,8 @@
           </span>
                     <span class="font-semibold shrink-0 tabular-nums"
                           [class.text-green-600]="row.signe > 0"
-                          [class.text-blue-500]="row.type === 'RESERVE'">
+                          [class.text-blue-500]="row.type === 'RESERVE'"
+                          [class.text-amber-500]="row.type === 'ARGENT_POCHE'">
             {{ row.signe > 0 ? '+' : '−' }}&nbsp;{{ formatMontantSansDevise(row.montantAbs) }}
           </span>
                 </div>

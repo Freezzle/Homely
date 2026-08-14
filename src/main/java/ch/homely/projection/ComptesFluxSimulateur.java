@@ -1,11 +1,15 @@
 package ch.homely.projection;
 
 import ch.homely.compte.Compte;
+import ch.homely.moteur.AggregatMensuel;
 import ch.homely.moteur.DetailCompteMembre;
 import ch.homely.moteur.MoteurCalcul;
 import ch.homely.moteur.ParametresScenario;
 import ch.homely.moteur.VentilationsCompteDetail;
+import ch.homely.poche.ArgentPocheService;
+import ch.homely.poche.ResolutionArgentPoche;
 
+import java.time.YearMonth;
 import java.util.*;
 
 /**
@@ -58,6 +62,13 @@ final class ComptesFluxSimulateur {
      * @param membreCible        membre dont on veut la part sur chaque compte (le
      *                           reste de la simulation, notamment le comblement de
      *                           trésorerie, considère toujours tous les co-titulaires)
+     * @param argentPocheService résolution de l'argent de poche par (membre, mois) —
+     *                           n'est pas un poste, donc absent du moteur pur ; injecté
+     *                           ici pour fusionner son montant, sur le compte crédité,
+     *                           dans la ventilation compte/membre avant simulation des
+     *                           virements (sinon la trésorerie du compte cible ne
+     *                           reflète jamais l'argent de poche qui y est versé)
+     * @param scenarioId         scénario cible, requis par {@code argentPocheService}
      * @return pour chaque compte, la liste chronologique des flux mensuels — scopés à
      *         {@code membreCible} — depuis {@code params.anneeDepart()} jusqu'à
      *         {@code (anneeCible, moisCible)} inclus
@@ -67,7 +78,8 @@ final class ComptesFluxSimulateur {
             List<Compte> tousComptes,
             Map<UUID, UUID> primairesParMembre,
             UUID membreCible,
-            int anneeCible, int moisCible) {
+            int anneeCible, int moisCible,
+            ArgentPocheService argentPocheService, UUID scenarioId) {
 
         Set<UUID> comptesActifsIds = new HashSet<>();
         Map<UUID, Double> cumulTotalParCompte = new LinkedHashMap<>();
@@ -82,7 +94,7 @@ final class ComptesFluxSimulateur {
         int m = 1;
         while (y < anneeCible || (y == anneeCible && m <= moisCible)) {
             simulerMois(params, tousComptes, comptesActifsIds, primairesParMembre, membreCible,
-                    cumulTotalParCompte, resultat, y, m);
+                    cumulTotalParCompte, resultat, y, m, argentPocheService, scenarioId);
             if (m == 12) { m = 1; y++; } else { m++; }
         }
 
@@ -93,9 +105,12 @@ final class ComptesFluxSimulateur {
             ParametresScenario params, List<Compte> tousComptes, Set<UUID> comptesActifsIds,
             Map<UUID, UUID> primairesParMembre, UUID membreCible,
             Map<UUID, Double> cumulTotalParCompte,
-            Map<UUID, List<CompteFluxMensuel>> resultat, int annee, int mois) {
+            Map<UUID, List<CompteFluxMensuel>> resultat, int annee, int mois,
+            ArgentPocheService argentPocheService, UUID scenarioId) {
 
         VentilationsCompteDetail detail = MoteurCalcul.ventilationsCompteMembreDetail(params, annee, mois);
+        Map<UUID, Map<UUID, DetailCompteMembre>> parCompteMembreDetail =
+                fusionnerArgentPocheDansDetail(params, detail, argentPocheService, scenarioId, annee, mois);
 
         Map<UUID, Double> entreesParCompte = new HashMap<>();
         Map<UUID, Double> baseParCompte = new HashMap<>();
@@ -104,7 +119,7 @@ final class ComptesFluxSimulateur {
         Map<UUID, Map<UUID, Double>> echuShareParCompte = new HashMap<>();
 
         for (Compte c : tousComptes) {
-            Map<UUID, DetailCompteMembre> parMembre = detail.parCompteMembre().getOrDefault(c.getId(), Map.of());
+            Map<UUID, DetailCompteMembre> parMembre = parCompteMembreDetail.getOrDefault(c.getId(), Map.of());
             double entrees = 0, base = 0, echu = 0;
             Map<UUID, Double> baseShares = new LinkedHashMap<>();
             Map<UUID, Double> echuShares = new LinkedHashMap<>();
@@ -196,7 +211,7 @@ final class ComptesFluxSimulateur {
 
         for (Compte c : tousComptes) {
             UUID compteId = c.getId();
-            Map<UUID, DetailCompteMembre> parMembre = detail.parCompteMembre().getOrDefault(compteId, Map.of());
+            Map<UUID, DetailCompteMembre> parMembre = parCompteMembreDetail.getOrDefault(compteId, Map.of());
             DetailCompteMembre detailMembre = parMembre.getOrDefault(membreCible, DetailCompteMembre.zero());
 
             double entrees = detailMembre.revenusEchu();
@@ -217,5 +232,33 @@ final class ComptesFluxSimulateur {
                     compteId, annee, mois, entrees, sortiesPlanifiees, sortiesEchues,
                     virementsEntrants, virementsSortants, soldeRestant));
         }
+    }
+
+    /**
+     * Fusionne l'argent de poche résolu par membre (montant + compte crédité) dans la
+     * ventilation compte/membre issue du moteur pur (qui ne connaît que les postes,
+     * pas l'argent de poche). Traité comme un revenu de type "entrée" (mensualisé =
+     * échu, aucun lissage n'existe pour l'argent de poche — le montant est déjà exact
+     * pour ce mois) sur le compte crédité, pour le membre auquel appartient l'argent
+     * de poche. Ne modifie pas {@code detail}, retourne une nouvelle map mutable.
+     */
+    private static Map<UUID, Map<UUID, DetailCompteMembre>> fusionnerArgentPocheDansDetail(
+            ParametresScenario params, VentilationsCompteDetail detail,
+            ArgentPocheService argentPocheService, UUID scenarioId, int annee, int mois) {
+
+        Map<UUID, Map<UUID, DetailCompteMembre>> resultat = new LinkedHashMap<>();
+        detail.parCompteMembre().forEach((compteId, memMap) -> resultat.put(compteId, new LinkedHashMap<>(memMap)));
+
+        for (UUID membreId : params.membres()) {
+            AggregatMensuel ag = MoteurCalcul.aggregatMembreMois(params, membreId, annee, mois);
+            double ravBrut = ag.revenus() - ag.charges() - ag.reserves();
+            ResolutionArgentPoche poche = argentPocheService.resoudre(scenarioId, membreId, YearMonth.of(annee, mois), ravBrut);
+            if (poche.compteId() == null || poche.montant() <= 0) continue;
+
+            DetailCompteMembre delta = new DetailCompteMembre(poche.montant(), poche.montant(), 0, 0);
+            resultat.computeIfAbsent(poche.compteId(), k -> new LinkedHashMap<>())
+                    .merge(membreId, delta, DetailCompteMembre::plus);
+        }
+        return resultat;
     }
 }

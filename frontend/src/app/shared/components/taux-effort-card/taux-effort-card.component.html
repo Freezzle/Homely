@@ -85,6 +85,37 @@
         </div>
       </div>
 
+      <p-divider class="my-3"></p-divider>
+
+      <!-- Taux d'effort "charges + réserves + argent de poche" (vision la plus complète) -->
+      <div class="gauge-section">
+        <div class="gauge-value">
+            <strong>{{ tauxEffortAvecPoche() | number:'1.0-1' }}%</strong>
+            <span class="gauge-label">{{ t.projection.effortCardTauxChargesReservesPoche }}</span>
+        </div>
+
+        <div class="gauge">
+          <div class="gauge-track">
+            <div
+              class="gauge-fill gauge-fill-poche"
+              [style.width.%]="tauxEffortAvecPocheAffiche()">
+            </div>
+            <div
+              class="gauge-worst"
+              [style.left.%]="tauxEffortAvecPochePireCasAffiche()"
+              [attr.data-label]="(tauxEffortAvecPochePireCas() | number:'1.0-0') + '%'">
+            </div>
+          </div>
+          <div class="gauge-scale">
+              <span style="left: 0%">0</span>
+              <span style="left: 75%">75</span>
+              <span style="left: 90%">90</span>
+              <span style="left: 95%">95</span>
+              <span style="left: 100%">100</span>
+          </div>
+        </div>
+      </div>
+
       @if (message(); as msg) {
         <p class="zone-message" [class.zone-message-sature]="zone() === 'SATURE'">{{ msg }}</p>
       }

@@ -9,6 +9,11 @@ import java.util.UUID;
  * qui applique aux postes CHARGE/RESERVE de nature ESTIMATION leur variation maximale
  * ({@code estimPourcentage}). Le taux d'effort et la zone (Confortable/Correct/Tendu/
  * Saturé) sont calculés côté frontend à partir de ces champs bruts.
+ *
+ * <p>{@code argentPocheTotal}/{@code argentPocheTotalPireCas} : montant d'argent de
+ * poche résolu pour ce membre (non un poste, absent de {@code chargesTotal}/
+ * {@code reservesTotal}) — alimente le 3ᵉ jauge "charges + réserves + argent de poche"
+ * côté frontend, une vision plus complète de l'effort réel du membre.</p>
  */
 public record TauxEffortMembreDto(
         UUID membreId,
@@ -18,5 +23,7 @@ public record TauxEffortMembreDto(
         BigDecimal chargesTotal,
         BigDecimal reservesTotal,
         BigDecimal chargesTotalPireCas,
-        BigDecimal reservesTotalPireCas
+        BigDecimal reservesTotalPireCas,
+        BigDecimal argentPocheTotal,
+        BigDecimal argentPocheTotalPireCas
 ) {}

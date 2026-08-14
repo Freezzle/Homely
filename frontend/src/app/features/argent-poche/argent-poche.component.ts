@@ -403,13 +403,17 @@ export class ArgentPocheComponent {
   /** Libellé du mode de la politique (utilisé côté template, où l'union du type
    *  source empêche l'indexation directe de `t.argentPoche.modes`). */
   modeLabel(item: ArgentPocheAffiche): string {
-    const p = item.source as PolitiqueArgentPocheDto;
-    return this.t.argentPoche.modes[p.mode];
+    if(item._type === 'POLITIQUE') {
+        const p = item.source as PolitiqueArgentPocheDto;
+        return this.t.argentPoche.typeOptions[item._type] + " - " + this.t.argentPoche.modes[p.mode];
+    } else {
+        return this.t.argentPoche.typeOptions[item._type];
+    }
   }
-  modeSeverity(item: ArgentPocheAffiche): 'info' | 'success' {
-    const p = item.source as PolitiqueArgentPocheDto;
-    return p.mode === 'FIXE' ? 'info' : 'success';
-  }
+
+    typeSeverity(item: ArgentPocheAffiche): 'info' | 'warn' {
+        return item._type === 'ALLOCATION' ? 'warn' : 'info';
+    }
 
   readonly chargementListe = computed(() => this.chargementPolitiques() || this.chargementAllocations());
 
