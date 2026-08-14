@@ -13,13 +13,22 @@
   <div class="indicator-card__right">
     <!-- Contenu par défaut : info + infoSubtitle. Peut être remplacé par une projection riche. -->
     <ng-content select="[card-info]">
-      <div class="indicator-card__info" [attr.data-color]="infoColor()">{{ info() }}</div>
+      @if (tags(); as tagList) {
+        <div class="indicator-card__tags">
+          @for (tag of tagList; track tag.label) {
+            <app-tag [couleur]="tag.couleur" [texte]="tag.label" />
+          }
+        </div>
+      } @else {
+        <div class="indicator-card__info" [attr.data-color]="infoColor()">{{ info() }}</div>
+      }
     </ng-content>
 
     @if (infoSubtitle()) {
       <div class="indicator-card__info-subtitle">{{ infoSubtitle() }}</div>
     }
   </div>
+
 
   <span class="indicator-card__chevron">›</span>
 </div>

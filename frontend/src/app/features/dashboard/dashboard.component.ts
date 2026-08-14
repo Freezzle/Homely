@@ -23,6 +23,7 @@ import {
   ObjectifDto,
   PosteDto,
   PostePositionneDto,
+  ProrataPartageMembreDto,
   TauxEffortMembreDto,
   TypeCategorie,
   TypePoste,
@@ -62,6 +63,7 @@ import { virementsComptesIndicator } from './indicators/virements-comptes/vireme
 import { VirementsComptesDrawerData } from './indicators/virements-comptes/virements-comptes-drawer-content.component';
 import { besoinsPlaisirsIndicator } from './indicators/besoins-plaisirs/besoins-plaisirs.indicator';
 import { BesoinsPlaisirsCardData } from '../../shared/components/besoins-plaisirs-card/besoins-plaisirs-card.component';
+import { prorataPartageIndicator, aDesDonneesProrataPartage } from './indicators/prorata-partage/prorata-partage.indicator';
 import { moisARisqueIndicator } from './indicators/mois-a-risque/mois-a-risque.indicator';
 import { MoisARisqueDrawerData, MoisARisqueItem } from './indicators/mois-a-risque/mois-a-risque-drawer-content.component';
 import { comparaisonPeriodeIndicator } from './indicators/comparaison-periode/comparaison-periode.indicator';
@@ -406,6 +408,35 @@ export class DashboardComponent {
     this.estModeMembre() ? this.tauxEffortCardsAnnee().map((data) => ({ indicator: tauxEffortMembreIndicator(data, this.t), data })) : [],
   );
 
+  // ── Indicateur "Prorata des postes partagés" ────────────────────────────
+  /** Foyer entier uniquement (jamais scopé membre) — mêmes coordonnées que le taux
+   *  d'effort (`_tauxEffortCle`/`_tauxEffortAnnuelCle`), la comparaison n'a de sens
+   *  qu'entre tous les membres du foyer. */
+  private readonly _prorataPartageMois = creerChargementReactif(this._tauxEffortCle, ({ foyerId, scenarioId, annee, mois }) =>
+    this.projSvc.prorataPartage(foyerId, scenarioId, annee, mois),
+  );
+
+  private readonly _prorataPartageAnnee = creerChargementReactif(this._tauxEffortAnnuelCle, ({ foyerId, scenarioId, annee }) =>
+    this.projSvc.prorataPartageAnnuel(foyerId, scenarioId, annee),
+  );
+
+  private readonly prorataPartageDtosMois = computed<ProrataPartageMembreDto[]>(() => this._prorataPartageMois.donnees() ?? []);
+  private readonly prorataPartageDtosAnnee = computed<ProrataPartageMembreDto[]>(() => this._prorataPartageAnnee.donnees() ?? []);
+
+  /** `null` si aucun membre n'a de poste partagé sur la période — masque entièrement
+   *  l'indicateur (ex. foyer mono-membre, aucun poste CHARGE/RESERVE partagé défini). */
+  readonly prorataPartageIndicateurMois = computed(() => {
+    const dtos = this.prorataPartageDtosMois();
+    if (!aDesDonneesProrataPartage(dtos)) return null;
+    return { indicator: prorataPartageIndicator('prorata-partage-mois', dtos, this.t), data: dtos };
+  });
+
+  readonly prorataPartageIndicateurAnnee = computed(() => {
+    const dtos = this.prorataPartageDtosAnnee();
+    if (!aDesDonneesProrataPartage(dtos)) return null;
+    return { indicator: prorataPartageIndicator('prorata-partage-annee', dtos, this.t), data: dtos };
+  });
+
   /** Payload signaux transmis au drawer "Événements" — `layout` fige le rendu (groupé pour
    *  l'année, à plat pour le mois où tous les items partagent le même "when"). */
   private readonly evenementsDataMois = computed<EvenementsDrawerData>(() => ({
@@ -666,22 +697,32 @@ export class DashboardComponent {
   }));
 
   /** Section "Pour aller plus loin" (vue mois) : "Ventilations des postes", "Postes à
-   *  optimiser" et "Plaisirs vs Besoins" (les graphiques n'existent qu'en vue annuelle). */
-  readonly pourAllerPlusLoinIndicateursMois = computed(() => [
-    this.comparaisonPeriodeIndicateurMois(),
-    this.ventilationPostesIndicateurMois(),
-    this.postesAOptimiserIndicateurMois(),
-    this.besoinsPlaisirsIndicateurMois(),
-  ]);
+   *  optimiser", "Plaisirs vs Besoins" et "Prorata des postes partagés" (les graphiques
+   *  n'existent qu'en vue annuelle ; le prorata partagé est masqué si non applicable). */
+  readonly pourAllerPlusLoinIndicateursMois = computed(() => {
+    const prorata = this.prorataPartageIndicateurMois();
+    return [
+      this.comparaisonPeriodeIndicateurMois(),
+      this.ventilationPostesIndicateurMois(),
+      this.postesAOptimiserIndicateurMois(),
+      this.besoinsPlaisirsIndicateurMois(),
+      ...(prorata ? [prorata] : []),
+    ];
+  });
 
-  /** Section "Pour aller plus loin" (vue année) : les 4 indicateurs. */
-  readonly pourAllerPlusLoinIndicateursAnnee = computed(() => [
-    this.comparaisonPeriodeIndicateurAnnee(),
-    this.ventilationPostesIndicateurAnnee(),
-    this.evolutionGraphiqueIndicateur(),
-    this.postesAOptimiserIndicateur(),
-    this.besoinsPlaisirsIndicateurAnnee(),
-  ]);
+  /** Section "Pour aller plus loin" (vue année) : les 4 indicateurs + "Prorata des
+   *  postes partagés" (masqué si non applicable). */
+  readonly pourAllerPlusLoinIndicateursAnnee = computed(() => {
+    const prorata = this.prorataPartageIndicateurAnnee();
+    return [
+      this.comparaisonPeriodeIndicateurAnnee(),
+      this.ventilationPostesIndicateurAnnee(),
+      this.evolutionGraphiqueIndicateur(),
+      this.postesAOptimiserIndicateur(),
+      this.besoinsPlaisirsIndicateurAnnee(),
+      ...(prorata ? [prorata] : []),
+    ];
+  });
 
   /** Onglet "Comptes" (récap mensuel de trésorerie par compte) : uniquement en vue mois
    *  ET vue membre, scopé au membre courant côté serveur (accès + agrégation). Le fetch

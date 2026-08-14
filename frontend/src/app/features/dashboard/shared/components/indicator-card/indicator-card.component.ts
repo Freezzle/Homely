@@ -1,5 +1,6 @@
 import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { IconColor } from '../../models/icon-color.type';
+import { TagComponent } from '../../../../../shared/components/tag/tag.component';
 
 /**
  * Une ligne d'indicateur cliquable : icône · titre/sous-titre · info/sous-info · chevron.
@@ -10,6 +11,7 @@ import { IconColor } from '../../models/icon-color.type';
 @Component({
   selector: 'app-indicator-card',
   standalone: true,
+  imports: [TagComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './indicator-card.component.html',
   styleUrl: './indicator-card.component.scss',
@@ -38,6 +40,10 @@ export class IndicatorCardComponent {
 
   /** Sous-info sous l'info principale. */
   readonly infoSubtitle = input<string>('');
+
+  /** Rangée de tags colorés (ex. un tag par membre) affichée à la place du bloc `info`
+   *  texte quand fournie — voir `Indicator.tags`. */
+  readonly tags = input<{ label: string; couleur: string }[] | undefined>(undefined);
 
   /** Émis quand l'utilisateur clique la carte. */
   readonly cardClick = output<void>();

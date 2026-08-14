@@ -215,6 +215,23 @@ export interface TauxEffortMembreDto {
   argentPocheTotalPireCas: number;
 }
 
+// ── Indicateur — Prorata des postes partagés ───────────────────────────────
+/** Compare, pour un membre et une période (mois ou année), le prorata moyen
+ *  réellement appliqué sur les postes CHARGE/RESERVE partagés (pondéré par montant)
+ *  au prorata théorique selon le poids de ses revenus dans le total du foyer. */
+export interface ProrataPartageMembreDto {
+  membreId: string;
+  nomMembre?: string;
+  couleurMembre?: string;
+  /** ∈ [0,1], null si aDesPostesPartages === false. */
+  prorataMoyenApplique: number | null;
+  /** ∈ [0,1], null si le foyer n'a aucun revenu sur la période. */
+  prorataTheoriqueRevenu: number | null;
+  /** false si aucun poste CHARGE/RESERVE partagé n'a de contribution non nulle sur la
+   *  période — permet de masquer l'indicateur. */
+  aDesPostesPartages: boolean;
+}
+
 // ── Objectifs ─────────────────────────────────────────────────────────────────
 export interface ObjectifDto {
   id: string; libelle: string; categorieProjetId?: string;

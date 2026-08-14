@@ -89,6 +89,27 @@ public class ProjectionController {
         return projectionService.tauxEffortAnnuel(foyerId, scenarioId, annee);
     }
 
+    /** Indicateur "Prorata des postes partagés" — mois donné : prorata moyen appliqué
+     *  (pondéré par montant) vs prorata théorique selon les revenus, par membre. */
+    @GetMapping("/prorata-partage")
+    public List<ProrataPartageMembreDto> prorataPartage(@PathVariable UUID foyerId,
+                                                          @PathVariable UUID scenarioId,
+                                                          @RequestParam int annee,
+                                                          @RequestParam int mois) {
+        multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
+        return projectionService.prorataPartage(foyerId, scenarioId, annee, mois);
+    }
+
+    /** Indicateur "Prorata des postes partagés" — variante annuelle (somme des 12 mois).
+     *  Réservé au dashboard annuel. */
+    @GetMapping("/prorata-partage-annuel")
+    public List<ProrataPartageMembreDto> prorataPartageAnnuel(@PathVariable UUID foyerId,
+                                                                @PathVariable UUID scenarioId,
+                                                                @RequestParam int annee) {
+        multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
+        return projectionService.prorataPartageAnnuel(foyerId, scenarioId, annee);
+    }
+
     /** Événements budgétaires ("ce qui change") pour une année : début, fin, révision, occurrence.
      *  Si {@code membreId} est fourni, ne renvoie que les événements où sa quote-part effective
      *  est &gt; 0 ce mois-là, avec les montants déjà proratisés (voir {@link EvenementDto#quotePart()}). */

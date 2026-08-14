@@ -222,6 +222,100 @@ public class ProjectionService {
         return resultat;
     }
 
+    // ── Indicateur — Prorata des postes partagés ────────────────────────────
+
+    /**
+     * Compare, pour chaque membre et pour le mois {@code (annee, mois)}, le prorata
+     * moyen réellement appliqué sur les postes {@code CHARGE}/{@code RESERVE} partagés
+     * (pondéré par le montant de chaque poste) au prorata théorique qui s'appliquerait
+     * si la répartition suivait le poids des revenus de chacun dans le total du foyer.
+     * Voir {@link ProrataPartageMembreDto}.
+     */
+    @Cacheable(value = "projections",
+               key = "#scenarioId + '-prorata-' + #annee + '-' + #mois + '-' + T(ch.homely.projection.ProjectionService).versionKey(#foyerId, #scenarioId, @scenarioRepository)")
+    public List<ProrataPartageMembreDto> prorataPartage(UUID foyerId, UUID scenarioId, int annee, int mois) {
+        ParametresScenario params = chargerParametres(foyerId, scenarioId);
+        return prorataPartageInterne(params, annee, mois, mois);
+    }
+
+    /**
+     * Variante annuelle : mêmes règles que {@link #prorataPartage}, mais cumulées sur les
+     * 12 mois de l'année (mensuel × 12 équivalent, comme {@link #tauxEffortAnnuel}).
+     */
+    @Cacheable(value = "projections",
+               key = "#scenarioId + '-prorata-annuel-' + #annee + '-' + T(ch.homely.projection.ProjectionService).versionKey(#foyerId, #scenarioId, @scenarioRepository)")
+    public List<ProrataPartageMembreDto> prorataPartageAnnuel(UUID foyerId, UUID scenarioId, int annee) {
+        ParametresScenario params = chargerParametres(foyerId, scenarioId);
+        return prorataPartageInterne(params, annee, 1, 12);
+    }
+
+    private List<ProrataPartageMembreDto> prorataPartageInterne(ParametresScenario params, int annee,
+                                                                  int moisDebut, int moisFin) {
+        List<UUID> membreIds = params.membres();
+        if (membreIds.size() <= 1) return List.of();
+
+        Map<UUID, Membre> membresParId = membreRepo.findAllById(membreIds).stream()
+                .collect(Collectors.toMap(Membre::getId, m -> m));
+
+        // Postes CHARGE/RESERVE réellement partagés (cf. MoteurCalcul#estPersonnel) :
+        // les postes personnels (CUSTOM à un seul membre) sont exclus du calcul.
+        List<PosteCalcul> postesPartages = params.postes().stream()
+                .filter(p -> p.type() == TypePoste.CHARGE || p.type() == TypePoste.RESERVE)
+                .filter(p -> !MoteurCalcul.estPersonnel(p))
+                .toList();
+
+        double denominateurTotal = 0.0;
+        Map<UUID, Double> numerateurParMembre = new LinkedHashMap<>();
+        for (UUID membreId : membreIds) numerateurParMembre.put(membreId, 0.0);
+
+        for (PosteCalcul poste : postesPartages) {
+            for (int mois = moisDebut; mois <= moisFin; mois++) {
+                double contribution = MoteurCalcul.contribution(poste, annee, mois)
+                        * MoteurCalcul.tauxConversion(poste.devise(), params.deviseBase(), params.taux());
+                if (contribution == 0.0) continue;
+                denominateurTotal += contribution;
+                for (UUID membreId : membreIds) {
+                    double quotePart = MoteurCalcul.quotePartEffective(
+                            poste, membreId, annee, mois, params.periodesDefaut(), membreIds.size());
+                    if (quotePart > 0) {
+                        numerateurParMembre.merge(membreId, contribution * quotePart, Double::sum);
+                    }
+                }
+            }
+        }
+
+        double revenuFoyerTotal = 0.0;
+        Map<UUID, Double> revenuParMembre = new LinkedHashMap<>();
+        for (UUID membreId : membreIds) {
+            double revenu = 0.0;
+            for (int mois = moisDebut; mois <= moisFin; mois++) {
+                revenu += MoteurCalcul.aggregatMembreMois(params, membreId, annee, mois).revenus();
+            }
+            revenuParMembre.put(membreId, revenu);
+            revenuFoyerTotal += revenu;
+        }
+
+        boolean aDesPostesPartages = denominateurTotal > 0;
+        List<ProrataPartageMembreDto> resultat = new ArrayList<>();
+        for (UUID membreId : membreIds) {
+            Membre membre = membresParId.get(membreId);
+            BigDecimal prorataMoyenApplique = aDesPostesPartages
+                    ? bdRatio(numerateurParMembre.get(membreId) / denominateurTotal)
+                    : null;
+            BigDecimal prorataTheoriqueRevenu = revenuFoyerTotal > 0
+                    ? bdRatio(revenuParMembre.get(membreId) / revenuFoyerTotal)
+                    : null;
+            resultat.add(new ProrataPartageMembreDto(
+                    membreId,
+                    membre != null ? membre.getNom() : null,
+                    membre != null ? membre.getCouleur() : null,
+                    prorataMoyenApplique,
+                    prorataTheoriqueRevenu,
+                    aDesPostesPartages));
+        }
+        return resultat;
+    }
+
     /**
      * Construit un jeu de paramètres alternatif où chaque poste CHARGE/RESERVE de nature
      * ESTIMATION est majoré de {@code estimPourcentage} — simule le "pire cas" sans modifier
@@ -627,6 +721,13 @@ public class ProjectionService {
 
     private static BigDecimal bd(double v) {
         return BigDecimal.valueOf(v).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /** Arrondi une quote-part/prorata ∈ [0,1] avec la même précision que
+     *  {@code repartition_poste.quote_part} (scale 6) — évite d'écraser des écarts
+     *  fins (ex. 0.55 vs 0.5678) au dixième près comme le ferait {@link #bd(double)}. */
+    private static BigDecimal bdRatio(double v) {
+        return BigDecimal.valueOf(v).setScale(6, RoundingMode.HALF_UP);
     }
 
     public static String versionKey(UUID foyerId, UUID scenarioId, ScenarioRepository repo) {

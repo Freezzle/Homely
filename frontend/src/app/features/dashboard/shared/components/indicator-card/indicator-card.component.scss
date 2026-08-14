@@ -56,5 +56,13 @@
   }
   &__info-subtitle { font-size: 10px; color: var(--dash-ink-3); margin-top: 2px; }
 
+  &__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: flex-end;
+    max-width: 160px;
+  }
+
   &__chevron { color: var(--dash-ink-3); font-size: 15px; opacity: 0.4; }
 }

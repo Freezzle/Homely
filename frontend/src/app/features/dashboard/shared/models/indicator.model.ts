@@ -25,6 +25,10 @@ export interface Indicator {
   /** Teinte du texte de l'info principale (ex. rouge si zone critique). */
   infoColor?: IconColor;
   infoSubtitle?: string;
+  /** Rangée de tags colorés (ex. un tag par membre, couleur du membre) affichée à la
+   *  place du bloc `info` texte quand fournie — pour les indicateurs comparant
+   *  plusieurs membres sur une même carte (ex. "Prorata des postes partagés"). */
+  tags?: { label: string; couleur: string }[];
 
   // ─── Ce qui va dans le drawer ───
   /** Composant Angular monté dans le body du drawer. */

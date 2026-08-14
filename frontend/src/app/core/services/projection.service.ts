@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import {
   ProjectionAnnuelleDto, VentilationsDto, VentilationAnnuelleDto, EvenementDto, TauxEffortMembreDto,
-  CompteRecapMensuelDto,
+  CompteRecapMensuelDto, ProrataPartageMembreDto,
 } from '../models/api.models';
 
 /** T9.3 — Service HTTP projection scopé par foyer/scénario. */
@@ -65,6 +65,21 @@ export class ProjectionService {
   comptesRecap(foyerId: string, scenarioId: string, annee: number, mois: number, membreId: string) {
     return this.http.get<CompteRecapMensuelDto[]>(
       `${this.base(foyerId, scenarioId)}/comptes-recap`, { params: { annee, mois, membreId } }
+    );
+  }
+
+  /** Indicateur "Prorata des postes partagés" — mois donné : prorata moyen appliqué
+   *  (pondéré par montant) vs prorata théorique selon les revenus, par membre. */
+  prorataPartage(foyerId: string, scenarioId: string, annee: number, mois: number) {
+    return this.http.get<ProrataPartageMembreDto[]>(
+      `${this.base(foyerId, scenarioId)}/prorata-partage`, { params: { annee, mois } }
+    );
+  }
+
+  /** Indicateur "Prorata des postes partagés" — variante annuelle (somme des 12 mois). */
+  prorataPartageAnnuel(foyerId: string, scenarioId: string, annee: number) {
+    return this.http.get<ProrataPartageMembreDto[]>(
+      `${this.base(foyerId, scenarioId)}/prorata-partage-annuel`, { params: { annee } }
     );
   }
 }

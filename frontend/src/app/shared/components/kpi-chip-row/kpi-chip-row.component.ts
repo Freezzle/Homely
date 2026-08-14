@@ -18,10 +18,26 @@ import { KpiChip, KpiChipComponent } from '../kpi-chip/kpi-chip.component';
     }
   `,
   styles: [`
+    /* Le hôte devient le conteneur de référence pour la @container query ci-dessous :
+     * on ne se base pas sur la largeur du viewport, mais sur l'espace réellement
+     * disponible pour la ligne de chips (qui dépend de la mise en page/carte parente). */
+    :host {
+      display: block;
+      container-type: inline-size;
+    }
+
     .kpi-row {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 10px;
+    }
+
+    /* Uniquement 2 ou 4 colonnes : jamais de valeur intermédiaire (3) qui isolerait
+     * un chip seul sur sa ligne. En dessous du seuil : 2 par ligne ; au-dessus : 4. */
+    @container (min-width: 640px) {
+      .kpi-row {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
     }
   `],
 })
