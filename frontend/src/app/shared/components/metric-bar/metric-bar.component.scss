@@ -14,13 +14,13 @@
 }
 
 .metric-bar-item-label {
-  color: var(--p-text-color);
+  color: var(--app-ink);
 }
 
 .metric-bar-item-value {
   margin-left: auto;
   font-weight: 700;
-  color: var(--p-text-color);
+  color: var(--app-ink);
 }
 
 .metric-bar-label-list {
@@ -37,7 +37,7 @@
   align-items: center;
   gap: 0.4rem;
   font-size: 0.85rem;
-  color: var(--p-text-muted-color);
+  color: var(--app-ink-muted);
 }
 
 .metric-bar-label-marker {

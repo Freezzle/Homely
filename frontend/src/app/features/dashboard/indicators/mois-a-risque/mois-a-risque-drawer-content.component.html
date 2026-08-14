@@ -11,7 +11,7 @@
       @for (item of d.moisARisque(); track item.label) {
         <li class="flex items-center justify-between gap-3 py-1">
           <span>{{ item.label }}</span>
-          <span class="font-bold" style="color: var(--p-red-500)">{{ item.soldeDisponible | montant: d.devise() }}</span>
+          <span class="font-bold" style="color: var(--app-negatif)">{{ item.soldeDisponible | montant: d.devise() }}</span>
         </li>
       }
     </ul>

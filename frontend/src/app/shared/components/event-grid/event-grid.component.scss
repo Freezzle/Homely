@@ -24,14 +24,14 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--p-text-muted-color);
+  color: var(--app-ink-muted);
   white-space: nowrap;
 }
 
 .eg-header-rule {
   flex: 1 1 auto;
   height: 1px;
-  background: var(--p-content-border-color);
+  background: var(--app-line);
 }
 
 .eg-count {
@@ -41,11 +41,11 @@
   min-width: 1.4rem;
   height: 1.4rem;
   padding: 0 0.4rem;
-  border-radius: 999px;
-  background: var(--p-content-background);
-  border: 1px solid var(--p-content-border-color);
+  border-radius: var(--app-radius-pill);
+  background: var(--app-card);
+  border: 1px solid var(--app-line);
   font-size: 0.7rem;
-  color: var(--p-text-muted-color);
+  color: var(--app-ink-muted);
 }
 
 .eg-flat-list {
@@ -75,8 +75,8 @@
 .eg-card {
   width: 100%;
   text-align: left;
-  border: 1px solid var(--p-content-border-color);
-  background: var(--p-content-background);
+  border: 1px solid var(--app-line);
+  background: var(--app-card);
   border-radius: var(--p-content-border-radius);
   padding: 0.85rem 1rem;
   display: flex;
@@ -110,7 +110,7 @@
 
 .eg-card-title {
   font-size: 0.85rem;
-  color: var(--p-text-color);
+  color: var(--app-ink);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -118,38 +118,18 @@
   flex: 1 1 auto;
 }
 
-.eg-icon-success {
-  color: var(--p-green-500);
-}
-
-.eg-icon-danger {
-  color: var(--p-red-500);
-}
-
-.eg-icon-info {
-  color: var(--p-blue-500);
-}
-
-.eg-icon-secondary {
-  color: var(--p-text-muted-color);
-}
+.eg-icon-success   { color: var(--app-success); }
+.eg-icon-danger    { color: var(--app-danger); }
+.eg-icon-info      { color: var(--app-info); }
+.eg-icon-secondary { color: var(--app-ink-muted); }
 
 .eg-card-amount {
   font-size: 0.85rem;
   line-height: 1.2;
 }
 
-.eg-impact {
-
-}
-
-.eg-impact.pos {
-  color: var(--p-emerald-600);
-}
-
-.eg-impact.neg {
-  color: var(--p-red-500);
-}
+.eg-impact.pos { color: var(--app-positif); }
+.eg-impact.neg { color: var(--app-negatif); }
 
 .eg-revision {
   display: inline-flex;
@@ -159,15 +139,15 @@
 
   .pi-arrow-right {
     font-size: 0.7rem;
-    color: var(--p-text-muted-color);
+    color: var(--app-ink-muted);
   }
 }
 
 .eg-avant {
-  color: var(--p-text-muted-color);
+  color: var(--app-ink-muted);
 }
 
 .eg-secondaire {
   font-size: 0.72rem;
-  color: var(--p-text-muted-color);
+  color: var(--app-ink-muted);
 }

@@ -3,7 +3,7 @@
 }
 
 .tl-when {
-  color: var(--p-text-muted-color);
+  color: var(--app-ink-muted);
   font-size: 0.8rem;
   line-height: 1.2;
   padding-top: 0.2rem;
@@ -12,32 +12,24 @@
 .tl-marker {
   width: 2rem;
   height: 2rem;
-  border-radius: 999px;
+  border-radius: var(--app-radius-pill);
   border: 2px solid var(--p-primary-200);
   background: var(--p-primary-50);
-  color: var(--p-text-color);
+  color: var(--app-ink);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
 }
 
-.tl-icon-success {
-  color: var(--p-green-500);
-}
-
-.tl-icon-danger {
-  color: var(--p-red-500);
-}
-
-.tl-icon-info {
-  color: var(--p-blue-500);
-}
+.tl-icon-success { color: var(--app-success); }
+.tl-icon-danger  { color: var(--app-danger); }
+.tl-icon-info    { color: var(--app-info); }
 
 .tl-marker-dot {
   width: 0.65rem;
   height: 0.65rem;
-  border-radius: 999px;
+  border-radius: var(--app-radius-pill);
   background: var(--p-primary-color);
   display: inline-block;
 }
@@ -45,8 +37,8 @@
 .tl-card {
   width: 100%;
   text-align: left;
-  border: 1px solid var(--p-content-border-color);
-  background: var(--p-content-background);
+  border: 1px solid var(--app-line);
+  background: var(--app-card);
   border-radius: var(--p-content-border-radius);
   padding: 0.85rem 1rem;
   margin-bottom: 1rem;
@@ -58,7 +50,7 @@
 
 .tl-title {
   font-size: 0.8rem;
-  color: var(--p-text-color);
+  color: var(--app-ink);
   flex: 1 1 auto;
   min-width: 0;
   display: inline-flex;
@@ -86,13 +78,8 @@
   white-space: nowrap;
 }
 
-.tl-impact.pos {
-  color: var(--p-emerald-600);
-}
-
-.tl-impact.neg {
-  color: var(--p-red-500);
-}
+.tl-impact.pos { color: var(--app-positif); }
+.tl-impact.neg { color: var(--app-negatif); }
 
 .tl-impact-revision {
   display: inline-flex;
@@ -104,17 +91,17 @@
 
   .pi-arrow-right {
     font-size: 0.7rem;
-    color: var(--p-text-muted-color);
+    color: var(--app-ink-muted);
   }
 }
 
 .tl-impact-avant {
-  color: var(--p-text-muted-color);
+  color: var(--app-ink-muted);
 }
 
 .tl-impact-secondaire {
   font-size: 0.72rem;
-  color: var(--p-text-muted-color);
+  color: var(--app-ink-muted);
 }
 
 .tl-card-group {
@@ -126,11 +113,10 @@
   flex-direction: column;
   gap: 0.2rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px dashed var(--p-content-border-color);
+  border-bottom: 1px dashed var(--app-line);
 }
 
 .tl-subitem:last-child {
   padding-bottom: 0;
   border-bottom: none;
 }
-

@@ -30,8 +30,8 @@
 /* PrimeIcons */
 @import "primeicons/primeicons.css";
 
-/* Tokens du dashboard (cartes d'indicateurs, sections, drawer) */
-@import "./app/features/dashboard/shared/tokens/_dashboard-tokens.css";
+/* Charte graphique globale (couleurs de texte, fonds, tokens sémantiques). */
+@import "./styles/_app-tokens.css";
 
 html, body {
   height: 100%;

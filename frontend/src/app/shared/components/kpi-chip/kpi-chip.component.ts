@@ -52,8 +52,8 @@ export interface KpiChip {
   styles: [`
     .kpi-chip {
       height: 100%;
-      border: 1px solid var(--p-content-border-color);
-      background: var(--p-surface-50);
+      border: 1px solid var(--app-line);
+      background: var(--app-bg);
       border-radius: var(--p-content-border-radius);
       display: flex;
       flex-direction: row;
@@ -85,7 +85,7 @@ export interface KpiChip {
       height: 100%;
       width: 2.75rem;
       border-radius: 0;
-      border-left: 1px solid var(--p-content-border-color);
+      border-left: 1px solid var(--app-line);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -96,7 +96,7 @@ export interface KpiChip {
       line-height: 1.2;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: var(--p-text-muted-color);
+      color: var(--app-ink-muted);
       font-weight: 700;
     }
 
@@ -104,14 +104,14 @@ export interface KpiChip {
       font-size: 17px;
       line-height: 1.2;
       font-weight: 800;
-      color: var(--p-text-color);
+      color: var(--app-ink);
       word-break: break-word;
     }
 
     .kpi-hint {
       font-size: 11px;
       line-height: 1.25;
-      color: var(--p-text-muted-color);
+      color: var(--app-ink-muted);
     }
   `],
 })

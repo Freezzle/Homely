@@ -54,13 +54,13 @@ export class CarteBilanComponent {
     this.variante() === 'foyer' ? 'var(--p-secondary-color)' : this.couleur()
   );
 
-  /** Couleur de la barre de taux d'effort : primaire (<60), avertissement (60-85), danger (>=85). */
+  /** Couleur de la barre de taux d'effort : info (<75), alert (75-85), danger (>=85). */
   readonly couleurTauxEffort = computed(() => {
     const taux = this.tauxEffort();
-    if (taux === undefined) return 'var(--p-primary-color)';
-    if (taux >= 85) return 'var(--p-red-500)';
-    if (taux >= 75) return 'var(--p-orange-500)';
-    return 'var(--p-primary-color)';
+    if (taux === undefined) return 'var(--app-info)';
+    if (taux >= 85) return 'var(--app-danger)';
+    if (taux >= 75) return 'var(--app-alert)';
+    return 'var(--app-info)';
   });
 
   /** Montant sans le symbole de devise — utilisé pour le chiffre principal des cartes. */

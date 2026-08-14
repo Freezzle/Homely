@@ -56,7 +56,7 @@ export interface StatGridStatusTag {
     .stat-label {
       font-size: 11px;
       line-height: 1.25;
-      color: var(--p-text-muted-color);
+      color: var(--app-ink-muted);
     }
 
     .stat-value {
@@ -64,7 +64,7 @@ export interface StatGridStatusTag {
           font-size: 13px;
       line-height: 1.2;
           font-weight: 700;
-      color: var(--p-text-color);
+      color: var(--app-ink);
     }
 
     .stat-value-row {
@@ -78,7 +78,7 @@ export interface StatGridStatusTag {
       font-size: 11px;
       line-height: 1.2;
       font-weight: 500;
-      color: var(--p-text-muted-color);
+      color: var(--app-ink-muted);
     }
   `],
 })

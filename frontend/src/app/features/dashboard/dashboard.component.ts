@@ -62,14 +62,14 @@ import { EvenementsDrawerData } from './indicators/evenements/evenements-drawer-
 import { virementsComptesIndicator } from './indicators/virements-comptes/virements-comptes.indicator';
 import { VirementsComptesDrawerData } from './indicators/virements-comptes/virements-comptes-drawer-content.component';
 import { besoinsPlaisirsIndicator } from './indicators/besoins-plaisirs/besoins-plaisirs.indicator';
-import { BesoinsPlaisirsCardData } from '../../shared/components/besoins-plaisirs-card/besoins-plaisirs-card.component';
-import { prorataPartageIndicator, aDesDonneesProrataPartage } from './indicators/prorata-partage/prorata-partage.indicator';
+import { BesoinsPlaisirsCardData } from '../../shared/components/besoins-plaisirs-card/besoins-plaisirs-card.component';import { prorataPartageIndicator, aDesDonneesProrataPartage } from './indicators/prorata-partage/prorata-partage.indicator';
 import { moisARisqueIndicator } from './indicators/mois-a-risque/mois-a-risque.indicator';
 import { MoisARisqueDrawerData, MoisARisqueItem } from './indicators/mois-a-risque/mois-a-risque-drawer-content.component';
 import { comparaisonPeriodeIndicator } from './indicators/comparaison-periode/comparaison-periode.indicator';
 import { ComparaisonPeriodeDrawerData } from './indicators/comparaison-periode/comparaison-periode-drawer-content.component';
 import { ChartModule } from 'primeng/chart';
 import { KpiChipRowComponent } from '../../shared/components/kpi-chip-row/kpi-chip-row.component';
+import { resolveAppColor, withAlpha } from '../../shared/utils/css-vars';
 
 type StatutObjectif = 'DANS_LES_TEMPS' | 'EN_RETARD' | 'ATTEINT';
 type DashboardTimelineItem = TimelineItem & { mois: number };
@@ -124,6 +124,23 @@ export class DashboardComponent {
   readonly t = this.i18n.translations();
   readonly deviseBase = this.contexte.deviseBase;
   readonly membres = this.contexte.membres;
+
+  /** Couleurs de la charte `--app-*` résolues à l'exécution pour Chart.js
+   *  (le `<canvas>` ne résout pas les CSS custom properties). Dépend de
+   *  `contexte.isDark()` pour se ré-évaluer automatiquement à chaque
+   *  bascule de thème. Les fallbacks correspondent aux teintes historiques
+   *  du dashboard, utilisées en cas d'exécution hors DOM (SSR/tests). */
+  private readonly chartColors = computed(() => {
+    void this.contexte.isDark();
+    return {
+      revenu: resolveAppColor('--app-revenu', '#3BBFA1'),
+      charge: resolveAppColor('--app-charge', '#EF5350'),
+      reserve: resolveAppColor('--app-reserve', '#42A5F5'),
+      argentPoche: resolveAppColor('--app-argent-poche', '#FFB300'),
+      positif: resolveAppColor('--app-positif', '#3BBFA1'),
+      negatif: resolveAppColor('--app-negatif', '#EF5350'),
+    };
+  });
 
   readonly annee = input.required<number, string>({ transform: numberAttribute });
   readonly mois = input<number | undefined, string | undefined>(undefined, {
@@ -1231,13 +1248,13 @@ export class DashboardComponent {
 
   private buildChartData(mois: AggregatDto[], argentPocheMontants: number[]): object {
     if (!mois.length) return {};
+    const colors = this.chartColors();
     const datasets: object[] = [
       {
         type: 'line',
         label: this.t.projection.revenus,
-        // Aligné sur --p-emerald-500 (couleur du solde disponible dans l'anneau mensuel).
-        borderColor: '#3BBFA1',
-        backgroundColor: '#3BBFA1',
+        borderColor: colors.revenu,
+        backgroundColor: colors.revenu,
         data: mois.map((m) => m.revenus),
         tension: 0.3,
         fill: false,
@@ -1247,16 +1264,14 @@ export class DashboardComponent {
       {
         type: 'bar',
         label: this.t.projection.charges,
-        // Aligné sur --p-red-400 (couleur des charges fixes dans l'anneau mensuel).
-        backgroundColor: '#EF5350',
+        backgroundColor: colors.charge,
         data: mois.map((m) => m.charges),
         stack: 'depenses',
       },
       {
         type: 'bar',
         label: this.t.projection.reserves,
-        // Aligné sur --p-blue-400 (couleur des réserves dans l'anneau mensuel).
-        backgroundColor: '#42A5F5',
+        backgroundColor: colors.reserve,
         data: mois.map((m) => m.reserves),
         stack: 'depenses',
       },
@@ -1265,8 +1280,7 @@ export class DashboardComponent {
       datasets.push({
         type: 'bar',
         label: this.t.dashboard.argentPocheMois,
-        // Aligné sur --p-amber-500 (couleur de l'argent de poche dans les chips/barre).
-        backgroundColor: '#FFB300',
+        backgroundColor: colors.argentPoche,
         data: mois.map((_, i) => argentPocheMontants[i] ?? 0),
         stack: 'depenses',
       });
@@ -1280,21 +1294,22 @@ export class DashboardComponent {
    *  `comparaisonPeriodeIndicateurAnnee`) et non plus par un chip ici. */
   readonly kpisAnneeTop = computed<KpiChip[]>(() => {
     const total = this.agregatAnneeCourant();
+    const colors = this.chartColors();
     const chips: KpiChip[] = [
       {
         label: this.t.dashboard.revenuTotalAnnuel,
         value: this.formatMontant(total.revenus),
-        color: 'var(--p-primary-color)',
+        color: colors.revenu,
       },
       {
         label: this.t.dashboard.chargesTotalesAnnuelles,
         value: this.formatMontant(total.charges),
-        color: 'var(--p-red-500)',
+        color: colors.charge,
       },
       {
         label: this.t.dashboard.reservesTotalesAnnuelles,
         value: this.formatMontant(total.reserves),
-        color: 'var(--p-blue-500)',
+        color: colors.reserve,
       },
     ];
     // PR6.d — Argent de poche agrégée : en mode foyer, total de tous les
@@ -1304,14 +1319,14 @@ export class DashboardComponent {
       chips.push({
         label: this.t.dashboard.argentPocheAnnee,
         value: this.formatMontant(this.argentPocheTotalAnnuel()),
-        color: 'var(--p-amber-500)',
+        color: colors.argentPoche,
         hint: this.i18n.instant('dashboard.argentPocheAnneeHint', { mois: this.argentPocheMoisConfigures() }),
       });
     } else if (!this.estModeMembre() && this.argentPocheFoyerMoisConfigures() > 0) {
       chips.push({
         label: this.t.dashboard.argentPocheAnnee,
         value: this.formatMontant(this.argentPocheFoyerTotalAnnuel()),
-        color: 'var(--p-amber-500)',
+        color: colors.argentPoche,
         hint: this.i18n.instant('dashboard.argentPocheAnneeHint', { mois: this.argentPocheFoyerMoisConfigures() }),
         action: { icon: 'pi pi-cog', ariaLabel: this.t.dashboard.gererArgentPoche, onClick: () => this.naviguerVersArgentPoche() },
       });
@@ -1325,21 +1340,22 @@ export class DashboardComponent {
    *  `comparaisonPeriodeIndicateurMois`) et non plus par un chip ici. */
   readonly kpisMoisTop = computed<KpiChip[]>(() => {
     const agregat = this.agregatMoisCourant();
+    const colors = this.chartColors();
     const chips: KpiChip[] = [
       {
         label: this.t.projection.revenus,
         value: this.formatMontant(agregat.revenus),
-        color: 'var(--p-secondary-color)',
+        color: colors.revenu,
       },
       {
         label: this.t.projection.charges,
         value: this.formatMontant(agregat.charges),
-        color: 'var(--p-red-500)',
+        color: colors.charge,
       },
       {
         label: this.t.projection.reserves,
         value: this.formatMontant(agregat.reserves),
-        color: 'var(--p-blue-500)',
+        color: colors.reserve,
       },
     ];
     // PR6.b — Argent de poche du mois : toujours affiché en mode membre
@@ -1353,7 +1369,7 @@ export class DashboardComponent {
       chips.push({
         label: this.t.dashboard.argentPocheMois,
         value: this.formatMontant(poche?.montant ?? 0),
-        color: 'var(--p-amber-500)',
+        color: colors.argentPoche,
         hint: this.t.argentPoche.source[source],
         action: {
           icon: source === 'ALLOCATION' ? 'pi pi-pencil' : 'pi pi-plus',
@@ -1367,7 +1383,7 @@ export class DashboardComponent {
         chips.push({
           label: this.t.dashboard.argentPocheMois,
           value: this.formatMontant(pocheFoyer.total),
-          color: 'var(--p-amber-500)',
+          color: colors.argentPoche,
           action: { icon: 'pi pi-cog', ariaLabel: this.t.dashboard.gererArgentPoche, onClick: () => this.naviguerVersArgentPoche() },
         });
       }
@@ -1397,9 +1413,10 @@ export class DashboardComponent {
     const mois = this.moisAgregatsCourant();
     const positifs = mois.filter((item) => item.soldeDisponible >= 0).length;
     const negatifs = Math.max(mois.length - positifs, 0);
+    const colors = this.chartColors();
     return [
-      { value: positifs, color: 'var(--p-emerald-500)' },
-      { value: negatifs, color: 'var(--p-red-500)' },
+      { value: positifs, color: colors.positif },
+      { value: negatifs, color: colors.negatif },
     ];
   });
 
@@ -1445,6 +1462,7 @@ export class DashboardComponent {
   readonly revenusChargesReservesChartData = computed(() => {
     const mois = this.moisAgregatsCourant();
     if (!mois.length) return {};
+    const colors = this.chartColors();
     const argentPoche: number[] = this.estModeMembre()
       ? this.argentPocheMois().map((r) => r.montant ?? 0)
       : this.argentPocheFoyerMois().map((r) => r.total ?? 0);
@@ -1454,13 +1472,11 @@ export class DashboardComponent {
         {
           type: 'line',
           label: this.t.projection.revenus,
-          // Couleurs codées en dur : Chart.js dessine sur un <canvas>, qui ne résout pas
-          // les CSS custom properties (var(--p-xxx)) passées comme couleur — même
-          // convention que `buildChartData` ci-dessous. Aligné sur --p-emerald-500
-          // (couleur "positive" du reste du dashboard : anneau, ligne revenus du flux
-          // mensuel).
-          borderColor: '#3BBFA1',
-          backgroundColor: '#3BBFA1',
+          // Chart.js dessine sur un <canvas> qui ne résout pas les CSS
+          // custom properties : on résout les tokens --app-* à l'exécution
+          // via `chartColors()` (voir shared/utils/css-vars.ts).
+          borderColor: colors.revenu,
+          backgroundColor: colors.revenu,
           data: mois.map((m) => m.revenus),
           tension: 0.3,
           fill: false,
@@ -1470,9 +1486,8 @@ export class DashboardComponent {
         {
           type: 'line',
           label: this.t.dashboard.chargesEtReservesEtArgentdePoche,
-          // Aligné sur --p-red-500 (couleur "danger" du reste du dashboard).
-          borderColor: '#EF5350',
-          backgroundColor: 'rgb(239 83 80 / 0.59)',
+          borderColor: colors.charge,
+          backgroundColor: withAlpha(colors.charge, 0.59, 'rgba(239, 83, 80, 0.59)'),
           data: mois.map((m, i) => m.charges + m.reserves + (argentPoche[i] ?? 0)),
           tension: 0.3,
           fill: true,
@@ -1566,22 +1581,22 @@ export class DashboardComponent {
       {
         label: this.t.dashboard.chargesSures,
         value: this.chargesSuresMois(),
-        color: 'var(--p-red-400)',
+        color: 'var(--app-charge)',
       },
       {
         label: this.t.dashboard.reserves,
         value: reserves,
-        color: 'var(--p-blue-400)',
+        color: 'var(--app-reserve)',
       },
       ...(argentDePoche > 0 ? [{
         label: this.t.dashboard.argentPocheMois,
         value: argentDePoche,
-        color: 'var(--p-amber-500)',
+        color: 'var(--app-argent-poche)',
       }] : []),
       {
         label: this.t.dashboard.resteAVivre,
         value: Math.max(rav, 0),
-        color: 'var(--p-emerald-500)',
+        color: 'var(--app-neutre)',
       },
     ];
   });

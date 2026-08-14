@@ -1,7 +1,7 @@
 @if (data(); as d) {
   <div class="flex flex-col gap-5">
     <div class="flex flex-col items-center gap-1 py-3 px-4 rounded-xl"
-         style="background: var(--p-surface-50); border: 1px solid var(--p-content-border-color)">
+         style="background: var(--app-bg); border: 1px solid var(--app-line)">
       <span class="text-xs font-bold uppercase tracking-wide text-surface-500">{{ t.dashboard.comparaisonInfoSousTitre }}</span>
       <span class="text-3xl font-extrabold" [style.color]="diffColor(d.diffPrincipal())">
         @if (d.diffPrincipal(); as diff) {
@@ -15,7 +15,7 @@
     <ul class="m-0 p-0 flex flex-col gap-1 list-none">
       <li class="flex items-center justify-between gap-3 py-2 border-b border-surface-200 dark:border-surface-700">
         <span class="flex items-center gap-2 text-sm text-surface-600">
-          <i class="pi pi-arrow-up-right text-xs" style="color: var(--p-primary-color)"></i>
+          <i class="pi pi-arrow-up-right text-xs" style="color: var(--app-revenu)"></i>
           {{ t.projection.revenus }}
         </span>
         <span class="font-bold" [style.color]="diffColor(d.diffRevenus())">
@@ -28,7 +28,7 @@
       </li>
       <li class="flex items-center justify-between gap-3 py-2 border-b border-surface-200 dark:border-surface-700">
         <span class="flex items-center gap-2 text-sm text-surface-600">
-          <i class="pi pi-arrow-down-right text-xs" style="color: var(--p-red-500)"></i>
+          <i class="pi pi-arrow-down-right text-xs" style="color: var(--app-charge)"></i>
           {{ t.projection.charges }}
         </span>
         <span class="font-bold" [style.color]="diffColor(d.diffCharges(), true)">
@@ -44,7 +44,7 @@
           [class.border-surface-200]="d.diffArgentPoche"
           [class.dark:border-surface-700]="d.diffArgentPoche">
         <span class="flex items-center gap-2 text-sm text-surface-600">
-          <i class="pi pi-shield text-xs" style="color: var(--p-blue-500)"></i>
+          <i class="pi pi-shield text-xs" style="color: var(--app-reserve)"></i>
           {{ t.projection.reserves }}
         </span>
         <span class="font-bold" [style.color]="diffColor(d.diffReserves(), true)">
@@ -58,7 +58,7 @@
       @if (d.diffArgentPoche; as diffArgentPoche) {
         <li class="flex items-center justify-between gap-3 py-2">
           <span class="flex items-center gap-2 text-sm text-surface-600">
-            <i class="pi pi-wallet text-xs" style="color: var(--p-amber-500)"></i>
+            <i class="pi pi-wallet text-xs" style="color: var(--app-argent-poche)"></i>
             {{ t.dashboard.argentPocheMois }}
           </span>
           <span class="font-bold" [style.color]="diffColor(diffArgentPoche(), true)">

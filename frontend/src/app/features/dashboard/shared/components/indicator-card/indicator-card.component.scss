@@ -1,5 +1,6 @@
-// Les tokens --dash-* sont des CSS custom properties globales (voir
-// shared/tokens/_dashboard-tokens.css, importé dans styles.css) — pas besoin de @use.
+// Les tokens --app-* sont des CSS custom properties globales
+// (voir frontend/src/styles/_app-tokens.css, importé dans styles.css) —
+// pas besoin de @use.
 .indicator-card {
   display: grid;
   grid-template-columns: 26px 1fr auto 10px;
@@ -7,32 +8,35 @@
   align-items: center;
   padding: 10px 14px;
   cursor: pointer;
-  border-bottom: 1px solid var(--dash-line);
+  border-bottom: 1px solid var(--app-line);
   transition: background 0.15s;
 
-  &:hover, &:focus-visible { background: var(--dash-line-2); }
+  &:hover, &:focus-visible { background: var(--app-line-2); }
   &:focus-visible { outline: 2px solid var(--p-primary-color); outline-offset: -2px; }
 
   &__icon {
     width: 26px; height: 26px;
-    border-radius: var(--dash-radius-item);
+    border-radius: var(--app-radius-item);
     display: flex; align-items: center; justify-content: center;
 
-    // Palette pilotée par [data-color]
-    &[data-color="pos"]    { background: var(--dash-pos-bg);   color: var(--dash-pos); }
-    &[data-color="neg"]    { background: var(--dash-alert-bg); color: var(--dash-alert); }
-    &[data-color="red"]    { background: var(--dash-neg-bg);   color: var(--dash-neg); }
-    &[data-color="blue"]   { background: var(--dash-info-bg);  color: var(--dash-info); }
-    &[data-color="pink"]   { background: color-mix(in srgb, var(--p-pink-500) 15%, transparent); color: var(--p-pink-600); }
-    &[data-color="yellow"] { background: var(--dash-warn-bg);  color: var(--dash-warn); }
-    &[data-color="gray"]   { background: var(--dash-line-2);   color: var(--dash-ink-2); }
+    // Palette pilotée par [data-color] — les data-color exposent
+    // l'intention sémantique (success/warning/alert/danger/info) plus
+    // quelques teintes libres pour les indicateurs qui n'ont pas de
+    // sens métier standard (pink/violet/teal).
+    &[data-color="pos"]    { background: var(--app-success-bg); color: var(--app-success); }
+    &[data-color="neg"]    { background: var(--app-alert-bg);   color: var(--app-alert); }
+    &[data-color="red"]    { background: var(--app-danger-bg);  color: var(--app-danger); }
+    &[data-color="blue"]   { background: var(--app-info-bg);    color: var(--app-info); }
+    &[data-color="yellow"] { background: var(--app-warning-bg); color: var(--app-warning); }
+    &[data-color="gray"]   { background: var(--app-line-2);     color: var(--app-ink-muted); }
+    &[data-color="pink"]   { background: color-mix(in srgb, var(--p-pink-500)   15%, transparent); color: var(--p-pink-600); }
     &[data-color="violet"] { background: color-mix(in srgb, var(--p-purple-500) 15%, transparent); color: var(--p-purple-600); }
-    &[data-color="teal"]   { background: color-mix(in srgb, var(--p-teal-500) 15%, transparent); color: var(--p-teal-600); }
+    &[data-color="teal"]   { background: color-mix(in srgb, var(--p-teal-500)   15%, transparent); color: var(--p-teal-600); }
   }
 
   &__body { min-width: 0; }
-  &__title { font-size: 12.5px; font-weight: 600; color: var(--dash-ink); }
-  &__subtitle { font-size: 10.5px; color: var(--dash-ink-3); margin-top: 1px; }
+  &__title { font-size: 12.5px; font-weight: 600; color: var(--app-ink); }
+  &__subtitle { font-size: 10.5px; color: var(--app-ink-muted); margin-top: 1px; }
 
   &__right {
     text-align: right;
@@ -40,21 +44,19 @@
   }
   &__info {
     font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1;
-    color: var(--dash-ink);
+    color: var(--app-ink);
 
-    // Palette pilotée par [data-color] — mêmes teintes que __icon, appliquées au texte
-    // seul (pas de fond), pour signaler la zone/sévérité de la valeur affichée.
-    &[data-color="pos"]    { color: var(--dash-pos); }
-    &[data-color="neg"]    { color: var(--dash-alert); }
-    &[data-color="red"]    { color: var(--dash-neg); }
-    &[data-color="blue"]   { color: var(--dash-info); }
+    &[data-color="pos"]    { color: var(--app-success); }
+    &[data-color="neg"]    { color: var(--app-alert); }
+    &[data-color="red"]    { color: var(--app-danger); }
+    &[data-color="blue"]   { color: var(--app-info); }
+    &[data-color="yellow"] { color: var(--app-warning); }
+    &[data-color="gray"]   { color: var(--app-ink-muted); }
     &[data-color="pink"]   { color: var(--p-pink-600); }
-    &[data-color="yellow"] { color: var(--dash-warn); }
-    &[data-color="gray"]   { color: var(--dash-ink-2); }
     &[data-color="violet"] { color: var(--p-purple-600); }
     &[data-color="teal"]   { color: var(--p-teal-600); }
   }
-  &__info-subtitle { font-size: 10px; color: var(--dash-ink-3); margin-top: 2px; }
+  &__info-subtitle { font-size: 10px; color: var(--app-ink-muted); margin-top: 2px; }
 
   &__tags {
     display: flex;
@@ -64,5 +66,5 @@
     max-width: 160px;
   }
 
-  &__chevron { color: var(--dash-ink-3); font-size: 15px; opacity: 0.4; }
+  &__chevron { color: var(--app-ink-muted); font-size: 15px; opacity: 0.4; }
 }

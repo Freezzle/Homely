@@ -12,13 +12,13 @@
   display: flex;
   align-items: baseline;
   gap: 0.4rem;
-  color: var(--p-text-color);
+  color: var(--app-ink);
   font-weight: 700;
   font-size: 0.95rem;
 }
 
 .cbar-unit {
-  color: var(--p-text-muted-color);
+  color: var(--app-ink-muted);
   font-size: 0.75rem;
   font-weight: 500;
 }
@@ -42,8 +42,8 @@
   flex: 1;
   display: flex;
   height: 8px;
-  background: var(--p-surface-100);
-  border-radius: 99px;
+  background: var(--app-line-2);
+  border-radius: var(--app-radius-pill);
   overflow: hidden;
 }
 
@@ -53,13 +53,13 @@
 
 .cbar-fill {
   height: 100%;
-  border-radius: 99px;
+  border-radius: var(--app-radius-pill);
 }
 
 .cbar-mid {
   width: 2px;
   height: 12px;
-  background: var(--p-surface-300);
-  border-radius: 99px;
+  background: var(--app-line-3);
+  border-radius: var(--app-radius-pill);
   flex-shrink: 0;
 }

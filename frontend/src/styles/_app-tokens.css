@@ -1,0 +1,77 @@
+/*
+ * Charte graphique globale de l'application Homely.
+ *
+ * Source unique de vérité pour les couleurs de texte, de fond et sémantiques
+ * partagées entre le dashboard et le reste des écrans. Les tokens sont mappés
+ * sur les variables CSS exposées par le thème PrimeNG (preset Aura/Soho,
+ * voir app.config.ts) afin de rester cohérents avec le reste de l'UI et de
+ * fonctionner nativement en dark mode (`.dark` posé sur <html>).
+ *
+ * Règles d'usage :
+ *   - Titres / texte primaire ......... var(--app-ink)
+ *   - Sous-titres / labels / légendes . var(--app-ink-muted)
+ *   - Bordure carte / séparateur ...... var(--app-line)
+ *   - Fond de carte ................... var(--app-card)
+ *   - Montant "revenu" ................ var(--app-revenu)
+ *   - Montant "charge" ................ var(--app-charge)
+ *   - Montant "réserve" ............... var(--app-reserve)
+ *   - Montant "argent de poche" ....... var(--app-argent-poche)
+ *   - Montant neutre (solde, reste) ... var(--app-neutre)
+ *   - Positif / négatif (générique) ... var(--app-positif) / var(--app-negatif)
+ *   - Feedback UI ..................... var(--app-success|warning|alert|danger|info)
+ *     + variantes -bg (color-mix ~15 %) pour les fonds doux.
+ *
+ * Un composant peut légitimement surcharger ces tokens quand le contexte
+ * l'exige (ex. montant négatif sur une ligne "charge" qui représente une
+ * économie s'affiche en vert). La logique vit dans le composant, il choisit
+ * simplement le token adapté.
+ *
+ * Hors charte : couleurs de membre (dto.couleurMembre) et de scénario, qui
+ * restent dynamiques et sont posées en style inline.
+ */
+:root {
+  /* Encre (texte) */
+  --app-ink:        var(--p-text-color);
+  --app-ink-muted:  var(--p-text-muted-color);
+
+  /* Surfaces / lignes */
+  --app-bg:      var(--p-surface-50);
+  --app-card:    var(--p-content-background);
+  --app-line:    var(--p-content-border-color);
+  --app-line-2:  var(--p-surface-100);
+  --app-line-3:  var(--p-surface-300);
+
+  /* Sémantique — montants métier */
+  --app-revenu:        var(--p-primary-color);
+  --app-charge:        var(--p-red-500);
+  --app-reserve:       var(--p-blue-500);
+  --app-argent-poche:  var(--p-amber-500);
+  --app-neutre:        var(--app-ink-muted);
+
+  /* Sémantique — signe brut (fallback quand pas de contexte métier) */
+  --app-positif:  var(--p-green-500);
+  --app-negatif:  var(--p-red-500);
+
+  /* Sémantique — feedback UI (zones jauges, badges d'état, alertes) */
+  --app-success:  var(--p-green-500);
+  --app-warning:  var(--p-yellow-500);
+  --app-alert:    var(--p-orange-500);
+  --app-danger:   var(--p-red-500);
+  --app-info:     var(--p-primary-color);
+
+  /* Fonds sémantiques doux (color-mix ~15 %) */
+  --app-revenu-bg:       color-mix(in srgb, var(--p-primary-color) 15%, transparent);
+  --app-charge-bg:       color-mix(in srgb, var(--p-red-500)       15%, transparent);
+  --app-reserve-bg:      color-mix(in srgb, var(--p-blue-500)      15%, transparent);
+  --app-argent-poche-bg: color-mix(in srgb, var(--p-amber-500)     15%, transparent);
+  --app-success-bg:      color-mix(in srgb, var(--p-green-500)     15%, transparent);
+  --app-warning-bg:      color-mix(in srgb, var(--p-yellow-500)    18%, transparent);
+  --app-alert-bg:        color-mix(in srgb, var(--p-orange-500)    15%, transparent);
+  --app-danger-bg:       color-mix(in srgb, var(--p-red-500)       15%, transparent);
+  --app-info-bg:         color-mix(in srgb, var(--p-primary-color) 15%, transparent);
+
+  /* Rayons */
+  --app-radius-card: 12px;
+  --app-radius-item: 6px;
+  --app-radius-pill: 999px;
+}

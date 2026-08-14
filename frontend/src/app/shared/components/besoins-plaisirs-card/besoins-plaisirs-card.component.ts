@@ -135,7 +135,7 @@ export class BesoinsPlaisirsCardComponent {
     { value: this.data().montantBesoins, color: 'var(--p-blue-400)', label: this.t.dashboard.besoinsPlaisirsBesoins },
     {
       value: this.data().montantPlaisirs,
-      color: this.zoneCharges() === 'ELEVE' ? 'var(--p-red-500)' : 'var(--p-emerald-500)',
+      color: this.zoneCharges() === 'ELEVE' ? 'var(--app-danger)' : 'var(--app-success)',
       label: this.t.dashboard.besoinsPlaisirsPlaisirs,
     },
   ]);
@@ -156,7 +156,7 @@ export class BesoinsPlaisirsCardComponent {
       {
         label: this.t.dashboard.besoinsPlaisirsBesoins,
         value: besoins,
-        color: this.zoneBudget() === 'ELEVE' ? 'var(--p-red-500)' : 'var(--p-emerald-500)',
+        color: this.zoneBudget() === 'ELEVE' ? 'var(--app-danger)' : 'var(--app-success)',
       },
       {
         label: this.t.dashboard.besoinsPlaisirsMontantPlaisirs,

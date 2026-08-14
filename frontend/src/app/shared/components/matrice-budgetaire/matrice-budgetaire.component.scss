@@ -5,7 +5,7 @@
 .mb-skeleton {
   height: 420px;
   border-radius: var(--p-content-border-radius);
-  background: linear-gradient(90deg, var(--p-content-background) 25%, var(--p-surface-100) 37%, var(--p-content-background) 63%);
+  background: linear-gradient(90deg, var(--app-card) 25%, var(--app-line-2) 37%, var(--app-card) 63%);
   background-size: 400% 100%;
   animation: mb-skeleton-shimmer 1.4s ease infinite;
 }
@@ -22,7 +22,7 @@
   justify-content: center;
   gap: 0.6rem;
   padding: 2.5rem 1rem;
-  color: var(--p-text-muted-color);
+  color: var(--app-ink-muted);
   text-align: center;
 
   i {
@@ -39,7 +39,7 @@
 .mb-formule {
   margin: 0 0 0.75rem;
   font-size: 0.72rem;
-  color: var(--p-text-muted-color);
+  color: var(--app-ink-muted);
   opacity: 0.85;
 }
 
@@ -59,8 +59,8 @@
   gap: 0.6rem;
   padding: 0.4rem 0.5rem;
   border-radius: 8px;
-  border: 1px solid var(--p-content-border-color);
-  background: var(--p-content-background);
+  border: 1px solid var(--app-line);
+  background: var(--app-card);
 }
 
 .mb-rang {
@@ -68,7 +68,7 @@
   width: 2.1rem;
   font-size: 0.72rem;
   font-weight: 700;
-  color: var(--p-text-muted-color);
+  color: var(--app-ink-muted);
   padding-top: 0.15rem;
 }
 
@@ -94,7 +94,7 @@
   white-space: nowrap;
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--p-text-color);
+  color: var(--app-ink);
   position: relative;
   padding-left: 0.7rem;
 
@@ -105,35 +105,30 @@
     top: 0.35rem;
     width: 0.5rem;
     height: 0.5rem;
-    border-radius: 999px;
+    border-radius: var(--app-radius-pill);
   }
 
-  &.charge::before {
-    background: rgba(244, 63, 94, 0.85);
-  }
-
-  &.reserve::before {
-    background: rgba(59, 130, 246, 0.85);
-  }
+  &.charge::before  { background: var(--app-charge); }
+  &.reserve::before { background: var(--app-reserve); }
 }
 
 .mb-montant {
   flex-shrink: 0;
   font-size: 0.78rem;
   font-variant-numeric: tabular-nums;
-  color: var(--p-text-color);
+  color: var(--app-ink);
 }
 
 .mb-bar-track {
   height: 8px;
-  border-radius: 999px;
-  background: var(--p-surface-100);
+  border-radius: var(--app-radius-pill);
+  background: var(--app-line-2);
   overflow: hidden;
 }
 
 .mb-bar-fill {
   height: 100%;
-  border-radius: 999px;
+  border-radius: var(--app-radius-pill);
   transition: width 200ms ease;
 }
 

@@ -10,18 +10,18 @@
   align-items: center;
   gap: 0.55rem;
   padding: 0.65rem 0.9rem;
-  border-radius: 999px;
-  border: 1px solid var(--p-content-border-color);
-  background: var(--p-surface-50);
+  border-radius: var(--app-radius-pill);
+  border: 1px solid var(--app-line);
+  background: var(--app-bg);
   font-weight: 700;
-  color: var(--p-text-color);
+  color: var(--app-ink);
 }
 
 .duel-vs {
   font-size: 0.8rem;
   font-weight: 800;
   letter-spacing: 0.12em;
-  color: var(--p-text-muted-color);
+  color: var(--app-ink-muted);
 }
 
 .duel-select {
@@ -37,6 +37,6 @@
 .dot {
   width: 0.7rem;
   height: 0.7rem;
-  border-radius: 999px;
+  border-radius: var(--app-radius-pill);
   flex-shrink: 0;
 }

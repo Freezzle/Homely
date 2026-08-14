@@ -753,12 +753,12 @@ export class ArgentPocheComponent {
     return 'or';
   }
 
-  /** Couleur CSS (variable de thème PrimeNG) associée à une classification. */
+  /** Couleur CSS (charte --app-*) associée à une classification. */
   private _couleurCss(couleur: 'rouge' | 'vert' | 'or' | 'neutre'): string {
     switch (couleur) {
-      case 'rouge': return 'var(--p-red-500)';
-      case 'vert': return 'var(--p-green-500)';
-      case 'or': return 'var(--p-amber-500)';
+      case 'rouge': return 'var(--app-danger)';
+      case 'vert': return 'var(--app-success)';
+      case 'or': return 'var(--app-argent-poche)';
       default: return 'var(--p-surface-400)';
     }
   }

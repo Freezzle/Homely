@@ -8,10 +8,10 @@
     </div>
 
     <div class="cbar-vals">
-      <span [style.color]="winner(row) === 'a' ? colorA() : 'var(--p-text-muted-color)'">
+      <span [style.color]="winner(row) === 'a' ? colorA() : 'var(--app-ink-muted)'">
         {{ format(row, row.a) }}{{ winner(row) === 'a' ? ' ✓' : '' }}
       </span>
-      <span [style.color]="winner(row) === 'b' ? colorB() : 'var(--p-text-muted-color)'">
+      <span [style.color]="winner(row) === 'b' ? colorB() : 'var(--app-ink-muted)'">
         {{ winner(row) === 'b' ? '✓ ' : '' }}{{ format(row, row.b) }}
       </span>
     </div>
@@ -21,7 +21,7 @@
         <div
           class="cbar-fill"
           [style.width.%]="widthFor(row, 'a')"
-          [style.background]="winner(row) === 'a' ? colorA() : 'var(--p-surface-300)'"
+          [style.background]="winner(row) === 'a' ? colorA() : 'var(--app-line-3)'"
         ></div>
       </div>
       <div class="cbar-mid"></div>
@@ -29,7 +29,7 @@
         <div
           class="cbar-fill"
           [style.width.%]="widthFor(row, 'b')"
-          [style.background]="winner(row) === 'b' ? colorB() : 'var(--p-surface-300)'"
+          [style.background]="winner(row) === 'b' ? colorB() : 'var(--app-line-3)'"
         ></div>
       </div>
     </div>

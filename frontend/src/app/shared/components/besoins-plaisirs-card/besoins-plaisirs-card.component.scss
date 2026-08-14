@@ -31,17 +31,17 @@
     font-size: 2rem;
     font-weight: 800;
     line-height: 1.1;
-    color: var(--p-emerald-500);
+    color: var(--app-success);
   }
 
   &.budget-stat-eleve strong {
-    color: var(--p-red-500);
+    color: var(--app-danger);
   }
 }
 
 .budget-stat-label {
   font-size: 0.8rem;
-  color: var(--text-color-secondary);
+  color: var(--app-ink-muted);
 }
 
 .ring-block {
@@ -58,7 +58,7 @@
 .espace-budget-label {
   font-size: 0.8rem;
   font-weight: 600;
-  color: var(--text-color-secondary);
+  color: var(--app-ink-muted);
 }
 
 .breakdown {
@@ -81,11 +81,11 @@
   border-radius: 6px;
   font-size: 0.75rem;
   line-height: 1.4;
-  background: color-mix(in srgb, var(--p-emerald-500) 10%, transparent);
-  color: var(--text-color);
+  background: var(--app-success-bg);
+  color: var(--app-ink);
 
   &.zone-message-eleve {
-    background: color-mix(in srgb, var(--p-red-500) 10%, transparent);
+    background: var(--app-danger-bg);
   }
 }
 
@@ -99,12 +99,12 @@
   .na-value {
     font-size: 28px;
     font-weight: 700;
-    color: var(--text-color-secondary);
+    color: var(--app-ink-muted);
   }
 
   .na-reason {
     font-size: 12px;
-    color: var(--text-color-secondary);
+    color: var(--app-ink-muted);
     margin-top: 4px;
   }
 }
@@ -118,12 +118,12 @@
 .postes-besoins-titre {
   font-size: 0.8rem;
   font-weight: 600;
-  color: var(--text-color-secondary);
+  color: var(--app-ink-muted);
 }
 
 .postes-besoins-vide {
   font-size: 0.75rem;
-  color: var(--text-color-secondary);
+  color: var(--app-ink-muted);
 }
 
 .postes-besoins-liste {

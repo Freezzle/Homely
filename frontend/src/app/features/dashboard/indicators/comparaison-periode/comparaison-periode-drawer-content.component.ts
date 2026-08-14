@@ -38,8 +38,8 @@ export class ComparaisonPeriodeDrawerContentComponent {
   readonly data = input<ComparaisonPeriodeDrawerData>();
 
   protected diffColor(diff: number | null, inverse: boolean = false): string {
-    if (diff === null) return 'var(--p-text-muted-color)';
-    return (diff >= 0 && !inverse) || (diff < 0 && inverse) ? 'var(--p-green-500)' : 'var(--p-red-500)';
+    if (diff === null) return 'var(--app-ink-muted)';
+    return (diff >= 0 && !inverse) || (diff < 0 && inverse) ? 'var(--app-positif)' : 'var(--app-negatif)';
   }
 
   protected diffSigne(diff: number): string {

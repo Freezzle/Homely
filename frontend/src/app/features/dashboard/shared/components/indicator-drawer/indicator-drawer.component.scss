@@ -1,6 +1,7 @@
-// Largeur responsive du drawer, alignée sur les breakpoints Tailwind déjà utilisés
-// dans l'app (md = 768px, lg = 1024px — cf. ViewportService estMobile/estCompact) :
-// mobile inchangé (quasi plein écran), tablette 40 % de la largeur, desktop 30 %.
+// Largeur responsive du drawer, alignée sur les breakpoints Tailwind déjà
+// utilisés dans l'app (md = 768px, lg = 1024px — cf. ViewportService
+// estMobile/estCompact) : mobile inchangé (quasi plein écran), tablette
+// 40 % de la largeur, desktop 30 %.
 :host ::ng-deep .indicator-drawer {
   width: min(420px, 100vw);
 
@@ -19,14 +20,14 @@
   justify-content: space-between;
   gap: 12px;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--dash-line);
+  border-bottom: 1px solid var(--app-line);
 }
 
 .indicator-drawer__label {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--dash-ink-3);
+  color: var(--app-ink-muted);
   font-weight: 700;
 }
 
@@ -34,14 +35,14 @@
   margin: 2px 0 0;
   font-size: 18px;
   font-weight: 700;
-  color: var(--dash-ink);
+  color: var(--app-ink);
 }
 
 .indicator-drawer__close {
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--dash-ink-3);
+  color: var(--app-ink-muted);
   font-size: 16px;
   padding: 4px;
   line-height: 1;
@@ -56,5 +57,5 @@
   justify-content: flex-end;
   gap: 8px;
   padding-top: 12px;
-  border-top: 1px solid var(--dash-line);
+  border-top: 1px solid var(--app-line);
 }

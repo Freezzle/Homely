@@ -38,7 +38,7 @@ export type ObjectiveProgressSeverity = 'success' | 'warn' | 'danger' | 'info' |
     .obj-meta {
       font-size: 0.8rem;
       line-height: 1.25;
-      color: var(--p-text-muted-color);
+      color: var(--app-ink-muted);
     }
   `],
 })

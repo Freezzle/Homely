@@ -74,15 +74,15 @@ export interface PageNavSelection {
       flex-direction: column;
       gap: 2px;
       padding: 16px 12px;
-      background: var(--p-content-background);
-      border-left: 1px solid var(--p-content-border-color);
+      background: var(--app-card);
+      border-left: 1px solid var(--app-line);
       height: 100%;
       overflow-y: auto;
     }
 
     .pn-label {
       margin-bottom: 6px;
-      color: var(--p-text-muted-color);
+      color: var(--app-ink-muted);
       font-size: 12px;
       font-weight: 700;
       text-transform: uppercase;
@@ -96,7 +96,7 @@ export interface PageNavSelection {
       gap: 6px;
       padding: 6px 10px;
       border-radius: 8px;
-      color: var(--p-text-muted-color);
+      color: var(--app-ink-muted);
       font-size: 12px;
       font-weight: 600;
       background: transparent;
@@ -108,13 +108,13 @@ export interface PageNavSelection {
     }
 
     .pn-item:hover {
-      background: var(--p-surface-100);
-      color: var(--p-text-color);
+      background: var(--app-line-2);
+      color: var(--app-ink);
     }
 
     .pn-item.cur {
       background: var(--p-primary-50);
-      color: var(--p-text-color);
+      color: var(--app-ink);
       font-weight: 700;
       box-shadow: inset 2.5px 0 0 var(--p-primary-color);
     }
@@ -126,11 +126,11 @@ export interface PageNavSelection {
     }
 
     .pn-s-pos {
-      color: var(--p-emerald-500);
+      color: var(--app-positif);
     }
 
     .pn-s-neg {
-      color: var(--p-red-500);
+      color: var(--app-negatif);
     }
 
     .pn-chip-bar {
@@ -138,8 +138,8 @@ export interface PageNavSelection {
       gap: 6px;
       overflow-x: auto;
       padding: 10px 20px;
-      background: var(--p-content-background);
-      border-bottom: 1px solid var(--p-content-border-color);
+      background: var(--app-card);
+      border-bottom: 1px solid var(--app-line);
       scrollbar-width: none;
     }
 
@@ -153,13 +153,13 @@ export interface PageNavSelection {
       align-items: center;
       gap: 1px;
       flex-shrink: 0;
-      border: 1.5px solid var(--p-content-border-color);
-      background: var(--p-content-background);
+      border: 1.5px solid var(--app-line);
+      background: var(--app-card);
       border-radius: 14px;
       padding: 5px 13px;
       font-size: 12px;
       font-weight: 700;
-      color: var(--p-text-muted-color);
+      color: var(--app-ink-muted);
       cursor: pointer;
       font-family: inherit;
     }
@@ -167,7 +167,7 @@ export interface PageNavSelection {
     .pn-chip.cur {
       border-color: var(--p-primary-color);
       background: var(--p-primary-50);
-      color: var(--p-text-color);
+      color: var(--app-ink);
     }
 
     .pn-chip-label {
