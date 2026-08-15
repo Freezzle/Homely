@@ -2,8 +2,8 @@
 
 > Consignes permanentes pour l'agent LLM travaillant sur ce dépôt. À respecter dans
 > **chaque** contribution. En cas de doute sur le métier, la **référence absolue** est
-> [`docs/01-business-rules-engine.md`](../docs/01-business-rules-engine.md) et ses
-> vecteurs de test ; le fichier Excel d'origine tranche en dernier recours.
+> [`docs/01-principes-et-moteur.md`](../docs/01-principes-et-moteur.md) et ses
+> vecteurs golden ; le fichier Excel d'origine tranche en dernier recours.
 >
 > **Trust these instructions first.** They were validated by running every command
 > below in this exact environment. Only search the repo/docs further if something here
@@ -117,12 +117,11 @@ check `$LASTEXITCODE`, not just the presence of red/error-looking text.
   `docker compose up --build` (frontend :4200, backend :8080, Swagger UI at
   `/swagger-ui.html`).
 - `dev.ps1` — one-shot local dev script (Postgres + backend + frontend).
-- `docs/` — the actual specs: `README.md` (vision/architecture), `00-synthese.md`,
-  `01-business-rules-engine.md` (**engine reference + golden test vectors — highest
-  priority for engine work**), `02-domain-and-data-model.md`, `03-architecture.md`
-  (package-by-feature layout, Tailwind/PrimeNG layering), `04-api-spec.md` (API +
-  `ApiError` format), `05-frontend-spec.md`, `06-backlog-and-tasks.md` (sequential
-  backlog — **one task = one PR**, follow the order unless told otherwise).
+- `docs/` — the reference specs (consolidated): `README.md` (vision, glossaire, règles
+  d'or), `01-principes-et-moteur.md` (**engine reference + golden test vectors — highest
+  priority for engine work**), `02-domaine-et-donnees.md` (entities, SQL schema,
+  migrations), `03-architecture.md` (package-by-feature layout, security, Tailwind/PrimeNG
+  layering), `04-api-et-frontend.md` (REST API + `ApiError` format + Angular screens).
 
 ---
 
@@ -130,8 +129,8 @@ check `$LASTEXITCODE`, not just the presence of red/error-looking text.
 Réécriture d'un classeur Excel de **prévision budgétaire familiale** en application web
 **Spring Boot 4 (Java 21) + Angular 22 + PrimeNG 22 + Tailwind CSS v4**, en **SaaS
 multi-foyers**. Prévision uniquement (pas de réel, pas d'import bancaire). Lis, dans
-l'ordre : `README.md`, puis `docs/01` → `docs/06`. Suis le backlog `docs/06`
-**séquentiellement**, une tâche par PR.
+l'ordre : `README.md`, puis `docs/README.md` et les docs `docs/01` → `docs/04`. Une tâche
+= une PR, tests inclus.
 
 ## Règles d'or
 1. **Le moteur de calcul se développe en test-first.** Écris d'abord les tests JUnit
@@ -152,7 +151,7 @@ l'ordre : `README.md`, puis `docs/01` → `docs/06`. Suis le backlog `docs/06`
 
 ## Conventions backend (Java / Spring)
 - Java 21, records pour les DTO et les objets de valeur du moteur (immuables).
-- Package-by-feature (voir doc 03 §2). Le module `moteur` **n'importe ni Spring, ni JPA,
+- Package-by-feature (voir doc 03). Le module `moteur` **n'importe ni Spring, ni JPA,
   ni `java.time` lié à l'horloge** (dates passées en paramètre).
 - `@Enumerated(EnumType.STRING)` pour les enums ; jamais d'ordinal en base.
 - Persistance gérée par **Flyway** ; Hibernate en `ddl-auto=validate` (pas de génération
@@ -160,7 +159,7 @@ l'ordre : `README.md`, puis `docs/01` → `docs/06`. Suis le backlog `docs/06`
 - DTO ⇄ entités via **MapStruct** ; ne jamais exposer les entités JPA dans les
   contrôleurs.
 - Validation d'entrée via **Bean Validation** ; erreurs renvoyées au format `ApiError`
-  (doc 04 §2) avec un **code métier** stable.
+  (doc 04) avec un **code métier** stable.
 - Éviter le **N+1** : requêtes de chargement du scénario avec fetch joints.
 - Tests : JUnit 5 + AssertJ ; intégration avec **Testcontainers** (PostgreSQL réel).
   Couverture module `moteur` > 90 %.
@@ -175,7 +174,7 @@ l'ordre : `README.md`, puis `docs/01` → `docs/06`. Suis le backlog `docs/06`
   `@primeng/themes`, mode styled). Graphiques via `p-chart` (Chart.js).
 - **Tailwind CSS v4** pour layout/espacement/responsive, **couplé à PrimeNG** via le
   plugin officiel `tailwindcss-primeui` + **CSS layers** (ordre `tailwind, primeng`, le
-  layer `primeng` avant les utilitaires Tailwind) — voir doc 03 §6.1. **Ne pas** utiliser
+  layer `primeng` avant les utilitaires Tailwind) — voir doc 03 §7.1. **Ne pas** utiliser
   PrimeFlex (legacy). Éviter le préfixe `!` : régler la spécificité par les layers.
   Utiliser les couleurs de tokens (`bg-primary`, `text-surface-*`) ; sur un composant
   PrimeNG, passer les utilitaires via `styleClass`. Aligner `darkModeSelector` avec la
@@ -204,8 +203,7 @@ UI.
 ## Definition of Done (rappel)
 Une tâche est terminée quand : code + tests verts en CI, moteur non régressé, lint OK,
 multi-tenant respecté (test d'accès croisé), DTO ≠ entités, OpenAPI à jour, UI en clés
-i18n, et **les vecteurs golden restent reproduits au centime**. Une tâche = une PR, dans
-l'ordre du backlog `docs/06`.
+i18n, et **les vecteurs golden restent reproduits au centime**. Une tâche = une PR.
 
 ## Ce qu'il ne faut PAS faire
 - Ne pas introduire de suivi du **réalisé**, d'import bancaire, ni de rapprochement (hors

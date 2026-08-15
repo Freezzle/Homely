@@ -12,7 +12,7 @@ import java.util.*;
 /**
  * ★ Moteur de calcul budgétaire — module pur, zéro dépendance Spring/JPA/horloge.
  *
- * <p>Implémente exactement l'algorithme décrit dans {@code docs/01-business-rules-engine.md}.
+ * <p>Implémente exactement l'algorithme décrit dans {@code docs/01-principes-et-moteur.md}.
  * Entrées = records immuables ({@link ParametresScenario}, {@link PosteCalcul}…).
  * Sorties = {@link ProjectionAnnuelle}, {@link ProjectionPluriannuelle}, {@link Ventilations}.</p>
  *
