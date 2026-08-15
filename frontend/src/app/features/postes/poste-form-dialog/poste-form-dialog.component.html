@@ -63,7 +63,7 @@
                                 <label class="text-sm font-medium flex items-center justify-between">
                                     <span [pTooltip]="t.poste.importanceTooltip">{{ t.poste.importance }}</span>
                                     <span class="text-xs text-surface-500">
-                                        {{ formValue()?.importance ?? 3 }} / 5
+                                        {{ formValue().importance ?? 3 }} / 5
                                     </span>
                                 </label>
                                 <div class="w-[95%] mx-auto flex justify-start flex-col gap-1">
@@ -198,7 +198,7 @@
                                 formControlName="nature"
                                 styleClass="w-full"/>
 
-                            @if (formValue()?.nature === 'ESTIMATION') {
+                            @if (formValue().nature === 'ESTIMATION') {
                                 <div class="border-l-2 border-primary pl-3">
                                     <app-input-number
                                         [label]="t.poste.estimationPourcentage"
@@ -220,7 +220,7 @@
                                 <label class="text-sm font-medium flex items-center justify-between">
                                     <span [pTooltip]="t.poste.potentielOptimisationTooltip">{{ t.poste.potentielOptimisation }}</span>
                                     <span class="text-xs text-surface-500">
-                                        {{ formValue()?.potentielOptimisation ?? 3 }} / 5
+                                        {{ formValue().potentielOptimisation ?? 3 }} / 5
                                     </span>
                                 </label>
                                 <div class="w-[95%] mx-auto flex justify-start flex-col gap-1">
@@ -290,7 +290,7 @@
                                         optionLabel="label"
                                         optionValue="value"
                                         [allowEmpty]="false"
-                                        [ngModel]="formValue()?.typeRepartition"
+                                        [ngModel]="formValue().typeRepartition"
                                         [ngModelOptions]="{standalone: true}"
                                         (ngModelChange)="choisirTypeRepartition($event)"
                                         styleClass="w-full"/>
@@ -340,7 +340,7 @@
                                                                 (onInput)="onQuotePartChange(repartitionsArray.controls.indexOf(ctrl))"/>
                                                         </div>
                                                         <div class="col-span-2 text-sm text-surface-500 truncate">
-                                                            {{ (formValue()?.montant ?? 0) * (ctrl.get('quotePart')?.value ?? 0) / 100 | montant:(formValue()?.devise ?? undefined) }}
+                                                            {{ (formValue().montant ?? 0) * (ctrl.get('quotePart')?.value ?? 0) / 100 | montant:(formValue().devise ?? undefined) }}
                                                         </div>
                                                     } @else {
                                                         <div class="col-span-4 text-sm text-surface-400 italic">{{ t.poste.stepper.auto }}</div>
@@ -411,19 +411,19 @@
                                 <div class="flex flex-col gap-1 text-sm">
                                     <div class="flex justify-between">
                                         <span class="text-surface-500">{{ t.poste.description }}</span>
-                                        @if (formValue()?.description) {
-                                            <span>{{ formValue()?.description }}</span>
+                                        @if (formValue().description) {
+                                            <span>{{ formValue().description }}</span>
                                         } @else {
                                             <span class="italic text-red-500">{{ t.commun.aRenseigner }}</span>
                                         }
                                     </div>
                                     <div class="flex justify-between">
                                         <span class="text-surface-500">{{ t.poste.categorie }}</span>
-                                        <span>{{ categorieLibelle(formValue()?.categorieId) || '–' }}</span>
+                                        <span>{{ categorieLibelle(formValue().categorieId) || '–' }}</span>
                                     </div>
                                     <div class="flex justify-between">
                                         <span class="text-surface-500">{{ t.poste.importance }}</span>
-                                        <span>{{ formValue()?.importance ?? 3 }} / 5</span>
+                                        <span>{{ formValue().importance ?? 3 }} / 5</span>
                                     </div>
                                 </div>
                             </div>
@@ -439,13 +439,13 @@
                                 <div class="flex flex-col gap-1 text-sm">
                                     <div class="flex justify-between">
                                         <span class="text-surface-500">{{ t.poste.periodicite }}</span>
-                                        <span>{{ formValue()?.periodiciteMois | periodicite }}</span>
+                                        <span>{{ formValue().periodiciteMois | periodicite }}</span>
                                     </div>
-                                    @if ((formValue()?.periodiciteMois ?? 1) === 0) {
+                                    @if ((formValue().periodiciteMois ?? 1) === 0) {
                                         <div class="flex justify-between">
                                             <span class="text-surface-500">{{ t.poste.questionnaire.datePosteLabel }}</span>
-                                            @if (formValue()?.debut) {
-                                                <span>{{ formValue()?.debut | date:'dd/MM/yyyy' }}</span>
+                                            @if (formValue().debut) {
+                                                <span>{{ formValue().debut | date:'dd/MM/yyyy' }}</span>
                                             } @else {
                                                 <span class="italic text-red-500">{{ t.commun.aRenseigner }}</span>
                                             }
@@ -454,19 +454,19 @@
                                         <div class="flex justify-between">
                                             <span class="text-surface-500">{{ t.poste.periode }}</span>
                                             <span>
-                                                {{ formValue()?.debut ? (formValue()?.debut | date:'dd/MM/yyyy') : '–' }}
+                                                {{ formValue().debut ? (formValue().debut | date:'dd/MM/yyyy') : '–' }}
                                                 →
-                                                {{ formValue()?.fin ? (formValue()?.fin | date:'dd/MM/yyyy') : t.poste.stepper.sansEcheance }}
+                                                {{ formValue().fin ? (formValue().fin | date:'dd/MM/yyyy') : t.poste.stepper.sansEcheance }}
                                             </span>
                                         </div>
                                         @if (sousFrequence() === 'AUTRE') {
                                             <div class="flex justify-between">
                                                 <span class="text-surface-500">{{ t.poste.moment }}</span>
-                                                <span>{{ t.poste.momentOptions[formValue()?.moment ?? 'DEBUT_PERIODE'] }}</span>
+                                                <span>{{ t.poste.momentOptions[formValue().moment ?? 'DEBUT_PERIODE'] }}</span>
                                             </div>
                                             <div class="flex justify-between">
                                                 <span class="text-surface-500">{{ t.poste.mode }}</span>
-                                                <span>{{ formValue()?.mode === 'PERIODIQUE' ? t.poste.modeOptions.PERIODIQUE : t.poste.modeOptions.MENSUALISE }}</span>
+                                                <span>{{ formValue().mode === 'PERIODIQUE' ? t.poste.modeOptions.PERIODIQUE : t.poste.modeOptions.MENSUALISE }}</span>
                                             </div>
                                         }
                                     }
@@ -484,20 +484,20 @@
                                 <div class="flex flex-col gap-1 text-sm">
                                     <div class="flex justify-between">
                                         <span class="text-surface-500">{{ t.poste.montant }}</span>
-                                        <span>{{ formValue()?.montant | montant:(formValue()?.devise ?? undefined) }}</span>
+                                        <span>{{ formValue().montant | montant:(formValue().devise ?? undefined) }}</span>
                                     </div>
                                     <div class="flex justify-between">
                                         <span class="text-surface-500">{{ t.poste.nature }}</span>
                                         <span>
-                                            {{ formValue()?.nature === 'ESTIMATION' ? t.poste.natureOptions.ESTIMATION : t.poste.natureOptions.EFFECTIF }}
-                                            @if (formValue()?.nature === 'ESTIMATION') {
-                                                ({{ formValue()?.estimPourcentage ?? 0 }}%)
+                                            {{ formValue().nature === 'ESTIMATION' ? t.poste.natureOptions.ESTIMATION : t.poste.natureOptions.EFFECTIF }}
+                                            @if (formValue().nature === 'ESTIMATION') {
+                                                ({{ formValue().estimPourcentage ?? 0 }}%)
                                             }
                                         </span>
                                     </div>
                                     <div class="flex justify-between">
                                         <span class="text-surface-500">{{ t.poste.potentielOptimisation }}</span>
-                                        <span>{{ formValue()?.potentielOptimisation ?? 3 }} / 5</span>
+                                        <span>{{ formValue().potentielOptimisation }} / 5</span>
                                     </div>
                                 </div>
                             </div>
@@ -517,7 +517,7 @@
                                             @if (estMonoMembre() || membresSelectionnesIds().size === 1) {
                                                 {{ t.poste.stepper.membreUnique }}
                                             } @else {
-                                                {{ t.poste.typeRepartitionOptions[formValue()?.typeRepartition ?? 'AUTO'] }}
+                                                {{ t.poste.typeRepartitionOptions[formValue().typeRepartition ?? 'AUTO'] }}
                                             }
                                         </span>
                                     </div>
