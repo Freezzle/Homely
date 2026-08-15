@@ -17,6 +17,9 @@ public interface PolitiqueArgentPocheRepository extends JpaRepository<PolitiqueA
 
     Optional<PolitiqueArgentPoche> findByIdAndScenarioId(UUID id, UUID scenarioId);
 
+    /** Utilisé avant la désactivation d'un compte : refuse si une politique le crédite encore. */
+    boolean existsByCompte_Id(UUID compteId);
+
     /**
      * Politique active pour {@code (membre, mois)} — au plus une (contrainte
      * de non-chevauchement portée par le service). {@code mois} est le 1er du mois.

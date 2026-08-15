@@ -377,3 +377,17 @@ export interface CompteRecapMensuelDto {
   virementsSortants: number;
   soldeRestant: number;
 }
+
+/** Détail d'une ligne alimentant un compte (poste ou argent de poche) — liste affichée
+ *  lorsqu'un compte est sélectionné dans la vue "Virements des comptes" (org-chart hub
+ *  & rayons). `posteId`/`libelle` sont `null` si `argentPoche` est vrai (pas un poste).
+ *  `quotePart` est `null` pour l'argent de poche (pas de notion de prorata). */
+export interface ComptePosteDetailDto {
+  posteId: string | null;
+  libelle: string | null;
+  type: TypePoste;
+  argentPoche: boolean;
+  montant: number;
+  quotePart: number | null;
+}
+

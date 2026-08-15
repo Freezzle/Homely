@@ -19,6 +19,9 @@ public interface AllocationArgentPocheRepository extends JpaRepository<Allocatio
 
     Optional<AllocationArgentPoche> findByIdAndScenarioId(UUID id, UUID scenarioId);
 
+    /** Utilisé avant la désactivation d'un compte : refuse si une allocation le crédite encore. */
+    boolean existsByCompte_Id(UUID compteId);
+
     Optional<AllocationArgentPoche> findByScenarioIdAndMembreIdAndMois(
             UUID scenarioId, UUID membreId, LocalDate mois);
 }

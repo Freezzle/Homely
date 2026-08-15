@@ -1,0 +1,75 @@
+<div class="hub-recap">
+  <p class="hub-recap-description">{{ t.dashboard.comptesDescription }}</p>
+
+  @if (chargement()) {
+    <div class="hub-recap-skeleton">
+      <p-skeleton width="280px" height="180px" borderRadius="12px" />
+      <div class="hub-recap-skeleton-children">
+        @for (i of [1, 2, 3]; track i) {
+          <p-skeleton width="250px" height="160px" borderRadius="12px" />
+        }
+      </div>
+    </div>
+  } @else if (aucunCompte()) {
+    <p class="hub-recap-empty">{{ t.dashboard.comptesAucunCompte }}</p>
+  } @else {
+    <div class="hub-recap-chart">
+      <p-organization-chart
+              [value]="tree()"
+              [collapsible]="false"
+              selectionMode="single"
+              (onNodeSelect)="onNodeSelect($event)"
+              (onNodeUnselect)="onNodeUnselect($event)">
+        <ng-template #node let-node>
+          <app-compte-flow-card
+            [compte]="node.data.compte"
+            [devise]="devise()"
+            [variant]="node.data.variant" />
+        </ng-template>
+      </p-organization-chart>
+    </div>
+
+    @if (compteSelectionneId()) {
+      <div class="hub-recap-postes">
+        <p class="hub-recap-postes-titre">
+          {{ t.dashboard.comptesPostesTitre }}
+          @if (libelleCompteSelectionne(); as libelle) {
+            <span class="hub-recap-postes-compte">{{ libelle }}</span>
+          }
+        </p>
+
+        @if (postesDetailChargement()) {
+          <div class="hub-recap-postes-skeleton">
+            @for (i of [1, 2, 3]; track i) {
+              <p-skeleton height="40px" borderRadius="8px" />
+            }
+          </div>
+        } @else if (postesDetail().length === 0) {
+          <p class="hub-recap-postes-vide">{{ t.dashboard.comptesPostesAucun }}</p>
+        } @else {
+          <ul class="hub-recap-postes-liste">
+            @for (poste of postesDetail(); track poste.posteId ?? 'argent-poche') {
+              <li class="hub-recap-poste" [class.argent-poche]="poste.argentPoche">
+                <span class="hub-recap-poste-icone">
+                  <i class="pi" [class.pi-wallet]="poste.argentPoche" [class.pi-tag]="!poste.argentPoche"></i>
+                </span>
+                <span class="hub-recap-poste-libelle">
+                  {{ poste.argentPoche ? t.dashboard.comptesPostesArgentPoche : poste.libelle }}
+                </span>
+                @if (poste.quotePart != null && poste.quotePart < 1) {
+                  <span class="hub-recap-poste-quotepart">
+                    {{ t.dashboard.comptesPostesQuotePart }} {{ poste.quotePart * 100 | number:'1.0-0' }}%
+                  </span>
+                }
+                <span class="hub-recap-poste-montant" [class.negatif]="poste.type !== 'REVENU'">
+                  {{ poste.type === 'REVENU' ? '+' : '−' }}{{ poste.montant | montant:devise() }}
+                </span>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    }
+  }
+</div>
+

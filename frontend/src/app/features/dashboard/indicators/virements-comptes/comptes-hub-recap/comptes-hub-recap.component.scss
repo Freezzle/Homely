@@ -1,0 +1,162 @@
+:host {
+  display: block;
+}
+
+.hub-recap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hub-recap-description {
+  margin: 0;
+  font-size: 12px;
+  color: var(--app-ink-muted);
+}
+
+.hub-recap-empty {
+  margin: 0;
+  color: var(--app-ink-muted);
+  text-align: center;
+  padding: 32px 16px;
+}
+
+.hub-recap-skeleton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 16px;
+}
+
+.hub-recap-skeleton-children {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.hub-recap-chart {
+  overflow-x: auto;
+  padding: 8px 0;
+
+  // Laisse la card gérer son propre style ; on ne garde que la couleur des lignes
+  // de l'orgchart, alignée sur la charte graphique du projet (_app-tokens.css).
+  ::ng-deep {
+    .p-organizationchart {
+      background: transparent;
+    }
+    .p-organizationchart-node-content {
+      padding: 0;
+      background: transparent;
+      border: none;
+      box-shadow: none;
+
+      &:hover {
+        background: transparent;
+      }
+    }
+    .p-organizationchart-lines,
+    .p-organizationchart-line-down,
+    .p-organizationchart-line-top,
+    .p-organizationchart-line-left,
+    .p-organizationchart-line-right {
+      background-color: var(--app-line);
+      border-color: var(--app-line) !important;
+    }
+    // Compte sélectionné (selectionMode="single") : anneau de mise en évidence autour
+    // de la carte, cohérent avec la charte graphique (_app-tokens.css).
+    .p-organizationchart-node[data-selected='true'] {
+      border-radius: var(--app-radius-card);
+      box-shadow: 0 0 0 2px var(--app-info);
+      cursor: pointer;
+    }
+    .p-organizationchart-node[data-selectable='true'] {
+      cursor: pointer;
+    }
+  }
+}
+
+.hub-recap-postes {
+  border-top: 1px solid var(--app-line);
+  padding-top: 12px;
+}
+
+.hub-recap-postes-titre {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+.hub-recap-postes-compte {
+  font-weight: 400;
+  color: var(--app-ink-muted);
+
+  &::before {
+    content: ' — ';
+  }
+}
+
+.hub-recap-postes-vide {
+  margin: 0;
+  color: var(--app-ink-muted);
+  font-size: 13px;
+}
+
+.hub-recap-postes-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hub-recap-postes-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hub-recap-poste {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--app-radius-card);
+  background: var(--app-card);
+
+  &.argent-poche {
+    background: color-mix(in srgb, var(--app-info) 8%, var(--app-card));
+  }
+}
+
+.hub-recap-poste-icone {
+  color: var(--app-ink-muted);
+  flex: 0 0 auto;
+}
+
+.hub-recap-poste-libelle {
+  flex: 1 1 auto;
+  font-size: 13px;
+  color: var(--app-ink);
+}
+
+.hub-recap-poste-quotepart {
+  font-size: 12px;
+  color: var(--app-ink-muted);
+  white-space: nowrap;
+}
+
+.hub-recap-poste-montant {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--app-positif);
+  white-space: nowrap;
+
+  &.negatif {
+    color: var(--app-negatif);
+  }
+}
+

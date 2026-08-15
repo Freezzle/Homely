@@ -1,0 +1,74 @@
+<div class="flow-card" [class.hub]="isHub()" [class.negatif]="isNegatif()">
+
+  <!-- Header : nom du compte + badge Hub -->
+  <div class="flow-card-header">
+    <div class="flow-card-avatar">
+      <i class="pi pi-wallet"></i>
+    </div>
+    <div class="flow-card-name">
+        {{ compte().libelleCompte }}
+    </div>
+    @if (isHub()) {
+      <span class="flow-card-hub-badge">
+        <i class="pi pi-star-fill"></i>{{ t.dashboard.comptesHubBadge }}
+      </span>
+    }
+  </div>
+
+  <!-- Body : lignes de flux -->
+  <div class="flow-card-body">
+    @if (showVirementsEntrants()) {
+      <div class="flow-row entree">
+        <span class="flow-label">
+          <i class="pi pi-arrow-down-left"></i>{{ t.dashboard.comptesVirementsEntrants }}
+        </span>
+        <span class="flow-value">+{{ compte().virementsEntrants | montant:devise() }}</span>
+      </div>
+    }
+
+    @if (showEntrees()) {
+      <div class="flow-row entree">
+        <span class="flow-label">
+          <i class="pi pi-plus"></i>{{ t.dashboard.comptesEntrees }}
+        </span>
+        <span class="flow-value">+{{ compte().entrees | montant:devise() }}</span>
+      </div>
+    }
+
+    <!-- Sorties échues : toujours affiché, même à 0 -->
+    <div class="flow-row sortie">
+      <span class="flow-label">
+        <i class="pi pi-arrow-up-right"></i>{{ t.dashboard.comptesSortiesEchues }}
+      </span>
+      <span class="flow-value">
+        {{ compte().sortiesEchues > 0 ? '−' : '' }}{{ compte().sortiesEchues | montant:devise() }}
+      </span>
+    </div>
+
+    @if (showVirementsSortants()) {
+      <div class="flow-row virement-out">
+        <span class="flow-label">
+          <i class="pi pi-sign-out"></i>{{ t.dashboard.comptesVirementsSortants }}
+        </span>
+        <span class="flow-value">−{{ compte().virementsSortants | montant:devise() }}</span>
+      </div>
+    }
+  </div>
+
+  <!-- Footer : solde + avertissement si négatif -->
+  <div class="flow-card-footer" [class.negatif]="isNegatif()">
+    <div class="solde-row">
+      <span class="solde-label">{{ t.dashboard.comptesSoldeRestant }}</span>
+      <span class="solde-value" [class.negatif]="isNegatif()">
+        {{ compte().soldeRestant | montant:devise() }}
+      </span>
+    </div>
+
+    @if (isNegatif()) {
+      <div class="solde-warning" role="alert">
+        <i class="pi pi-exclamation-triangle"></i>
+        <span class="solde-warning-text">{{ t.dashboard.comptesSoldeNegatifMessage }}</span>
+      </div>
+    }
+  </div>
+</div>

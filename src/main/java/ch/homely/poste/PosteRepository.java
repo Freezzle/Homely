@@ -17,6 +17,9 @@ public interface PosteRepository extends JpaRepository<Poste, UUID> {
     /** Utilisé par les actions groupées : charge uniquement les postes appartenant bien au scénario. */
     List<Poste> findAllByScenarioIdAndIdIn(UUID scenarioId, List<UUID> ids);
 
+    /** Utilisé avant la désactivation d'un compte : refuse si un poste le ventile encore. */
+    boolean existsByVentilations_Compte_Id(UUID compteId);
+
     /**
      * Recherche le poste (s'il existe) issu d'une révision du poste donné.
      * Sert à vérifier qu'un poste est bien le dernier maillon de sa chaîne

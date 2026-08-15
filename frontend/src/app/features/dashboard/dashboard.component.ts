@@ -484,11 +484,12 @@ export class DashboardComponent {
     data: this.evenementsDataAnnee(),
   }));
 
-  /** Payload signaux transmis au drawer "Virements des comptes". */
+  /** Payload signaux transmis au drawer "Virements des comptes" (vue mois). */
   private readonly virementsComptesData = computed<VirementsComptesDrawerData>(() => ({
     recaps: this.comptesRecapDto,
     devise: this.deviseBase,
     chargement: this.comptesRecapChargement,
+    cle: this._comptesRecapCle,
   }));
 
   /** Indicateur "Virements des comptes" (mois + vue membre uniquement, mêmes données que
@@ -498,8 +499,31 @@ export class DashboardComponent {
     const recaps = this.comptesRecapDto();
     const totalSortants = recaps.reduce((somme, r) => somme + r.virementsSortants, 0);
     return {
-      indicator: virementsComptesIndicator(recaps, this.formatMontant(totalSortants), this.t),
+      indicator: virementsComptesIndicator('virements-comptes-mois', recaps, this.formatMontant(totalSortants), this.t),
       data: this.virementsComptesData(),
+    };
+  });
+
+  /** Payload signaux transmis au drawer "Virements des comptes" (vue année) — le drill-down
+   *  par poste (`ComptesHubRecapCle`) réutilise décembre comme mois de référence, seul mois
+   *  couvert par le solde restant fin d'année (voir `_comptesRecapAnnuelCle`). */
+  private readonly virementsComptesDataAnnee = computed<VirementsComptesDrawerData>(() => ({
+    recaps: this.comptesRecapAnnuelDto,
+    devise: this.deviseBase,
+    chargement: this.comptesRecapAnnuelChargement,
+    cle: this._comptesRecapAnnuelCle,
+  }));
+
+  /** Indicateur "Virements des comptes" (vue année, vue membre uniquement) — variante
+   *  annuelle de {@link virementsComptesIndicateur} : flux sommés sur les 12 mois, solde
+   *  restant = instantané fin décembre. `null` si non applicable (vue foyer). */
+  readonly virementsComptesIndicateurAnnee = computed(() => {
+    if (!this.afficherOngletComptes()) return null;
+    const recaps = this.comptesRecapAnnuelDto();
+    const totalSortants = recaps.reduce((somme, r) => somme + r.virementsSortants, 0);
+    return {
+      indicator: virementsComptesIndicator('virements-comptes-annee', recaps, this.formatMontant(totalSortants), this.t),
+      data: this.virementsComptesDataAnnee(),
     };
   });
 
@@ -516,13 +540,17 @@ export class DashboardComponent {
   });
 
   /** Section "Comment se passe cette année" : Comparaison de l'année passée + Mois à
-   *  risque (anneau + compteur) + Taux d'effort par membre (vue membre uniquement) +
-   *  Événements de l'année. */
-  readonly commentSePasseIndicateursAnnee = computed(() => [
-    this.moisARisqueIndicateurAnnee(),
-    ...this.tauxEffortIndicateursAnnee(),
-    this.evenementsIndicateurAnnee(),
-  ]);
+   *  risque (anneau + compteur) + Taux d'effort par membre + Événements de l'année +
+   *  Virements des comptes (si applicable — vue membre uniquement). */
+  readonly commentSePasseIndicateursAnnee = computed(() => {
+    const virements = this.virementsComptesIndicateurAnnee();
+    return [
+      this.moisARisqueIndicateurAnnee(),
+      ...this.tauxEffortIndicateursAnnee(),
+      this.evenementsIndicateurAnnee(),
+      ...(virements ? [virements] : []),
+    ];
+  });
 
 
   /** Ouvre le drawer partagé pour l'indicateur cliqué (tous les indicateurs du dashboard
@@ -741,9 +769,9 @@ export class DashboardComponent {
     ];
   });
 
-  /** Onglet "Comptes" (récap mensuel de trésorerie par compte) : uniquement en vue mois
-   *  ET vue membre, scopé au membre courant côté serveur (accès + agrégation). Le fetch
-   *  n'est plus gaté sur l'onglet actif (chargé dès la vue mois/membre) car l'indicateur
+  /** Onglet "Comptes" (récap de trésorerie par compte, mois ou année) : uniquement en vue
+   *  membre, scopé au membre courant côté serveur (accès + agrégation). Le fetch n'est plus
+   *  gaté sur l'onglet actif (chargé dès la vue mois/année en mode membre) car l'indicateur
    *  "Virements des comptes" a besoin de la donnée résolue même onglet fermé. */
   readonly afficherOngletComptes = computed(() => this.sujet().mode === 'membre');
 
@@ -761,6 +789,24 @@ export class DashboardComponent {
   readonly comptesRecapDto = computed<CompteRecapMensuelDto[]>(() => this._comptesRecap.donnees() ?? []);
 
   readonly comptesRecapChargement = computed(() => this._comptesRecap.chargement());
+
+  /** Variante annuelle du récap comptes (vue membre) : flux sommés sur les 12 mois, scopée
+   *  à `_projectionAnnuelleCle` (pas de `mois`). Le `cle` transmis au drawer (drill-down par
+   *  poste) fige `mois: 12` (décembre), seul mois couvert par le solde restant fin d'année. */
+  private readonly _comptesRecapAnnuelCle = computed<{ foyerId: string; scenarioId: string; annee: number; mois: number; membreId: string } | null>(() => {
+    if (!this.afficherOngletComptes()) return null;
+    const projCle = this._projectionAnnuelleCle();
+    const s = this.sujet();
+    return projCle && s.mode === 'membre' ? { ...projCle, mois: 12, membreId: s.membreId } : null;
+  });
+
+  private readonly _comptesRecapAnnuel = creerChargementReactif(this._comptesRecapAnnuelCle, ({ foyerId, scenarioId, annee, membreId }) =>
+    this.projSvc.comptesRecapAnnuel(foyerId, scenarioId, annee, membreId),
+  );
+
+  readonly comptesRecapAnnuelDto = computed<CompteRecapMensuelDto[]>(() => this._comptesRecapAnnuel.donnees() ?? []);
+
+  readonly comptesRecapAnnuelChargement = computed(() => this._comptesRecapAnnuel.chargement());
 
   private mapperTauxEffortCards(dtos: TauxEffortMembreDto[] | null | undefined): TauxEffortCardData[] {
     return (dtos ?? []).map((dto) => ({

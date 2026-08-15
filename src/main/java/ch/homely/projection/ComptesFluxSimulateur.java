@@ -36,7 +36,27 @@ import java.util.*;
  *       part planifiée (mensualisée) seule alimente virementsEntrants, sans
  *       comblement automatique — comportement strictement identique à avant
  *       l'introduction du compte primaire.</li>
+ *   <li>Si le compte crédité a un ou plusieurs co-titulaires <b>autres</b> que le
+ *       contributeur, et qu'aucun d'eux n'a lui-même de part active sur ce compte ce
+ *       mois (ni poste ventilé, ni argent de poche crédité là où le compte est leur
+ *       propre primaire) : le montant financé est restitué comme virement entrant à la
+ *       fois au contributeur (sa propre part financée depuis son propre primaire) et à
+ *       ce(s) co-titulaire(s) (l'argent devient réellement disponible sur son compte —
+ *       que celui-ci soit ou non son primaire désigné, ex. transfert vers le compte
+ *       courant ou l'épargne d'un autre membre). Ce sont des vues distinctes du même
+ *       montant réel — jamais sommées entre elles côté UI, chacune scopée à son propre
+ *       {@code membreCible}. Un co-titulaire déjà actif sur ce compte (ex. compte joint
+ *       à prorata, où chacun ventile lui-même sur le même compte) garde sa vue
+ *       strictement scopée à sa propre part, sans cette restitution supplémentaire.</li>
  * </ul>
+ *
+ * <p>L'<b>argent de poche</b> (résolu par {@link ArgentPocheService}, hors moteur pur) suit
+ * exactement la même règle de compte primaire que les postes : si le compte crédité par la
+ * politique/allocation diffère du primaire du membre, le montant est financé depuis ce
+ * primaire (virement entrant sur le compte crédité, sortant sur le primaire) plutôt que de
+ * matérialiser l'argent directement sur le compte crédité. Dans tous les cas, elle est comptée
+ * comme une <b>dépense</b> (charge) du compte crédité, jamais comme un revenu — c'est de
+ * l'argent qui quitte le budget du foyer pour la consommation personnelle du membre.</p>
  *
  * <p><b>Vue membre</b> : le résultat exposé ({@link CompteFluxMensuel}) est <b>scopé
  * au membre demandé</b> — chaque montant (entrées, sorties, virements, solde restant)
@@ -64,10 +84,9 @@ final class ComptesFluxSimulateur {
      *                           trésorerie, considère toujours tous les co-titulaires)
      * @param argentPocheService résolution de l'argent de poche par (membre, mois) —
      *                           n'est pas un poste, donc absent du moteur pur ; injecté
-     *                           ici pour fusionner son montant, sur le compte crédité,
-     *                           dans la ventilation compte/membre avant simulation des
-     *                           virements (sinon la trésorerie du compte cible ne
-     *                           reflète jamais l'argent de poche qui y est versé)
+     *                           ici pour appliquer la même règle de compte primaire que
+     *                           les postes (financement depuis le primaire si le compte
+     *                           crédité en diffère, sinon crédit direct)
      * @param scenarioId         scénario cible, requis par {@code argentPocheService}
      * @return pour chaque compte, la liste chronologique des flux mensuels — scopés à
      *         {@code membreCible} — depuis {@code params.anneeDepart()} jusqu'à
@@ -109,8 +128,28 @@ final class ComptesFluxSimulateur {
             ArgentPocheService argentPocheService, UUID scenarioId) {
 
         VentilationsCompteDetail detail = MoteurCalcul.ventilationsCompteMembreDetail(params, annee, mois);
-        Map<UUID, Map<UUID, DetailCompteMembre>> parCompteMembreDetail =
-                fusionnerArgentPocheDansDetail(params, detail, argentPocheService, scenarioId, annee, mois);
+        Map<UUID, Map<UUID, DetailCompteMembre>> parCompteMembreDetail = new LinkedHashMap<>();
+        detail.parCompteMembre().forEach((compteId, memMap) -> parCompteMembreDetail.put(compteId, new LinkedHashMap<>(memMap)));
+
+        // Compte → membres co-titulaires (depuis Compte.getMembres()) : permet, quand un AUTRE
+        // membre finance ce compte (ventilation d'un poste chez lui, ou argent de poche crédité
+        // là-bas) — que ce compte soit ou non le primaire désigné d'un co-titulaire — de
+        // restituer le virement entrant également à ce(s) co-titulaire(s), pas seulement au
+        // contributeur. Voir la règle complète plus bas (membresActifsParCompte).
+        Map<UUID, Set<UUID>> coTitulairesParCompte = new HashMap<>();
+        for (Compte c : tousComptes) {
+            Set<UUID> ids = new HashSet<>();
+            c.getMembres().forEach(m -> ids.add(m.getId()));
+            coTitulairesParCompte.put(c.getId(), ids);
+        }
+
+        // Argent de poche crédité directement (auto-financé ou mode legacy) : fusionné tout de
+        // suite dans la ventilation, comme un poste dont le compte primaire du membre EST le
+        // compte crédité. Le reste (financé depuis un primaire différent) est restitué pour être
+        // traité comme un virement, après le calcul des virements planifiés (postes) ci-dessous.
+        List<PocheAFinancer> pochesAFinancer = fusionnerArgentPocheDansDetail(
+                params, parCompteMembreDetail, argentPocheService, scenarioId, annee, mois,
+                primairesParMembre, comptesActifsIds);
 
         Map<UUID, Double> entreesParCompte = new HashMap<>();
         Map<UUID, Double> baseParCompte = new HashMap<>();
@@ -136,6 +175,23 @@ final class ComptesFluxSimulateur {
             echuParCompte.put(c.getId(), echu);
             baseShareParCompte.put(c.getId(), baseShares);
             echuShareParCompte.put(c.getId(), echuShares);
+        }
+
+        // Compte → membres ayant, ce mois, une part active dessus (poste ventilé et/ou argent de
+        // poche crédité là où le compte est leur propre primaire) : sert à décider, pour un
+        // co-titulaire du compte crédité qui n'y contribue lui-même en rien ce mois, s'il faut lui
+        // restituer aussi le virement entrant d'un AUTRE membre (voir plus bas). Un co-titulaire
+        // déjà actif sur ce compte garde sa vue strictement scopée à sa propre part (ex. compte
+        // joint à prorata, où chacun ventile lui-même sur le même compte) — comportement inchangé.
+        Map<UUID, Set<UUID>> membresActifsParCompte = new HashMap<>();
+        for (Compte c : tousComptes) {
+            Set<UUID> actifs = new HashSet<>();
+            actifs.addAll(baseShareParCompte.get(c.getId()).keySet());
+            actifs.addAll(echuShareParCompte.get(c.getId()).keySet());
+            membresActifsParCompte.put(c.getId(), actifs);
+        }
+        for (PocheAFinancer p : pochesAFinancer) {
+            membresActifsParCompte.computeIfAbsent(p.compteCible(), k -> new HashSet<>()).add(p.membreId());
         }
 
         // Manque de trésorerie ("topUp") par compte, tous co-titulaires confondus :
@@ -205,7 +261,41 @@ final class ComptesFluxSimulateur {
                         virementsEntrantsMembreParCompte.merge(compteId, montantFinance, Double::sum);
                         virementsSortantsMembreParCompte.merge(primaireId, montantFinance, Double::sum);
                     }
+                    // Un co-titulaire du compte crédité, non actif lui-même dessus ce mois (voir
+                    // membresActifsParCompte), voit cet argent arriver réellement sur son compte —
+                    // que ce compte soit ou non son primaire désigné (transfert vers un compte
+                    // courant, une épargne, etc.) : on le lui restitue aussi comme virement entrant,
+                    // en plus de la restitution au contributeur ci-dessus (deux vues distinctes du
+                    // même montant réel, jamais sommées entre elles côté UI).
+                    Set<UUID> coTitulaires = coTitulairesParCompte.getOrDefault(compteId, Set.of());
+                    Set<UUID> membresActifs = membresActifsParCompte.getOrDefault(compteId, Set.of());
+                    if (!membreCible.equals(membreId) && coTitulaires.contains(membreCible)
+                            && !membresActifs.contains(membreCible)) {
+                        virementsEntrantsMembreParCompte.merge(compteId, montantFinance, Double::sum);
+                    }
                 }
+            }
+        }
+
+        // Argent de poche financé depuis un compte primaire différent du compte crédité :
+        // même traitement qu'un poste financé (virement entrant sur le compte crédité, sortant
+        // sur le primaire), calculé ici séparément car l'argent de poche n'est pas un poste du
+        // moteur pur (pas de baseShare/echuShare, pas de topUp — le montant est déjà exact).
+        for (PocheAFinancer p : pochesAFinancer) {
+            virementsEntrantsTotalParCompte.merge(p.compteCible(), p.montant(), Double::sum);
+            virementsSortantsTotalParCompte.merge(p.comptePrimaire(), p.montant(), Double::sum);
+            if (p.membreId().equals(membreCible)) {
+                virementsEntrantsMembreParCompte.merge(p.compteCible(), p.montant(), Double::sum);
+                virementsSortantsMembreParCompte.merge(p.comptePrimaire(), p.montant(), Double::sum);
+            }
+            // Même règle que pour les postes ventilés (voir ci-dessus) : un co-titulaire du
+            // compte crédité, non actif lui-même dessus ce mois, voit aussi cet argent de poche
+            // arriver réellement sur son compte.
+            Set<UUID> coTitulaires = coTitulairesParCompte.getOrDefault(p.compteCible(), Set.of());
+            Set<UUID> membresActifs = membresActifsParCompte.getOrDefault(p.compteCible(), Set.of());
+            if (!membreCible.equals(p.membreId()) && coTitulaires.contains(membreCible)
+                    && !membresActifs.contains(membreCible)) {
+                virementsEntrantsMembreParCompte.merge(p.compteCible(), p.montant(), Double::sum);
             }
         }
 
@@ -235,30 +325,61 @@ final class ComptesFluxSimulateur {
     }
 
     /**
-     * Fusionne l'argent de poche résolu par membre (montant + compte crédité) dans la
-     * ventilation compte/membre issue du moteur pur (qui ne connaît que les postes,
-     * pas l'argent de poche). Traité comme un revenu de type "entrée" (mensualisé =
-     * échu, aucun lissage n'existe pour l'argent de poche — le montant est déjà exact
-     * pour ce mois) sur le compte crédité, pour le membre auquel appartient l'argent
-     * de poche. Ne modifie pas {@code detail}, retourne une nouvelle map mutable.
+     * Résout l'argent de poche par membre (montant + compte crédité) et applique la même règle
+     * de compte primaire que le financement des postes. L'argent de poche est traité comme une
+     * <b>dépense</b> du compte crédité (sortiesPlanifiees/sortiesEchues), pas comme un revenu :
+     * une fois versée au membre pour sa consommation personnelle, elle réduit la trésorerie
+     * disponible du compte exactement comme une charge, même si elle n'est pas un poste.
+     * <ul>
+     *   <li>Si le membre n'a pas de primaire configuré (mode legacy), ou si son primaire EST le
+     *       compte crédité (auto-financé) : le montant est fusionné directement dans
+     *       {@code parCompteMembreDetail} comme une charge sur le compte crédité.</li>
+     *   <li>Sinon (primaire différent, actif) : rien n'est fusionné ici — le montant est
+     *       restitué dans la liste retournée pour être traité, dans {@link #simulerMois}, comme
+     *       un virement entrant sur le compte crédité et sortant sur le primaire.</li>
+     * </ul>
+     * Mute {@code parCompteMembreDetail} pour le cas auto-financé/legacy uniquement.
      */
-    private static Map<UUID, Map<UUID, DetailCompteMembre>> fusionnerArgentPocheDansDetail(
-            ParametresScenario params, VentilationsCompteDetail detail,
-            ArgentPocheService argentPocheService, UUID scenarioId, int annee, int mois) {
+    private static List<PocheAFinancer> fusionnerArgentPocheDansDetail(
+            ParametresScenario params, Map<UUID, Map<UUID, DetailCompteMembre>> parCompteMembreDetail,
+            ArgentPocheService argentPocheService, UUID scenarioId, int annee, int mois,
+            Map<UUID, UUID> primairesParMembre, Set<UUID> comptesActifsIds) {
 
-        Map<UUID, Map<UUID, DetailCompteMembre>> resultat = new LinkedHashMap<>();
-        detail.parCompteMembre().forEach((compteId, memMap) -> resultat.put(compteId, new LinkedHashMap<>(memMap)));
-
+        List<PocheAFinancer> aFinancer = new ArrayList<>();
         for (UUID membreId : params.membres()) {
             AggregatMensuel ag = MoteurCalcul.aggregatMembreMois(params, membreId, annee, mois);
             double ravBrut = ag.revenus() - ag.charges() - ag.reserves();
             ResolutionArgentPoche poche = argentPocheService.resoudre(scenarioId, membreId, YearMonth.of(annee, mois), ravBrut);
             if (poche.compteId() == null || poche.montant() <= 0) continue;
 
-            DetailCompteMembre delta = new DetailCompteMembre(poche.montant(), poche.montant(), 0, 0);
-            resultat.computeIfAbsent(poche.compteId(), k -> new LinkedHashMap<>())
-                    .merge(membreId, delta, DetailCompteMembre::plus);
+            UUID compteCible = poche.compteId();
+            UUID primaireId = primairesParMembre.get(membreId);
+
+            // Défense en profondeur : si le compte crédité n'est plus actif (ex. compte
+            // désactivé après coup alors qu'une politique/allocation le référence encore —
+            // normalement empêché à la source par CompteService#supprimer, mais des données
+            // existantes peuvent déjà être dans cet état), ne JAMAIS router via le primaire :
+            // le compte cible étant hors de `tousComptes`, son entrant ne serait lu par
+            // aucune boucle du résultat, alors que le sortant sur le primaire, lui, resterait
+            // affiché — créant un virement sortant sans contrepartie visible.
+            boolean compteCibleActif = comptesActifsIds.contains(compteCible);
+
+            if (!compteCibleActif || primaireId == null || !comptesActifsIds.contains(primaireId)
+                    || primaireId.equals(compteCible)) {
+                // Mode legacy, compte cible inactif, ou auto-financé (le compte cible EST le
+                // primaire) : comptée directement comme une charge (dépense), aucun virement
+                // à simuler pour cette part.
+                DetailCompteMembre delta = new DetailCompteMembre(0, 0, poche.montant(), poche.montant());
+                parCompteMembreDetail.computeIfAbsent(compteCible, k -> new LinkedHashMap<>())
+                        .merge(membreId, delta, DetailCompteMembre::plus);
+            } else {
+                aFinancer.add(new PocheAFinancer(membreId, compteCible, primaireId, poche.montant()));
+            }
         }
-        return resultat;
+        return aFinancer;
     }
+
+    /** Montant d'argent de poche à financer depuis le compte primaire du membre (voir ci-dessus). */
+    private record PocheAFinancer(UUID membreId, UUID compteCible, UUID comptePrimaire, double montant) {}
 }
+

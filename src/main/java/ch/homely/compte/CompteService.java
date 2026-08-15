@@ -10,6 +10,11 @@ import ch.homely.foyer.FoyerRepository;
 import ch.homely.foyer.RoleFoyer;
 import ch.homely.membre.Membre;
 import ch.homely.membre.MembreRepository;
+import ch.homely.poche.AllocationArgentPocheRepository;
+import ch.homely.poche.PolitiqueArgentPocheRepository;
+import ch.homely.poste.PosteRepository;
+import ch.homely.projection.ProjectionService;
+import ch.homely.scenario.ScenarioRepository;
 import ch.homely.securite.MultiTenantService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,14 +35,32 @@ public class CompteService {
     private final CompteRepository compteRepo;
     private final FoyerRepository  foyerRepo;
     private final MembreRepository membreRepo;
+    private final CompteMembreRepository compteMembreRepo;
+    private final PosteRepository posteRepo;
+    private final PolitiqueArgentPocheRepository politiqueArgentPocheRepo;
+    private final AllocationArgentPocheRepository allocationArgentPocheRepo;
     private final MultiTenantService multiTenant;
+    private final ScenarioRepository scenarioRepo;
+    private final ProjectionService projectionService;
 
     public CompteService(CompteRepository compteRepo, FoyerRepository foyerRepo,
-                         MembreRepository membreRepo, MultiTenantService multiTenant) {
+                         MembreRepository membreRepo, CompteMembreRepository compteMembreRepo,
+                         PosteRepository posteRepo,
+                         PolitiqueArgentPocheRepository politiqueArgentPocheRepo,
+                         AllocationArgentPocheRepository allocationArgentPocheRepo,
+                         MultiTenantService multiTenant,
+                         ScenarioRepository scenarioRepo,
+                         ProjectionService projectionService) {
         this.compteRepo  = compteRepo;
         this.foyerRepo   = foyerRepo;
         this.membreRepo  = membreRepo;
+        this.compteMembreRepo = compteMembreRepo;
+        this.posteRepo   = posteRepo;
+        this.politiqueArgentPocheRepo = politiqueArgentPocheRepo;
+        this.allocationArgentPocheRepo = allocationArgentPocheRepo;
         this.multiTenant = multiTenant;
+        this.scenarioRepo = scenarioRepo;
+        this.projectionService = projectionService;
     }
 
     @Transactional(readOnly = true)
@@ -60,24 +83,59 @@ public class CompteService {
         Compte c = new Compte();
         c.setFoyer(foyer);
         appliquer(c, req, foyerId);
-        return toDto(compteRepo.save(c));
+        CompteDto dto = toDto(compteRepo.save(c));
+        invaliderProjectionsFoyer(foyerId);
+        return dto;
     }
 
     public CompteDto modifier(UUID foyerId, UUID compteId, CompteRequest req) {
         multiTenant.verifierAcces(foyerId, RoleFoyer.EDITOR);
         Compte c = trouver(foyerId, compteId);
         appliquer(c, req, foyerId);
-        return toDto(compteRepo.save(c));
+        CompteDto dto = toDto(compteRepo.save(c));
+        invaliderProjectionsFoyer(foyerId);
+        return dto;
     }
 
     public void supprimer(UUID foyerId, UUID compteId) {
         multiTenant.verifierAcces(foyerId, RoleFoyer.EDITOR);
         Compte c = trouver(foyerId, compteId);
+
+        // Refuse la désactivation tant que le compte est encore référencé ailleurs : un
+        // compte désactivé sort du périmètre de ComptesFluxSimulateur (tousComptes =
+        // uniquement les comptes actifs), donc toute ventilation de poste, politique/
+        // allocation d'argent de poche ou statut de compte primaire qui continuerait à le
+        // cibler produirait des virements orphelins (sortant enregistré côté compte
+        // primaire actif, sans entrant correspondant nulle part) ou des charges qui
+        // disparaissent silencieusement de la simulation de trésorerie.
+        if (posteRepo.existsByVentilations_Compte_Id(compteId)
+                || politiqueArgentPocheRepo.existsByCompte_Id(compteId)
+                || allocationArgentPocheRepo.existsByCompte_Id(compteId)
+                || compteMembreRepo.existsByCompte_IdAndEstPrimaireTrue(compteId)) {
+            throw new RegleMetierException(
+                    CodesErreur.COMPTE_REFERENCE_SUPPRESSION,
+                    "Ce compte est encore utilisé (ventilation de poste, politique/allocation d'argent de "
+                            + "poche, ou compte primaire d'un membre) : réassignez ces références avant de le désactiver.");
+        }
+
         c.setActif(false);
         compteRepo.save(c);
+        invaliderProjectionsFoyer(foyerId);
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
+
+    /** La liste des comptes actifs et leurs co-titulaires (via {@link CompteMembre})
+     *  conditionnent directement la simulation de trésorerie et la restitution
+     *  croisée des virements entre membres, sans être reflétés dans
+     *  {@code Scenario.dateModification}. On invalide donc le cache
+     *  {@code @Cacheable("projections")} pour tous les scénarios du foyer après
+     *  toute création/modification/désactivation de compte. */
+    private void invaliderProjectionsFoyer(UUID foyerId) {
+        for (UUID scenarioId : scenarioRepo.findIdsByFoyerId(foyerId)) {
+            projectionService.invaliderCache(scenarioId);
+        }
+    }
 
     private void appliquer(Compte c, CompteRequest req, UUID foyerId) {
         c.setLibelle(req.libelle());

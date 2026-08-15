@@ -216,6 +216,82 @@ class ComptesRecapIT {
     }
 
     @Test
+    @DisplayName("Compte primaire : virement vers le hub d'un AUTRE membre visible des deux côtés")
+    void virementVersHubAutreMembreVisibleDesDeuxCotes() throws Exception {
+        String token = creerEtLogin("primaire_hub_croise@test.ch");
+        String foyerId = creerFoyer(token, "Foyer Primaire Hub Croisé");
+        String membreAId = premierMembreId(token, foyerId);
+        String membreBId = creerMembre(token, foyerId, "Membre 2");
+        String scenarioId = creerScenarioDeuxMembres(token, foyerId, membreAId, membreBId, 1.0, 0.0);
+
+        String comptePrimaireA = creerCompte(token, foyerId, membreAId, "Compte A perso");
+        String comptePrimaireB = creerCompte(token, foyerId, membreBId, "Compte B perso");
+
+        definirComptePrimaire(token, foyerId, membreAId, comptePrimaireA);
+        definirComptePrimaire(token, foyerId, membreBId, comptePrimaireB);
+
+        String catCharge = creerCategorie(token, foyerId, "Contribution", "CHARGE");
+        // A ventile une charge mensuelle de 300 vers le compte primaire (hub) de B, financée
+        // depuis son propre primaire — typiquement : A envoie de l'argent à B chaque mois.
+        creerPoste(token, foyerId, scenarioId, catCharge, "CHARGE", "2025-01-01", null, 300, 1, "MENSUALISE",
+                membreAId, comptePrimaireB);
+
+        // Vue de A : le hub de B (pas co-titulaire) doit apparaître, avec le virement entrant
+        // financé (sa propre part) et le virement sortant sur son propre primaire.
+        List<JsonNode> recapA = comptesRecap(token, foyerId, scenarioId, 2025, 1, membreAId);
+        JsonNode hubBVuParA = trouverCompte(recapA, comptePrimaireB);
+        assertThat(hubBVuParA.get("virementsEntrants").asDouble()).isCloseTo(300.0, within(0.01));
+
+        JsonNode primaireAVuParA = trouverCompte(recapA, comptePrimaireA);
+        assertThat(primaireAVuParA.get("virementsSortants").asDouble()).isCloseTo(300.0, within(0.01));
+
+        // Vue de B : sur son propre hub, il doit voir le même virement entrant, alors qu'il n'a
+        // lui-même ventilé aucun poste dessus.
+        List<JsonNode> recapB = comptesRecap(token, foyerId, scenarioId, 2025, 1, membreBId);
+        JsonNode hubBVuParB = trouverCompte(recapB, comptePrimaireB);
+        assertThat(hubBVuParB.get("virementsEntrants").asDouble()).isCloseTo(300.0, within(0.01));
+    }
+
+    @Test
+    @DisplayName("Compte primaire : virement vers un compte QUELCONQUE d'un autre membre (pas son hub) visible des deux côtés")
+    void virementVersCompteNonPrimaireAutreMembreVisibleDesDeuxCotes() throws Exception {
+        String token = creerEtLogin("primaire_compte_non_hub@test.ch");
+        String foyerId = creerFoyer(token, "Foyer Virement Compte Non Hub");
+        String membreAId = premierMembreId(token, foyerId);
+        String membreBId = creerMembre(token, foyerId, "Membre 2");
+        String scenarioId = creerScenarioDeuxMembres(token, foyerId, membreAId, membreBId, 1.0, 0.0);
+
+        String comptePrimaireA = creerCompte(token, foyerId, membreAId, "Compte A perso");
+        String comptePrimaireB = creerCompte(token, foyerId, membreBId, "Compte B primaire");
+        // Compte secondaire de B, PAS désigné comme primaire (ex. compte épargne) : B en est
+        // co-titulaire mais ne le finance lui-même en rien ce mois-ci.
+        String compteEpargneB = creerCompte(token, foyerId, membreBId, "Compte B épargne");
+
+        definirComptePrimaire(token, foyerId, membreAId, comptePrimaireA);
+        definirComptePrimaire(token, foyerId, membreBId, comptePrimaireB);
+
+        String catCharge = creerCategorie(token, foyerId, "Cadeau", "CHARGE");
+        // A ventile une charge mensuelle de 150 vers le compte ÉPARGNE de B (pas son primaire),
+        // financée depuis son propre primaire.
+        creerPoste(token, foyerId, scenarioId, catCharge, "CHARGE", "2025-01-01", null, 150, 1, "MENSUALISE",
+                membreAId, compteEpargneB);
+
+        // Vue de A : le compte épargne de B (pas co-titulaire) doit apparaître avec le virement
+        // entrant, et son propre primaire avec le virement sortant correspondant.
+        List<JsonNode> recapA = comptesRecap(token, foyerId, scenarioId, 2025, 1, membreAId);
+        JsonNode epargneBVuParA = trouverCompte(recapA, compteEpargneB);
+        assertThat(epargneBVuParA.get("virementsEntrants").asDouble()).isCloseTo(150.0, within(0.01));
+        JsonNode primaireAVuParA = trouverCompte(recapA, comptePrimaireA);
+        assertThat(primaireAVuParA.get("virementsSortants").asDouble()).isCloseTo(150.0, within(0.01));
+
+        // Vue de B : même s'il ne s'agit pas de son hub, B doit voir ce virement entrant sur son
+        // compte épargne, car il en est co-titulaire et n'y contribue lui-même en rien ce mois.
+        List<JsonNode> recapB = comptesRecap(token, foyerId, scenarioId, 2025, 1, membreBId);
+        JsonNode epargneBVuParB = trouverCompte(recapB, compteEpargneB);
+        assertThat(epargneBVuParB.get("virementsEntrants").asDouble()).isCloseTo(150.0, within(0.01));
+    }
+
+    @Test
     @DisplayName("Compte primaire : redéfinir le primaire d'un membre retire automatiquement l'ancien (unicité)")
     void redefinirComptePrimaireRetireAncien() throws Exception {
         String token = creerEtLogin("primaire_unique@test.ch");
@@ -280,6 +356,86 @@ class ComptesRecapIT {
     }
 
     @Test
+    @DisplayName("Détail des postes d'un compte : montants échus corrects (revenu + charge D=12)")
+    void detailPostesCompteCoherent() throws Exception {
+        String token = creerEtLogin("detail_postes@test.ch");
+        String foyerId = creerFoyer(token, "Foyer Detail Postes");
+        String membreId = premierMembreId(token, foyerId);
+        String scenarioId = creerScenario(token, foyerId, membreId);
+        String compteId = creerCompte(token, foyerId, membreId, "Compte courant");
+
+        String catRevenu = creerCategorie(token, foyerId, "Salaire", "REVENU");
+        String catCharge = creerCategorie(token, foyerId, "Loyer", "CHARGE");
+
+        creerPoste(token, foyerId, scenarioId, catRevenu, "REVENU", "2025-01-01", null, 5000, 1, "MENSUALISE", membreId, compteId);
+        // Charge annuelle 1200 (D=12), échue en pleine en janvier (mois d'ancrage).
+        creerPoste(token, foyerId, scenarioId, catCharge, "CHARGE", "2025-01-01", null, 1200, 12, "MENSUALISE", membreId, compteId);
+
+        List<JsonNode> postes = comptePostes(token, foyerId, scenarioId, 2025, 1, membreId, compteId);
+        assertThat(postes).hasSize(2);
+
+        JsonNode revenu = postes.stream().filter(p -> p.get("type").asText().equals("REVENU")).findFirst().orElseThrow();
+        assertThat(revenu.get("montant").asDouble()).isCloseTo(5000.0, within(0.01));
+        assertThat(revenu.get("quotePart").asDouble()).isCloseTo(1.0, within(0.001));
+        assertThat(revenu.get("argentPoche").asBoolean()).isFalse();
+
+        JsonNode charge = postes.stream().filter(p -> p.get("type").asText().equals("CHARGE")).findFirst().orElseThrow();
+        assertThat(charge.get("montant").asDouble()).isCloseTo(1200.0, within(0.01)); // échu en janvier (ancre)
+
+        // Février : la charge D=12 n'échoit pas -> absente de la liste (montant nul).
+        List<JsonNode> postesFevrier = comptePostes(token, foyerId, scenarioId, 2025, 2, membreId, compteId);
+        assertThat(postesFevrier).hasSize(1);
+        assertThat(postesFevrier.get(0).get("type").asText()).isEqualTo("REVENU");
+    }
+
+    @Test
+    @DisplayName("Détail des postes d'un compte joint : quote-part effective correcte (prorata 60/40)")
+    void detailPostesCompteJointProrata() throws Exception {
+        String token = creerEtLogin("detail_postes_joint@test.ch");
+        String foyerId = creerFoyer(token, "Foyer Detail Postes Joint");
+        String membreAId = premierMembreId(token, foyerId);
+        String membreBId = creerMembre(token, foyerId, "Membre 2");
+        String scenarioId = creerScenarioDeuxMembres(token, foyerId, membreAId, membreBId, 0.6, 0.4);
+        String compteJoint = creerCompteJoint(token, foyerId, List.of(membreAId, membreBId), "Compte commun");
+
+        String catCharge = creerCategorie(token, foyerId, "Loyer", "CHARGE");
+        creerPosteDeuxMembres(token, foyerId, scenarioId, catCharge, "CHARGE", "2025-01-01", 1000, 1, "MENSUALISE",
+                membreAId, membreBId, compteJoint);
+
+        List<JsonNode> postesA = comptePostes(token, foyerId, scenarioId, 2025, 1, membreAId, compteJoint);
+        assertThat(postesA).hasSize(1);
+        assertThat(postesA.get(0).get("montant").asDouble()).isCloseTo(600.0, within(0.01));
+        assertThat(postesA.get(0).get("quotePart").asDouble()).isCloseTo(0.6, within(0.001));
+
+        List<JsonNode> postesB = comptePostes(token, foyerId, scenarioId, 2025, 1, membreBId, compteJoint);
+        assertThat(postesB).hasSize(1);
+        assertThat(postesB.get(0).get("montant").asDouble()).isCloseTo(400.0, within(0.01));
+        assertThat(postesB.get(0).get("quotePart").asDouble()).isCloseTo(0.4, within(0.001));
+    }
+
+    @Test
+    @DisplayName("Accès inter-foyers refusé (403) sur comptes-recap/postes")
+    void accesInterFoyersRefusePostes() {
+        String tokenA = creerEtLogin("detail_postes_a@test.ch");
+        String foyerAId = creerFoyer(tokenA, "Foyer A Detail Postes");
+        String membreAId = premierMembreId(tokenA, foyerAId);
+        String scenarioId = creerScenario(tokenA, foyerAId, membreAId);
+        String compteId = creerCompte(tokenA, foyerAId, membreAId, "Compte");
+
+        String tokenB = creerEtLogin("detail_postes_b@test.ch");
+        creerFoyer(tokenB, "Foyer B Detail Postes");
+
+        assertThatThrownBy(() -> client.get()
+                .uri("/api/foyers/" + foyerAId + "/scenarios/" + scenarioId
+                        + "/projection/comptes-recap/postes?annee=2025&mois=1&membreId=" + membreAId
+                        + "&compteId=" + compteId)
+                .header("Authorization", "Bearer " + tokenB)
+                .retrieve().toBodilessEntity())
+                .isInstanceOfSatisfying(HttpClientErrorException.class,
+                        ex -> assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+    }
+
+    @Test
     @DisplayName("Accès inter-foyers refusé (403) sur comptes-recap")
     void accesInterFoyersRefuse() {
         String tokenA = creerEtLogin("recap_a@test.ch");
@@ -293,6 +449,86 @@ class ComptesRecapIT {
         assertThatThrownBy(() -> client.get()
                 .uri("/api/foyers/" + foyerAId + "/scenarios/" + scenarioId
                         + "/projection/comptes-recap?annee=2025&mois=1&membreId=" + membreAId)
+                .header("Authorization", "Bearer " + tokenB)
+                .retrieve().toBodilessEntity())
+                .isInstanceOfSatisfying(HttpClientErrorException.class,
+                        ex -> assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+    }
+
+    @Test
+    @DisplayName("Récap annuel : flux sommés sur 12 mois, solde restant = instantané fin décembre")
+    void recapAnnuelSommeLesFluxSoldeFinDecembre() throws Exception {
+        String token = creerEtLogin("recap_annuel_ok@test.ch");
+        String foyerId = creerFoyer(token, "Foyer Recap Annuel");
+        String membreId = premierMembreId(token, foyerId);
+        String scenarioId = creerScenario(token, foyerId, membreId);
+        String compteId = creerCompte(token, foyerId, membreId, "Compte courant");
+
+        String catRevenu = creerCategorie(token, foyerId, "Salaire", "REVENU");
+        String catCharge = creerCategorie(token, foyerId, "Loyer", "CHARGE");
+
+        // Revenu mensuel 5000, échu chaque mois (D=1)
+        creerPoste(token, foyerId, scenarioId, catRevenu, "REVENU", "2025-01-01", null, 5000, 1, "MENSUALISE", membreId, compteId);
+        // Charge annuelle 1200 (D=12) : mensualisée = 100/mois, échue en janvier (mois d'ancrage)
+        creerPoste(token, foyerId, scenarioId, catCharge, "CHARGE", "2025-01-01", null, 1200, 12, "MENSUALISE", membreId, compteId);
+
+        List<JsonNode> recapAnnuel = comptesRecapAnnuel(token, foyerId, scenarioId, 2025, membreId);
+        assertThat(recapAnnuel).hasSize(1);
+        JsonNode c = recapAnnuel.get(0);
+        // Sommé sur 12 mois : entrees = 5000*12, virements/sortiesPlanifiees = 100*12, sortiesEchues = 1200 (janvier seul)
+        assertThat(c.get("entrees").asDouble()).isCloseTo(60000.0, within(0.01));
+        assertThat(c.get("virementsEntrants").asDouble()).isCloseTo(1200.0, within(0.01));
+        assertThat(c.get("sortiesPlanifiees").asDouble()).isCloseTo(1200.0, within(0.01));
+        assertThat(c.get("sortiesEchues").asDouble()).isCloseTo(1200.0, within(0.01));
+
+        // Solde restant = instantané fin décembre, pas une somme des 12 mois : doit coïncider
+        // avec le solde restant du récap mensuel de décembre (mois 12).
+        List<JsonNode> recapDecembre = comptesRecap(token, foyerId, scenarioId, 2025, 12, membreId);
+        assertThat(c.get("soldeRestant").asDouble())
+                .isCloseTo(recapDecembre.get(0).get("soldeRestant").asDouble(), within(0.01));
+    }
+
+    @Test
+    @DisplayName("Argent de poche (auto-financée) comptée comme une dépense (sorties), pas un revenu")
+    void argentPocheComptesCommeUneDepense() throws Exception {
+        String token = creerEtLogin("recap_poche@test.ch");
+        String foyerId = creerFoyer(token, "Foyer Recap Poche");
+        String membreId = premierMembreId(token, foyerId);
+        String scenarioId = creerScenario(token, foyerId, membreId);
+        String compteId = creerCompte(token, foyerId, membreId, "Compte courant");
+
+        String catRevenu = creerCategorie(token, foyerId, "Salaire", "REVENU");
+        // Revenu mensuel 5000, échu chaque mois (D=1) — aucune charge, pour isoler l'effet de la poche.
+        creerPoste(token, foyerId, scenarioId, catRevenu, "REVENU", "2025-01-01", null, 5000, 1, "MENSUALISE", membreId, compteId);
+
+        // Pas de compte primaire configuré (mode legacy) : la poche est créditée directement sur
+        // le compte cible — c'est justement le cas visé par la correction (auto-financé/legacy).
+        creerPolitiqueArgentPocheFixe(token, foyerId, scenarioId, membreId, compteId, 300);
+
+        List<JsonNode> recap = comptesRecap(token, foyerId, scenarioId, 2025, 1, membreId);
+        assertThat(recap).hasSize(1);
+        JsonNode c = recap.get(0);
+        // La poche (300) doit apparaître comme une sortie (planifiée ET échue), jamais comme un
+        // revenu supplémentaire — les entrees ne reflètent que le salaire (5000), pas 5300.
+        assertThat(c.get("entrees").asDouble()).isCloseTo(5000.0, within(0.01));
+        assertThat(c.get("sortiesPlanifiees").asDouble()).isCloseTo(300.0, within(0.01));
+        assertThat(c.get("sortiesEchues").asDouble()).isCloseTo(300.0, within(0.01));
+    }
+
+    @Test
+    @DisplayName("Accès inter-foyers refusé (403) sur comptes-recap-annuel")
+    void accesInterFoyersRefuseAnnuel() {
+        String tokenA = creerEtLogin("recap_annuel_a@test.ch");
+        String foyerAId = creerFoyer(tokenA, "Foyer A Recap Annuel");
+        String membreAId = premierMembreId(tokenA, foyerAId);
+        String scenarioId = creerScenario(tokenA, foyerAId, membreAId);
+
+        String tokenB = creerEtLogin("recap_annuel_b@test.ch");
+        creerFoyer(tokenB, "Foyer B Recap Annuel");
+
+        assertThatThrownBy(() -> client.get()
+                .uri("/api/foyers/" + foyerAId + "/scenarios/" + scenarioId
+                        + "/projection/comptes-recap-annuel?annee=2025&membreId=" + membreAId)
                 .header("Authorization", "Bearer " + tokenB)
                 .retrieve().toBodilessEntity())
                 .isInstanceOfSatisfying(HttpClientErrorException.class,
@@ -355,6 +591,27 @@ class ComptesRecapIT {
                     .body(MAPPER.writeValueAsString(payload))
                     .retrieve().body(String.class);
             return MAPPER.readTree(body).get("id").asText();
+        } catch (Exception e) { throw new RuntimeException(e); }
+    }
+
+    /** Politique d'argent de poche en mode FIXE (montant identique chaque mois, pas de socle
+     *  ni de pourcentage) — créditée sur {@code compteId} pour {@code membreId}. */
+    private void creerPolitiqueArgentPocheFixe(String token, String foyerId, String scenarioId,
+                                                String membreId, String compteId, double montantFixe) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("membreId", membreId);
+        payload.put("compteId", compteId);
+        payload.put("nom", "Poche Test");
+        payload.put("dateDebut", "2025-01");
+        payload.put("mode", "FIXE");
+        payload.put("montantFixe", montantFixe);
+        try {
+            client.post()
+                    .uri("/api/foyers/" + foyerId + "/scenarios/" + scenarioId + "/argent-poche/politiques")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(MAPPER.writeValueAsString(payload))
+                    .retrieve().toBodilessEntity();
         } catch (Exception e) { throw new RuntimeException(e); }
     }
 
@@ -533,6 +790,36 @@ class ComptesRecapIT {
             String body = client.get()
                     .uri("/api/foyers/" + foyerId + "/scenarios/" + scenarioId
                             + "/projection/comptes-recap?annee=" + annee + "&mois=" + mois + "&membreId=" + membreId)
+                    .header("Authorization", "Bearer " + token)
+                    .retrieve().body(String.class);
+            JsonNode arr = MAPPER.readTree(body);
+            List<JsonNode> result = new ArrayList<>();
+            arr.forEach(result::add);
+            return result;
+        } catch (Exception e) { throw new RuntimeException(e); }
+    }
+
+    private List<JsonNode> comptesRecapAnnuel(String token, String foyerId, String scenarioId, int annee, String membreId) {
+        try {
+            String body = client.get()
+                    .uri("/api/foyers/" + foyerId + "/scenarios/" + scenarioId
+                            + "/projection/comptes-recap-annuel?annee=" + annee + "&membreId=" + membreId)
+                    .header("Authorization", "Bearer " + token)
+                    .retrieve().body(String.class);
+            JsonNode arr = MAPPER.readTree(body);
+            List<JsonNode> result = new ArrayList<>();
+            arr.forEach(result::add);
+            return result;
+        } catch (Exception e) { throw new RuntimeException(e); }
+    }
+
+    private List<JsonNode> comptePostes(String token, String foyerId, String scenarioId, int annee, int mois,
+                                         String membreId, String compteId) {
+        try {
+            String body = client.get()
+                    .uri("/api/foyers/" + foyerId + "/scenarios/" + scenarioId
+                            + "/projection/comptes-recap/postes?annee=" + annee + "&mois=" + mois
+                            + "&membreId=" + membreId + "&compteId=" + compteId)
                     .header("Authorization", "Bearer " + token)
                     .retrieve().body(String.class);
             JsonNode arr = MAPPER.readTree(body);

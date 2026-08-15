@@ -13,7 +13,9 @@ import ch.homely.foyer.RoleFoyer;
 import ch.homely.membre.dto.ComptePrimaireRequest;
 import ch.homely.membre.dto.MembreDto;
 import ch.homely.membre.dto.MembreRequest;
+import ch.homely.projection.ProjectionService;
 import ch.homely.scenario.RepartitionPeriodeService;
+import ch.homely.scenario.ScenarioRepository;
 import ch.homely.securite.MultiTenantService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,18 +39,24 @@ public class MembreService {
     private final CompteMembreRepository compteMembreRepo;
     private final MultiTenantService multiTenant;
     private final RepartitionPeriodeService periodeService;
+    private final ScenarioRepository scenarioRepo;
+    private final ProjectionService projectionService;
 
     public MembreService(MembreRepository membreRepo, FoyerRepository foyerRepo,
                          CompteRepository compteRepo,
                          CompteMembreRepository compteMembreRepo,
                          MultiTenantService multiTenant,
-                         RepartitionPeriodeService periodeService) {
+                         RepartitionPeriodeService periodeService,
+                         ScenarioRepository scenarioRepo,
+                         ProjectionService projectionService) {
         this.membreRepo       = membreRepo;
         this.foyerRepo        = foyerRepo;
         this.compteRepo       = compteRepo;
         this.compteMembreRepo = compteMembreRepo;
         this.multiTenant      = multiTenant;
         this.periodeService   = periodeService;
+        this.scenarioRepo     = scenarioRepo;
+        this.projectionService = projectionService;
     }
 
     @Transactional(readOnly = true)
@@ -115,6 +123,7 @@ public class MembreService {
         compteMembreRepo.saveAll(anciensPrimaires);
 
         if (req.compteId() == null) {
+            invaliderProjectionsFoyer(foyerId);
             return toDto(m, null);
         }
 
@@ -126,10 +135,23 @@ public class MembreService {
                         "Le compte primaire doit être un compte dont le membre est co-titulaire."));
         rattachement.setEstPrimaire(true);
         compteMembreRepo.save(rattachement);
+        invaliderProjectionsFoyer(foyerId);
         return toDto(m, compte.getId());
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
+
+    /** Le compte primaire d'un membre conditionne directement la simulation des
+     *  virements (comblement, restitution croisée entre membres) mais n'est pas
+     *  reflété dans {@code Scenario.dateModification} : sans invalidation explicite,
+     *  le cache {@code @Cacheable("projections")} continuerait à servir des récaps
+     *  calculés avant ce changement. On invalide donc pour tous les scénarios du
+     *  foyer (le compte primaire n'est pas scopé à un seul scénario). */
+    private void invaliderProjectionsFoyer(UUID foyerId) {
+        for (UUID scenarioId : scenarioRepo.findIdsByFoyerId(foyerId)) {
+            projectionService.invaliderCache(scenarioId);
+        }
+    }
 
     private Membre trouver(UUID foyerId, UUID membreId) {
         return membreRepo.findByIdAndFoyerId(membreId, foyerId)

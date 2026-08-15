@@ -133,4 +133,29 @@ public class ProjectionController {
         multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
         return projectionService.recapComptesMembre(foyerId, scenarioId, annee, mois, membreId);
     }
+
+    /** Variante annuelle de {@link #comptesRecap} (dashboard, vue membre annuelle) : flux
+     * sommés sur les 12 mois de l'année, solde restant = instantané fin décembre. */
+    @GetMapping("/comptes-recap-annuel")
+    public List<CompteRecapMensuelDto> comptesRecapAnnuel(@PathVariable UUID foyerId,
+                                                           @PathVariable UUID scenarioId,
+                                                           @RequestParam int annee,
+                                                           @RequestParam UUID membreId) {
+        multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
+        return projectionService.recapComptesMembreAnnuel(foyerId, scenarioId, annee, membreId);
+    }
+
+    /** Détail poste par poste (+ argent de poche éventuel) alimentant un compte donné,
+     * pour un membre et un mois donnés — affiché en liste lorsqu'un compte est sélectionné
+     * dans la vue "Virements des comptes" (org-chart hub & rayons). */
+    @GetMapping("/comptes-recap/postes")
+    public List<ComptePosteDetailDto> comptePostes(@PathVariable UUID foyerId,
+                                                    @PathVariable UUID scenarioId,
+                                                    @RequestParam int annee,
+                                                    @RequestParam int mois,
+                                                    @RequestParam UUID membreId,
+                                                    @RequestParam UUID compteId) {
+        multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
+        return projectionService.recapComptePostes(foyerId, scenarioId, annee, mois, membreId, compteId);
+    }
 }

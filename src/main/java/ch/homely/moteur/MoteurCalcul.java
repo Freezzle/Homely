@@ -643,6 +643,40 @@ public class MoteurCalcul {
     }
 
     /**
+     * Détail poste par poste des contributions échues d'un membre sur un compte donné,
+     * pour un mois donné (montants déjà proratisés selon {@link #quotePartEffective}) —
+     * alimente la liste des postes affichée lorsqu'un compte est sélectionné dans la vue
+     * "Virements des comptes" du dashboard.
+     *
+     * <p>Réutilise exactement les mêmes briques que {@link #ventilationsCompteMembreDetail}
+     * (résolution du compte cible, quote-part effective, contribution échue) — aucune
+     * nouvelle règle de calcul, uniquement une désagrégation par poste au lieu d'une
+     * somme, filtrée sur un {@code compteId} donné.</p>
+     */
+    public static List<PosteContributionDetail> posteContributionsCompteMembre(
+            ParametresScenario params, UUID compteId, UUID membreId, int annee, int mois) {
+        List<PosteContributionDetail> resultat = new ArrayList<>();
+        int nbMembres = params.membres().size();
+
+        for (PosteCalcul poste : params.postes()) {
+            UUID cible = resolveCompte(poste, membreId);
+            if (!compteId.equals(cible)) continue;
+
+            double qp = quotePartEffective(poste, membreId, annee, mois, params.periodesDefaut(), nbMembres);
+            if (qp == 0) continue;
+
+            double taux = tauxConversion(poste.devise(), params.deviseBase(), params.taux());
+            double contribEchue = contributionReelle(poste, annee, mois) * taux;
+            if (contribEchue == 0) continue;
+
+            resultat.add(new PosteContributionDetail(
+                    poste.id(), poste.description(), poste.type(), contribEchue * qp, qp));
+        }
+
+        return resultat;
+    }
+
+    /**
      * Résout le compte cible d'un membre pour un poste (ventilationComptes).
      * Package-visible (non {@code private}) pour être réutilisé par d'autres calculs
      * ayant besoin de la même résolution compte/membre sans dupliquer la logique.

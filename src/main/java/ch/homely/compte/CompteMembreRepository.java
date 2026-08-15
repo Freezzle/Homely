@@ -15,4 +15,7 @@ public interface CompteMembreRepository extends JpaRepository<CompteMembre, Comp
 
     /** Tous les couples (compte, membre) marqués primaires pour un foyer donné (agrégation dashboard). */
     List<CompteMembre> findAllByCompte_Foyer_IdAndEstPrimaireTrue(UUID foyerId);
+
+    /** Utilisé avant la désactivation d'un compte : refuse s'il est encore le primaire d'un membre. */
+    boolean existsByCompte_IdAndEstPrimaireTrue(UUID compteId);
 }

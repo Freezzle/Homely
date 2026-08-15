@@ -565,11 +565,13 @@ public class ProjectionService {
     /**
      * Récapitulatif mensuel de trésorerie par compte pour un membre donné : virements
      * entrants/sortants simulés (comblement via compte primaire si configuré, sinon
-     * mode "legacy"), entrées échues, sorties planifiées/échues, solde restant. Ne
-     * renvoie que les comptes dont {@code membreId} est co-titulaire ; les montants
-     * sont scopés à la seule part de {@code membreId} sur chaque compte (pas le flux
-     * de caisse total du compte, qui regrouperait tous les co-titulaires — prévu pour
-     * une future vue "foyer").
+     * mode "legacy"), entrées échues, sorties planifiées/échues, solde restant. Renvoie
+     * les comptes dont {@code membreId} est co-titulaire, ainsi que tout autre compte sur
+     * lequel il a un montant non nul (ex. il ventile un poste vers le compte primaire d'un
+     * autre membre, ou il est propriétaire d'un primaire crédité par un autre membre — voir
+     * {@link ComptesFluxSimulateur}) ; les montants sont scopés à la seule part de
+     * {@code membreId} sur chaque compte (pas le flux de caisse total du compte, qui
+     * regrouperait tous les co-titulaires — prévu pour une future vue "foyer").
      */
     @Cacheable(value = "projections",
                key = "#scenarioId + '-recap-compte-' + #annee + '-' + #mois + '-' + #membreId + '-' + T(ch.homely.projection.ProjectionService).versionKey(#foyerId, #scenarioId, @scenarioRepository)")
@@ -577,13 +579,20 @@ public class ProjectionService {
         ParametresScenario params = chargerParametres(foyerId, scenarioId);
 
         List<Compte> tousComptes = compteRepo.findAllByFoyerIdAndActifTrueOrderByLibelleAsc(foyerId);
-        List<Compte> comptesMembre = tousComptes.stream()
-                .filter(c -> c.getMembres().stream().anyMatch(m -> m.getId().equals(membreId)))
-                .toList();
 
         Map<UUID, UUID> primairesParMembre = chargerPrimairesParMembre(foyerId);
         Map<UUID, List<CompteFluxMensuel>> flux = ComptesFluxSimulateur.simuler(
                 params, tousComptes, primairesParMembre, membreId, annee, mois, argentPocheService, scenarioId);
+
+        // Un compte est restitué s'il appartient au membre, OU si la simulation contient un
+        // montant non nul pour lui sur ce compte (ex. il ventile un poste vers le compte
+        // primaire d'un autre membre, ou reçoit un virement entrant sur le primaire dont il est
+        // propriétaire — voir ComptesFluxSimulateur) : dans les deux cas le membre a un intérêt
+        // réel à voir ce compte apparaître dans son propre récapitulatif.
+        List<Compte> comptesMembre = tousComptes.stream()
+                .filter(c -> c.getMembres().stream().anyMatch(m -> m.getId().equals(membreId))
+                        || compteConcerneParMembre(flux.getOrDefault(c.getId(), List.of())))
+                .toList();
 
         List<CompteRecapMensuelDto> resultat = new ArrayList<>();
         for (Compte compte : comptesMembre) {
@@ -596,6 +605,103 @@ public class ProjectionService {
                     bd(f.virementsEntrants()), bd(f.entrees()), bd(f.sortiesPlanifiees()), bd(f.sortiesEchues()),
                     bd(f.virementsSortants()), bd(f.soldeRestant())));
         }
+        return resultat;
+    }
+
+    /**
+     * Variante annuelle de {@link #recapComptesMembre} : les flux mensuels (entrées, sorties
+     * planifiées/échues, virements entrants/sortants) sont sommés sur les 12 mois de l'année
+     * {@code annee} — contrairement à {@code soldeRestant}, qui reste un instantané (état de
+     * trésorerie chaînée fin décembre) et n'est donc jamais additionné, comme pour la vue
+     * mensuelle. Réutilise la même simulation {@link ComptesFluxSimulateur#simuler} jusqu'à
+     * décembre, puis ne garde que les mois de l'année demandée.
+     */
+    @Cacheable(value = "projections",
+               key = "#scenarioId + '-recap-compte-annuel-' + #annee + '-' + #membreId + '-' + T(ch.homely.projection.ProjectionService).versionKey(#foyerId, #scenarioId, @scenarioRepository)")
+    public List<CompteRecapMensuelDto> recapComptesMembreAnnuel(UUID foyerId, UUID scenarioId, int annee, UUID membreId) {
+        ParametresScenario params = chargerParametres(foyerId, scenarioId);
+
+        List<Compte> tousComptes = compteRepo.findAllByFoyerIdAndActifTrueOrderByLibelleAsc(foyerId);
+
+        Map<UUID, UUID> primairesParMembre = chargerPrimairesParMembre(foyerId);
+        Map<UUID, List<CompteFluxMensuel>> flux = ComptesFluxSimulateur.simuler(
+                params, tousComptes, primairesParMembre, membreId, annee, 12, argentPocheService, scenarioId);
+
+        // Même règle d'inclusion que recapComptesMembre (voir ci-dessus) — appliquée sur les
+        // seuls mois de l'année demandée.
+        List<Compte> comptesMembre = tousComptes.stream()
+                .filter(c -> c.getMembres().stream().anyMatch(m -> m.getId().equals(membreId))
+                        || compteConcerneParMembre(flux.getOrDefault(c.getId(), List.of()).stream()
+                                .filter(f -> f.annee() == annee).toList()))
+                .toList();
+
+        List<CompteRecapMensuelDto> resultat = new ArrayList<>();
+        for (Compte compte : comptesMembre) {
+            List<CompteFluxMensuel> historiqueAnnee = flux.getOrDefault(compte.getId(), List.of()).stream()
+                    .filter(f -> f.annee() == annee)
+                    .toList();
+            if (historiqueAnnee.isEmpty()) continue;
+
+            double virementsEntrants = 0, entrees = 0, sortiesPlanifiees = 0, sortiesEchues = 0, virementsSortants = 0;
+            for (CompteFluxMensuel f : historiqueAnnee) {
+                virementsEntrants += f.virementsEntrants();
+                entrees += f.entrees();
+                sortiesPlanifiees += f.sortiesPlanifiees();
+                sortiesEchues += f.sortiesEchues();
+                virementsSortants += f.virementsSortants();
+            }
+            double soldeFinAnnee = historiqueAnnee.get(historiqueAnnee.size() - 1).soldeRestant();
+
+            resultat.add(new CompteRecapMensuelDto(
+                    compte.getId(), compte.getLibelle(),
+                    bd(virementsEntrants), bd(entrees), bd(sortiesPlanifiees), bd(sortiesEchues),
+                    bd(virementsSortants), bd(soldeFinAnnee)));
+        }
+        return resultat;
+    }
+
+    /**
+     * Vrai si au moins un des mois de l'historique porte un montant non nul (entrées,
+     * sorties, virements entrants/sortants) pour le membre demandé sur ce compte — utilisé
+     * pour inclure, dans le récapitulatif d'un membre, un compte dont il n'est pas
+     * co-titulaire mais qu'il finance (ou dont il reçoit un virement, s'il en est le
+     * propriétaire du primaire) via la logique de compte primaire.
+     */
+    private static boolean compteConcerneParMembre(List<CompteFluxMensuel> historique) {
+        return historique.stream().anyMatch(f ->
+                Math.abs(f.entrees()) > 1e-9 || Math.abs(f.sortiesPlanifiees()) > 1e-9
+                        || Math.abs(f.sortiesEchues()) > 1e-9 || Math.abs(f.virementsEntrants()) > 1e-9
+                        || Math.abs(f.virementsSortants()) > 1e-9);
+    }
+
+    /**
+     * Détail poste par poste (+ argent de poche éventuel) alimentant un compte donné pour
+     * un membre et un mois donnés — sous-tend l'affichage de la liste des postes lorsqu'un
+     * compte est sélectionné dans la vue "Virements des comptes" (org-chart hub & rayons).
+     * Ne retourne rien (liste vide) si {@code compteId} n'est pas un compte actif du foyer.
+     */
+    @Cacheable(value = "projections",
+               key = "#scenarioId + '-recap-compte-postes-' + #annee + '-' + #mois + '-' + #membreId + '-' + #compteId + '-' + T(ch.homely.projection.ProjectionService).versionKey(#foyerId, #scenarioId, @scenarioRepository)")
+    public List<ComptePosteDetailDto> recapComptePostes(UUID foyerId, UUID scenarioId, int annee, int mois, UUID membreId, UUID compteId) {
+        boolean compteActifDuFoyer = compteRepo.findAllByFoyerIdAndActifTrueOrderByLibelleAsc(foyerId).stream()
+                .anyMatch(c -> c.getId().equals(compteId));
+        if (!compteActifDuFoyer) return List.of();
+
+        ParametresScenario params = chargerParametres(foyerId, scenarioId);
+
+        List<ComptePosteDetailDto> resultat = new ArrayList<>();
+        for (PosteContributionDetail d : MoteurCalcul.posteContributionsCompteMembre(params, compteId, membreId, annee, mois)) {
+            resultat.add(new ComptePosteDetailDto(d.posteId(), d.libelle(), d.type(), false, bd(d.montant()), bd(d.quotePart())));
+        }
+
+        AggregatMensuel ag = MoteurCalcul.aggregatMembreMois(params, membreId, annee, mois);
+        double ravBrut = ag.revenus() - ag.charges() - ag.reserves();
+        ResolutionArgentPoche poche = argentPocheService.resoudre(scenarioId, membreId, YearMonth.of(annee, mois), ravBrut);
+        if (compteId.equals(poche.compteId()) && poche.montant() > 0) {
+            // Comptée comme une dépense (CHARGE), pas un revenu — voir ComptesFluxSimulateur.
+            resultat.add(new ComptePosteDetailDto(null, null, TypePoste.CHARGE, true, bd(poche.montant()), null));
+        }
+
         return resultat;
     }
 

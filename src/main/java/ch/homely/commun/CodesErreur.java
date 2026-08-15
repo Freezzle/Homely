@@ -31,6 +31,7 @@ public final class CodesErreur {
     public static final String ACTION_GROUPEE_CHAMP_MANQUANT   = "ACTION_GROUPEE_CHAMP_MANQUANT";
     public static final String COMPTE_PRIMAIRE_NON_RATTACHE    = "COMPTE_PRIMAIRE_NON_RATTACHE";
     public static final String COMPTE_PRIMAIRE_MULTIPLE         = "COMPTE_PRIMAIRE_MULTIPLE";
+    public static final String COMPTE_REFERENCE_SUPPRESSION     = "COMPTE_REFERENCE_SUPPRESSION";
 
     // ── Argent de poche ─────────────────────────────────────
     public static final String ARGENT_POCHE_ALLOCATION_DOUBLON       = "ARGENT_POCHE_ALLOCATION_DOUBLON";

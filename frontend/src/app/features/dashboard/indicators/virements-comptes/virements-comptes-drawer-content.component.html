@@ -1,6 +1,7 @@
 @if (data(); as d) {
-  <app-comptes-membre-recap
+  <app-comptes-hub-recap
           [recaps]="d.recaps()"
           [devise]="d.devise()"
-          [chargement]="d.chargement()"/>
+          [chargement]="d.chargement()"
+          [cle]="d.cle()"/>
 }
