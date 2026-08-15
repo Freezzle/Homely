@@ -22,8 +22,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  *       {@code reserves} (cohérence
  *       {@code revenus = charges + reserves + soldeDisponible + argentDePoche}).</li>
  *   <li><b>Isolation membre</b> — le provider est appelé indépendamment pour chaque
- *       membre ; l'agrégat foyer n'est pas impacté (il continue de porter la
- *       vue "postes réels" du foyer).</li>
+ *       membre ; l'agrégat foyer voit son solde disponible diminué de la somme des
+ *       poches de tous les membres (revenus/charges/réserves FOYER restent, eux, la
+ *       vue "postes réels" du foyer, inchangée).</li>
  * </ol>
  */
 class MoteurCalculArgentPocheTest {
@@ -90,7 +91,7 @@ class MoteurCalculArgentPocheTest {
     }
 
     @Test
-    void provider_n_impacte_pas_l_agregat_foyer() {
+    void provider_impacte_l_agregat_foyer_de_la_somme_des_poches_membres() {
         ParametresScenario base = GoldenFixture.buildScenario2026(DYLAN, MELANIE);
         AggregatMensuel foyerAvant = MoteurCalcul.aggregatFoyerMois(base, 2026, 5);
 
@@ -103,13 +104,15 @@ class MoteurCalculArgentPocheTest {
 
         AggregatMensuel foyerApres = MoteurCalcul.aggregatFoyerMois(avec, 2026, 5);
 
-        // L'argent de poche est un mouvement inter-comptes du foyer (le compte
-        // "poche" d'un membre est un compte du foyer). Sa comptabilité au niveau
-        // FOYER doit donc rester neutre — ce test verrouille ce contrat.
+        // L'argent de poche quitte le budget disponible du foyer pour la consommation
+        // personnelle des membres (doc 01 §4/§7) : revenus/charges/réserves FOYER restent
+        // inchangés, mais le solde disponible FOYER doit être diminué de la somme des
+        // poches de tous les membres actifs (2 × 999 ici) — ce test verrouille ce contrat.
         assertThat(foyerApres.revenus()).isEqualTo(foyerAvant.revenus());
         assertThat(foyerApres.charges()).isEqualTo(foyerAvant.charges());
         assertThat(foyerApres.reserves()).isEqualTo(foyerAvant.reserves());
-        assertThat(foyerApres.soldeDisponible()).isEqualTo(foyerAvant.soldeDisponible());
+        assertThat(foyerApres.soldeDisponible())
+                .isCloseTo(foyerAvant.soldeDisponible() - 2 * 999.0, org.assertj.core.api.Assertions.within(1e-6));
     }
 
     @Test

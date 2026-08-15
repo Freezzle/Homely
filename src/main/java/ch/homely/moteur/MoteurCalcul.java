@@ -360,7 +360,10 @@ public class MoteurCalcul {
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
-     * Calcule les agrégats du foyer pour un mois donné (périmètre FOYER).
+     * Calcule les agrégats du foyer pour un mois donné (périmètre FOYER). Le
+     * {@code soldeDisponible} retranche la somme de l'argent de poche de tous les
+     * membres actifs (§7) — {@code revenus}/{@code charges}/{@code reserves} restent la
+     * vue "postes réels" du foyer, non affectée par la poche.
      */
     public static AggregatMensuel aggregatFoyerMois(ParametresScenario params, int annee, int mois) {
         return aggregatFoyerMoisInterne(params, annee, mois, false);
@@ -384,7 +387,20 @@ public class MoteurCalcul {
                 case RESERVE -> reserves += contrib;
             }
         }
-        return new AggregatMensuel(revenus, charges, reserves, revenus - charges - reserves);
+        // Argent de poche : la formule (doc 01 §4/§7) s'applique à tout périmètre, y
+        // compris FOYER — l'argent de poche quitte le budget disponible du foyer pour la
+        // consommation personnelle des membres, il doit donc réduire le solde disponible
+        // FOYER exactement comme il réduit celui de chaque membre (même règle,
+        // {@link #aggregatMembreMoisInterne}), sans quoi le solde FOYER se retrouve
+        // artificiellement gonflé de la somme des poches déjà attribuées aux membres.
+        double pocheTotal = 0;
+        for (UUID membreId : params.membres()) {
+            AggregatMensuel agMembre = reel ? aggregatMembreMoisReel(params, membreId, annee, mois)
+                                            : aggregatMembreMois(params, membreId, annee, mois);
+            double ravBrutMembre = agMembre.revenus() - agMembre.charges() - agMembre.reserves();
+            pocheTotal += ravBrutMembre - agMembre.soldeDisponible();
+        }
+        return new AggregatMensuel(revenus, charges, reserves, revenus - charges - reserves - pocheTotal);
     }
 
     /**
