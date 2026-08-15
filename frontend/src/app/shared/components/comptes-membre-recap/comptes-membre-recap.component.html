@@ -30,11 +30,19 @@
                 <span class="font-semibold text-surface-600">{{ carte.sortiesPlanifiees | montant:devise() }}</span>
               </div>
               <div class="flex items-center justify-between gap-2">
-                <span class="text-surface-500">{{ t.dashboard.comptesSortiesEchues }}</span>
+                <span class="text-surface-500">{{ t.dashboard.comptesChargesEchues }}</span>
                 <span class="font-semibold" style="color: var(--app-alert)">
-                  {{ carte.sortiesEchues | montant:devise() }}
+                  {{ carte.sortiesEchues - carte.reservesEchues | montant:devise() }}
                 </span>
               </div>
+              @if (carte.reservesEchues > 0) {
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-surface-500">{{ t.dashboard.comptesReservesEchues }}</span>
+                  <span class="font-semibold text-primary">
+                    {{ carte.reservesEchues | montant:devise() }}
+                  </span>
+                </div>
+              }
               @if (carte.virementsSortants > 0) {
                 <div class="flex items-center justify-between gap-2">
                   <span class="text-surface-500">{{ t.dashboard.comptesVirementsSortants }}</span>

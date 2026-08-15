@@ -486,6 +486,8 @@
     "comptesEntrees": "Entrées échues",
     "comptesSortiesPlanifiees": "Sorties planifiées",
     "comptesSortiesEchues": "Sorties échues",
+    "comptesChargesEchues": "Charges échues",
+    "comptesReservesEchues": "Réserves",
     "comptesVirementsSortants": "Virements sortants",
     "comptesSoldeRestant": "Solde restant",
     "comptesAucunCompte": "Aucun compte rattaché.",

@@ -307,6 +307,7 @@ final class ComptesFluxSimulateur {
             double entrees = detailMembre.revenusEchu();
             double sortiesPlanifiees = detailMembre.chargesReservesMensualise();
             double sortiesEchues = detailMembre.chargesReservesEchu();
+            double reservesEchues = detailMembre.reservesEchu();
             double virementsEntrants = virementsEntrantsMembreParCompte.get(compteId);
             double virementsSortants = virementsSortantsMembreParCompte.get(compteId);
 
@@ -320,7 +321,7 @@ final class ComptesFluxSimulateur {
 
             resultat.get(compteId).add(new CompteFluxMensuel(
                     compteId, annee, mois, entrees, sortiesPlanifiees, sortiesEchues,
-                    virementsEntrants, virementsSortants, soldeRestant));
+                    virementsEntrants, virementsSortants, reservesEchues, soldeRestant));
         }
     }
 
@@ -369,7 +370,7 @@ final class ComptesFluxSimulateur {
                 // Mode legacy, compte cible inactif, ou auto-financé (le compte cible EST le
                 // primaire) : comptée directement comme une charge (dépense), aucun virement
                 // à simuler pour cette part.
-                DetailCompteMembre delta = new DetailCompteMembre(0, 0, poche.montant(), poche.montant());
+                DetailCompteMembre delta = new DetailCompteMembre(0, 0, poche.montant(), poche.montant(), 0, 0);
                 parCompteMembreDetail.computeIfAbsent(compteCible, k -> new LinkedHashMap<>())
                         .merge(membreId, delta, DetailCompteMembre::plus);
             } else {

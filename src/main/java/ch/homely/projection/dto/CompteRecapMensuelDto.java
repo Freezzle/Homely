@@ -30,6 +30,9 @@ import java.util.UUID;
  * @param sortiesEchues        charges + réserves réellement échues ce mois pour la part du membre
  * @param virementsSortants    montant que la part du membre sur ce compte doit fournir ce mois pour
  *                             financer ses propres postes ventilés sur d'autres comptes dont celui-ci est son primaire
+ * @param reservesEchues       sous-montant de {@code sortiesEchues} correspondant aux seules réserves
+ *                             (transferts internes) — permet de distinguer mouvements externes (charges)
+ *                             et internes (réserves) dans l'affichage
  * @param soldeRestant         entrees + virementsEntrants − sortiesEchues − virementsSortants
  */
 public record CompteRecapMensuelDto(
@@ -40,5 +43,6 @@ public record CompteRecapMensuelDto(
         BigDecimal sortiesPlanifiees,
         BigDecimal sortiesEchues,
         BigDecimal virementsSortants,
+        BigDecimal reservesEchues,
         BigDecimal soldeRestant
 ) {}

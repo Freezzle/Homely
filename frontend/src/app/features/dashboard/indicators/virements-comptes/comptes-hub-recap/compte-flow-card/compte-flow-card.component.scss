@@ -129,6 +129,9 @@
   &.sortie {
     .flow-label i, .flow-value { color: var(--app-alert); }
   }
+  &.reserve {
+    .flow-label i, .flow-value { color: var(--app-info); }
+  }
   &.virement-out {
     .flow-label i, .flow-value { color: var(--app-info); }
   }

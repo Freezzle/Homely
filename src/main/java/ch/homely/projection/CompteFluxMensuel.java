@@ -18,11 +18,15 @@ import java.util.UUID;
  *                          primaire désigné du membre
  * @param virementsSortants montant que la part du membre sur ce compte doit fournir ce
  *                          mois pour financer ses propres postes ventilés ailleurs, dont ce compte est le primaire désigné
+ * @param reservesEchues    sous-montant de {@code sortiesEchues} correspondant aux seules réserves
+ *                          (transferts internes) du membre sur ce compte — permet au frontend de distinguer
+ *                          mouvements externes (charges) des mouvements internes (réserves)
  * @param soldeRestant      entrees + virementsEntrants − sortiesEchues − virementsSortants
  */
 record CompteFluxMensuel(
         UUID compteId, int annee, int mois,
         double entrees, double sortiesPlanifiees, double sortiesEchues,
         double virementsEntrants, double virementsSortants,
+        double reservesEchues,
         double soldeRestant
 ) {}

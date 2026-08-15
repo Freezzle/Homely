@@ -367,6 +367,7 @@ export interface CompteRecapMensuelDto {
   sortiesPlanifiees: number;
   sortiesEchues: number;
   virementsSortants: number;
+  reservesEchues: number;
   soldeRestant: number;
 }
 

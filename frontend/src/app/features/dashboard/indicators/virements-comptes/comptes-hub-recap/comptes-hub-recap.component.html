@@ -61,8 +61,8 @@
                     {{ t.dashboard.comptesPostesQuotePart }} {{ poste.quotePart * 100 | number:'1.0-0' }}%
                   </span>
                 }
-                <span class="hub-recap-poste-montant" [class.negatif]="poste.type !== 'REVENU'">
-                  {{ poste.type === 'REVENU' ? '+' : '−' }}{{ poste.montant | montant:devise() }}
+                <span class="hub-recap-poste-montant" [class.negatif]="poste.type === 'CHARGE' || poste.argentPoche">
+                  {{ poste.type === 'CHARGE' && !poste.argentPoche ? '−' : '+' }}{{ poste.montant | montant:devise() }}
                 </span>
               </li>
             }

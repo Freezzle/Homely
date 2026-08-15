@@ -35,15 +35,24 @@
       </div>
     }
 
-    <!-- Sorties échues : toujours affiché, même à 0 -->
+    <!-- Charges échues : toujours affiché (même à 0), sans les réserves -->
     <div class="flow-row sortie">
       <span class="flow-label">
-        <i class="pi pi-arrow-up-right"></i>{{ t.dashboard.comptesSortiesEchues }}
+        <i class="pi pi-arrow-up-right"></i>{{ t.dashboard.comptesChargesEchues }}
       </span>
       <span class="flow-value">
-        {{ compte().sortiesEchues > 0 ? '−' : '' }}{{ compte().sortiesEchues | montant:devise() }}
+        {{ chargesEchues() > 0 ? '−' : '' }}{{ chargesEchues() | montant:devise() }}
       </span>
     </div>
+
+    @if (showReserves()) {
+      <div class="flow-row reserve">
+        <span class="flow-label">
+          <i class="pi pi-bookmark"></i>{{ t.dashboard.comptesReservesEchues }}
+        </span>
+        <span class="flow-value">+{{ compte().reservesEchues | montant:devise() }}</span>
+      </div>
+    }
 
     @if (showVirementsSortants()) {
       <div class="flow-row virement-out">

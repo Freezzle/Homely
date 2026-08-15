@@ -629,7 +629,7 @@ public class ProjectionService {
             resultat.add(new CompteRecapMensuelDto(
                     compte.getId(), compte.getLibelle(),
                     bd(f.virementsEntrants()), bd(f.entrees()), bd(f.sortiesPlanifiees()), bd(f.sortiesEchues()),
-                    bd(f.virementsSortants()), bd(f.soldeRestant())));
+                    bd(f.virementsSortants()), bd(f.reservesEchues()), bd(f.soldeRestant())));
         }
         return resultat;
     }
@@ -668,20 +668,21 @@ public class ProjectionService {
                     .toList();
             if (historiqueAnnee.isEmpty()) continue;
 
-            double virementsEntrants = 0, entrees = 0, sortiesPlanifiees = 0, sortiesEchues = 0, virementsSortants = 0;
+            double virementsEntrants = 0, entrees = 0, sortiesPlanifiees = 0, sortiesEchues = 0, virementsSortants = 0, reservesEchues = 0;
             for (CompteFluxMensuel f : historiqueAnnee) {
                 virementsEntrants += f.virementsEntrants();
                 entrees += f.entrees();
                 sortiesPlanifiees += f.sortiesPlanifiees();
                 sortiesEchues += f.sortiesEchues();
                 virementsSortants += f.virementsSortants();
+                reservesEchues += f.reservesEchues();
             }
             double soldeFinAnnee = historiqueAnnee.get(historiqueAnnee.size() - 1).soldeRestant();
 
             resultat.add(new CompteRecapMensuelDto(
                     compte.getId(), compte.getLibelle(),
                     bd(virementsEntrants), bd(entrees), bd(sortiesPlanifiees), bd(sortiesEchues),
-                    bd(virementsSortants), bd(soldeFinAnnee)));
+                    bd(virementsSortants), bd(reservesEchues), bd(soldeFinAnnee)));
         }
         return resultat;
     }

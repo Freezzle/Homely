@@ -34,4 +34,8 @@ export class CompteFlowCardComponent {
   protected readonly showVirementsEntrants = computed(() => this.compte().virementsEntrants > 0);
   protected readonly showEntrees = computed(() => this.compte().entrees > 0);
   protected readonly showVirementsSortants = computed(() => this.compte().virementsSortants > 0);
+  protected readonly showReserves = computed(() => this.compte().reservesEchues > 0);
+
+  /** Charges seules (sorties échues moins réserves) — 0 si aucune charge. */
+  protected readonly chargesEchues = computed(() => this.compte().sortiesEchues - this.compte().reservesEchues);
 }

@@ -486,6 +486,8 @@
     "comptesEntrees": "Income due",
     "comptesSortiesPlanifiees": "Planned outgoings",
     "comptesSortiesEchues": "Outgoings due",
+    "comptesChargesEchues": "Expenses due",
+    "comptesReservesEchues": "Reserves",
     "comptesVirementsSortants": "Outgoing transfers",
     "comptesSoldeRestant": "Remaining balance",
     "comptesAucunCompte": "No linked account.",

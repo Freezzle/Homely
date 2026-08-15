@@ -669,6 +669,7 @@ public class MoteurCalcul {
             if (contribMensualise == 0 && contribEchue == 0) continue;
 
             boolean estRevenu = poste.type() == TypePoste.REVENU;
+            boolean estReserve = poste.type() == TypePoste.RESERVE;
 
             for (UUID membreId : params.membres()) {
                 double qp = quotePartEffective(poste, membreId, annee, mois, params.periodesDefaut(), nbMembres);
@@ -680,8 +681,10 @@ public class MoteurCalcul {
                 double partMensualise = contribMensualise * qp;
                 double partEchue = contribEchue * qp;
                 DetailCompteMembre delta = estRevenu
-                        ? new DetailCompteMembre(partMensualise, partEchue, 0, 0)
-                        : new DetailCompteMembre(0, 0, partMensualise, partEchue);
+                        ? new DetailCompteMembre(partMensualise, partEchue, 0, 0, 0, 0)
+                        : estReserve
+                                ? new DetailCompteMembre(0, 0, 0, 0, partMensualise, partEchue)
+                                : new DetailCompteMembre(0, 0, partMensualise, partEchue, 0, 0);
 
                 parCompteMembre
                         .computeIfAbsent(compteId, k -> new LinkedHashMap<>())

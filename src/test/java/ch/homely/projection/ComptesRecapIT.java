@@ -74,6 +74,8 @@ class ComptesRecapIT {
         assertThat(c.get("entrees").asDouble()).isCloseTo(5000.0, within(0.01));
         assertThat(c.get("sortiesPlanifiees").asDouble()).isCloseTo(100.0, within(0.01));
         assertThat(c.get("sortiesEchues").asDouble()).isCloseTo(1200.0, within(0.01)); // échu en janvier (ancre)
+        // Aucun poste RESERVE ici -> reservesEchues == 0 (uniquement une charge).
+        assertThat(c.get("reservesEchues").asDouble()).isCloseTo(0.0, within(0.01));
         // soldeRestant = virements(100) + entrees(5000) - sortiesEchues(1200) = 3900
         assertThat(c.get("soldeRestant").asDouble()).isCloseTo(3900.0, within(0.01));
 
@@ -108,6 +110,8 @@ class ComptesRecapIT {
         JsonNode c = recap.get(0);
         assertThat(c.get("virementsEntrants").asDouble()).isCloseTo(100.0, within(0.01));
         assertThat(c.get("sortiesEchues").asDouble()).isCloseTo(1200.0, within(0.01));
+        // Poste RESERVE seul sur ce compte -> reservesEchues == sortiesEchues (aucune charge).
+        assertThat(c.get("reservesEchues").asDouble()).isCloseTo(1200.0, within(0.01));
         double soldeRestant = c.get("soldeRestant").asDouble();
         assertThat(soldeRestant).isCloseTo(-1000.0, within(0.01)); // 100 + 100 - 1200
     }
