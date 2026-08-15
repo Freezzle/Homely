@@ -58,9 +58,8 @@ class FoyerSuppressionCascadeIT {
         String catId = creerCategorie(token, foyerId, "Charges fixes", "CHARGE");
         String scenarioId = premierScenarioId(token, foyerId);
         String membreId = premierMembreId(token, foyerId);
-        String compteId = creerCompte(token, foyerId, membreId);
+        creerCompte(token, foyerId, membreId);
         creerPoste(token, foyerId, scenarioId, catId);
-        creerObjectif(token, foyerId, scenarioId, catId, compteId);
 
         client.delete()
                 .uri("/api/foyers/" + foyerId)
@@ -76,7 +75,6 @@ class FoyerSuppressionCascadeIT {
         assertThat(count("SELECT COUNT(*) FROM compte WHERE foyer_id = ?", foyerId)).isZero();
         assertThat(count("SELECT COUNT(*) FROM taux_change WHERE foyer_id = ?", foyerId)).isZero();
         assertThat(count("SELECT COUNT(*) FROM poste p JOIN scenario s ON s.id = p.scenario_id WHERE s.foyer_id = ?", foyerId)).isZero();
-        assertThat(count("SELECT COUNT(*) FROM objectif o JOIN scenario s ON s.id = o.scenario_id WHERE s.foyer_id = ?", foyerId)).isZero();
         assertThat(count("SELECT COUNT(*) FROM repartition_periode rp JOIN scenario s ON s.id = rp.scenario_id WHERE s.foyer_id = ?", foyerId)).isZero();
         assertThat(count("SELECT COUNT(*) FROM repartition_poste rp JOIN poste p ON p.id = rp.poste_id JOIN scenario s ON s.id = p.scenario_id WHERE s.foyer_id = ?", foyerId)).isZero();
         assertThat(count("SELECT COUNT(*) FROM ventilation_compte vc JOIN poste p ON p.id = vc.poste_id JOIN scenario s ON s.id = p.scenario_id WHERE s.foyer_id = ?", foyerId)).isZero();
@@ -201,25 +199,6 @@ class FoyerSuppressionCascadeIT {
         try {
             String body = client.post()
                     .uri("/api/foyers/" + foyerId + "/comptes")
-                    .header("Authorization", "Bearer " + token)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(MAPPER.writeValueAsString(payload))
-                    .retrieve().body(String.class);
-            return MAPPER.readTree(body).get("id").asText();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private String creerObjectif(String token, String foyerId, String scenarioId, String categorieId, String compteId) {
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("libelle", "Objectif purge");
-        payload.put("categorieProjetId", categorieId);
-        payload.put("montantCible", 3000);
-        payload.put("compteId", compteId);
-        try {
-            String body = client.post()
-                    .uri("/api/foyers/" + foyerId + "/scenarios/" + scenarioId + "/objectifs")
                     .header("Authorization", "Bearer " + token)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(MAPPER.writeValueAsString(payload))

@@ -24,7 +24,7 @@ public record PolitiqueArgentPocheRequest(
         /** Mode VARIABLE — minimum garanti versé chaque mois. */
         @DecimalMin("0.0") BigDecimal socle,
 
-        /** Mode VARIABLE — part (0-100) du surplus. */
+        /** Mode VARIABLE — part (0-100) du RàV brut. */
         @DecimalMin("0.0") @DecimalMax("100.0") BigDecimal pourcentage,
 
         /** Mode VARIABLE — plafond absolu. */

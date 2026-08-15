@@ -17,7 +17,7 @@ import static ch.homely.poste.TypePoste.*;
 import static org.assertj.core.api.Assertions.*;
 
 /**
- * Tests golden du moteur de calcul — vecteurs de référence doc 01 §8-bis.
+ * Tests golden du moteur de calcul — vecteurs de référence doc 01 §11.
  * Tolérance affichage : ±0,01 CHF (arrondi 2 décimales).
  * Tolérance interne   : ±1e-6.
  */
@@ -56,7 +56,7 @@ class MoteurCalculTest {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // §T1 — Contributions élémentaires (doc 01 §8-bis T1)
+    // §T1 — Contributions élémentaires (doc 01 §11 T1)
     // ─────────────────────────────────────────────────────────────────────────
 
     @Nested
@@ -102,7 +102,7 @@ class MoteurCalculTest {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // §T2 — Projection annuelle 2026 (doc 01 §8-bis T2)
+    // §T2 — Projection annuelle 2026 (doc 01 §11 T2)
     // ─────────────────────────────────────────────────────────────────────────
 
     @Nested
@@ -234,7 +234,7 @@ class MoteurCalculTest {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // §T4 — Répartition par membre (doc 01 §8-bis T4)
+    // §T4 — Répartition par membre (doc 01 §11 T4)
     // ─────────────────────────────────────────────────────────────────────────
 
     @Nested
@@ -297,7 +297,7 @@ class MoteurCalculTest {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // §T5 — Cas limites (doc 01 §8-bis T5)
+    // §T5 — Cas limites (doc 01 §11 T5)
     // ─────────────────────────────────────────────────────────────────────────
 
     @Nested

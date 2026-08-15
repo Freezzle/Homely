@@ -6,6 +6,8 @@
 > (mêmes entrées → mêmes sorties, sans lecture de l'horloge), développée **test-first** à
 > partir des [vecteurs golden](#12-vecteurs-de-test-golden). Ces tests ne régressent jamais.
 
+> **Décisions gouvernées par ce doc** : toute logique de calcul (contribution, agrégats, trésorerie chaînée, répartition N membres, devises, ventilations, événements, argent de poche) et la conformité au centime via les vecteurs golden.
+
 ---
 
 ## 1. Principes — types d'argent & cascade
@@ -61,40 +63,46 @@ Mois représenté par le 1ᵉʳ jour : `premierJour = date(année, mois, 1)`, `f
 dernier jour du mois`. Soit `C = montant`, `D = periodiciteMois`.
 
 ```
-# Divisor sûr (protège des divisions/modulo par zéro)
-Dsafe = D + (D == 0 ? 1 : 0)
+# Diviseur (D == 0 est traité à part comme "one-shot", cf. ci-dessous)
+Dsafe = D
 
 # Fenêtre de validité (poste sans dates = toujours actif)
 actifDebut = (debut est null) OU (debut <= finDeMois)
 actifFin   = (fin   est null) OU (fin   >= premierJour)
 actif      = actifDebut ET actifFin
 
-# Indicateurs (un poste mensuel D==1 est toujours lissé)
-estDebut = (D != 1) ET (moment == DEBUT_PERIODE) ET (mode == PERIODIQUE)
-estFin   = (D != 1) ET (moment == FIN_PERIODE)   ET (mode == PERIODIQUE)
+# Indicateurs (un poste mensuel D==1 est toujours lissé ; D==0 = one-shot)
+estOneShot = (D == 0)
+estDebut = (D != 1) ET (D != 0) ET (moment == DEBUT_PERIODE) ET (mode == PERIODIQUE)
+estFin   = (D != 1) ET (D != 0) ET (moment == FIN_PERIODE)   ET (mode == PERIODIQUE)
 
 # Ancre : numéro de mois 1..12 de la date de début (année/jour ignorés)
 ancre = (debut est null) ? 1 : mois(debut)
 
 # Calcul final (modulo EUCLIDIEN : Math.floorMod)
 si NON actif           : contribution = 0
+sinon si estOneShot    : contribution = (debut != null ET année(debut)==année ET mois(debut)==mois) ? C : 0
 sinon si estDebut      : contribution = ((mois - ancre)     mod Dsafe == 0) ? C : 0
 sinon si estFin        : contribution = ((mois - ancre + 1) mod Dsafe == 0) ? C : 0
 sinon                  : contribution = C / Dsafe        # MENSUALISE, ou D == 1
 ```
 
+> **One-shot (`D == 0`)** : montant plein imputé **uniquement** au mois exact de `debut`
+> (année **et** mois), 0 partout ailleurs. Un one-shot sans `debut` n'est jamais imputé.
+
 > La récurrence périodique se calcule sur le **numéro de mois modulo la périodicité**, en
 > ignorant l'année : une charge trimestrielle ancrée en janvier tombe en jan/avr/juil/oct
 > **chaque** année.
 
-**Champ dérivé** : `montantMensualise = (C null | D null | D==0) ? 0 : C / Dsafe`.
+**Champ dérivé** : `montantMensualise = (C null | D null) ? 0 : (D == 0 ? C : C / Dsafe)`
+(un one-shot affiche son montant plein).
 
 ### 3.1 Variante réelle — `contributionReelle`
-Visualise les flux **effectifs** (sans lissage). Fenêtre identique. Si `D <= 1`, = `C`
-chaque mois actif. Si `D > 1`, imputation forcée en périodique selon `moment`
-(`DEBUT_PERIODE`/`FIN_PERIODE`), **sauf** `moment == INCONNU` qui reste lissé (`C / Dsafe`,
-aucun mois d'ancrage connu). Invariant : sur une année complète, `Σ contributionReelle =
-Σ contribution`.
+Visualise les flux **effectifs** (sans lissage). Fenêtre identique. Si `D == 0` (one-shot),
+= `C` au seul mois exact de `debut`. Si `D == 1`, = `C` chaque mois actif. Si `D > 1`,
+imputation forcée en périodique selon `moment` (`DEBUT_PERIODE`/`FIN_PERIODE`), **sauf**
+`moment == INCONNU` qui reste lissé (`C / Dsafe`, aucun mois d'ancrage connu). Invariant :
+sur une année complète, `Σ contributionReelle = Σ contribution`.
 
 ### 3.2 Table de vérité
 | Périodicité | Mode | Moment | Comportement |
@@ -104,7 +112,7 @@ aucun mois d'ancrage connu). Invariant : sur une année complète, `Σ contribut
 | > 1 | PERIODIQUE | DEBUT_PERIODE | montant plein si `(mois − ancre) mod D == 0` |
 | > 1 | PERIODIQUE | FIN_PERIODE | montant plein si `(mois − ancre + 1) mod D == 0` |
 | > 1 | MENSUALISE (imposé) | INCONNU | `C / D` chaque mois (y compris en vue réelle) |
-| 0 | quelconque | — | Dsafe = 1 ⇒ traité comme mensuel |
+| 0 | quelconque | — | **one-shot** : montant plein au seul mois exact de `debut`, 0 sinon (jamais si `debut` null) |
 
 ## 4. Agrégats mensuels & projection
 
@@ -187,12 +195,15 @@ Défaut `AUCUN` → `0` (aucun impact si rien n'est configuré : rétro-compatib
 
 **Formule d'une politique** (deux modes exclusifs) :
 ```
-# VARIABLE (socle + % du surplus, plafonné)
-surplus = max(0, ravBrut − socle)
-poche   = min(socle + surplus × pourcentage / 100, plafond)
+# VARIABLE (% du RàV brut, avec socle comme plancher et plafond comme maximum)
+brut  = ravBrut × pourcentage / 100
+poche = min(max(brut, socle), plafond)
 # FIXE
-poche   = montantFixe
+poche = montantFixe
 ```
+Le `pourcentage` s'applique **directement au RàV brut** du mois (pas à un surplus
+`RàV − socle`) ; le `socle` est un **plancher** (montant versé si le résultat du
+pourcentage tombe en dessous) et le `plafond` un **maximum** absolu.
 Le solde disponible peut devenir négatif (découvert assumé). Les politiques d'un membre ne
 se chevauchent jamais (validation en service) ; les allocations sont indépendantes.
 
@@ -223,22 +234,14 @@ DEBUT**, puis `description`. Vue par membre (`?membreId=`) : la couche service a
 `quotePartEffective` et ne renvoie que les événements où elle est > 0 (jamais recalculé
 côté frontend). Tests golden : `MoteurEvenementsTest`.
 
-## 10. Objectifs / projets d'épargne
-```
-progressionPct          = min(100, soldeCourant / montantCible × 100)
-moisRestants            = nb de mois entre aujourd'hui et echeance
-epargneMensuelleRequise = max(0, (montantCible − soldeCourant) / moisRestants)
-dateAtteintePrevue      = 1er mois où solde projeté ≥ montantCible (null si jamais)
-```
-
-## 11. Précision & performances
+## 10. Précision & performances
 - Calculs internes en **double** (comme Excel) ; **arrondir uniquement à l'affichage**
   (2 décimales). Ne jamais arrondir les étapes intermédiaires (sinon divergence golden).
 - Cache par `(scénario, version)` invalidé à chaque modification de poste/hypothèse.
 - Le moteur ne lit jamais l'horloge (déterminisme) ; la date du jour est passée en
-  paramètre explicite (écrans « mois courant / objectifs »).
+  paramètre explicite.
 
-## 12. Vecteurs de test (golden)
+## 11. Vecteurs de test (golden)
 
 Jeu de référence = classeur d'origine (foyer 2 membres, CHF, répartition défaut
 0,58/0,42, année de départ **2026**, trésorerie initiale **0**). **Valeurs vérifiées au
@@ -290,7 +293,7 @@ Pour tout mois, `partMembre(M1) + partMembre(M2) = contribution` (foyer). Répar
 défaut 0,58/0,42 : `revenus(M1, jan) = 11 000 × 0,58 = 6 380` ; `revenus(M2) = 4 620`.
 
 ### T5 — Cas limites (tests unitaires)
-- `D = 0` → traité comme mensuel (Dsafe = 1), pas de division par zéro.
+- `D = 0` → **one-shot** : montant plein au seul mois exact de `debut` (0 sinon, jamais si `debut` null) ; pas de division par zéro.
 - Poste sans dates → actif tous les mois ; `fin` en cours d'année → 0 après `fin`.
 - `PERIODIQUE` ancre mars, `D = 6` → tombe en mars et septembre.
 - Montant manquant → 0 (pas d'exception) ; `mois − ancre` négatif → modulo euclidien.

@@ -49,6 +49,18 @@ public class ProjectionController {
         return projectionService.tresorerie(foyerId, scenarioId);
     }
 
+    /** Courbe de trésorerie cumulée d'une année, scopée au sujet (foyer, ou membre si
+     *  {@code membreId} fourni) — séries mensualisée + réelle. Remplace le cumul
+     *  auparavant recalculé côté dashboard. */
+    @GetMapping("/tresorerie-cumulee")
+    public TresorerieCumuleeDto tresorerieCumulee(@PathVariable UUID foyerId,
+                                                  @PathVariable UUID scenarioId,
+                                                  @RequestParam int annee,
+                                                  @RequestParam(required = false) UUID membreId) {
+        multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
+        return projectionService.tresorerieCumulee(foyerId, scenarioId, annee, membreId);
+    }
+
     /** T8.3 — Ventilations mensuelles */
     @GetMapping("/mensuelle")
     public VentilationsDto mensuelle(@PathVariable UUID foyerId,

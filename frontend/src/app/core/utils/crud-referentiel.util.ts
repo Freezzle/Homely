@@ -117,8 +117,7 @@ export function creerCrudReferentiel<T, TReq>(
 
 /**
  * Variante de `ServiceCrudReferentiel` pour les ressources scopées **foyer + scénario**
- * (`postes`, `objectifs` — voir `PosteService`/`ObjectifService` dans
- * `scenario-poste.service.ts`).
+ * (`postes`, politiques ou allocations scopées scénario, etc.).
  */
 export interface ServiceCrudReferentielScenario<T, TReq> {
   lister(foyerId: string, scenarioId: string): Observable<T[]>;
@@ -129,7 +128,7 @@ export interface ServiceCrudReferentielScenario<T, TReq> {
 
 /**
  * Équivalent de `creerCrudReferentiel` pour les ressources scopées foyer + scénario
- * (ex. `ObjectifsComponent`) : réagit à `contexte.foyerId()` **et** `contexte.scenarioId()`
+ * : réagit à `contexte.foyerId()` **et** `contexte.scenarioId()`
  * via `switchMap`, ce qui annule toute requête en vol dès que l'un des deux change (même
  * garde-fou anti-fuite inter-foyers/inter-scénarios que `creerCrudReferentiel`).
  *

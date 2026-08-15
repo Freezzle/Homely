@@ -49,7 +49,7 @@ export interface ComptePrimaireRequest { compteId: string | null; }
 export interface CompteDto { id: string; libelle: string; soldeInitial: number; devise: string; actif: boolean; membreIds: string[]; membresPrimaireIds: string[]; }
 export interface CompteRequest { libelle: string; soldeInitial: number; devise?: string; membreIds: string[]; }
 
-export type TypeCategorie = 'REVENU' | 'CHARGE' | 'RESERVE' | 'PROJET';
+export type TypeCategorie = 'REVENU' | 'CHARGE' | 'RESERVE';
 export interface CategorieDto { id: string; libelle: string; typePoste: TypeCategorie; actif: boolean; }
 export interface CategorieRequest { libelle: string; typePoste: TypeCategorie; }
 
@@ -232,19 +232,6 @@ export interface ProrataPartageMembreDto {
   aDesPostesPartages: boolean;
 }
 
-// ── Objectifs ─────────────────────────────────────────────────────────────────
-export interface ObjectifDto {
-  id: string; libelle: string; categorieProjetId?: string;
-  montantCible: number; echeance?: string;
-  compteId?: string;
-  soldeActuel: number; progression: number; epargneRequise: number;
-}
-export interface ObjectifRequest {
-  libelle: string; categorieProjetId?: string;
-  montantCible: number; echeance?: string;
-  compteId: string;
-}
-
 // ── Argent de poche ───────────────────────────────────────────────────────────
 export type ModePolitiqueArgentPoche = 'VARIABLE' | 'FIXE';
 export type SourceArgentPoche = 'ALLOCATION' | 'POLITIQUE' | 'AUCUNE';
@@ -334,6 +321,11 @@ export interface ProjectionAnnuelleDto {
   moisParMembre: Record<string, AggregatDto[]>;
   moisParMembreReel: Record<string, AggregatDto[]>;
 }
+export interface TresorerieCumuleeDto {
+  annee: number;
+  mensualise: Array<number | string>;
+  reel: Array<number | string>;
+}
 export interface EntreeTresorerieDto { annee: number; soldeAnnuel: number; tresorerieDebutAnnee: number; tresorerieFinAnnee: number; }
 export interface MoisCourbeDto { annee: number; mois: number; tresorerie: number; }
 export interface TresorerieDto { annees: EntreeTresorerieDto[]; courbe: MoisCourbeDto[]; }
@@ -391,3 +383,13 @@ export interface ComptePosteDetailDto {
   quotePart: number | null;
 }
 
+export interface SeuilsDashboardDto {
+  moisARisqueSoldeMin: number;
+  tauxEffortCorrect: number;
+  tauxEffortTendu: number;
+  tauxEffortSature: number;
+  tauxEffortSoutenu: number;
+  tauxEffortCritique: number;
+  besoinsPlaisirsBudget: number;
+  posteAOptimiserScore: number;
+}

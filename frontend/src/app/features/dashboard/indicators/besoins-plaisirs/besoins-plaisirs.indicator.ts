@@ -4,13 +4,7 @@ import { BesoinsPlaisirsCardData } from '../../../../shared/components/besoins-p
 import { formatTaux } from '../../../../shared/utils/format-taux.util';
 import { BesoinsPlaisirsDrawerContentComponent } from './besoins-plaisirs-drawer-content.component';
 import { AppTranslations } from '../../../../core/i18n/i18n.types';
-
-/** Seuil (%) du taux "budget" (Besoins parmi les revenus totaux) au-delà duquel le
- *  taux de charges nécessaires est jugé élevé — même seuil que
- *  `BesoinsPlaisirsCardComponent.SEUIL_ZONE_ELEVEE_BUDGET`, dupliqué ici pour éviter une
- *  dépendance du module d'indicateur au composant riche du drawer. Le taux "charges"
- *  (28 %, besoins vs plaisirs) n'est utilisé que dans le donut du drawer, pas ici. */
-const SEUIL_ZONE_ELEVEE_BUDGET = 50;
+import { SeuilsDashboardDto } from '../../../../core/models/api.models';
 
 /**
  * Construit la déclaration de carte + drawer pour l'indicateur "Plaisirs vs Besoins", à
@@ -24,10 +18,17 @@ const SEUIL_ZONE_ELEVEE_BUDGET = 50;
  * drawer) : c'est la lecture la plus parlante pour l'utilisateur ("quelle part de mon
  * revenu part dans mes charges de nécessité ?").
  */
-export function besoinsPlaisirsIndicator(cle: string, data: BesoinsPlaisirsCardData, t: AppTranslations): Indicator {
+type BesoinsPlaisirsIndicatorSeuils = Pick<SeuilsDashboardDto, 'besoinsPlaisirsBudget'>;
+
+export function besoinsPlaisirsIndicator(
+  cle: string,
+  data: BesoinsPlaisirsCardData,
+  t: AppTranslations,
+  seuils: BesoinsPlaisirsIndicatorSeuils,
+): Indicator {
   const total = data.montantBesoins + data.montantPlaisirs;
   const tauxBesoinsBudget = data.revenusTotal > 0 ? (data.montantBesoins / data.revenusTotal) * 100 : 0;
-  const infoColor: IconColor = tauxBesoinsBudget > SEUIL_ZONE_ELEVEE_BUDGET ? 'red' : 'pos';
+  const infoColor: IconColor = tauxBesoinsBudget > seuils.besoinsPlaisirsBudget ? 'red' : 'pos';
 
   return {
     key: cle,

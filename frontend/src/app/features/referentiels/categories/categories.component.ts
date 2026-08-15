@@ -62,7 +62,6 @@ export class CategoriesComponent {
     { label: this.t.referentiels.categorie.typeOptions.REVENU, value: 'REVENU' },
     { label: this.t.referentiels.categorie.typeOptions.CHARGE, value: 'CHARGE' },
     { label: this.t.referentiels.categorie.typeOptions.RESERVE, value: 'RESERVE' },
-    { label: this.t.referentiels.categorie.typeOptions.PROJET, value: 'PROJET' },
   ];
 
   form = this.fb.group({

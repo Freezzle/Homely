@@ -42,6 +42,48 @@ Conventions et garde-fous de l'agent : [`../.github/copilot-instructions.md`](..
 5. **Ne pas coder en dur** les données du foyer d'exemple (elles vivent dans le seed
    Flyway).
 
+## Guide de décision — nouvelle fonctionnalité / évolution
+
+> À suivre **avant de coder** toute demande. Objectif : décider vite et bien, en restant
+> fidèle au métier et à l'architecture.
+
+**Workflow**
+
+1. **Cadrer le périmètre** : la demande est-elle dans le périmètre ? (prévision
+   uniquement — voir « Ce qu'il ne faut PAS faire » ci-dessous). Si hors périmètre,
+   le signaler avant d'implémenter.
+2. **Repérer le(s) doc(s) impacté(s)** via la table ci-dessous et y lire les règles à
+   respecter.
+3. **Appliquer les [Règles d'or](#règles-dor)** et les conventions du doc concerné.
+4. **Vérifier la Definition of Done** avant de considérer la tâche terminée.
+
+**Quel doc consulter selon le changement**
+
+| Type de changement | Doc de référence |
+|---|---|
+| Calcul, contribution, agrégats, trésorerie, répartition, devises, argent de poche, **vecteurs golden** | [`01-principes-et-moteur.md`](01-principes-et-moteur.md) |
+| Nouvelle entité/champ, énumération, schéma SQL, **migration Flyway**, seed | [`02-domaine-et-donnees.md`](02-domaine-et-donnees.md) |
+| Découpage packages, isolation du moteur, sécurité multi-tenant, cache, i18n, config, couplage PrimeNG/Tailwind | [`03-architecture.md`](03-architecture.md) |
+| Endpoint REST, `ApiError`, contrat DTO, route/écran/composant Angular | [`04-api-et-frontend.md`](04-api-et-frontend.md) |
+
+**Definition of Done**
+
+Code + tests verts, **moteur non régressé** (vecteurs golden au centime), multi-tenant
+respecté (**test d'accès croisé** par endpoint sensible), **DTO ≠ entités JPA**, migration
+Flyway ajoutée si le schéma change, OpenAPI/Swagger à jour, **UI en clés i18n** (aucun
+texte en dur), actions d'écriture masquées pour les `VIEWER`.
+
+**Ce qu'il ne faut PAS faire (hors périmètre / garde-fous)**
+
+- Pas de suivi du **réalisé**, d'import bancaire, ni de rapprochement.
+- Ne pas modifier la sémantique du moteur pour « simplifier » : elle reste **identique à
+  l'Excel**. Pas d'arrondi des étapes intermédiaires.
+- Ne pas contourner le scoping multi-tenant ni la validation de la somme des quotes-parts
+  (= 100 %).
+- Ne pas coder en dur les données du foyer d'exemple (elles vivent dans le seed Flyway).
+- Respecter les **versions imposées** : Spring Boot 4, Angular 22, PrimeNG 22, Tailwind
+  v4. Pas de PrimeFlex. Épingler la dernière version stable compatible pour le reste.
+
 ## Glossaire — langage ubiquitaire
 
 Termes FR à utiliser de façon cohérente dans le code, les entités et l'UI.
@@ -68,7 +110,6 @@ Termes FR à utiliser de façon cohérente dans le code, les entités et l'UI.
 | **Contribution** | Montant d'un poste imputé à un mois | `contribution` |
 | **Solde disponible / RàV** | `Revenus − Charges − Réserves` | `soldeDisponible` |
 | **Trésorerie chaînée** | Tréso initiale + cumul des soldes annuels précédents | `tresorerieDebutAnnee` |
-| **Objectif** | Cible d'épargne (montant, échéance, compte) | `Objectif` |
 | **Argent de poche** | Montant mensuel retranché du solde disponible (prévisionnel) | `ArgentPocheService` |
 
 > Données d'origine (contexte) : foyer suisse 2 membres, CHF, répartition défaut

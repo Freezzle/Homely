@@ -20,7 +20,6 @@
     "charges": "Charges",
     "reserves": "Réserves",
     "scenarios": "Scénarios",
-    "objectifs": "Objectifs (travaux)",
     "argentPoche": "Argent de poche",
     "referentiels": "Référentiels",
     "comptes": "Comptes",
@@ -393,7 +392,6 @@
     "effortCardNA": "N/A",
     "effortCardNaRaison": "Membre sans revenu ce mois.",
     "effortCardAriaLabel": "Taux d'effort de {{nom}} : {{taux}}%, zone {{zone}}. Pire cas : {{tauxPireCas}}%.",
-    "objectifPrefixe": "Objectif ·",
     "fluxMensuels": "Flux mensuels",
     "detailMensuel": "Détail mensuel",
     "legendeGraphiqueMixte": "Barres empilées = charges + réserves · Ligne verte = revenus",
@@ -414,7 +412,6 @@
     "recapitulatifs": "Récapitulatifs",
     "echeances": "Échéances",
     "evenement": "Événement",
-    "objectifs": "Objectifs",
     "fluxMensuel": "Flux mensuel",
     "fluxMensuelDescription": "Flux mensuel, mois par mois, sur l'horizon des postes scénarisés.",
     "tresorerieTitle": "Trésorerie cumulée",
@@ -471,7 +468,6 @@
     "chargesSures": "Charges",
     "reserves": "Réserves",
     "fourchetteDuMois": "Fourchette du reste à vivre",
-    "nbObjectifs": "Objectifs",
     "echeancesCeMois": "Échéances ce mois",
     "evenementsCeMois": "Événements ce mois",
     "statutExcedentaire": "Excédentaire",
@@ -617,8 +613,7 @@
       "typeOptions": {
         "REVENU": "Revenu",
         "CHARGE": "Charge",
-        "RESERVE": "Réserve",
-        "PROJET": "Projet"
+        "RESERVE": "Réserve"
       }
     },
     "taux": {
@@ -651,37 +646,6 @@
     },
     "retirer": "Retirer l'accès",
     "changerRole": "Changer le rôle"
-  },
-  "objectif": {
-    "titre": "Objectifs",
-    "libelle": "Libellé",
-    "montantCible": "Montant cible",
-    "echeance": "Échéance",
-    "compte": "Compte lié",
-    "progression": "Progression",
-    "epargneRequise": "Épargne requise/mois",
-    "soldeActuel": "Solde actuel",
-    "cible": "cible",
-    "statuts": {
-      "DANS_LES_TEMPS": "Dans les temps",
-      "EN_RETARD": "En retard",
-      "ATTEINT": "Atteint"
-    },
-    "aCeRythme": "Échéance dépassée le",
-    "verserPourTenir": "· pour l'atteindre rapidement, verser",
-    "parMoisPourTenirEcheance": "/mois.",
-    "parMois": "/mois",
-    "termine": "Terminé",
-    "jalon": "Jalon",
-    "supportRequis": "Sélectionnez un compte lié.",
-    "actions": {
-      "recalibrer": "Recalibrer",
-      "verserExtra": "Verser un extra",
-      "mettreEnPause": "Mettre en pause",
-      "convertirReserve": "Convertir en réserve libre",
-      "archiver": "Archiver"
-    },
-    "actionAVenir": "Fonctionnalité à venir."
   },
   "argentPoche": {
     "titre": "Argent de poche",

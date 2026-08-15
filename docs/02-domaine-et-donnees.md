@@ -5,6 +5,8 @@
 > (Hibernate en `ddl-auto=validate`) : toute évolution passe par une nouvelle migration
 > `V{n}__description.sql`.
 
+> **Décisions gouvernées par ce doc** : ajout/modification d'entité, de champ ou d'énumération, conception du schéma, écriture d'une migration Flyway et données de seed.
+
 ---
 
 ## 1. Agrégats & multi-tenant
@@ -21,7 +23,7 @@ Utilisateur ──< AccesFoyer >── Foyer
            Scenario (n par Foyer, dont 1 « de référence »)
               │
       ┌───────┼──────────────────────┐
-   Poste  RepartitionPeriode      Objectif
+   Poste  RepartitionPeriode      ArgentPoche
       │      └─< RepartitionPeriodePart >─ Membre
       ├──< RepartitionPoste >── Membre   (CUSTOM uniquement)
       └──< VentilationCompte >── (Membre, Compte)
@@ -29,7 +31,7 @@ Utilisateur ──< AccesFoyer >── Foyer
 - **Niveau Foyer** (référentiels partagés) : Membre, Compte, Categorie, TauxChange,
   `deviseBase`.
 - **Niveau Scénario** (hypothèses variables) : année de départ, trésorerie initiale,
-  horizon, périodes de répartition, Postes, Objectifs, argent de poche.
+  horizon, périodes de répartition, Postes, argent de poche.
 
 Dupliquer un scénario copie les postes/hypothèses sans toucher aux référentiels du foyer.
 
@@ -51,8 +53,8 @@ Dupliquer un scénario copie les postes/hypothèses sans toucher aux référenti
 - **Compte** — compte bancaire (`libelle`, `soldeInitial`, `devise`, `actif`). N-N avec
   Membre via `compte_membre` (`estPrimaire` : au plus un primaire par membre). Un compte
   ne peut être créé sans au moins un membre actif (`422 COMPTE_SANS_MEMBRE`).
-- **Categorie** — classification (`libelle`, `typePoste` REVENU | CHARGE | RESERVE |
-  PROJET). `poste.categorieId` en `ON DELETE SET NULL` (supprimer une catégorie dissocie
+- **Categorie** — classification (`libelle`, `typePoste` REVENU | CHARGE | RESERVE).
+  `poste.categorieId` en `ON DELETE SET NULL` (supprimer une catégorie dissocie
   les postes sans les supprimer).
 - **TauxChange** — taux prévisionnel vers la devise de base (`devise`, `tauxVersBase`),
   unique `(foyerId, devise)`.
@@ -72,8 +74,6 @@ Dupliquer un scénario copie les postes/hypothèses sans toucher aux référenti
   `typeRepartition = CUSTOM`.
 - **VentilationCompte** — compte utilisé par chaque membre pour un poste (le membre ne
   peut choisir qu'un compte auquel il est rattaché).
-- **Objectif** — cible d'épargne (`montantCible`, `echeance`, `compteId` **obligatoire**,
-  `categorieProjetId` optionnel).
 - **PolitiqueArgentPoche** — politique récurrente par `(scenario, membre)` : `compteId`,
   `dateDebut`/`dateFin` (null = ouverte), `mode` (VARIABLE : socle/pourcentage/plafond, ou
   FIXE : montantFixe). Chevauchements interdits, trous autorisés (validation en service).
@@ -83,7 +83,7 @@ Dupliquer un scénario copie les postes/hypothèses sans toucher aux référenti
 ## 3. Énumérations
 ```
 TypePoste                 = REVENU | CHARGE | RESERVE
-TypeCategorie             = REVENU | CHARGE | RESERVE | PROJET
+TypeCategorie             = REVENU | CHARGE | RESERVE
 ModeComptabilisation      = MENSUALISE | PERIODIQUE
 MomentPeriode             = DEBUT_PERIODE | FIN_PERIODE | INCONNU
 NaturePoste               = EFFECTIF | ESTIMATION
@@ -154,7 +154,7 @@ CREATE TABLE categorie (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   foyer_id UUID NOT NULL REFERENCES foyer(id) ON DELETE CASCADE,
   libelle VARCHAR(120) NOT NULL,
-  type_poste VARCHAR(16) NOT NULL CHECK (type_poste IN ('REVENU','CHARGE','RESERVE','PROJET')),
+  type_poste VARCHAR(16) NOT NULL CHECK (type_poste IN ('REVENU','CHARGE','RESERVE')),
   actif BOOLEAN NOT NULL DEFAULT TRUE
 );
 
@@ -224,14 +224,6 @@ CREATE TABLE ventilation_compte (
   poste_id UUID NOT NULL REFERENCES poste(id) ON DELETE CASCADE,
   membre_id UUID NOT NULL REFERENCES membre(id) ON DELETE CASCADE,
   compte_id UUID NOT NULL REFERENCES compte(id), UNIQUE (poste_id, membre_id)
-);
-
-CREATE TABLE objectif (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  scenario_id UUID NOT NULL REFERENCES scenario(id) ON DELETE CASCADE,
-  libelle VARCHAR(160) NOT NULL, categorie_projet_id UUID REFERENCES categorie(id),
-  montant_cible NUMERIC(15,2) NOT NULL, echeance DATE,
-  compte_id UUID NOT NULL REFERENCES compte(id), date_creation TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE politique_argent_poche (

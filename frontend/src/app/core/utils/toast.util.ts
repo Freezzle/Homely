@@ -2,7 +2,7 @@ import { MessageService } from 'primeng/api';
 
 /**
  * Mutualise les toasts succès/erreur répétés à l'identique dans une dizaine de composants
- * (référentiels, scénarios, postes, objectifs, accès...) : `severity: 'success'` avec un
+ * (référentiels, scénarios, postes, accès...) : `severity: 'success'` avec un
  * simple résumé, et `severity: 'error'` avec le message métier renvoyé par l'API
  * (`err.error.message`, format `ApiError` — doc 04 §2) en détail.
  */

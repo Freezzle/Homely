@@ -8,8 +8,7 @@ import {
 
 /**
  * Service HTTP typé de l'argent de poche (politiques récurrentes + allocations
- * ponctuelles + endpoint de résolution). Scopé foyer + scénario, en cohérence
- * avec {@link ObjectifService}.
+ * ponctuelles + endpoint de résolution). Scopé foyer + scénario.
  */
 @Injectable({ providedIn: 'root' })
 export class PolitiqueArgentPocheService {

@@ -4,8 +4,9 @@ package ch.homely.poche;
  * Mode de calcul d'une {@link PolitiqueArgentPoche}.
  *
  * <ul>
- *     <li>{@link #VARIABLE} : {@code socle + pourcentage × max(0, RàV − socle)},
- *         plafonné par {@code plafond}. Le socle est toujours versé intégralement.</li>
+ *     <li>{@link #VARIABLE} : {@code min(max(RàV × pourcentage / 100, socle), plafond)}.
+ *         Le pourcentage s'applique au RàV brut ; le socle est un plancher (toujours
+ *         versé au minimum) et le plafond un maximum absolu.</li>
  *     <li>{@link #FIXE} : un montant constant chaque mois, indépendant du RàV.</li>
  * </ul>
  *

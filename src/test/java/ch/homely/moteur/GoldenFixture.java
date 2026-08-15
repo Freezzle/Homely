@@ -15,7 +15,7 @@ import static ch.homely.poste.TypePoste.*;
 
 /**
  * Fixture de test reproduisant le jeu de données golden (foyer Charmillot, 2026, CHF).
- * Les postes sont reconstruits pour reproduire <em>exactement</em> les vecteurs T2 du doc 01 §8-bis.
+ * Les postes sont reconstruits pour reproduire <em>exactement</em> les vecteurs T2 du doc 01 §11.
  *
  * <h2>Postes REVENU</h2>
  * <ul>

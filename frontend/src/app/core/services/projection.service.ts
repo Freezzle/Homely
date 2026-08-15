@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import {
   ProjectionAnnuelleDto, VentilationsDto, VentilationAnnuelleDto, EvenementDto, TauxEffortMembreDto,
   CompteRecapMensuelDto, ComptePosteDetailDto, ProrataPartageMembreDto,
+  TresorerieCumuleeDto,
 } from '../models/api.models';
 
 /** T9.3 — Service HTTP projection scopé par foyer/scénario. */
@@ -17,6 +18,14 @@ export class ProjectionService {
   annuelle(foyerId: string, scenarioId: string, annee: number) {
     return this.http.get<ProjectionAnnuelleDto>(
       `${this.base(foyerId, scenarioId)}/annuelle`, { params: { annee } }
+    );
+  }
+
+  tresorerieCumulee(foyerId: string, scenarioId: string, annee: number, membreId?: string) {
+    const params: Record<string, string | number> = { annee };
+    if (membreId) { params['membreId'] = membreId; }
+    return this.http.get<TresorerieCumuleeDto>(
+      `${this.base(foyerId, scenarioId)}/tresorerie-cumulee`, { params }
     );
   }
 

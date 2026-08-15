@@ -69,7 +69,7 @@ public class PolitiqueArgentPoche {
     @Column(precision = 15, scale = 2)
     private BigDecimal socle;
 
-    /** Mode VARIABLE — part (0-100) du surplus (RàV − socle) prélevée en bonus. */
+    /** Mode VARIABLE — part (0-100) du RàV brut prélevée (socle = plancher). */
     @Column(precision = 5, scale = 2)
     private BigDecimal pourcentage;
 

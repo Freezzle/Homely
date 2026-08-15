@@ -235,7 +235,7 @@ class MoteurRepartitionPeriodeTest {
             ParametresScenario params = GoldenFixture.buildScenario2026(DYLAN, MELANIE);
             ProjectionAnnuelle proj = MoteurCalcul.projectionAnnuelle(params, 2026);
 
-            // Totaux golden (doc 01 §8-bis T2) — au centime près
+            // Totaux golden (doc 01 §11 T2) — au centime près
             assertThat(proj.totalAnnuel().revenus())   .isCloseTo(140350.0, within(0.01));
             assertThat(proj.totalAnnuel().charges())   .isCloseTo(62322.0,  within(0.01));
             assertThat(proj.totalAnnuel().reserves())  .isCloseTo(8520.0,   within(0.01));

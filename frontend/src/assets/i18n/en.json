@@ -20,7 +20,6 @@
     "charges": "Expenses",
     "reserves": "Savings",
     "scenarios": "Scenarios",
-    "objectifs": "Goals (under construction)",
     "argentPoche": "Pocket money",
     "referentiels": "Reference data",
     "comptes": "Accounts",
@@ -393,7 +392,6 @@
     "effortCardNA": "N/A",
     "effortCardNaRaison": "Member has no income this month.",
     "effortCardAriaLabel": "Effort rate of {{nom}}: {{taux}}%, zone {{zone}}. Worst case: {{tauxPireCas}}%.",
-    "objectifPrefixe": "Goal ·",
     "fluxMensuels": "Monthly flows",
     "detailMensuel": "Monthly detail",
     "legendeGraphiqueMixte": "Stacked bars = expenses + savings · Green line = income",
@@ -414,7 +412,6 @@
     "recapitulatifs": "Summaries",
     "echeances": "Due dates",
     "evenement": "Event",
-    "objectifs": "Goals",
     "fluxMensuel": "Monthly flow",
     "fluxMensuelDescription": "Monthly flow, month by month, over the scenario horizon.",
     "tresorerieTitle": "Cumulative cash flow",
@@ -471,7 +468,6 @@
     "chargesSures": "Expenses",
     "reserves": "Savings",
     "fourchetteDuMois": "Range for money left to live on",
-    "nbObjectifs": "Goals",
     "echeancesCeMois": "Due dates this month",
     "evenementsCeMois": "Events this month",
     "statutExcedentaire": "Surplus",
@@ -617,8 +613,7 @@
       "typeOptions": {
         "REVENU": "Income",
         "CHARGE": "Expense",
-        "RESERVE": "Savings",
-        "PROJET": "Project"
+        "RESERVE": "Savings"
       }
     },
     "taux": {
@@ -651,37 +646,6 @@
     },
     "retirer": "Remove access",
     "changerRole": "Change role"
-  },
-  "objectif": {
-    "titre": "Goals",
-    "libelle": "Label",
-    "montantCible": "Target amount",
-    "echeance": "Deadline",
-    "compte": "Linked account",
-    "progression": "Progress",
-    "epargneRequise": "Required savings/month",
-    "soldeActuel": "Current balance",
-    "cible": "target",
-    "statuts": {
-      "DANS_LES_TEMPS": "On track",
-      "EN_RETARD": "Behind schedule",
-      "ATTEINT": "Reached"
-    },
-    "aCeRythme": "Deadline exceeded on",
-    "verserPourTenir": "· to reach it quickly, contribute",
-    "parMoisPourTenirEcheance": "/month.",
-    "parMois": "/month",
-    "termine": "Completed",
-    "jalon": "Milestone",
-    "supportRequis": "Select a linked account.",
-    "actions": {
-      "recalibrer": "Recalibrate",
-      "verserExtra": "Add an extra contribution",
-      "mettreEnPause": "Pause",
-      "convertirReserve": "Convert to free savings",
-      "archiver": "Archive"
-    },
-    "actionAVenir": "Feature coming soon."
   },
   "argentPoche": {
     "titre": "Pocket money",

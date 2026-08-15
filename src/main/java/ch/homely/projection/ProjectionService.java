@@ -114,6 +114,32 @@ public class ProjectionService {
         return new TresorerieDto(annees, courbe);
     }
 
+    /**
+     * Courbe de trésorerie cumulée d'une année, scopée à un sujet (foyer, ou membre si
+     * {@code membreId != null}), en séries mensualisée + réelle.
+     *
+     * <p>Amorçage à la trésorerie initiale du scénario (prorata de la quote-part de la
+     * période ouverte du membre en vue membre), puis cumul des soldes disponibles mensuels
+     * du sujet sur l'année. La courbe repart de la trésorerie initiale à chaque année (non
+     * chaînée — cf. {@link #tresorerie} pour le chaînage §4). Ce calcul, auparavant réalisé
+     * côté frontend, est déplacé ici pour que le backend reste seul propriétaire des
+     * calculs (aucune logique moteur dupliquée dans le dashboard).</p>
+     */
+    @Cacheable(value = "projections",
+               key = "#scenarioId + '-tresocum-' + #annee + '-' + #membreId + '-' + T(ch.homely.projection.ProjectionService).versionKey(#foyerId, #scenarioId, @scenarioRepository)")
+    public TresorerieCumuleeDto tresorerieCumulee(UUID foyerId, UUID scenarioId, int annee, UUID membreId) {
+        ParametresScenario params = chargerParametres(foyerId, scenarioId);
+        double[] mensualise = MoteurCalcul.tresorerieCumuleeAnnee(params, annee, membreId, false);
+        double[] reel       = MoteurCalcul.tresorerieCumuleeAnnee(params, annee, membreId, true);
+        return new TresorerieCumuleeDto(annee, bdListe(mensualise), bdListe(reel));
+    }
+
+    private static List<BigDecimal> bdListe(double[] valeurs) {
+        List<BigDecimal> out = new ArrayList<>(valeurs.length);
+        for (double v : valeurs) out.add(bd(v));
+        return out;
+    }
+
     // ── T8.3 ─────────────────────────────────────────────────────────────────
 
     @Cacheable(value = "projections",

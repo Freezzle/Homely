@@ -108,7 +108,7 @@ export class ArgentPocheComponent {
   private confirm = inject(ConfirmationService);
   private fb = inject(FormBuilder);
 
-  // ── CRUDs mutualisés (mêmes garde-fous switchMap que ObjectifsComponent) ────
+  // ── CRUDs mutualisés (mêmes garde-fous switchMap que les autres écrans scénario) ────
   private readonly _crudPolitiques = creerCrudReferentielScenario(
     this.contexte, this.politiqueSvc, this.toast,
     { succes: this.t.commun.succes, erreur: this.t.commun.erreur, suppressionImpossible: this.t.commun.erreur },

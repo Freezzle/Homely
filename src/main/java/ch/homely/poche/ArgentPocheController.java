@@ -22,7 +22,7 @@ import java.util.UUID;
 /**
  * API REST — argent de poche, scopée par {@code (foyer, scénario)}.
  *
- * <p>Pattern d'URL cohérent avec {@code ObjectifController} — placement sous
+ * <p>Pattern d'URL scopé sous
  * {@code /api/foyers/{foyerId}/scenarios/{scenarioId}/argent-poche} qui met en
  * évidence le scope multi-tenant à la lecture du log/tracing.</p>
  *

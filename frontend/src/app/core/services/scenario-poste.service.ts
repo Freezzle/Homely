@@ -4,7 +4,7 @@ import { ScenarioDto, ScenarioRequest, PosteDto, PosteRequest, PosteRevisionRequ
          PosteClotureRequest, PosteDecalerDateEffetRequest, PosteDecalerDateEffetResponse,
          PosteActionGroupeeRequest, PosteSuppressionGroupeeRequest, PostePositionneDto,
          BesoinsPlaisirsDto,
-         ObjectifDto, ObjectifRequest, RepartitionPeriodeDto, RepartitionPeriodeRequest } from '../models/api.models';
+         RepartitionPeriodeDto, RepartitionPeriodeRequest } from '../models/api.models';
 
 @Injectable({ providedIn: 'root' })
 export class ScenarioService {
@@ -94,18 +94,6 @@ export class PosteService {
       `${this.base(foyerId, scenarioId)}/besoins-plaisirs`, { params }
     );
   }
-}
-
-@Injectable({ providedIn: 'root' })
-export class ObjectifService {
-  constructor(private http: HttpClient) {}
-  private base(foyerId: string, scenarioId: string) {
-    return `/api/foyers/${foyerId}/scenarios/${scenarioId}/objectifs`;
-  }
-  lister(foyerId: string, scenarioId: string) { return this.http.get<ObjectifDto[]>(this.base(foyerId, scenarioId)); }
-  creer(foyerId: string, scenarioId: string, req: ObjectifRequest) { return this.http.post<ObjectifDto>(this.base(foyerId, scenarioId), req); }
-  modifier(foyerId: string, scenarioId: string, id: string, req: ObjectifRequest) { return this.http.put<ObjectifDto>(`${this.base(foyerId, scenarioId)}/${id}`, req); }
-  supprimer(foyerId: string, scenarioId: string, id: string) { return this.http.delete<void>(`${this.base(foyerId, scenarioId)}/${id}`); }
 }
 
 @Injectable({ providedIn: 'root' })

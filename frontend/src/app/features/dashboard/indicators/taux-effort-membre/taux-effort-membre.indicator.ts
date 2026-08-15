@@ -3,6 +3,8 @@ import { IconColor } from '../../shared/models/icon-color.type';
 import { TauxEffortCardData, TauxEffortZone } from '../../../../shared/components/taux-effort-card/taux-effort-card.component';
 import { TauxEffortMembreDrawerContentComponent } from './taux-effort-membre-drawer-content.component';
 import { AppTranslations } from '../../../../core/i18n/i18n.types';
+import { SeuilsDashboardDto } from '../../../../core/models/api.models';
+import { formatTaux } from '../../../../shared/utils/format-taux.util';
 
 /** Zone → couleur du texte de l'info (le taux %) — mêmes zones que `TauxEffortCardComponent`. */
 const INFO_COLOR_PAR_ZONE: Record<TauxEffortZone, IconColor> = {
@@ -12,10 +14,12 @@ const INFO_COLOR_PAR_ZONE: Record<TauxEffortZone, IconColor> = {
   SATURE: 'red',
 };
 
-function zoneDe(tauxEffort: number): TauxEffortZone {
-  if (tauxEffort < 75) return 'CONFORTABLE';
-  if (tauxEffort < 90) return 'CORRECT';
-  if (tauxEffort < 95) return 'TENDU';
+type TauxEffortIndicatorSeuils = Pick<SeuilsDashboardDto, 'tauxEffortCorrect' | 'tauxEffortTendu' | 'tauxEffortSature'>;
+
+function zoneDe(tauxEffort: number, seuils: TauxEffortIndicatorSeuils): TauxEffortZone {
+  if (tauxEffort < seuils.tauxEffortCorrect) return 'CONFORTABLE';
+  if (tauxEffort < seuils.tauxEffortTendu) return 'CORRECT';
+  if (tauxEffort < seuils.tauxEffortSature) return 'TENDU';
   return 'SATURE';
 }
 
@@ -27,11 +31,11 @@ function zoneDe(tauxEffort: number): TauxEffortZone {
  * carte est générique ("Taux d'effort" — toutes les cartes de la section partagent le
  * même libellé) ; le nom du membre distingue les cartes entre elles en sous-titre.
  */
-export function tauxEffortMembreIndicator(data: TauxEffortCardData, t: AppTranslations): Indicator {
+export function tauxEffortMembreIndicator(data: TauxEffortCardData, t: AppTranslations, seuils: TauxEffortIndicatorSeuils): Indicator {
   const tauxEffort = data.revenusTotal > 0
     ? ((data.chargesTotal + data.reservesTotal) / data.revenusTotal) * 100
     : 0;
-  const zone = zoneDe(tauxEffort);
+  const zone = zoneDe(tauxEffort, seuils);
 
   return {
     key: `taux-effort-${data.membre.id}`,
@@ -41,7 +45,7 @@ export function tauxEffortMembreIndicator(data: TauxEffortCardData, t: AppTransl
     iconColor: 'gray',
     title: t.projection.effortCardTitreSansNom,
     subtitle: data.membre.nom,
-    info: data.revenusTotal > 0 ? `${Math.round(tauxEffort)}%` : t.projection.effortCardNA,
+    info: data.revenusTotal > 0 ? `${formatTaux(tauxEffort)}%` : t.projection.effortCardNA,
     infoColor: data.revenusTotal > 0 ? INFO_COLOR_PAR_ZONE[zone] : 'gray',
     infoSubtitle: t.dashboard.sectionTauxEffortInfoSousTitre,
     drawerContent: TauxEffortMembreDrawerContentComponent,

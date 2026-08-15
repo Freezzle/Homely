@@ -3,6 +3,8 @@
 > Architecture backend/frontend, sécurité multi-tenant, multi-devises, i18n et structure
 > des projets.
 
+> **Décisions gouvernées par ce doc** : découpage en packages, isolation du moteur, stratégie de sécurité multi-tenant, cache, multi-devises, i18n, configuration et couplage PrimeNG/Tailwind.
+
 ---
 
 ## 1. Vue macro
@@ -54,11 +56,11 @@ ch.homely
 ├── scenario/     Scenario, RepartitionPeriode/Part, duplication/référence
 ├── poste/        Poste, RepartitionPoste, VentilationCompte, PosteValidator,
 │                 PosteService (reviser/annuler/decaler/cloturer/reactiver)
-├── objectif/     Objectif (compte obligatoire) + calculs progression
 ├── poche/        PolitiqueArgentPoche, AllocationArgentPoche, ArgentPocheService
+├── dashboard/    Seuils d'interprétation du dashboard (config, sans logique moteur)
 ├── moteur/       ★ MoteurCalcul (pur, records immuables) + événements + argent de poche
 └── projection/   ProjectionService (cache Caffeine) + controllers (annuelle,
-                  tresorerie, mensuelle, evenements, taux-effort, apercu poste)
+                  tresorerie, tresorerie-cumulee, mensuelle, evenements, taux-effort, apercu poste)
 ```
 
 ### 3.1 Module `moteur` (critique)
@@ -131,7 +133,7 @@ frontend/src/app
 │             stat-grid, kpi-chip(-row), event-grid, objective-progress, taux-effort-card)
 ├── shell/    topbar, sidebar-menu, foyer-scenario-switcher
 └── features/ auth, foyer, referentiels, scenarios, postes, argent-poche, dashboard,
-              objectifs, parametres
+              parametres
 ```
 
 ### 7.1 Couplage PrimeNG + Tailwind v4

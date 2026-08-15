@@ -2,12 +2,12 @@ import { Injectable, inject } from '@angular/core';
 import { I18nService } from '../i18n/i18n.service';
 import { localeDeLangue } from '../i18n/locale.util';
 import {
-  CategorieDto, CompteDto, MembreDto, ObjectifDto, PosteDto, ScenarioDto, TypeCategorie,
+  CategorieDto, CompteDto, MembreDto, ScenarioDto, TypeCategorie,
   VentilationAggregatDto, VentilationSplitDto,
 } from '../models/api.models';
 import { LigneDecomposition, MembreTagInfo } from '../../shared/components/carte-bilan/carte-bilan.component';
 import { normaliserCouleur, couleurTexteContraste } from '../../shared/utils/couleur.util';
-import { parseIsoDateLocal } from '../utils/date.util';
+import { DashboardConfigService } from './dashboard-config.service';
 
 /** Forme minimale commune à une ventilation mensuelle ou à un agrégat annuel sommé. */
 export interface VentilationLike {
@@ -27,6 +27,7 @@ export interface VentilationLike {
 @Injectable({ providedIn: 'root' })
 export class DecompositionService {
   private readonly i18n = inject(I18nService);
+  private readonly dashboardConfig = inject(DashboardConfigService);
 
   /** Traductions courantes (recalculées à chaque accès, cohérent si la langue change). */
   private get t() {
@@ -38,10 +39,11 @@ export class DecompositionService {
     return nom.trim().split(/\s+/).map(mot => mot[0]).slice(0, 2).join('').toUpperCase();
   }
 
-  /** Qualifie un taux d'effort selon les seuils indicatifs 70 %/85 %. */
+  /** Qualifie un taux d'effort selon les seuils fournis par le backend. */
   niveauEffort(taux: number): string {
-    if (taux >= 85) return this.t.projection.tauxEffortCritique;
-    if (taux >= 70) return this.t.projection.tauxEffortSoutenu;
+    const seuils = this.dashboardConfig.seuils();
+    if (taux >= seuils.tauxEffortCritique) return this.t.projection.tauxEffortCritique;
+    if (taux >= seuils.tauxEffortSoutenu) return this.t.projection.tauxEffortSoutenu;
     return this.t.projection.tauxEffortConfortable;
   }
 
@@ -59,10 +61,8 @@ export class DecompositionService {
     return couleurTexteContraste(hexColor);
   }
 
-  /** Libellé de décomposition pour une catégorie RESERVE — préfixe « Objectif · nom » si liée. */
-  libelleCategorie(cat: { id: string; libelle: string }, objectifs: ObjectifDto[]): string {
-    const objectif = objectifs.find(o => o.categorieProjetId === cat.id);
-    return objectif ? `${this.t.projection.objectifPrefixe} ${objectif.libelle}` : cat.libelle;
+  libelleCategorie(cat: { libelle: string }): string {
+    return cat.libelle;
   }
 
   compteLibelle(id: string, comptes: CompteDto[]): string {
@@ -90,11 +90,11 @@ export class DecompositionService {
     revenus: { id: string; libelle: string; montant: number }[];
     charges: { id: string; libelle: string; montant: number }[];
     reserves: { id: string; libelle: string; montant: number }[];
-  }, objectifs: ObjectifDto[], argentDePoche = 0): LigneDecomposition[] {
+  }, argentDePoche = 0): LigneDecomposition[] {
     return [
       ...detail.revenus.map(r => ({ id: r.id, libelle: r.libelle, montantAbs: r.montant, signe: 1 as const, type: 'REVENU' as const })),
       ...detail.charges.map(r => ({ id: r.id, libelle: r.libelle, montantAbs: r.montant, signe: -1 as const, type: 'CHARGE' as const })),
-      ...detail.reserves.map(r => ({ id: r.id, libelle: this.libelleCategorie(r, objectifs), montantAbs: r.montant, signe: -1 as const, type: 'RESERVE' as const })),
+      ...detail.reserves.map(r => ({ id: r.id, libelle: this.libelleCategorie(r), montantAbs: r.montant, signe: -1 as const, type: 'RESERVE' as const })),
       ...(argentDePoche >= 0.005
         ? [{ id: 'argent-poche', libelle: this.t.dashboard.argentPocheCategorieLigne, montantAbs: argentDePoche, signe: -1 as const, type: 'ARGENT_POCHE' as const }]
         : []),
@@ -209,95 +209,6 @@ export class DecompositionService {
     if (!scenario) return '';
     const defaut = scenario.repartitions.find(r => r.membreId === membreId);
     return `${this.t.projection.quotePart} ${this.formatPct((defaut?.quotePart ?? 0) * 100)} %`;
-  }
-
-  /**
-   * Quote-part effective (∈[0,1]) d'un membre sur un poste donné, pour un mois donné.
-   * Reproduit fidèlement `MoteurCalcul.quotePartEffective` côté backend :
-   * - mono-membre (`nbMembres <= 1`) → toujours 1.
-   * - `CUSTOM` → quote-part stockée sur le poste (0 si absente).
-   * - `AUTO` → quote-part de la période active du scénario (0 si absente/aucune période).
-   * - `REVERSE_AUTO` → complément normalisé `(1 − pᵢ) / (N − 1)` (1 si N ≤ 1).
-   */
-  quotePartEffectivePoste(
-    poste: Pick<PosteDto, 'typeRepartition' | 'repartitions'>,
-    membreId: string,
-    scenario: ScenarioDto | null,
-    annee: number,
-    mois: number,
-    nbMembres: number,
-  ): number {
-    if (nbMembres <= 1) return 1;
-
-    if (poste.typeRepartition === 'CUSTOM') {
-      const r = poste.repartitions?.find(x => x.membreId === membreId);
-      return r?.quotePart ?? 0;
-    }
-
-    // AUTO / REVERSE_AUTO : résoudre la période active du scénario pour ce mois.
-    const debutMois = new Date(Date.UTC(annee, mois - 1, 1));
-    const periode = scenario?.periodes.find(p => {
-      const apresDebut = !p.debut || new Date(p.debut) <= debutMois;
-      const avantFin = !p.fin || new Date(p.fin) >= debutMois;
-      return apresDebut && avantFin;
-    });
-    const parts = periode?.parts ?? [];
-
-    if (poste.typeRepartition === 'AUTO' || !poste.typeRepartition) {
-      const part = parts.find(p => p.membreId === membreId);
-      return part?.quotePart ?? 0;
-    }
-
-    // REVERSE_AUTO
-    const N = parts.length;
-    if (N <= 1) return 1;
-    const pi = parts.find(p => p.membreId === membreId)?.quotePart ?? 0;
-    return (1 - pi) / (N - 1);
-  }
-
-  /**
-   * Contribution d'un poste pour un mois donné (dans la devise du poste, avant taux) —
-   * mirror fidèle de `MoteurCalcul.contribution` (backend, doc 01 §3) : fenêtre de
-   * validité, one-shot imputé sur son mois exact, mode PERIODIQUE imputé en plein sur
-   * son mois d'ancrage (0 les autres mois), sinon lissé (`montant / periodiciteMois`).
-   * Utilisé côté dashboard pour reproduire exactement les montants du récapitulatif
-   * (agrégats serveur) sans dupliquer par ailleurs la logique du moteur.
-   */
-  contributionMois(
-    poste: Pick<PosteDto, 'montant' | 'periodiciteMois' | 'debut' | 'fin' | 'mode' | 'moment'>,
-    annee: number,
-    mois: number,
-  ): number {
-    if (!poste || poste.montant <= 0) return 0;
-
-    const d = poste.periodiciteMois;
-    const debut = poste.debut ? parseIsoDateLocal(poste.debut) : null;
-    const fin = poste.fin ? parseIsoDateLocal(poste.fin) : null;
-    const premierJour = new Date(annee, mois - 1, 1);
-    const finDeMois = new Date(annee, mois, 0);
-
-    const actifDebut = !debut || debut <= finDeMois;
-    const actifFin = !fin || fin >= premierJour;
-    if (!actifDebut || !actifFin) return 0;
-
-    const estOneShot = d === 0;
-    const estDebut = d !== 1 && !estOneShot && poste.moment === 'DEBUT_PERIODE' && poste.mode === 'PERIODIQUE';
-    const estFin = d !== 1 && !estOneShot && poste.moment === 'FIN_PERIODE' && poste.mode === 'PERIODIQUE';
-    const ancre = debut ? debut.getMonth() + 1 : 1;
-    const c = poste.montant;
-    const floorMod = (n: number, dd: number) => ((n % dd) + dd) % dd;
-
-    if (estOneShot) {
-      if (!debut) return 0;
-      return debut.getFullYear() === annee && debut.getMonth() + 1 === mois ? c : 0;
-    }
-    if (estDebut) {
-      return floorMod(mois - ancre, d) === 0 ? c : 0;
-    }
-    if (estFin) {
-      return floorMod(mois - ancre + 1, d) === 0 ? c : 0;
-    }
-    return c / d;
   }
 
   private formatMoisAnnee(iso: string): string {

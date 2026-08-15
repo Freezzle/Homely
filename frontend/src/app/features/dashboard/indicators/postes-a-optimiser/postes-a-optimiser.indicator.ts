@@ -2,8 +2,7 @@ import { Indicator } from '../../shared/models/indicator.model';
 import { IconColor } from '../../shared/models/icon-color.type';
 import { PostesAOptimiserDrawerContentComponent } from './postes-a-optimiser-drawer-content.component';
 import { AppTranslations } from '../../../../core/i18n/i18n.types';
-
-const SEUIL_SCORE = 66;
+import { SeuilsDashboardDto } from '../../../../core/models/api.models';
 
 /** Teinte de l'info (nombre de postes à optimiser) selon la sévérité, alignée sur les seuils
  *  déjà utilisés pour la matrice budgétaire (couleurPourScore). */
@@ -19,8 +18,15 @@ function infoColorPourCount(count: number): IconColor {
  * éviter toute collision de clé entre les deux). Info = nombre de postes dont le score
  * ≥ 35 (seuil « à réviser »).
  */
-export function postesAOptimiserIndicator(cle: string, postes: PostePositionneDtoLike[], t: AppTranslations): Indicator {
-  const count = postes.filter((p) => p.score >= SEUIL_SCORE).length;
+type PostesAOptimiserIndicatorSeuils = Pick<SeuilsDashboardDto, 'posteAOptimiserScore'>;
+
+export function postesAOptimiserIndicator(
+  cle: string,
+  postes: PostePositionneDtoLike[],
+  t: AppTranslations,
+  seuils: PostesAOptimiserIndicatorSeuils,
+): Indicator {
+  const count = postes.filter((p) => p.score >= seuils.posteAOptimiserScore).length;
 
   return {
     key: cle,

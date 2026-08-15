@@ -1,9 +1,8 @@
 package ch.homely.categorie;
 
-/** Classification d'un poste ou d'un objectif. */
+/** Classification d'un poste ou d'une catégorie. */
 public enum TypeCategorie {
     REVENU,
     CHARGE,
-    RESERVE,
-    PROJET
+    RESERVE
 }

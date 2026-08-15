@@ -16,9 +16,9 @@ export interface ChargementReactif<T> {
 /**
  * Mutualise le chargement réactif en lecture seule d'une clé dérivée du contexte
  * (ex. `{ foyerId, scenarioId }`) — utilisé pour les données de référence auxiliaires
- * (catégories/comptes/postes/objectifs) rechargées à chaque changement de foyer ou de
+ * (catégories/comptes/postes, etc.) rechargées à chaque changement de foyer ou de
  * scénario, auparavant dupliquées quasi à l'identique (bloc `forkJoin` + `effect`) dans
- * `DashboardComponent`, `ObjectifsComponent`, `TauxComponent`.
+ * `DashboardComponent` et d'autres écrans de référence.
  *
  * Implémenté avec l'API native Angular `rxResource()` (stable depuis Angular 22) : chaque
  * changement de `cleSignal` annule automatiquement la requête en vol et relance le

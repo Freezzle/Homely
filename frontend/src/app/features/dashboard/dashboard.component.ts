@@ -9,9 +9,10 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { DialogModule } from 'primeng/dialog';
 import { MessageService } from 'primeng/api';
 import { ContexteService } from '../../core/services/contexte.service';
+import { DashboardConfigService } from '../../core/services/dashboard-config.service';
 import { ProjectionService } from '../../core/services/projection.service';
 import { CategorieService, CompteService } from '../../core/services/referentiel.service';
-import { ObjectifService, PosteService } from '../../core/services/scenario-poste.service';
+import { PosteService } from '../../core/services/scenario-poste.service';
 import { AllocationArgentPocheService, ResolutionArgentPocheService } from '../../core/services/argent-poche.service';
 import { DecompositionService, VentilationLike } from '../../core/services/decomposition.service';
 import {
@@ -20,11 +21,10 @@ import {
   EvenementDto,
   MembreDto,
   ModeComptabilisation,
-  ObjectifDto,
-  PosteDto,
   PostePositionneDto,
   ProrataPartageMembreDto,
   TauxEffortMembreDto,
+  TresorerieCumuleeDto,
   TypeCategorie,
   TypePoste,
   VentilationAggregatDto,
@@ -34,17 +34,15 @@ import { I18nService } from '../../core/i18n/i18n.service';
 import { localeDeLangue } from '../../core/i18n/locale.util';
 import { ViewportService } from '../../core/services/viewport.service';
 import { creerChargementReactif } from '../../core/utils/reference-data.util';
-import { parseIsoDateLocal } from '../../core/utils/date.util';
 import { LigneDecomposition, MembreTagInfo } from '../../shared/components/carte-bilan/carte-bilan.component';
 import { TauxEffortCardData } from '../../shared/components/taux-effort-card/taux-effort-card.component';
 import { KpiChip } from '../../shared/components/kpi-chip/kpi-chip.component';
 import { MetricRingSegment } from '../../shared/components/metric-ring/metric-ring.component';
 import { MetricBarComponent, MetricBarSegment } from '../../shared/components/metric-bar/metric-bar.component';
-import { ObjectiveProgressSeverity } from '../../shared/components/objective-progress/objective-progress.component';
 import { PageNavComponent, PageNavMonthSummary, PageNavSelection } from '../../shared/components/page-nav/page-nav.component';
 import { TimelineItem } from '../../shared/components/timeline/timeline.component';
 import { MatriceBudgetaireLabels } from '../../shared/components/matrice-budgetaire/matrice-budgetaire.component';
-import { SelectComponent, InputNumberComponent, InputTextComponent, DatePickerComponent } from '../../shared/components/form-fields';
+import { SelectComponent, InputNumberComponent, InputTextComponent } from '../../shared/components/form-fields';
 import { DashboardSectionComponent } from './shared/components/dashboard-section/dashboard-section.component';
 import { IndicatorCardComponent } from './shared/components/indicator-card/indicator-card.component';
 import { IndicatorDrawerComponent } from './shared/components/indicator-drawer/indicator-drawer.component';
@@ -62,7 +60,8 @@ import { EvenementsDrawerData } from './indicators/evenements/evenements-drawer-
 import { virementsComptesIndicator } from './indicators/virements-comptes/virements-comptes.indicator';
 import { VirementsComptesDrawerData } from './indicators/virements-comptes/virements-comptes-drawer-content.component';
 import { besoinsPlaisirsIndicator } from './indicators/besoins-plaisirs/besoins-plaisirs.indicator';
-import { BesoinsPlaisirsCardData } from '../../shared/components/besoins-plaisirs-card/besoins-plaisirs-card.component';import { prorataPartageIndicator, aDesDonneesProrataPartage } from './indicators/prorata-partage/prorata-partage.indicator';
+import { BesoinsPlaisirsCardData } from '../../shared/components/besoins-plaisirs-card/besoins-plaisirs-card.component';
+import { prorataPartageIndicator, aDesDonneesProrataPartage } from './indicators/prorata-partage/prorata-partage.indicator';
 import { moisARisqueIndicator } from './indicators/mois-a-risque/mois-a-risque.indicator';
 import { MoisARisqueDrawerData, MoisARisqueItem } from './indicators/mois-a-risque/mois-a-risque-drawer-content.component';
 import { comparaisonPeriodeIndicator } from './indicators/comparaison-periode/comparaison-periode.indicator';
@@ -71,7 +70,6 @@ import { ChartModule } from 'primeng/chart';
 import { KpiChipRowComponent } from '../../shared/components/kpi-chip-row/kpi-chip-row.component';
 import { resolveAppColor, withAlpha } from '../../shared/utils/css-vars';
 
-type StatutObjectif = 'DANS_LES_TEMPS' | 'EN_RETARD' | 'ATTEINT';
 type DashboardTimelineItem = TimelineItem & { mois: number };
 /** Sujet du tableau de bord affiché : le foyer entier (cumul de tous les membres) ou un
  *  membre spécifique (données propres uniquement). Piloté par le segment `:sujetId`
@@ -100,18 +98,17 @@ const ZERO_AGREGAT: { revenus: number; charges: number; reserves: number; soldeD
     SelectComponent,
     InputNumberComponent,
     InputTextComponent,
-    DatePickerComponent,
   ],
   templateUrl: './dashboard.component.html',
 })
 export class DashboardComponent {
   private readonly i18n = inject(I18nService);
-  private readonly contexte = inject(ContexteService);
+  protected readonly contexte = inject(ContexteService);
+  private readonly dashboardConfig = inject(DashboardConfigService);
   private readonly projSvc = inject(ProjectionService);
   private readonly categorieSvc = inject(CategorieService);
   private readonly compteSvc = inject(CompteService);
   private readonly posteSvc = inject(PosteService);
-  private readonly objectifSvc = inject(ObjectifService);
   private readonly argentPocheSvc = inject(ResolutionArgentPocheService);
   private readonly allocationArgentPocheSvc = inject(AllocationArgentPocheService);
   private readonly decomp = inject(DecompositionService);
@@ -124,6 +121,7 @@ export class DashboardComponent {
   readonly t = this.i18n.translations();
   readonly deviseBase = this.contexte.deviseBase;
   readonly membres = this.contexte.membres;
+  readonly seuils = this.dashboardConfig.seuils;
 
   /** Couleurs de la charte `--app-*` résolues à l'exécution pour Chart.js
    *  (le `<canvas>` ne résout pas les CSS custom properties). Dépend de
@@ -186,7 +184,7 @@ export class DashboardComponent {
   });
 
   readonly vue = computed<'annee' | 'mois'>(() => this.moisSelectionne() !== undefined ? 'mois' : 'annee');
-  readonly ongletAnnee = signal('objectifs');
+  readonly ongletAnnee = signal('recapitulatifs');
   readonly ongletMois = signal('echeances');
   readonly vueDecomposition = signal<'CATEGORIE' | 'TYPE_POSTE' | 'COMPTE'>('TYPE_POSTE');
   readonly pageNavSelectionForBinding = signal<PageNavSelection>({ mode: 'annee' });
@@ -222,19 +220,15 @@ export class DashboardComponent {
     return foyerId && scenarioId ? { foyerId, scenarioId } : null;
   });
 
-  private readonly _refData = creerChargementReactif(this._refCle, ({ foyerId, scenarioId }) =>
+  private readonly _refData = creerChargementReactif(this._refCle, ({ foyerId }) =>
     forkJoin([
       this.categorieSvc.lister(foyerId),
       this.compteSvc.lister(foyerId),
-      this.posteSvc.lister(foyerId, scenarioId),
-      this.objectifSvc.lister(foyerId, scenarioId),
     ]),
   );
 
   readonly categories = computed(() => this._refData.donnees()?.[0] ?? []);
   readonly comptes = computed(() => this._refData.donnees()?.[1] ?? []);
-  readonly postes = computed(() => this._refData.donnees()?.[2] ?? []);
-  readonly objectifs = computed(() => this._refData.donnees()?.[3] ?? []);
 
   private readonly _projectionAnnuelleCle = computed<{ foyerId: string; scenarioId: string; annee: number } | null>(() => {
     const ref = this._refCle();
@@ -246,6 +240,17 @@ export class DashboardComponent {
   );
 
   readonly projectionAnnuelle = computed(() => this._projectionAnnuelle.donnees());
+
+  private readonly _tresorerieCumuleeCle = computed<{ foyerId: string; scenarioId: string; annee: number; membreId?: string } | null>(() => {
+    if (this.vue() !== 'annee') return null;
+    const cle = this._projectionAnnuelleCle();
+    const s = this.sujet();
+    return cle ? { ...cle, membreId: s.mode === 'membre' ? s.membreId : undefined } : null;
+  });
+
+  private readonly _tresorerieCumulee = creerChargementReactif(this._tresorerieCumuleeCle, ({ foyerId, scenarioId, annee, membreId }) =>
+    this.projSvc.tresorerieCumulee(foyerId, scenarioId, annee, membreId),
+  );
 
   private readonly _evenementsCle = computed<{ foyerId: string; scenarioId: string; annee: number; membreId?: string } | null>(() => {
     const cle = this._projectionAnnuelleCle();
@@ -415,14 +420,14 @@ export class DashboardComponent {
    *  membre, réutilisant les mêmes données que `<app-taux-effort-card>` déjà affichées
    *  plus haut. Le clic ouvre le drawer partagé avec la carte détaillée en contenu. */
   readonly tauxEffortIndicateursMois = computed(() =>
-    this.tauxEffortCards().map((data) => ({ indicator: tauxEffortMembreIndicator(data, this.t), data })),
+    this.tauxEffortCards().map((data) => ({ indicator: tauxEffortMembreIndicator(data, this.t, this.seuils()), data })),
   );
 
   /** Variante annuelle de la section "Taux d'effort" (vue année). Masquée en vue foyer
    *  agrégée (`sujet().mode === 'foyer'`) : sur l'année, l'indicateur par membre n'a de
    *  sens que consulté depuis le dashboard d'un membre précis. */
   readonly tauxEffortIndicateursAnnee = computed(() =>
-    this.estModeMembre() ? this.tauxEffortCardsAnnee().map((data) => ({ indicator: tauxEffortMembreIndicator(data, this.t), data })) : [],
+    this.estModeMembre() ? this.tauxEffortCardsAnnee().map((data) => ({ indicator: tauxEffortMembreIndicator(data, this.t, this.seuils()), data })) : [],
   );
 
   // ── Indicateur "Prorata des postes partagés" ────────────────────────────
@@ -671,13 +676,13 @@ export class DashboardComponent {
   /** Indicateur "Plaisirs vs Besoins" (vue mois) — auto-scopé foyer/membre comme
    *  "Ventilations des postes", pas de duplication de carte par membre. */
   readonly besoinsPlaisirsIndicateurMois = computed(() => ({
-    indicator: besoinsPlaisirsIndicator('besoins-plaisirs-mois', this.besoinsPlaisirsDataMois(), this.t),
+    indicator: besoinsPlaisirsIndicator('besoins-plaisirs-mois', this.besoinsPlaisirsDataMois(), this.t, this.seuils()),
     data: this.besoinsPlaisirsDataMois(),
   }));
 
   /** Variante annuelle de l'indicateur "Plaisirs vs Besoins" (vue année). */
   readonly besoinsPlaisirsIndicateurAnnee = computed(() => ({
-    indicator: besoinsPlaisirsIndicator('besoins-plaisirs-annee', this.besoinsPlaisirsDataAnnee(), this.t),
+    indicator: besoinsPlaisirsIndicator('besoins-plaisirs-annee', this.besoinsPlaisirsDataAnnee(), this.t, this.seuils()),
     data: this.besoinsPlaisirsDataAnnee(),
   }));
 
@@ -720,7 +725,7 @@ export class DashboardComponent {
   /** Indicateur "Postes à optimiser" (vue année) — enveloppe la matrice budgétaire
    *  sortie de l'onglet "Graphiques" ; info = nombre de postes avec un score ≥ 35. */
   readonly postesAOptimiserIndicateur = computed(() => ({
-    indicator: postesAOptimiserIndicator('postes-a-optimiser-annee', this.postesMatriceAnnee(), this.t),
+    indicator: postesAOptimiserIndicator('postes-a-optimiser-annee', this.postesMatriceAnnee(), this.t, this.seuils()),
     data: this.postesAOptimiserData(),
   }));
 
@@ -737,7 +742,7 @@ export class DashboardComponent {
    *  mois-là uniquement (montant réel du mois, pas annualisé) ; info = nombre de postes
    *  avec un score ≥ 35. */
   readonly postesAOptimiserIndicateurMois = computed(() => ({
-    indicator: postesAOptimiserIndicator('postes-a-optimiser-mois', this.postesMatriceMois(), this.t),
+    indicator: postesAOptimiserIndicator('postes-a-optimiser-mois', this.postesMatriceMois(), this.t, this.seuils()),
     data: this.postesAOptimiserDataMois(),
   }));
 
@@ -857,6 +862,18 @@ export class DashboardComponent {
     this.projSvc.annuelle(foyerId, scenarioId, annee),
   );
 
+  private readonly _tresorerieCumuleeAnneePrecedenteCle = computed<{ foyerId: string; scenarioId: string; annee: number; membreId?: string } | null>(() => {
+    if (this.vue() !== 'annee') return null;
+    const cle = this._projectionAnneePrecedenteCle();
+    const s = this.sujet();
+    return cle ? { ...cle, membreId: s.mode === 'membre' ? s.membreId : undefined } : null;
+  });
+
+  private readonly _tresorerieCumuleeAnneePrecedente = creerChargementReactif(
+    this._tresorerieCumuleeAnneePrecedenteCle,
+    ({ foyerId, scenarioId, annee, membreId }) => this.projSvc.tresorerieCumulee(foyerId, scenarioId, annee, membreId),
+  );
+
   /** Agrégats des 12 mois de l'année précédente, scopés au sujet courant — utilisé
    *  uniquement pour calculer la différence de trésorerie cumulée avec l'an passé. */
   private readonly moisAgregatsAnneePrecedente = computed<AggregatDto[]>(() => {
@@ -869,7 +886,10 @@ export class DashboardComponent {
   readonly chargement = computed(() =>
     this._refData.chargement()
     || (this.vue() === 'annee'
-      ? this._projectionAnnuelle.chargement() || this._ventilationAnnuelleChargement.chargement()
+      ? this._projectionAnnuelle.chargement()
+        || this._ventilationAnnuelleChargement.chargement()
+        || this._tresorerieCumulee.chargement()
+        || this._tresorerieCumuleeAnneePrecedente.chargement()
       : this._ventilationsMois.chargement())
   );
 
@@ -976,10 +996,6 @@ export class DashboardComponent {
     return this.t.mois[mois - 1];
   }
 
-  private formatMoisAnnee(iso: string): string {
-    return new Intl.DateTimeFormat(this.localeCourante(), { month: 'short', year: 'numeric' }).format(parseIsoDateLocal(iso));
-  }
-
   private initiales(nom: string): string {
     return this.decomp.initiales(nom);
   }
@@ -1001,7 +1017,7 @@ export class DashboardComponent {
     charges: { id: string; libelle: string; montant: number }[];
     reserves: { id: string; libelle: string; montant: number }[];
   }): LigneDecomposition[] {
-    return this.decomp.construireDecomposition(detail, this.objectifs(), this.argentPocheMontantMoisSujet());
+    return this.decomp.construireDecomposition(detail, this.argentPocheMontantMoisSujet());
   }
 
   /** Montant d'une catégorie pour le sujet courant (mois sélectionné) : agrégat foyer
@@ -1156,7 +1172,7 @@ export class DashboardComponent {
       revenus: makeList('REVENU'),
       charges: makeList('CHARGE'),
       reserves: makeList('RESERVE'),
-    }, this.objectifs(), this.argentPocheMontantAnneeSujet());
+    }, this.argentPocheMontantAnneeSujet());
   });
 
   readonly foyerCompteDecompositionAnnuel = computed<LigneDecomposition[]>(() => {
@@ -1374,7 +1390,9 @@ export class DashboardComponent {
         value: this.formatMontant(this.argentPocheFoyerTotalAnnuel()),
         color: colors.argentPoche,
         hint: this.i18n.instant('dashboard.argentPocheAnneeHint', { mois: this.argentPocheFoyerMoisConfigures() }),
-        action: { icon: 'pi pi-cog', ariaLabel: this.t.dashboard.gererArgentPoche, onClick: () => this.naviguerVersArgentPoche() },
+        action: this.contexte.estEditor()
+          ? { icon: 'pi pi-cog', ariaLabel: this.t.dashboard.gererArgentPoche, onClick: () => this.naviguerVersArgentPoche() }
+          : undefined,
       });
     }
     return chips;
@@ -1412,16 +1430,17 @@ export class DashboardComponent {
     const poche = this.argentPocheMoisCourant();
     if (this.estModeMembre()) {
       const source = poche?.source ?? 'AUCUNE';
+      const action = this.contexte.estEditor() ? {
+        icon: source === 'ALLOCATION' ? 'pi pi-pencil' : 'pi pi-plus',
+        ariaLabel: source === 'ALLOCATION' ? this.t.dashboard.modifierArgentPoche : this.t.dashboard.creerArgentPoche,
+        onClick: () => this.ouvrirActionArgentPoche(),
+      } : undefined;
       chips.push({
         label: this.t.dashboard.argentPocheMois,
         value: this.formatMontant(poche?.montant ?? 0),
         color: colors.argentPoche,
         hint: this.t.argentPoche.source[source],
-        action: {
-          icon: source === 'ALLOCATION' ? 'pi pi-pencil' : 'pi pi-plus',
-          ariaLabel: source === 'ALLOCATION' ? this.t.dashboard.modifierArgentPoche : this.t.dashboard.creerArgentPoche,
-          onClick: () => this.ouvrirActionArgentPoche(),
-        },
+        action,
       });
     } else {
       const pocheFoyer = this.argentPocheFoyerMoisCourant();
@@ -1430,7 +1449,9 @@ export class DashboardComponent {
           label: this.t.dashboard.argentPocheMois,
           value: this.formatMontant(pocheFoyer.total),
           color: colors.argentPoche,
-          action: { icon: 'pi pi-cog', ariaLabel: this.t.dashboard.gererArgentPoche, onClick: () => this.naviguerVersArgentPoche() },
+          action: this.contexte.estEditor()
+            ? { icon: 'pi pi-cog', ariaLabel: this.t.dashboard.gererArgentPoche, onClick: () => this.naviguerVersArgentPoche() }
+            : undefined,
         });
       }
     }
@@ -1438,15 +1459,8 @@ export class DashboardComponent {
   });
 
   readonly kpiMois = computed<KpiChip[]>(() => {
-    const echeances = this.echeancesMois();
     const evenements = this.evenementsMois();
-    const restant = echeances.reduce((sum, objectif) => sum + objectif.restant, 0);
     return [
-      {
-        label: this.t.dashboard.echeancesCeMois,
-        value: echeances.length,
-        hint: echeances.length ? this.formatMontant(restant) : this.t.dashboard.aucuneEcheance,
-      },
       {
         label: this.t.dashboard.evenementsCeMois,
         value: evenements.length,
@@ -1473,12 +1487,11 @@ export class DashboardComponent {
     return `${positifs}-${negatifs}`;
   });
 
-  /** Liste des mois de l'année dont le solde disponible est sous le seuil de risque
-   *  (500), utilisée par l'indicateur "Mois à risque" (carte + drawer). */
+  /** Liste des mois de l'année dont le solde disponible est sous le seuil de risque backend. */
   readonly moisARisqueListe = computed<MoisARisqueItem[]>(() =>
     this.moisAgregatsCourant()
       .map((item, index) => ({ label: this.t.mois[index] ?? String(index + 1), soldeDisponible: item.soldeDisponible }))
-      .filter((item) => item.soldeDisponible < 500),
+      .filter((item) => item.soldeDisponible < this.seuils().moisARisqueSoldeMin),
   );
 
   /** Payload signaux transmis au drawer "Mois à risque". */
@@ -1575,14 +1588,6 @@ export class DashboardComponent {
     },
   };
 
-  readonly postesActifsMois = computed(() => {
-    const mois = this.moisSelectionne();
-    if (mois === undefined) return [];
-    const actifs = this.postes().filter((poste) => this.posteActifSurMois(poste, this.annee(), mois));
-    const s = this.sujet();
-    return s.mode === 'foyer' ? actifs : actifs.filter((p) => this.posteConcerneMembre(p, s.membreId, this.annee(), mois));
-  });
-
   /** Textes traduits transmis au composant partagé `app-matrice-budgetaire` (voir
    *  `MatriceBudgetaireLabels`) — le composant partagé ne connaît aucune clé i18n. */
   readonly matriceLabels = computed<MatriceBudgetaireLabels>(() => ({
@@ -1596,21 +1601,7 @@ export class DashboardComponent {
     scoreTooltip: this.t.dashboard.matriceScoreTooltip
   }));
 
-  // Note : `nature` (EFFECTIF|ESTIMATION) est purement descriptif côté moteur (doc 01
-  // §3) — il n'exclut aucune charge du total réel (`charges` = somme de toutes les
-  // contributions, quelle que soit la nature). Les « charges fixes » incluent donc
-  // TOUTES les charges (comme le récapitulatif serveur).
-  readonly chargesSuresMois = computed(() => {
-    const s = this.sujet();
-    const mois = this.moisSelectionne() ?? 1;
-    return this.postesActifsMois()
-      .filter((poste) => poste.type === 'CHARGE')
-      .reduce((sum, poste) => {
-        const montant = Math.abs(this.decomp.contributionMois(poste, this.annee(), mois));
-        const q = s.mode === 'membre' ? this.quotePartMembrePoste(poste, s.membreId, this.annee(), mois) : 1;
-        return sum + montant * q;
-      }, 0);
-  });
+  readonly chargesSuresMois = computed(() => this.agregatMoisCourant().charges);
 
   /** Segments labellisés de la barre mensuelle : chaque libellé est affiché avec son
    *  montant (voir `displayMode="montant"` sur `app-metric-bar`, section vue "mois").
@@ -1648,32 +1639,8 @@ export class DashboardComponent {
   });
 
 
-  readonly tresorerieCumuleeValeurs = computed(() => this.calculerTresorerieCumulee(this.moisAgregatsCourant()));
-
-  /** Trésorerie cumulée "réelle" : même calcul mais à partir des agrégats mensuels non
-   *  lissés (échéances imputées au mois d'ancrage, cf. moisReel). Permet de visualiser
-   *  quand la trésorerie évolue réellement par rapport à sa vision scénarisée/lissée. */
-  readonly tresorerieCumuleeReelValeurs = computed(() => this.calculerTresorerieCumulee(this.moisReelAgregatsCourant()));
-
-  /** Cumule la trésorerie mois par mois à partir de la trésorerie initiale du scénario
-   *  (prorata en mode membre), pour une série d'agrégats mensuels donnée. Factorisé pour
-   *  être réutilisé sur l'année courante et l'année précédente (comparaison N vs N-1). */
-  private calculerTresorerieCumulee(moisAgregats: AggregatDto[]): number[] {
-    const scenario = this.contexte.scenarioCourant();
-    if (!scenario || !moisAgregats.length) return [];
-    const s = this.sujet();
-    // Approximation en mode membre : le backend n'a pas de notion de trésorerie initiale
-    // par membre — on prorate la trésorerie initiale du scénario par sa quote-part par
-    // défaut (répartition du scénario), à défaut d'un vrai concept produit dédié.
-    const quotePartInitiale = s.mode === 'membre'
-      ? (scenario.repartitions.find((r) => r.membreId === s.membreId)?.quotePart ?? 0)
-      : 1;
-    let cumul = scenario.tresorerieInitiale * quotePartInitiale;
-    return moisAgregats.map((agregat) => {
-      cumul += agregat.soldeDisponible;
-      return cumul;
-    });
-  }
+  readonly tresorerieCumuleeValeurs = computed(() => this.serieTresorerie(this._tresorerieCumulee.donnees()?.mensualise));
+  readonly tresorerieCumuleeReelValeurs = computed(() => this.serieTresorerie(this._tresorerieCumulee.donnees()?.reel));
 
   readonly tresorerieCumuleeData = computed(() => {
     const valeurs = this.tresorerieCumuleeValeurs();
@@ -1785,14 +1752,13 @@ export class DashboardComponent {
 
   private tresorerieCumuleeFin(): number {
     const valeurs = this.tresorerieCumuleeValeurs();
-    return valeurs.length ? valeurs[valeurs.length - 1] : this.contexte.scenarioCourant()?.tresorerieInitiale ?? 0;
+    return valeurs.length ? valeurs[valeurs.length - 1] : 0;
   }
 
   /** Trésorerie cumulée en fin d'année précédente (N-1), ou `null` si non disponible
    *  (première année du scénario, ou données pas encore chargées). */
   readonly tresorerieFinAnneePrecedente = computed<number | null>(() => {
-    if (!this._projectionAnneePrecedenteCle()) return null;
-    const valeurs = this.calculerTresorerieCumulee(this.moisAgregatsAnneePrecedente());
+    const valeurs = this.serieTresorerie(this._tresorerieCumuleeAnneePrecedente.donnees()?.mensualise);
     return valeurs.length ? valeurs[valeurs.length - 1] : null;
   });
 
@@ -1916,76 +1882,6 @@ export class DashboardComponent {
     indicator: comparaisonPeriodeIndicator('comparaison-annee', 'annee', this.differenceTresorerieAnnuelle(), (v) => this.formatMontant(v), this.t),
     data: this.comparaisonPeriodeDataAnnee(),
   }));
-
-  private statutObjectif(objectif: ObjectifDto): StatutObjectif {
-    if (objectif.progression >= 1) return 'ATTEINT';
-    if (objectif.echeance && parseIsoDateLocal(objectif.echeance) < new Date()) return 'EN_RETARD';
-    return 'DANS_LES_TEMPS';
-  }
-
-  private severityObjectif(statut: StatutObjectif): ObjectiveProgressSeverity {
-    switch (statut) {
-      case 'EN_RETARD': return 'warn';
-      case 'ATTEINT': return 'success';
-      default: return 'info';
-    }
-  }
-
-  private objectifMeta(objectif: ObjectifDto): string {
-    const morceaux: string[] = [];
-    if (objectif.echeance) {
-      morceaux.push(this.formatMoisAnnee(objectif.echeance));
-    }
-    if (objectif.progression < 1 && objectif.epargneRequise > 0) {
-      morceaux.push(this.formatMontant(objectif.epargneRequise));
-    }
-    return morceaux.join(' · ');
-  }
-
-  /** Objectifs scopés au sujet courant : en mode membre, uniquement ceux rattachés à un
-   *  compte dont ce membre est co-titulaire (le compte "porte" l'objectif — cf. modèle). */
-  readonly objectifsPourSujet = computed<ObjectifDto[]>(() => {
-    const s = this.sujet();
-    const objectifs = this.objectifs();
-    if (s.mode === 'foyer') return objectifs;
-    const comptes = this.comptes();
-    return objectifs.filter((o) => (comptes.find((c) => c.id === o.compteId)?.membreIds ?? []).includes(s.membreId));
-  });
-
-  readonly objectifsRendus = computed(() =>
-    this.objectifsPourSujet().map((objectif) => {
-      const statut = this.statutObjectif(objectif);
-      return {
-        id: objectif.id,
-        nom: objectif.libelle,
-        pct: objectif.progression * 100,
-        statut,
-        statusLabel: this.t.objectif.statuts[statut],
-        severity: this.severityObjectif(statut),
-        meta: this.objectifMeta(objectif),
-      };
-    })
-  );
-
-  readonly echeancesMois = computed(() => {
-    const mois = this.moisSelectionne();
-    if (mois === undefined) return [];
-    return this.objectifsPourSujet()
-      .filter((objectif) => objectif.echeance && this.dateDansMois(objectif.echeance, this.annee(), mois))
-      .sort((a, b) => (a.echeance ?? '').localeCompare(b.echeance ?? ''))
-      .map((objectif) => {
-        const statut = this.statutObjectif(objectif);
-        return {
-          id: objectif.id,
-          nom: objectif.libelle,
-          pct: objectif.progression * 100,
-          restant: Math.max(objectif.montantCible - objectif.soldeActuel, 0),
-          statusLabel: this.t.objectif.statuts[statut],
-          severity: this.severityObjectif(statut),
-          meta: objectif.echeance ? this.formatMoisAnnee(objectif.echeance) : '',
-        };
-      });
-  });
 
   /** Icône + variante de couleur PrimeNG représentative d'un type d'événement. */
   private iconEvenement(evt: EvenementDto): { icon: string; variant: 'success' | 'danger' | 'secondary' } {
@@ -2116,35 +2012,6 @@ export class DashboardComponent {
   });
 
 
-  private dateDansMois(iso: string, annee: number, mois: number): boolean {
-    const date = parseIsoDateLocal(iso);
-    return date.getFullYear() === annee && date.getMonth() + 1 === mois;
-  }
-
-  private posteActifSurMois(poste: PosteDto, annee: number, mois: number): boolean {
-    const debutMois = new Date(annee, mois - 1, 1);
-    const finMois = new Date(annee, mois, 0);
-    const debut = poste.debut ? parseIsoDateLocal(poste.debut) : null;
-    const fin = poste.fin ? parseIsoDateLocal(poste.fin) : null;
-    const debutOk = !debut || debut <= finMois;
-    const finOk = !fin || fin >= debutMois;
-    return debutOk && finOk;
-  }
-
-  /** Quote-part effective (0-1) d'un membre sur un poste, pour un mois donné — miroir
-   *  fidèle de `MoteurCalcul.quotePartEffective` (backend), utilisé uniquement pour le
-   *  segment de la barre mensuelle (`chargesSuresMois`) : cette agrégation
-   *  n'est pas encore exposée telle quelle par le backend (voir docs/03 §2.3 — dette
-   *  assumée en attendant une extension du moteur avec vecteurs golden). */
-  private quotePartMembrePoste(poste: PosteDto, membreId: string, annee: number, mois: number): number {
-    return this.decomp.quotePartEffectivePoste(
-      poste, membreId, this.contexte.scenarioCourant(), annee, mois, this.membres().length);
-  }
-
-  private posteConcerneMembre(poste: PosteDto, membreId: string, annee: number, mois: number): boolean {
-    return this.quotePartMembrePoste(poste, membreId, annee, mois) > 0;
-  }
-
   peutReculer(): boolean {
     const annees = this.annees();
     const premiereAnnee = annees[0] ?? this.annee();
@@ -2273,6 +2140,7 @@ export class DashboardComponent {
    *  l'argent de poche" du KPI en mode foyer (pas d'édition unitaire possible
    *  sur un agrégat de tous les membres). */
   private naviguerVersArgentPoche(): void {
+    if (!this.contexte.estEditor()) return;
     const foyerId = this.contexte.foyerId();
     if (!foyerId) return;
     void this.router.navigate(['/f', foyerId, 'argent-poche']);
@@ -2295,6 +2163,7 @@ export class DashboardComponent {
    * qu'elle vienne d'une politique en vigueur ou de zéro).
    */
   ouvrirActionArgentPoche(): void {
+    if (!this.contexte.estEditor()) return;
     const foyerId = this.contexte.foyerId();
     const scenarioId = this.contexte.scenarioId();
     const poche = this.argentPocheMoisCourant();
@@ -2318,6 +2187,7 @@ export class DashboardComponent {
   }
 
   enregistrerAllocationArgentPoche(): void {
+    if (!this.contexte.estEditor()) return;
     const foyerId = this.contexte.foyerId();
     const scenarioId = this.contexte.scenarioId();
     const membre = this.membreCourant();
@@ -2345,5 +2215,9 @@ export class DashboardComponent {
         this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message });
       },
     });
+  }
+
+  private serieTresorerie(valeurs?: TresorerieCumuleeDto['mensualise']): number[] {
+    return (valeurs ?? []).map((valeur) => typeof valeur === 'string' ? Number(valeur) : valeur);
   }
 }

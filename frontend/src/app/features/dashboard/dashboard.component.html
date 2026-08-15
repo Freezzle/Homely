@@ -172,8 +172,9 @@
   <ng-template #footer>
     <p-button [label]="t.commun.annuler" severity="secondary"
               (click)="dialogArgentPocheVisible = false"/>
-    <p-button [label]="t.commun.enregistrer" (click)="enregistrerAllocationArgentPoche()"
-              [disabled]="formAllocationArgentPoche.invalid"/>
+    @if (contexte.estEditor()) {
+      <p-button [label]="t.commun.enregistrer" (click)="enregistrerAllocationArgentPoche()"
+                [disabled]="formAllocationArgentPoche.invalid"/>
+    }
   </ng-template>
 </p-dialog>
-

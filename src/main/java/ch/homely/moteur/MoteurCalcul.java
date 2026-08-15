@@ -544,6 +544,56 @@ public class MoteurCalcul {
         return new ProjectionPluriannuelle(annees, tresorerie);
     }
 
+    /**
+     * Courbe de trésorerie <b>cumulée</b> d'une année, scopée à un sujet (foyer si
+     * {@code membreId == null}, sinon le membre), amorcée à la trésorerie initiale du
+     * scénario (prorata de la quote-part de la période ouverte du membre en vue membre).
+     *
+     * <p>La courbe repart de la trésorerie initiale à chaque année (elle n'est pas chaînée
+     * entre années — pour le chaînage pluriannuel §4, voir {@link #projectionPluriannuelle}).
+     * {@code reel = true} utilise les agrégats réels (échéances imputées au mois d'ancrage),
+     * {@code false} les agrégats mensualisés.</p>
+     *
+     * @return 12 valeurs cumulées (fin de mois 1..12)
+     */
+    public static double[] tresorerieCumuleeAnnee(ParametresScenario params, int annee,
+                                                  UUID membreId, boolean reel) {
+        double quotePartInitiale = (membreId == null) ? 1.0 : quotePartPeriodeOuverte(params, membreId);
+        double cumul = params.tresorerieInitiale() * quotePartInitiale;
+
+        double[] out = new double[12];
+        for (int m = 1; m <= 12; m++) {
+            AggregatMensuel ag;
+            if (membreId == null) {
+                ag = reel ? aggregatFoyerMoisReel(params, annee, m) : aggregatFoyerMois(params, annee, m);
+            } else {
+                ag = reel ? aggregatMembreMoisReel(params, membreId, annee, m)
+                          : aggregatMembreMois(params, membreId, annee, m);
+            }
+            cumul += ag.soldeDisponible();
+            out[m - 1] = cumul;
+        }
+        return out;
+    }
+
+    /**
+     * Quote-part d'un membre dans la période de répartition <b>ouverte</b> ({@code fin == null})
+     * du scénario — {@code 0} si absente. Sert de prorata de la trésorerie initiale par membre
+     * (répartition "par défaut" du scénario = parts de la période ouverte).
+     */
+    public static double quotePartPeriodeOuverte(ParametresScenario params, UUID membreId) {
+        return params.periodesDefaut().stream()
+                .filter(p -> p.fin() == null)
+                .findFirst()
+                .map(RepartitionPeriodeCalcul::repartitions)
+                .orElse(List.of())
+                .stream()
+                .filter(r -> membreId.equals(r.membreId()))
+                .mapToDouble(RepartitionCalcul::quotePart)
+                .findFirst()
+                .orElse(0.0);
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // §8 — Ventilations (T2.7)
     // ─────────────────────────────────────────────────────────────────────────

@@ -3,6 +3,8 @@
 > Contrats REST (conventions, auth, endpoints réels, `ApiError`) et écrans Angular
 > associés. L'API est documentée en OpenAPI (Swagger UI sur `/swagger-ui.html`).
 
+> **Décisions gouvernées par ce doc** : conception d'un endpoint REST, format `ApiError`, contrats DTO, et routes/écrans/composants Angular associés.
+
 ---
 
 ## PARTIE A — API REST
@@ -77,7 +79,7 @@ CRUD standard `/api/foyers/{foyerId}/{ressource}` (+ `/{id}`) pour **membres**, 
 |---|---|---|
 | GET / POST | `/api/foyers/{foyerId}/scenarios` | Liste / créer `{nom, anneeDepart, tresorerieInitiale, horizonAnnees, repartitions:[{membreId, quotePart}]}` |
 | GET / PUT / DELETE | `…/scenarios/{scenarioId}` | Détail / modifier / supprimer (interdit si référence unique) |
-| POST | `…/scenarios/{scenarioId}:dupliquer` | Duplication profonde (postes, objectifs, périodes) |
+| POST | `…/scenarios/{scenarioId}:dupliquer` | Duplication profonde (postes, périodes) |
 | POST | `…/scenarios/{scenarioId}:definir-reference` | Marquer référence (retire l'ancien flag) |
 
 Validation : `repartitions` (PUT) doit sommer à 1 (`422 REPARTITION_INVALIDE`).
@@ -115,13 +117,7 @@ Règles clés :
 `GET …/postes/{id}/apercu?annee=2026` → contribution mois par mois (`{annee,
 contributions:[{mois, contribution}]}`).
 
-## 8. Objectifs (niveau scénario)
-
-`…/scenarios/{scenarioId}/objectifs` — CRUD. Corps `{libelle, categorieProjetId?,
-montantCible, echeance?, compteId}` (compte obligatoire). Réponse enrichie :
-`soldeActuel`, `progression` ∈ [0,1], `epargneRequise` (0 si atteint ou `echeance` null).
-
-## 9. Projections (endpoints de calcul ★)
+## 8. Projections (endpoints de calcul ★)
 
 Toutes en `GET`, scopées scénario, servies via le moteur (doc 01) + cache.
 
@@ -129,7 +125,14 @@ Toutes en `GET`, scopées scénario, servies via le moteur (doc 01) + cache.
   moisParMembre, moisParMembreReel}`. Chaque agrégat = `{revenus, charges, reserves,
   soldeDisponible}`. `mois` = mensualisé, `moisReel` = flux non lissés.
 - **`…/projection/tresorerie`** → `{annees:[{annee, soldeAnnuel, tresorerieDebutAnnee,
-  tresorerieFinAnnee}], courbe:[{annee, mois, tresorerie}]}`.
+  tresorerieFinAnnee}], courbe:[{annee, mois, tresorerie}]}` — trésorerie **chaînée** entre
+  années (doc 01 §4).
+- **`…/projection/tresorerie-cumulee?annee=&membreId=`** → `{annee, mensualise:[12],
+  reel:[12]}` — courbe cumulée d'une seule année, scopée foyer ou membre (`membreId`
+  optionnel), amorcée à la trésorerie initiale du scénario (prorata de la quote-part de la
+  période ouverte en vue membre). Repart de la trésorerie initiale à chaque année
+  (**non chaînée** entre années, contrairement à `…/tresorerie` — remplace un calcul
+  auparavant dupliqué côté frontend, désormais seul le backend le porte).
 - **`…/projection/mensuelle?annee=&mois=`** → agrégat + `parMembre` + `parCategorie` +
   `parCategorieMembre` + `parCompteMembre`.
 - **`…/projection/ventilation-annuelle?annee=`** → même forme que `mensuelle` (sans `mois`),
@@ -137,7 +140,8 @@ Toutes en `GET`, scopées scénario, servies via le moteur (doc 01) + cache.
 - **`…/projection/taux-effort?annee=&mois=`** / **`…/taux-effort-annuel?annee=`** → une
   entrée par membre : `revenusTotal`, `chargesTotal`/`reservesTotal` (+ `…PireCas` pour les
   ESTIMATION à variation max), `argentPocheTotal`/`argentPocheTotalPireCas` (doc 01 §7 —
-  argent de poche, **pas un poste**). Le % et la zone sont calculés côté frontend.
+  argent de poche, **pas un poste**). Le % et la zone sont calculés côté frontend à partir
+  des seuils exposés par `/api/dashboard/seuils` (§11).
 - **`…/projection/evenements?annee=&membreId=`** → liste triée (mois ↑, puis FIN > REVISION
   > DEBUT, puis description) : `{mois, type, posteId, description, categorieId, typePoste,
   nature, montant, periodiciteMois, mode, montantOrigine?, periodiciteMoisOrigine?,
@@ -145,11 +149,21 @@ Toutes en `GET`, scopées scénario, servies via le moteur (doc 01) + cache.
   non-null seulement pour `REVISION` ; `quotePart` = 1 en vue foyer, proratisé si
   `membreId` (jamais recalculé côté frontend). Sémantique : doc 01 §9.
 
-## 10. Argent de poche (niveau scénario)
+## 9. Argent de poche (niveau scénario)
 
 CRUD `…/politiques-argent-poche` (récurrentes) et `…/allocations-argent-poche`
 (ponctuelles). `GET …/rav-brut?annee=` alimente l'aperçu « 6 prochains mois ». Formule et
 priorité (`allocation > politique > 0`) : [doc 01 §7](01-principes-et-moteur.md#7-argent-de-poche--impact-sur-le-solde-disponible).
+Actions d'écriture masquées pour `VIEWER` (backend refuse aussi toute écriture hors
+OWNER/EDITOR).
+
+## 10. Configuration dashboard
+
+`GET /api/dashboard/seuils` (authentifié, non scopé foyer) → `{moisARisqueSoldeMin,
+tauxEffortCorrect, tauxEffortTendu, tauxEffortSature, tauxEffortSoutenu,
+tauxEffortCritique, besoinsPlaisirsBudget, posteAOptimiserScore}`. Seuils d'interprétation
+des indicateurs du dashboard (purement affichage, aucune règle moteur) — remplace les
+constantes auparavant codées en dur côté frontend.
 
 ---
 
@@ -160,7 +174,7 @@ priorité (`allocation > politique > 0`) : [doc 01 §7](01-principes-et-moteur.m
 - **Topbar** : logo, sélecteur de foyer, sélecteur de scénario (badge « référence »), menu
   utilisateur, sélecteur langue/thème.
 - **Menu latéral** (`hidden md:flex`) : Tableau de bord (foyer + par membre) · Revenus ·
-  Charges · Réserves · Scénarios · Objectifs · Argent de poche · Référentiels (Membres,
+  Charges · Réserves · Scénarios · Argent de poche · Référentiels (Membres,
   Comptes, Catégories, Taux) · Paramètres / Accès.
 - **Shell** synchronise le contexte depuis l'URL (`/f/:foyerId/…`) : charge foyer, membres,
   scénarios → sélectionne le scénario de référence. Auto-sélection si un seul foyer.
@@ -180,7 +194,6 @@ priorité (`allocation > politique > 0`) : [doc 01 §7](01-principes-et-moteur.m
   │     sujetId = "foyer" (cumul) ou id d'un membre
   ├── /revenus | /charges | /reserves
   ├── /scenarios
-  ├── /objectifs
   ├── /argent-poche
   ├── /referentiels/(membres|comptes|categories|taux)
   ├── /parametres
@@ -198,7 +211,7 @@ scoping backend via `parMembre`/`moisParMembre*`) et **vue** (annuelle si `:anne
 mensuelle si `:annee/:mois`). Bloc résumé : `app-metric-ring`, `app-stat-grid`,
 `app-kpi-chip-row`. Onglets (`app-tab-group`) : `recap` (bascule catégorie/type/compte),
 `graphiques` (flux mensuel / trésorerie / prévu vs réel en `p-chart`), `events`
-(`app-event-grid`, alimenté par `…/projection/evenements`), `objectifs`. Indicateurs
+(`app-event-grid`, alimenté par `…/projection/evenements`). Indicateurs
 enrichis (`features/dashboard/indicators/`) dont `taux-effort-membre`
 (`app-taux-effort-card`, jauges « charges + réserves » et « + argent de poche »).
 
@@ -218,24 +231,20 @@ sinon), ventilation comptes, aperçu mensuel. Écriture masquée pour `VIEWER`.
 Bouton **périodes** (`RepartitionPeriodesComponent`) visible si >1 membre : dialog listant
 les périodes + formulaire (début/fin, parts par membre, somme live, « Équitable »).
 
-### 3.4 Objectifs
-Cartes `p-card` (progression `p-progressbar`, % `PctPipe`, épargne requise, tag compte).
-Formulaire : libellé, montant cible, échéance, **compte lié obligatoire**.
-
-### 3.5 Référentiels (CRUD `p-table` + `p-dialog`)
+### 3.4 Référentiels (CRUD `p-table` + `p-dialog`)
 - **Membres** : couleur (pastille) · Nom · Actif ; formulaire nom + `p-colorpicker`.
 - **Comptes** : Libellé · Solde initial · Devise · Membres (tags) ; `p-multiselect` membres
   actifs **obligatoire**.
 - **Catégories** : Libellé · Type (filtrable) · Actif.
 - **Taux de change** : Devise · Taux vers base.
 
-### 3.6 Paramètres foyer & accès
+### 3.5 Paramètres foyer & accès
 - **`/parametres`** : nom + devise de base (enregistrement `OWNER`), zone dangereuse
   (suppression foyer, `OWNER`, `p-confirmdialog`).
 - **`/acces`** : table Nom · Email · Rôle ; actions `OWNER` (inviter / changer rôle /
   retirer ; l'OWNER ne peut se retirer lui-même).
 
-### 3.7 Argent de poche (`/argent-poche`, `ArgentPocheComponent`)
+### 3.6 Argent de poche (`/argent-poche`, `ArgentPocheComponent`)
 Par membre/scénario : **politiques** (`p-table` nom/membre/période/mode/paramètres,
 formulaire avec aperçu « 6 prochains mois » via `…/rav-brut`) et **allocations**
 ponctuelles (membre/mois/montant/raison, prioritaires sur la politique). Écriture masquée
