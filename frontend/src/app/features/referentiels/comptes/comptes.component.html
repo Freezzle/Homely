@@ -3,7 +3,7 @@
   <div class="flex items-center gap-4">
     <h1 class="text-2xl font-bold flex-1">{{ t.referentiels.compte.titre }}</h1>
     @if (contexte.estEditor()) {
-      <app-button icon="pi pi-plus" [label]="t.commun.creer" (click)="ouvrirCreation()" />
+      <app-button icon="pi pi-plus" [label]="t.commun.creer" (clickEvent)="ouvrirCreation()" />
     }
   </div>
 
@@ -50,8 +50,8 @@
         <td>
           <div class="flex gap-1">
             @if (contexte.estEditor()) {
-              <app-button icon="pi pi-pencil" [text]="true" size="small" (click)="ouvrirEdition(c)" />
-              <app-button icon="pi pi-trash" [text]="true" severity="danger" size="small" (click)="supprimer(c)" />
+              <app-button icon="pi pi-pencil" [text]="true" size="small" (clickEvent)="ouvrirEdition(c)" />
+              <app-button icon="pi pi-trash" [text]="true" severity="danger" size="small" (clickEvent)="supprimer(c)" />
             }
           </div>
         </td>
@@ -99,8 +99,8 @@
       [minFractionDigits]="2" />
   </form>
   <ng-template #footer>
-    <app-button [label]="t.commun.annuler" severity="secondary" (click)="dialogVisible = false" />
-    <app-button [label]="t.commun.enregistrer" (click)="enregistrer()"
+    <app-button [label]="t.commun.annuler" severity="secondary" (clickEvent)="dialogVisible = false" />
+    <app-button [label]="t.commun.enregistrer" (clickEvent)="enregistrer()"
               [disabled]="form.invalid || !membreIdsNonVides()" />
   </ng-template>
 </p-dialog>

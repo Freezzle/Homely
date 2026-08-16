@@ -552,18 +552,18 @@
     </form>
 
     <ng-template #footer>
-        <app-button [label]="t.commun.annuler" severity="secondary" [text]="true" (click)="fermer()"/>
+        <app-button [label]="t.commun.annuler" severity="secondary" [text]="true" (clickEvent)="fermer()"/>
         <span class="flex-1"></span>
         <app-button [label]="t.commun.precedent" severity="secondary" [outlined]="true"
-                  [disabled]="etapeActive() === 0" (click)="precedent()"/>
+                  [disabled]="etapeActive() === 0" (clickEvent)="precedent()"/>
         @if (etapeActive() < 4) {
-            <app-button [label]="t.commun.suivant" [disabled]="!etapeValide(etapeActive())" (click)="suivant()"/>
+            <app-button [label]="t.commun.suivant" [disabled]="!etapeValide(etapeActive())" (clickEvent)="suivant()"/>
         } @else {
             <app-button [label]="t.commun.enregistrerEtNouveau" [outlined]="true"
-                      [disabled]="!formulaireValide() || enregistrementEnCours()" (click)="enregistrer(true)"/>
+                      [disabled]="!formulaireValide() || enregistrementEnCours()" (clickEvent)="enregistrer(true)"/>
             <app-button [label]="t.commun.enregistrer"
                       [disabled]="!formulaireValide() || enregistrementEnCours()" [loading]="enregistrementEnCours()"
-                      (click)="enregistrer(false)"/>
+                      (clickEvent)="enregistrer(false)"/>
         }
     </ng-template>
 </p-dialog>

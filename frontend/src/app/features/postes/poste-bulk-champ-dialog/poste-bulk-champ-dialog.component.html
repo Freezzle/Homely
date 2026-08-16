@@ -48,8 +48,8 @@
     }
 
     <ng-template #footer>
-        <app-button [label]="t.commun.annuler" severity="secondary" (click)="fermer()"/>
-        <app-button [label]="t.poste.bulk.appliquer" (click)="appliquer()"
+        <app-button [label]="t.commun.annuler" severity="secondary" (clickEvent)="fermer()"/>
+        <app-button [label]="t.poste.bulk.appliquer" (clickEvent)="appliquer()"
                     [loading]="enregistrementEnCours"/>
     </ng-template>
 </p-dialog>

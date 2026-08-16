@@ -54,7 +54,7 @@
                       size="small"
                       [ariaLabel]="t.foyer.onboarding.champs.supprimerLigne"
                       [disabled]="membres().length <= 1"
-                      (click)="supprimerMembre(i)" />
+                      (clickEvent)="supprimerMembre(i)" />
                   </div>
                 }
               </div>
@@ -65,7 +65,7 @@
                   [text]="true"
                   [label]="t.foyer.onboarding.boutons.ajouter"
                   [disabled]="membres().length >= 3"
-                  (click)="ajouterMembre()" />
+                  (clickEvent)="ajouterMembre()" />
               </div>
             </div>
 
@@ -75,7 +75,7 @@
                 icon="pi pi-arrow-right"
                 iconPos="right"
                 [disabled]="!etape1Valide()"
-                (click)="entrerEtape2(); activateCallback(2)" />
+                (clickEvent)="entrerEtape2(); activateCallback(2)" />
             </div>
           </div>
         </ng-template>
@@ -129,7 +129,7 @@
                     size="small"
                     [ariaLabel]="t.foyer.onboarding.champs.supprimerLigne"
                     [disabled]="comptes().length <= 1"
-                    (click)="supprimerCompte(i)" />
+                    (clickEvent)="supprimerCompte(i)" />
                 </div>
               }
             </div>
@@ -140,7 +140,7 @@
                 [text]="true"
                 [label]="t.foyer.onboarding.boutons.ajouter"
                 [disabled]="comptes().length >= 10"
-                (click)="ajouterCompte()" />
+                (clickEvent)="ajouterCompte()" />
             </div>
 
             @if (primairesEnDoublon()) {
@@ -152,13 +152,13 @@
                 [label]="t.foyer.onboarding.boutons.retour"
                 icon="pi pi-arrow-left"
                 severity="secondary"
-                (click)="activateCallback(1)" />
+                (clickEvent)="activateCallback(1)" />
               <app-button
                 [label]="t.foyer.onboarding.boutons.suivant"
                 icon="pi pi-arrow-right"
                 iconPos="right"
                 [disabled]="!etape2Valide()"
-                (click)="activateCallback(3)" />
+                (clickEvent)="activateCallback(3)" />
             </div>
           </div>
         </ng-template>
@@ -184,12 +184,12 @@
                       (ngModelChange)="updateCategorieLibelle('REVENU', i, $event)" />
                     <app-button icon="pi pi-times" [text]="true" severity="danger" size="small"
                       [ariaLabel]="t.foyer.onboarding.champs.supprimerLigne"
-                      (click)="supprimerCategorie('REVENU', i)" />
+                      (clickEvent)="supprimerCategorie('REVENU', i)" />
                   </div>
                 }
                 <app-button icon="pi pi-plus" [text]="true" size="small"
                   [label]="t.foyer.onboarding.boutons.ajouter"
-                  (click)="ajouterCategorie('REVENU')" />
+                  (clickEvent)="ajouterCategorie('REVENU')" />
               </div>
 
               <!-- CHARGE -->
@@ -204,12 +204,12 @@
                       (ngModelChange)="updateCategorieLibelle('CHARGE', i, $event)" />
                     <app-button icon="pi pi-times" [text]="true" severity="danger" size="small"
                       [ariaLabel]="t.foyer.onboarding.champs.supprimerLigne"
-                      (click)="supprimerCategorie('CHARGE', i)" />
+                      (clickEvent)="supprimerCategorie('CHARGE', i)" />
                   </div>
                 }
                 <app-button icon="pi pi-plus" [text]="true" size="small"
                   [label]="t.foyer.onboarding.boutons.ajouter"
-                  (click)="ajouterCategorie('CHARGE')" />
+                  (clickEvent)="ajouterCategorie('CHARGE')" />
               </div>
 
               <!-- RESERVE -->
@@ -224,12 +224,12 @@
                       (ngModelChange)="updateCategorieLibelle('RESERVE', i, $event)" />
                     <app-button icon="pi pi-times" [text]="true" severity="danger" size="small"
                       [ariaLabel]="t.foyer.onboarding.champs.supprimerLigne"
-                      (click)="supprimerCategorie('RESERVE', i)" />
+                      (clickEvent)="supprimerCategorie('RESERVE', i)" />
                   </div>
                 }
                 <app-button icon="pi pi-plus" [text]="true" size="small"
                   [label]="t.foyer.onboarding.boutons.ajouter"
-                  (click)="ajouterCategorie('RESERVE')" />
+                  (clickEvent)="ajouterCategorie('RESERVE')" />
               </div>
             </div>
 
@@ -238,12 +238,12 @@
                 [label]="t.foyer.onboarding.boutons.retour"
                 icon="pi pi-arrow-left"
                 severity="secondary"
-                (click)="activateCallback(2)" />
+                (clickEvent)="activateCallback(2)" />
               <app-button
                 [label]="t.foyer.onboarding.boutons.suivant"
                 icon="pi pi-arrow-right"
                 iconPos="right"
-                (click)="entrerEtape4(); activateCallback(4)" />
+                (clickEvent)="entrerEtape4(); activateCallback(4)" />
             </div>
           </div>
         </ng-template>
@@ -311,13 +311,13 @@
                 [label]="t.foyer.onboarding.boutons.retour"
                 icon="pi pi-arrow-left"
                 severity="secondary"
-                (click)="activateCallback(3)" />
+                (clickEvent)="activateCallback(3)" />
               <app-button
                 [label]="t.foyer.onboarding.boutons.creer"
                 icon="pi pi-check"
                 [loading]="enCours()"
                 [disabled]="!etape4Valide()"
-                (click)="creer()" />
+                (clickEvent)="creer()" />
             </div>
           </div>
         </ng-template>

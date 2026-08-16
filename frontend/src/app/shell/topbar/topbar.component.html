@@ -33,7 +33,7 @@
             [rounded]="true"
             severity="secondary"
             [text]="true"
-            (click)="menuUser.toggle($event)"
+            (clickEvent)="menuUser.toggle($event)"
     />
     <p-menu #menuUser [popup]="true" [model]="userMenuItems"
             appendTo="body"/>

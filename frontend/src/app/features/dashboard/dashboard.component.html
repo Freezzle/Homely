@@ -11,7 +11,7 @@
                         [rounded]="true"
                         [disabled]="!peutReculer()"
                         [ariaLabel]="vue() === 'mois' ? t.projection.moisPrecedent : t.projection.anneePrecedente"
-                        (click)="reculer()"/>
+                        (clickEvent)="reculer()"/>
                 {{ periodeLabel() }}
                 <app-button
                         icon="pi pi-chevron-right"
@@ -19,7 +19,7 @@
                         [rounded]="true"
                         [disabled]="!peutAvancer()"
                         [ariaLabel]="vue() === 'mois' ? t.projection.moisSuivant : t.projection.anneeSuivante"
-                        (click)="avancer()"/>
+                        (clickEvent)="avancer()"/>
             </div>
         </div>
         @if (viewport.estCompact()) {
@@ -171,9 +171,9 @@
 
   <ng-template #footer>
     <app-button [label]="t.commun.annuler" severity="secondary"
-              (click)="dialogArgentPocheVisible = false"/>
+              (clickEvent)="dialogArgentPocheVisible = false"/>
     @if (contexte.estEditor()) {
-      <app-button [label]="t.commun.enregistrer" (click)="enregistrerAllocationArgentPoche()"
+      <app-button [label]="t.commun.enregistrer" (clickEvent)="enregistrerAllocationArgentPoche()"
                 [disabled]="formAllocationArgentPoche.invalid"/>
     }
   </ng-template>

@@ -3,7 +3,7 @@
   <div class="flex items-center gap-4">
     <h1 class="text-2xl font-bold flex-1">{{ t.nav.scenarios }}</h1>
     @if (contexte.estEditor()) {
-      <app-button icon="pi pi-plus" [label]="t.commun.creer" (click)="ouvrirCreation()" />
+      <app-button icon="pi pi-plus" [label]="t.commun.creer" (clickEvent)="ouvrirCreation()" />
     }
   </div>
 
@@ -31,8 +31,8 @@
          <td>
            <div class="flex gap-1 items-center">
              @if (contexte.estEditor()) {
-               <app-button icon="pi pi-pencil" [text]="true" size="small" (click)="ouvrirEdition(s)" />
-               <app-button icon="pi pi-copy" [text]="true" size="small" [pTooltip]="t.scenario.dupliquer" (click)="dupliquer(s)" />
+               <app-button icon="pi pi-pencil" [text]="true" size="small" (clickEvent)="ouvrirEdition(s)" />
+               <app-button icon="pi pi-copy" [text]="true" size="small" [tooltip]="t.scenario.dupliquer" (clickEvent)="dupliquer(s)" />
              }
              <!-- Bouton périodes de prorata (masqué si mono-membre) -->
              @if (membres().length > 1) {
@@ -40,8 +40,8 @@
              }
              @if (contexte.estOwner() && !s.estReference) {
                <app-button icon="pi pi-star" [text]="true" severity="warn" size="small"
-                           [pTooltip]="t.scenario.definirReference" (click)="definirReference(s)" />
-               <app-button icon="pi pi-trash" [text]="true" severity="danger" size="small" (click)="supprimer(s)" />
+                           [tooltip]="t.scenario.definirReference" (clickEvent)="definirReference(s)" />
+               <app-button icon="pi pi-trash" [text]="true" severity="danger" size="small" (clickEvent)="supprimer(s)" />
              }
            </div>
          </td>
@@ -105,8 +105,8 @@
     }
   </form>
   <ng-template #footer>
-    <app-button [label]="t.commun.annuler" severity="secondary" (click)="dialogVisible = false" />
-    <app-button [label]="t.commun.enregistrer" (click)="enregistrer()"
+    <app-button [label]="t.commun.annuler" severity="secondary" (clickEvent)="dialogVisible = false" />
+    <app-button [label]="t.commun.enregistrer" (clickEvent)="enregistrer()"
                 [disabled]="form.invalid || (!scenarioEnEdition && !monoMembre && !sommeRepValide)" />
   </ng-template>
 </p-dialog>

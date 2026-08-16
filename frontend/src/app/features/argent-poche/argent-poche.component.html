@@ -6,7 +6,7 @@
     <h1 class="text-2xl font-bold flex-1">{{ t.argentPoche.titre }}</h1>
     @if (contexte.estEditor()) {
       <div>
-        <app-button icon="pi pi-plus" [label]="t.commun.creer" (click)="menuCreation.toggle($event)" />
+        <app-button icon="pi pi-plus" [label]="t.commun.creer" (clickEvent)="menuCreation.toggle($event)" />
         <p-menu #menuCreation [popup]="true" [model]="creationMenuItems" appendTo="body" />
       </div>
     }
@@ -123,8 +123,8 @@
             <div class="flex items-center justify-end shrink-0">
               @if (contexte.estEditor()) {
                 <app-button icon="pi pi-cog" [rounded]="true" [text]="true" severity="secondary" size="small"
-                            [ariaLabel]="t.commun.actions" [pTooltip]="t.commun.actions"
-                            (click)="menuActions.toggle($event)" />
+                            [ariaLabel]="t.commun.actions" [tooltip]="t.commun.actions"
+                            (clickEvent)="menuActions.toggle($event)" />
                 <p-menu #menuActions [popup]="true" [model]="actionItemsFor(i)" appendTo="body" />
               }
             </div>
@@ -231,8 +231,8 @@
 
   <ng-template #footer>
     <app-button [label]="t.commun.annuler" severity="secondary"
-                (click)="dialogPolitiqueVisible = false" />
-    <app-button [label]="t.commun.enregistrer" (click)="enregistrerPolitique()"
+                (clickEvent)="dialogPolitiqueVisible = false" />
+    <app-button [label]="t.commun.enregistrer" (clickEvent)="enregistrerPolitique()"
                 [disabled]="formPolitique.invalid" />
   </ng-template>
 </p-dialog>
@@ -268,8 +268,8 @@
 
   <ng-template #footer>
     <app-button [label]="t.commun.annuler" severity="secondary"
-                (click)="dialogAllocationVisible = false" />
-    <app-button [label]="t.commun.enregistrer" (click)="enregistrerAllocation()"
+                (clickEvent)="dialogAllocationVisible = false" />
+    <app-button [label]="t.commun.enregistrer" (clickEvent)="enregistrerAllocation()"
                 [disabled]="formAllocation.invalid" />
   </ng-template>
 </p-dialog>

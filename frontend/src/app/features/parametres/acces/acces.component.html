@@ -3,7 +3,7 @@
   <div class="flex items-center gap-4">
     <h1 class="text-2xl font-bold flex-1">{{ t.acces.titre }}</h1>
     @if (contexte.estOwner()) {
-      <app-button icon="pi pi-user-plus" [label]="t.acces.inviter" (click)="ouvrirInvitation()" />
+      <app-button icon="pi pi-user-plus" [label]="t.acces.inviter" (clickEvent)="ouvrirInvitation()" />
     }
   </div>
 
@@ -28,9 +28,9 @@
            <div class="flex gap-1">
              @if (contexte.estOwner() && a.role !== 'OWNER') {
                <app-button icon="pi pi-cog" [text]="true" size="small"
-                           [pTooltip]="t.acces.changerRole" (click)="ouvrirChangerRole(a)" />
+                           [tooltip]="t.acces.changerRole" (clickEvent)="ouvrirChangerRole(a)" />
                <app-button icon="pi pi-user-minus" [text]="true" severity="danger" size="small"
-                           [pTooltip]="t.acces.retirer" (click)="retirer(a)" />
+                           [tooltip]="t.acces.retirer" (clickEvent)="retirer(a)" />
              }
            </div>
          </td>
@@ -60,8 +60,8 @@
       class="w-full" />
   </form>
   <ng-template #footer>
-    <app-button [label]="t.commun.annuler" severity="secondary" (click)="inviteVisible = false" />
-    <app-button [label]="t.acces.inviter" (click)="inviter()" [disabled]="inviteForm.invalid || enCours()" [loading]="enCours()" />
+    <app-button [label]="t.commun.annuler" severity="secondary" (clickEvent)="inviteVisible = false" />
+    <app-button [label]="t.acces.inviter" (clickEvent)="inviter()" [disabled]="inviteForm.invalid || enCours()" [loading]="enCours()" />
   </ng-template>
 </p-dialog>
 
@@ -76,7 +76,7 @@
       class="w-full" />
   </div>
   <ng-template #footer>
-    <app-button [label]="t.commun.annuler" severity="secondary" (click)="roleVisible = false" />
-    <app-button [label]="t.commun.enregistrer" (click)="changerRole()" [disabled]="enCours()" [loading]="enCours()" />
+    <app-button [label]="t.commun.annuler" severity="secondary" (clickEvent)="roleVisible = false" />
+    <app-button [label]="t.commun.enregistrer" (clickEvent)="changerRole()" [disabled]="enCours()" [loading]="enCours()" />
   </ng-template>
 </p-dialog>

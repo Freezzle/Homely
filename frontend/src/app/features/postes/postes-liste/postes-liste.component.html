@@ -15,25 +15,25 @@
 
             <div class="flex items-center gap-1 flex-wrap ml-auto">
                 <app-button icon="pi pi-tag" [text]="true" [rounded]="true" severity="secondary"
-                          [pTooltip]="t.poste.bulk.actionCategorie" [ariaLabel]="t.poste.bulk.actionCategorie"
-                          (click)="ouvrirBulkChamp('CATEGORIE')"/>
+                          [tooltip]="t.poste.bulk.actionCategorie" [ariaLabel]="t.poste.bulk.actionCategorie"
+                          (clickEvent)="ouvrirBulkChamp('CATEGORIE')"/>
                 <app-button icon="pi pi-heart" [text]="true" [rounded]="true" severity="secondary"
-                          [pTooltip]="t.poste.bulk.actionImportance" [ariaLabel]="t.poste.bulk.actionImportance"
-                          (click)="ouvrirBulkChamp('IMPORTANCE')"/>
+                          [tooltip]="t.poste.bulk.actionImportance" [ariaLabel]="t.poste.bulk.actionImportance"
+                          (clickEvent)="ouvrirBulkChamp('IMPORTANCE')"/>
                 <app-button icon="pi pi-arrows-h" [text]="true" [rounded]="true" severity="secondary"
-                          [pTooltip]="t.poste.bulk.actionPotentiel" [ariaLabel]="t.poste.bulk.actionPotentiel"
-                          (click)="ouvrirBulkChamp('POTENTIEL_OPTIMISATION')"/>
+                          [tooltip]="t.poste.bulk.actionPotentiel" [ariaLabel]="t.poste.bulk.actionPotentiel"
+                          (clickEvent)="ouvrirBulkChamp('POTENTIEL_OPTIMISATION')"/>
                 <app-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger"
                           [disabled]="selectionContientChaine()"
-                          [pTooltip]="selectionContientChaine() ? t.poste.bulk.supprimerDesactiveTooltip : t.poste.bulk.actionSupprimer"
+                          [tooltip]="selectionContientChaine() ? t.poste.bulk.supprimerDesactiveTooltip : t.poste.bulk.actionSupprimer"
                           [ariaLabel]="t.poste.bulk.actionSupprimer"
-                          (click)="ouvrirBulkSuppression()"/>
+                          (clickEvent)="ouvrirBulkSuppression()"/>
                 <app-button icon="pi pi-eraser" [text]="true" [rounded]="true" severity="secondary"
-                          [pTooltip]="t.poste.bulk.annulerSelection" [ariaLabel]="t.poste.bulk.annulerSelection"
-                          (click)="effacerSelection()"/>
+                          [tooltip]="t.poste.bulk.annulerSelection" [ariaLabel]="t.poste.bulk.annulerSelection"
+                          (clickEvent)="effacerSelection()"/>
                 <app-button icon="pi pi-times" [text]="true" [rounded]="true" severity="secondary"
-                          [pTooltip]="t.poste.bulk.quitterSelection" [ariaLabel]="t.poste.bulk.quitterSelection"
-                          (click)="toggleModeSelection()"/>
+                          [tooltip]="t.poste.bulk.quitterSelection" [ariaLabel]="t.poste.bulk.quitterSelection"
+                          (clickEvent)="toggleModeSelection()"/>
             </div>
         </div>
     }
@@ -51,7 +51,7 @@
 
             <div class="flex justify-end">
                 @if (contexte.estEditor()) {
-                    <app-button icon="pi pi-plus" [label]="t.commun.creer" (click)="ouvrirCreation()"
+                    <app-button icon="pi pi-plus" [label]="t.commun.creer" (clickEvent)="ouvrirCreation()"
                               class="shrink-0"/>
                 }
             </div>
@@ -82,17 +82,17 @@
                 @if (contexte.estEditor()) {
                     <app-button icon="pi pi-check-square"
                               [ariaLabel]="modeSelection() ? t.poste.bulk.quitterSelection : t.poste.bulk.activerSelection"
-                              [pTooltip]="modeSelection() ? t.poste.bulk.quitterSelection : t.poste.bulk.activerSelection"
+                              [tooltip]="modeSelection() ? t.poste.bulk.quitterSelection : t.poste.bulk.activerSelection"
                               [severity]="modeSelection() ? 'primary' : 'secondary'"
                               [text]="!modeSelection()"
-                              (click)="toggleModeSelection()"/>
+                              (clickEvent)="toggleModeSelection()"/>
                 }
                 <div>
                     <app-button icon="pi pi-sliders-h"
                               [ariaLabel]="t.commun.actions"
                               severity="secondary"
                               [text]="true"
-                              (click)="menuVisibilite.toggle($event)"/>
+                              (clickEvent)="menuVisibilite.toggle($event)"/>
                     <p-menu #menuVisibilite [popup]="true" [model]="visibiliteMenuItems" appendTo="body"
                             class="w-72">
                         <ng-template #item let-item>
@@ -180,7 +180,7 @@
             <span class="text-sm">{{ t.commun.aucunResultat }}</span>
             @if (contexte.estEditor()) {
                 <app-button icon="pi pi-plus" [label]="t.commun.creer" severity="secondary"
-                          size="small" (click)="ouvrirCreation()"/>
+                          size="small" (clickEvent)="ouvrirCreation()"/>
             }
         </div>
 
@@ -335,8 +335,8 @@
                                           severity="secondary"
                                           size="small"
                                           [ariaLabel]="t.commun.actions"
-                                          [pTooltip]="t.commun.actions"
-                                          (click)="menuActions.toggle($event)"/>
+                                          [tooltip]="t.commun.actions"
+                                          (clickEvent)="menuActions.toggle($event)"/>
                                 <p-menu #menuActions [popup]="true" [model]="actionItemsFor(p)" appendTo="body"/>
                             }
                         </div>

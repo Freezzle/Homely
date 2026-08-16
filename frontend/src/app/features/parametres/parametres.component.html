@@ -16,7 +16,7 @@
         class="w-full" />
       <div class="flex justify-end">
         <app-button [label]="t.parametres.enregistrer" icon="pi pi-save"
-                    (click)="enregistrer()" [disabled]="form.invalid || !contexte.estOwner()"
+                    (clickEvent)="enregistrer()" [disabled]="form.invalid || !contexte.estOwner()"
                     [loading]="sauvegarde()" />
       </div>
     </form>
@@ -30,7 +30,7 @@
           <div class="text-sm text-surface-500 mt-1">{{ t.parametres.confirmerSuppression }}</div>
         </div>
         <app-button [label]="t.parametres.supprimer" icon="pi pi-trash" severity="danger"
-                    (click)="supprimerFoyer()" />
+                    (clickEvent)="supprimerFoyer()" />
       </div>
     </p-card>
   }

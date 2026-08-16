@@ -3,8 +3,8 @@
 <!-- Bouton déclencheur : icône seule + tooltip, style cohérent avec les autres actions -->
 @if (membres().length > 1) {
   <app-button icon="pi pi-calendar-plus" [text]="true" size="small"
-              [pTooltip]="t.scenario.gererPeriodes" tooltipPosition="top"
-              (click)="ouvrirDialog()"/>
+              [tooltip]="t.scenario.gererPeriodes" tooltipPosition="top"
+              (clickEvent)="ouvrirDialog()"/>
 }
 
 <!-- Dialog liste des périodes -->
@@ -44,9 +44,9 @@
               @if (contexte.estEditor()) {
                 <div class="flex gap-1 justify-end">
                   <app-button icon="pi pi-pencil" [text]="true" size="small"
-                              (click)="ouvrirEdition(p)"/>
+                              (clickEvent)="ouvrirEdition(p)"/>
                   <app-button icon="pi pi-trash" [text]="true" severity="danger" size="small"
-                              (click)="confirmerSuppression(p)"/>
+                              (clickEvent)="confirmerSuppression(p)"/>
                 </div>
               }
             </td>
@@ -59,7 +59,7 @@
 
     @if (contexte.estEditor()) {
       <app-button [label]="t.scenario.nouvellePeriode" icon="pi pi-plus"
-                  size="small" (click)="ouvrirCreation()"/>
+                  size="small" (clickEvent)="ouvrirCreation()"/>
     }
   </div>
 </p-dialog>
@@ -117,8 +117,8 @@
     </div>
   </form>
   <ng-template #footer>
-    <app-button [label]="t.commun.annuler" severity="secondary" (click)="formVisible = false"/>
-    <app-button [label]="t.commun.enregistrer" (click)="enregistrer()"
+    <app-button [label]="t.commun.annuler" severity="secondary" (clickEvent)="formVisible = false"/>
+    <app-button [label]="t.commun.enregistrer" (clickEvent)="enregistrer()"
                 [disabled]="form.invalid || !sommePartsValide || !periodeValide"/>
   </ng-template>
 </p-dialog>

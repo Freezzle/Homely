@@ -2,7 +2,7 @@
           [header]="titre()" [modal]="true" class="w-full max-w-lg">
   <ng-content />
   <ng-template #footer>
-    <app-button [label]="libelleAnnuler()" severity="secondary" (click)="fermer()" />
-    <app-button [label]="libelleSupprimer()" severity="danger" [loading]="enCours()" (click)="confirmer.emit()" />
+    <app-button [label]="libelleAnnuler()" severity="secondary" (clickEvent)="fermer()" />
+    <app-button [label]="libelleSupprimer()" severity="danger" [loading]="enCours()" (clickEvent)="confirmer.emit()" />
   </ng-template>
 </p-dialog>
