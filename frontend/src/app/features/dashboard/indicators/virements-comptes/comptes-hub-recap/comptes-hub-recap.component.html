@@ -51,7 +51,7 @@
             @for (poste of postesDetail(); track poste.posteId ?? 'argent-poche') {
               <li class="hub-recap-poste" [class.argent-poche]="poste.argentPoche">
                 <span class="hub-recap-poste-icone">
-                  <i class="pi" [class.pi-wallet]="poste.argentPoche" [class.pi-tag]="!poste.argentPoche"></i>
+                  <i class="pi {{poste.argentPoche ? 'pi-money-bill' : (poste.type === 'REVENU' ? 'pi-arrow-up-right' : poste.type === 'CHARGE' ? 'pi-arrow-down-right' : 'pi-wallet' )}}"></i>
                 </span>
                 <span class="hub-recap-poste-libelle">
                   {{ poste.argentPoche ? t.dashboard.comptesPostesArgentPoche : poste.libelle }}

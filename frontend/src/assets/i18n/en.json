@@ -407,7 +407,6 @@
   },
   "dashboard": {
     "vueAnnuelle": "Year {{annee}}",
-    "periode": "Period",
     "moisPosVsNeg": "positive vs negative months",
     "resteAVivre": "Remaining balance",
     "recapitulatif": "Summary",

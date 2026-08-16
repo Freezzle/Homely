@@ -1,4 +1,4 @@
-import { Component, computed, input, inject } from '@angular/core';
+import { Component, input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CardModule } from 'primeng/card';
 import { AvatarModule } from 'primeng/avatar';
@@ -49,19 +49,6 @@ export class CarteBilanComponent {
   readonly tauxEffort = input<number | undefined>(undefined);
   /** Prorata / quote-part attribué (0-100) pour la période affichée — barre neutre en footer. */
   readonly prorataPct = input<number | undefined>(undefined);
-
-  readonly couleurEffective = computed(() =>
-    this.variante() === 'foyer' ? 'var(--p-secondary-color)' : this.couleur()
-  );
-
-  /** Couleur de la barre de taux d'effort : info (<75), alert (75-85), danger (>=85). */
-  readonly couleurTauxEffort = computed(() => {
-    const taux = this.tauxEffort();
-    if (taux === undefined) return 'var(--app-info)';
-    if (taux >= 85) return 'var(--app-danger)';
-    if (taux >= 75) return 'var(--app-alert)';
-    return 'var(--app-info)';
-  });
 
   /** Montant sans le symbole de devise — utilisé pour le chiffre principal des cartes. */
   formatMontantSansDevise(v: number): string {

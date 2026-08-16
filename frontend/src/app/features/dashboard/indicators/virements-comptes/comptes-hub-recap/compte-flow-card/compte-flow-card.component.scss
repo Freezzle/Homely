@@ -124,16 +124,16 @@
   }
 
   &.entree {
-    .flow-label i, .flow-value { color: var(--app-positif); }
+    .flow-label i, .flow-value { color: var(--app-revenu); }
   }
   &.sortie {
-    .flow-label i, .flow-value { color: var(--app-alert); }
+    .flow-label i, .flow-value { color: var(--app-charge); }
   }
   &.reserve {
-    .flow-label i, .flow-value { color: var(--app-info); }
+    .flow-label i, .flow-value { color: var(--app-reserve); }
   }
   &.virement-out {
-    .flow-label i, .flow-value { color: var(--app-info); }
+    .flow-label i, .flow-value { color: var(--app-charge); }
   }
 }
 

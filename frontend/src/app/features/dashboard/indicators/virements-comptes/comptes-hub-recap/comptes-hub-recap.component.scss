@@ -126,10 +126,6 @@
   padding: 8px 10px;
   border-radius: var(--app-radius-card);
   background: var(--app-card);
-
-  &.argent-poche {
-    background: color-mix(in srgb, var(--app-info) 8%, var(--app-card));
-  }
 }
 
 .hub-recap-poste-icone {

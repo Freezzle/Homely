@@ -43,7 +43,6 @@ export interface PageNavSelection {
       </div>
     } @else {
       <aside class="pn-aside">
-        <div class="pn-label">{{ t.dashboard.periode }}</div>
         <button
           type="button"
           class="pn-item"

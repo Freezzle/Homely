@@ -3,6 +3,7 @@ import { Component, input } from '@angular/core';
 import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
+import { IconTextComponent } from '../icon-text/icon-text.component';
 
 export type KpiChipSeverity = 'success' | 'warn' | 'danger' | 'info' | 'secondary';
 
@@ -20,6 +21,9 @@ export interface KpiChip {
   value: string | number;
   hint?: string;
   color?: string;
+  /** Icône PrimeNG optionnelle affichée devant le label (ex. `'pi pi-arrow-down'`,
+   *  reprise des icônes du menu latéral — voir `sidebar-menu.component.ts`). */
+  icon?: string;
   severity?: KpiChipSeverity;
   action?: KpiChipAction;
 }
@@ -27,12 +31,18 @@ export interface KpiChip {
 @Component({
   selector: 'app-kpi-chip',
   standalone: true,
-  imports: [CommonModule, TagModule, ButtonModule, TooltipModule],
+  imports: [CommonModule, TagModule, ButtonModule, TooltipModule, IconTextComponent],
   template: `
     <div class="kpi-chip">
       <div class="kpi-content">
         <div class="kpi-head">
-          <div class="kpi-label">{{ chip().label }}</div>
+          @if (chip().icon; as icon) {
+            <app-icon-text class="kpi-label-icon" [icone]="icon" [texte]="chip().label"
+                           [couleurIcone]="chip().color ?? 'var(--app-neutre)'"
+                           couleurTexte="var(--app-ink-muted)" />
+          } @else {
+            <div class="kpi-label">{{ chip().label }}</div>
+          }
           @if (chip().severity; as severity) {
             <p-tag [value]="severity" [severity]="severity" />
           }
@@ -96,6 +106,17 @@ export interface KpiChip {
       text-transform: uppercase;
       letter-spacing: 0.08em;
       color: var(--app-ink-muted);
+      font-weight: 700;
+    }
+
+    /* Variante avec icône (app-icon-text) : mêmes réglages typographiques que
+       .kpi-label, hérités par le <span> interne (couleur posée explicitement
+       via [couleurTexte] côté composant, cf. app-icon-text). */
+    .kpi-label-icon {
+      font-size: 10px;
+      line-height: 1.2;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
       font-weight: 700;
     }
 

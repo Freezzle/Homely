@@ -81,24 +81,24 @@ const ZERO_AGREGAT: { revenus: number; charges: number; reserves: number; soldeD
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    ButtonComponent,
-    CardModule,
-    SkeletonModule,
-    DialogModule,
-    MetricBarComponent,
-    PageNavComponent,
-    DashboardSectionComponent,
-    IndicatorCardComponent,
-    IndicatorDrawerComponent,
-    ChartModule,
-    KpiChipRowComponent,
-    SelectComponent,
-    InputNumberComponent,
-    InputTextComponent,
-  ],
+             imports: [
+               CommonModule,
+               ReactiveFormsModule,
+               ButtonComponent,
+               CardModule,
+               SkeletonModule,
+               DialogModule,
+               MetricBarComponent,
+               PageNavComponent,
+               DashboardSectionComponent,
+               IndicatorCardComponent,
+               IndicatorDrawerComponent,
+               ChartModule,
+               KpiChipRowComponent,
+               SelectComponent,
+               InputNumberComponent,
+               InputTextComponent,
+             ],
   templateUrl: './dashboard.component.html',
 })
 export class DashboardComponent {
@@ -198,7 +198,7 @@ export class DashboardComponent {
   /** Titre affiché en en-tête : nom du foyer ou nom du membre sélectionné. */
   readonly titrePage = computed(() => {
     const membre = this.membreCourant();
-    return membre ? membre.nom : (this.contexte.foyerCourant()?.nom ?? this.t.nav.dashboard);
+    return membre ? membre.nom : this.t.nav.dashboardFoyer;
   });
 
   readonly annees = computed(() => {
@@ -1362,16 +1362,19 @@ export class DashboardComponent {
         label: this.t.dashboard.revenuTotalAnnuel,
         value: this.formatMontant(total.revenus),
         color: colors.revenu,
+        icon: 'pi pi-arrow-up-right',
       },
       {
         label: this.t.dashboard.chargesTotalesAnnuelles,
         value: this.formatMontant(total.charges),
         color: colors.charge,
+        icon: 'pi pi-arrow-down-right',
       },
       {
         label: this.t.dashboard.reservesTotalesAnnuelles,
         value: this.formatMontant(total.reserves),
         color: colors.reserve,
+        icon: 'pi pi-wallet',
       },
     ];
     // PR6.d — Argent de poche agrégée : en mode foyer, total de tous les
@@ -1382,6 +1385,7 @@ export class DashboardComponent {
         label: this.t.dashboard.argentPocheAnnee,
         value: this.formatMontant(this.argentPocheTotalAnnuel()),
         color: colors.argentPoche,
+        icon: 'pi pi-money-bill',
         hint: this.i18n.instant('dashboard.argentPocheAnneeHint', { mois: this.argentPocheMoisConfigures() }),
       });
     } else if (!this.estModeMembre() && this.argentPocheFoyerMoisConfigures() > 0) {
@@ -1389,6 +1393,7 @@ export class DashboardComponent {
         label: this.t.dashboard.argentPocheAnnee,
         value: this.formatMontant(this.argentPocheFoyerTotalAnnuel()),
         color: colors.argentPoche,
+        icon: 'pi pi-money-bill',
         hint: this.i18n.instant('dashboard.argentPocheAnneeHint', { mois: this.argentPocheFoyerMoisConfigures() }),
         action: this.contexte.estEditor()
           ? { icon: 'pi pi-cog', ariaLabel: this.t.dashboard.gererArgentPoche, onClick: () => this.naviguerVersArgentPoche() }
@@ -1410,16 +1415,19 @@ export class DashboardComponent {
         label: this.t.projection.revenus,
         value: this.formatMontant(agregat.revenus),
         color: colors.revenu,
+        icon: 'pi pi-arrow-up-right',
       },
       {
         label: this.t.projection.charges,
         value: this.formatMontant(agregat.charges),
         color: colors.charge,
+        icon: 'pi pi-arrow-down-right',
       },
       {
         label: this.t.projection.reserves,
         value: this.formatMontant(agregat.reserves),
         color: colors.reserve,
+        icon: 'pi pi-wallet',
       },
     ];
     // PR6.b — Argent de poche du mois : toujours affiché en mode membre
@@ -1439,6 +1447,7 @@ export class DashboardComponent {
         label: this.t.dashboard.argentPocheMois,
         value: this.formatMontant(poche?.montant ?? 0),
         color: colors.argentPoche,
+        icon: 'pi pi-money-bill',
         hint: this.t.argentPoche.source[source],
         action,
       });
@@ -1449,6 +1458,7 @@ export class DashboardComponent {
           label: this.t.dashboard.argentPocheMois,
           value: this.formatMontant(pocheFoyer.total),
           color: colors.argentPoche,
+          icon: 'pi pi-money-bill',
           action: this.contexte.estEditor()
             ? { icon: 'pi pi-cog', ariaLabel: this.t.dashboard.gererArgentPoche, onClick: () => this.naviguerVersArgentPoche() }
             : undefined,

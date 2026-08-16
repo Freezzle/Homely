@@ -20,7 +20,7 @@
     @if (showVirementsEntrants()) {
       <div class="flow-row entree">
         <span class="flow-label">
-          <i class="pi pi-arrow-down-left"></i>{{ t.dashboard.comptesVirementsEntrants }}
+          <i class="pi pi-plus"></i>{{ t.dashboard.comptesVirementsEntrants }}
         </span>
         <span class="flow-value">+{{ compte().virementsEntrants | montant:devise() }}</span>
       </div>
@@ -29,7 +29,7 @@
     @if (showEntrees()) {
       <div class="flow-row entree">
         <span class="flow-label">
-          <i class="pi pi-plus"></i>{{ t.dashboard.comptesEntrees }}
+          <i class="pi pi-arrow-up-right"></i>{{ t.dashboard.comptesEntrees }}
         </span>
         <span class="flow-value">+{{ compte().entrees | montant:devise() }}</span>
       </div>
@@ -38,7 +38,7 @@
     <!-- Charges échues : toujours affiché (même à 0), sans les réserves -->
     <div class="flow-row sortie">
       <span class="flow-label">
-        <i class="pi pi-arrow-up-right"></i>{{ t.dashboard.comptesChargesEchues }}
+        <i class="pi pi-arrow-down-right"></i>{{ t.dashboard.comptesChargesEchues }}
       </span>
       <span class="flow-value">
         {{ chargesEchues() > 0 ? '−' : '' }}{{ chargesEchues() | montant:devise() }}
@@ -48,7 +48,7 @@
     @if (showReserves()) {
       <div class="flow-row reserve">
         <span class="flow-label">
-          <i class="pi pi-bookmark"></i>{{ t.dashboard.comptesReservesEchues }}
+          <i class="pi pi-wallet"></i>{{ t.dashboard.comptesReservesEchues }}
         </span>
         <span class="flow-value">+{{ compte().reservesEchues | montant:devise() }}</span>
       </div>
