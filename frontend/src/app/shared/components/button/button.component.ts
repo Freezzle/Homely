@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 
 /** Même union que les autres composants du design system (`TagSeverity`, etc.),
@@ -11,9 +11,17 @@ export type ButtonSeverity = 'primary' | 'secondary' | 'success' | 'info' | 'war
  * d'évolution du style/comportement des boutons sans repasser sur chaque écran.
  * Le `:host` est `display: contents` : aucun wrapper de layout n'est ajouté, le
  * `<p-button>` rendu se comporte comme s'il était directement à la place d'`<app-button>`
- * (flex/grid gap, etc. inchangés). `(click)` natif, `pTooltip`, `[attr.aria-label]`
- * additionnel, etc. peuvent être posés directement sur `<app-button>` par
- * l'appelant (ils s'attachent au host quel que soit le composant).
+ * (flex/grid gap, etc. inchangés). `pTooltip`, `[attr.aria-label]` additionnel, etc.
+ * peuvent être posés directement sur `<app-button>` par l'appelant (ils s'attachent
+ * au host quel que soit le composant).
+ *
+ * `(click)` est explicitement réémis (voir {@link click}) plutôt que laissé bulle
+ * nativement jusqu'au host : un listener natif posé sur `<app-button>` recevrait un
+ * évènement dont `currentTarget` est le host `display: contents` (rect 0×0), ce qui
+ * fait par ex. s'ouvrir un `p-menu`/`p-popover` positionné dessus (via
+ * `event.currentTarget`) tout en haut à gauche de l'écran au lieu de l'endroit du
+ * bouton. En réémettant l'évènement natif du vrai `<button>` interne via un
+ * `output()`, `currentTarget` référence le bouton effectivement cliqué.
  */
 @Component({
   selector: 'app-button',
@@ -34,6 +42,7 @@ export type ButtonSeverity = 'primary' | 'secondary' | 'success' | 'info' | 'war
       [type]="type()"
       [ariaLabel]="ariaLabel()"
       [styleClass]="styleClass()"
+      (click)="click.emit($event)"
     >
       <ng-content />
     </p-button>
@@ -54,4 +63,7 @@ export class ButtonComponent {
   readonly type = input<'button' | 'submit' | 'reset'>('button');
   readonly ariaLabel = input<string | undefined>(undefined);
   readonly styleClass = input<string | undefined>(undefined);
+
+  /** Réémet le clic natif du bouton interne — voir la note ci-dessus sur `currentTarget`. */
+  readonly click = output<MouseEvent>();
 }

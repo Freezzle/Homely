@@ -29,6 +29,7 @@ import {
   SelectButtonComponent,
   SelectComponent,
 } from '../../../shared/components/form-fields';
+import { CheckboxComponent } from '../../../shared/components/form-fields/checkbox/checkbox.component';
 import { MontantPipe, PeriodicitePipe } from '../../../core/pipes/format.pipes';
 
 /**
@@ -55,6 +56,7 @@ type Etape = 0 | 1 | 2 | 3 | 4;
     CommonModule, FormsModule, ReactiveFormsModule, DialogModule, ButtonComponent, InputTextComponent,
     InputNumberComponent, SelectComponent, SelectButtonComponent, DatePickerComponent, MessageModule,
     TooltipModule, StepperModule, ConfirmDialogModule, SliderModule, MembresTagsComponent, MontantPipe, PeriodicitePipe,
+    CheckboxComponent,
   ],
   templateUrl: './poste-form-dialog.component.html',
 })
@@ -107,6 +109,7 @@ export class PosteFormDialogComponent {
     debut:           [null as Date | null, Validators.required],
     fin:             [null as Date | null],
     repartitions:    this.fb.array([] as any[]),
+    inclureProrataTheorique: [true],
   }, { validators: [datesCoherentesValidator] });
 
   get repartitionsArray() { return this.form.get('repartitions') as FormArray; }
@@ -202,6 +205,10 @@ export class PosteFormDialogComponent {
   /** Vrai si le sélecteur de type de répartition (bloc 2) doit être visible. */
   afficherTypeRepartition = computed(() => !this.estMonoMembre() && this.membresSelectionnesIds().size > 1);
 
+  /** Vrai si l'option d'inclusion dans le prorata théorique doit être affichée
+   *  (postes REVENU d'un foyer à plusieurs membres uniquement). */
+  afficherInclureProrataTheorique = computed(() => this.type() === 'REVENU' && !this.estMonoMembre());
+
   /** Vrai si les quotes-parts affichées sont éditables (Personnalisé, 2+ membres). */
   estCustomMultiMembre = computed(() =>
     !this.estMonoMembre() && this.membresSelectionnesIds().size > 1 && this.typeRepartitionValue() === 'CUSTOM'
@@ -296,6 +303,7 @@ export class PosteFormDialogComponent {
       mode: 'MENSUALISE', moment: 'DEBUT_PERIODE', nature: 'EFFECTIF',
       periodiciteMois: 0, devise: this.contexte.deviseBase(),
       typeRepartition: 'AUTO', estimPourcentage: null, importance: 3, potentielOptimisation: 3,
+      inclureProrataTheorique: true,
     });
     this.initialiserRepartitions(undefined);
     this.frequenceChoisie.set('PONCTUEL');
@@ -321,6 +329,7 @@ export class PosteFormDialogComponent {
       typeRepartition: p.typeRepartition ?? 'AUTO',
       debut: p.debut ? parseIsoDateLocal(p.debut) : null,
       fin: p.fin ? parseIsoDateLocal(p.fin) : null,
+      inclureProrataTheorique: p.inclureProrataTheorique ?? true,
     });
     this.form.markAsPristine();
 
@@ -739,6 +748,7 @@ export class PosteFormDialogComponent {
       ordre: 0,
       repartitions,
       ventilations,
+      inclureProrataTheorique: this.type() === 'REVENU' ? (v.inclureProrataTheorique ?? true) : undefined,
     };
 
     const posteEnEdition = this.poste();

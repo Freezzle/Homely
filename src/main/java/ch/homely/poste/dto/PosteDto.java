@@ -33,7 +33,8 @@ public record PosteDto(
         List<RepartitionPosteDto> repartitions,
         List<VentilationCompteDto> ventilations,
         UUID posteOrigineId,  // Poste dont ce poste est issu par révision de montant (null si aucun)
-        UUID posteSuivantId   // Poste qui a remplacé celui-ci par révision de montant (null si actif, calculé)
+        UUID posteSuivantId,  // Poste qui a remplacé celui-ci par révision de montant (null si actif, calculé)
+        boolean inclureProrataTheorique  // pris en compte dans le prorata théorique des membres (défaut true) ; pertinent seulement si type=REVENU et foyer multi-membres
 ) {
     public record RepartitionPosteDto(UUID membreId, String nomMembre, BigDecimal quotePart) {}
     public record VentilationCompteDto(UUID membreId, UUID compteId, String libelleCompte) {}

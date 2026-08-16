@@ -35,6 +35,10 @@ import java.util.UUID;
  *                        Transporté uniquement pour {@link #evenements(List, int)} — n'altère
  *                        aucun autre calcul.
  * @param description     libellé du poste (descriptif uniquement, pour {@link #evenements(List, int)})
+ * @param inclureProrataTheorique prise en compte du poste (si {@code type=REVENU}) dans le calcul
+ *                        du prorata théorique des membres — voir
+ *                        {@link ch.homely.projection.ProjectionService#prorataPartage}. Sans effet
+ *                        pour les postes {@code CHARGE}/{@code RESERVE}. Défaut {@code true}.
  */
 public record PosteCalcul(
         UUID id,
@@ -52,7 +56,8 @@ public record PosteCalcul(
         List<VentilationCalcul> ventilations,
         UUID categorieId,
         UUID posteOrigineId,
-        String description
+        String description,
+        boolean inclureProrataTheorique
 ) {
     /** Compact constructor : defaults {@code nature} → EFFECTIF, {@code typeRepartition} → AUTO. */
     public PosteCalcul {
@@ -61,9 +66,23 @@ public record PosteCalcul(
     }
 
     /**
-     * Constructeur de compatibilité (sans {@code posteOrigineId}/{@code description}) —
+     * Constructeur de compatibilité (sans {@code inclureProrataTheorique}, défaut {@code true}) —
      * conservé pour ne pas casser les tests existants qui construisent un {@code PosteCalcul}
-     * sans ces 2 champs descriptifs.
+     * sans ce champ.
+     */
+    public PosteCalcul(UUID id, TypePoste type, double montant, String devise, int periodiciteMois,
+                        LocalDate debut, LocalDate fin, ModeComptabilisation mode, MomentPeriode moment,
+                        NaturePoste nature, TypeRepartition typeRepartition,
+                        List<RepartitionCalcul> repartitions, List<VentilationCalcul> ventilations,
+                        UUID categorieId, UUID posteOrigineId, String description) {
+        this(id, type, montant, devise, periodiciteMois, debut, fin, mode, moment, nature,
+                typeRepartition, repartitions, ventilations, categorieId, posteOrigineId, description, true);
+    }
+
+    /**
+     * Constructeur de compatibilité (sans {@code posteOrigineId}/{@code description}/
+     * {@code inclureProrataTheorique}) — conservé pour ne pas casser les tests existants qui
+     * construisent un {@code PosteCalcul} sans ces champs descriptifs.
      */
     public PosteCalcul(UUID id, TypePoste type, double montant, String devise, int periodiciteMois,
                         LocalDate debut, LocalDate fin, ModeComptabilisation mode, MomentPeriode moment,
@@ -71,6 +90,6 @@ public record PosteCalcul(
                         List<RepartitionCalcul> repartitions, List<VentilationCalcul> ventilations,
                         UUID categorieId) {
         this(id, type, montant, devise, periodiciteMois, debut, fin, mode, moment, nature,
-                typeRepartition, repartitions, ventilations, categorieId, null, null);
+                typeRepartition, repartitions, ventilations, categorieId, null, null, true);
     }
 }

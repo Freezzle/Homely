@@ -135,6 +135,36 @@ class ProrataPartageIT {
     }
 
     @Test
+    @DisplayName("Poste REVENU exclu du calcul (inclureProrataTheorique=false) n'influence pas le prorata théorique")
+    void prorataTheoriqueRevenu_posteExclu() throws Exception {
+        String token = creerEtLogin("prorata_revenu_exclu@test.ch");
+        String foyerId = creerFoyer2Membres(token, "Foyer Prorata Revenu Exclu");
+        String scenarioId = creerScenario2Membres(token, foyerId);
+        List<String> membreIds = tousMembresIds(token, foyerId);
+        String membre1 = membreIds.get(0);
+        String membre2 = membreIds.get(1);
+
+        String catRevenu = creerCategorie(token, foyerId, "Salaire", "REVENU");
+        String catCharge = creerCategorie(token, foyerId, "Loyer", "CHARGE");
+        // Revenu "normal" 100% membre1, compté dans le prorata théorique.
+        creerPosteCustom(token, foyerId, scenarioId, catRevenu, "REVENU", 1000, membre1, "1.0", membre2, "0.0");
+        // Revenu 100% membre2, mais exclu du prorata théorique (ex. allocation ponctuelle) : ne doit
+        // pas rééquilibrer le calcul malgré son montant élevé.
+        creerPosteRevenuExclu(token, foyerId, scenarioId, catRevenu, 5000, membre2);
+        // Un seul poste partagé, juste pour avoir aDesPostesPartages=true.
+        creerPoste(token, foyerId, scenarioId, catCharge, "CHARGE", 1000, "EFFECTIF");
+
+        List<JsonNode> resultat = prorataPartage(token, foyerId, scenarioId, 2025, 1);
+        JsonNode dtoMembre1 = parMembre(resultat, membre1);
+        JsonNode dtoMembre2 = parMembre(resultat, membre2);
+        // Seul le poste de 1000 (100% membre1) compte -> théorique 1.0 / 0.0.
+        assertThat(new BigDecimal(dtoMembre1.get("prorataTheoriqueRevenu").asText()))
+                .isEqualByComparingTo("1.000000");
+        assertThat(new BigDecimal(dtoMembre2.get("prorataTheoriqueRevenu").asText()))
+                .isEqualByComparingTo("0.000000");
+    }
+
+    @Test
     @DisplayName("Foyer mono-membre : liste vide")
     void monoMembre_listeVide() throws Exception {
         String token = creerEtLogin("prorata_mono@test.ch");
@@ -378,6 +408,36 @@ class ProrataPartageIT {
                 Map.of("membreId", membre1, "quotePart", quotePart1),
                 Map.of("membreId", membre2, "quotePart", quotePart2)));
         payload.put("ventilations", List.of());
+        try {
+            String body = client.post()
+                    .uri("/api/foyers/" + foyerId + "/scenarios/" + scenarioId + "/postes")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(MAPPER.writeValueAsString(payload))
+                    .retrieve().body(String.class);
+            return MAPPER.readTree(body).get("id").asText();
+        } catch (Exception e) { throw new RuntimeException(e); }
+    }
+
+    /** Poste REVENU en CUSTOM 100% pour {@code membreId}, avec inclureProrataTheorique=false. */
+    private String creerPosteRevenuExclu(String token, String foyerId, String scenarioId, String catId,
+                                          double montant, String membreId) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("type", "REVENU");
+        payload.put("description", "Poste revenu exclu du prorata théorique");
+        payload.put("categorieId", catId);
+        payload.put("montant", montant);
+        payload.put("periodiciteMois", 1);
+        payload.put("debut", "2025-01-01");
+        payload.put("fin", null);
+        payload.put("mode", "MENSUALISE");
+        payload.put("moment", "DEBUT_PERIODE");
+        payload.put("nature", "EFFECTIF");
+        payload.put("typeRepartition", "CUSTOM");
+        payload.put("ordre", 1);
+        payload.put("repartitions", List.of(Map.of("membreId", membreId, "quotePart", "1.0")));
+        payload.put("ventilations", List.of());
+        payload.put("inclureProrataTheorique", false);
         try {
             String body = client.post()
                     .uri("/api/foyers/" + foyerId + "/scenarios/" + scenarioId + "/postes")

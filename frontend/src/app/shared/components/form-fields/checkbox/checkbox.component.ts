@@ -1,6 +1,7 @@
 import { Component, Input, forwardRef, signal } from '@angular/core';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { CheckboxModule } from 'primeng/checkbox';
+import { TooltipModule } from 'primeng/tooltip';
 
 /**
  * Case à cocher réutilisable (design system) — remplace `<p-checkbox [binary]="true">`.
@@ -10,7 +11,7 @@ import { CheckboxModule } from 'primeng/checkbox';
 @Component({
   selector: 'app-checkbox',
   standalone: true,
-  imports: [FormsModule, CheckboxModule],
+  imports: [FormsModule, CheckboxModule, TooltipModule],
   template: `
     <div class="flex items-center gap-2">
       <p-checkbox
@@ -21,7 +22,7 @@ import { CheckboxModule } from 'primeng/checkbox';
         (onChange)="handleChange($event.checked)"
       />
       @if (label) {
-        <label [for]="inputId" class="text-sm">{{ label }}</label>
+        <label [for]="inputId" class="text-sm" [pTooltip]="tooltip || undefined">{{ label }}</label>
       }
     </div>
   `,
@@ -37,6 +38,7 @@ import { CheckboxModule } from 'primeng/checkbox';
 export class CheckboxComponent implements ControlValueAccessor {
   @Input() label = '';
   @Input() inputId = '';
+  @Input() tooltip = '';
 
   protected readonly value = signal(false);
   protected readonly disabled = signal(false);

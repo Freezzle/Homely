@@ -16,8 +16,9 @@ import java.util.UUID;
  *                               {@code Σ(contribution)} de ces mêmes postes. {@code null}
  *                               si {@code aDesPostesPartages == false}.
  * @param prorataTheoriqueRevenu ∈ [0,1] — revenus du membre / revenus du foyer sur la
- *                               période. {@code null} si le foyer n'a aucun revenu sur la
- *                               période.
+ *                               période, en ne comptant que les postes {@code REVENU} dont
+ *                               {@code inclureProrataTheorique=true} (cf. {@code Poste}).
+ *                               {@code null} si le foyer n'a aucun revenu éligible sur la période.
  * @param aDesPostesPartages     {@code false} si aucun poste {@code CHARGE}/{@code RESERVE}
  *                               partagé n'a de contribution non nulle sur la période (par
  *                               ex. foyer mono-membre, ou aucun poste partagé défini) —

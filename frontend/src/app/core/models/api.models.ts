@@ -98,6 +98,7 @@ export interface PosteDto {
   ventilations: VentilationCompteDto[];
   posteOrigineId?: string;   // Poste dont ce poste est issu par révision de montant
   posteSuivantId?: string;   // Poste qui a remplacé celui-ci par révision de montant (calculé)
+  inclureProrataTheorique: boolean;  // pris en compte dans le prorata théorique des membres (pertinent si type=REVENU et foyer multi-membres)
 }
 export interface PosteRequest {
   type: TypePoste; description: string; categorieId?: string;
@@ -111,6 +112,7 @@ export interface PosteRequest {
   potentielOptimisation?: number;  // 1 (non optimisable) à 5 (très optimisable), défaut 3
   repartitions?: { membreId: string; quotePart: number; }[];
   ventilations?: { membreId: string; compteId: string; }[];
+  inclureProrataTheorique?: boolean;  // null → true ; pertinent si type=REVENU et foyer multi-membres
 }
 export interface PosteRevisionRequest {
   nouveauMontant: number;

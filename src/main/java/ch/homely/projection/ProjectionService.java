@@ -310,15 +310,34 @@ public class ProjectionService {
             }
         }
 
+        // Revenus pris en compte pour le prorata théorique : seuls les postes REVENU dont
+        // inclureProrataTheorique=true participent (cf. Poste#inclureProrataTheorique) — un
+        // membre peut ainsi avoir des revenus exclus de cette moyenne pondérée (ex. allocations
+        // qui ne reflètent pas sa capacité contributive réelle au foyer).
+        List<PosteCalcul> postesRevenusProrata = params.postes().stream()
+                .filter(p -> p.type() == TypePoste.REVENU)
+                .filter(PosteCalcul::inclureProrataTheorique)
+                .toList();
+
         double revenuFoyerTotal = 0.0;
         Map<UUID, Double> revenuParMembre = new LinkedHashMap<>();
-        for (UUID membreId : membreIds) {
-            double revenu = 0.0;
+        for (UUID membreId : membreIds) revenuParMembre.put(membreId, 0.0);
+
+        for (PosteCalcul poste : postesRevenusProrata) {
             for (int mois = moisDebut; mois <= moisFin; mois++) {
-                revenu += MoteurCalcul.aggregatMembreMois(params, membreId, annee, mois).revenus();
+                double contribution = MoteurCalcul.contribution(poste, annee, mois)
+                        * MoteurCalcul.tauxConversion(poste.devise(), params.deviseBase(), params.taux());
+                if (contribution == 0.0) continue;
+                for (UUID membreId : membreIds) {
+                    double quotePart = MoteurCalcul.quotePartEffective(
+                            poste, membreId, annee, mois, params.periodesDefaut(), membreIds.size());
+                    if (quotePart > 0) {
+                        double contributionMembre = contribution * quotePart;
+                        revenuParMembre.merge(membreId, contributionMembre, Double::sum);
+                        revenuFoyerTotal += contributionMembre;
+                    }
+                }
             }
-            revenuParMembre.put(membreId, revenu);
-            revenuFoyerTotal += revenu;
         }
 
         boolean aDesPostesPartages = denominateurTotal > 0;
@@ -365,7 +384,7 @@ public class ProjectionService {
                     return new PosteCalcul(pc.id(), pc.type(), pc.montant() * facteur, pc.devise(),
                             pc.periodiciteMois(), pc.debut(), pc.fin(), pc.mode(), pc.moment(),
                             pc.nature(), pc.typeRepartition(), pc.repartitions(), pc.ventilations(),
-                            pc.categorieId(), pc.posteOrigineId(), pc.description());
+                            pc.categorieId(), pc.posteOrigineId(), pc.description(), pc.inclureProrataTheorique());
                 })
                 .toList();
         return new ParametresScenario(
@@ -821,7 +840,7 @@ public class ProjectionService {
                 p.getTypeRepartition(),
                 repartitions, ventilations,
                 p.getCategorie() != null ? p.getCategorie().getId() : null,
-                p.getPosteOrigineId(), p.getDescription());
+                p.getPosteOrigineId(), p.getDescription(), p.isInclureProrataTheorique());
     }
 
     // ── mappers ───────────────────────────────────────────────────────────────

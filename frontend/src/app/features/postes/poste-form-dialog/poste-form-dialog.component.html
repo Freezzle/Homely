@@ -231,6 +231,14 @@
                                     </div>
                                 </div>
                             </div>
+
+                            @if (afficherInclureProrataTheorique()) {
+                                <app-checkbox
+                                        inputId="inclure-prorata-theorique"
+                                        [label]="t.poste.inclureProrataTheorique"
+                                        [tooltip]="t.poste.inclureProrataTheoriqueTooltip"
+                                        formControlName="inclureProrataTheorique"/>
+                            }
                         </div>
                     </ng-template>
                 </p-step-panel>

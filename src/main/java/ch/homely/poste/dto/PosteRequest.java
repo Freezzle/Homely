@@ -32,7 +32,8 @@ public record PosteRequest(
         @Min(1) @Max(5) Integer importance,  // null → 3 (neutre)
         @Min(1) @Max(5) Integer potentielOptimisation,  // null → 3 (neutre)
         @Valid List<RepartitionPosteDto> repartitions,
-        @Valid List<VentilationCompteDto> ventilations
+        @Valid List<VentilationCompteDto> ventilations,
+        Boolean inclureProrataTheorique  // null → true ; pertinent seulement si type=REVENU et foyer multi-membres
 ) {
     public record RepartitionPosteDto(
             @NotNull UUID membreId,

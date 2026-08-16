@@ -114,6 +114,16 @@ public class Poste {
     @Column(name = "poste_origine_id")
     private UUID posteOrigineId;
 
+    /**
+     * Prise en compte du poste dans le calcul du prorata théorique des membres
+     * (part de revenus de chacun dans le total du foyer — cf.
+     * {@link ch.homely.projection.ProjectionService#prorataPartage}). Défaut {@code true}.
+     * Pertinent uniquement pour les postes {@link TypePoste#REVENU} d'un foyer à
+     * plusieurs membres : sans effet sinon.
+     */
+    @Column(name = "inclure_prorata_theorique", nullable = false)
+    private boolean inclureProrataTheorique = true;
+
     @CreatedDate
     @Column(name = "date_creation", nullable = false, updatable = false)
     private Instant dateCreation;

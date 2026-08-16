@@ -173,6 +173,8 @@
     "potentielOptimisationMin": "Not optimizable",
     "potentielOptimisationMax": "Easily optimizable",
     "potentielOptimisationValeur": "Optimization potential: {{n}}/5",
+    "inclureProrataTheorique": "Count in members' theoretical prorata",
+    "inclureProrataTheoriqueTooltip": "Check if you want the income to be included in the calculation of the theoretical pro rata of the members.",
     "repartition": "Split",
     "typeRepartition": "Split mode",
     "typeRepartitionTooltip": "AUTO = automatically follows the split defined in the scenario. Auto reverse = swaps the shares between people. Custom = fixed shares you set manually.",

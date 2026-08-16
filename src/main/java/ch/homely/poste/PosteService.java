@@ -437,6 +437,8 @@ public class PosteService {
         p.setNature(req.nature() != null ? req.nature() : NaturePoste.EFFECTIF);
         p.setEstimPourcentage(req.estimPourcentage());
         p.setOrdre(req.ordre());
+        p.setInclureProrataTheorique(
+                req.inclureProrataTheorique() != null ? req.inclureProrataTheorique() : true);
         int importance = req.importance() != null ? req.importance() : 3;
         if (importance < 1) importance = 1;
         if (importance > 5) importance = 5;
@@ -551,6 +553,6 @@ public class PosteService {
                 p.getEstimPourcentage(),
                 p.getTypeRepartition(),
                 p.getOrdre(), p.getImportance(), p.getPotentielOptimisation(), reps, vents,
-                p.getPosteOrigineId(), successeurParOrigine.get(p.getId()));
+                p.getPosteOrigineId(), successeurParOrigine.get(p.getId()), p.isInclureProrataTheorique());
     }
 }

@@ -173,6 +173,8 @@
     "potentielOptimisationMin": "Non optimisable",
     "potentielOptimisationMax": "Très optimisable",
     "potentielOptimisationValeur": "Potentiel d'optimisation : {{n}}/5",
+    "inclureProrataTheorique": "Compter dans le prorata théorique des membres",
+    "inclureProrataTheoriqueTooltip": "Cochez si vous désirez que le revenu soit compté dans le calcul du prorata théorique des membre.",
     "repartition": "Répartition",
     "typeRepartition": "Mode de répartition",
     "typeRepartitionTooltip": "AUTO = suit automatiquement la répartition définie dans le scénario. Inverse auto = échange les parts entre les personnes. Personnalisé = parts fixes définies manuellement.",
