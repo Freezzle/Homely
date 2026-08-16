@@ -271,7 +271,7 @@
     "revisionDateEffet": "Effet dès le",
     "revisionResume": "{{avant}} → {{apres}} ({{signe}}{{pct}}%), dès {{date}}",
     "revisionHistoriqueTooltip": "Historique ({{count}} versions)",
-    "revisionTag": "Muté",
+    "revisionTag": "Révision",
     "revisionTagTooltip": "Ce maillon résulte d'une révision d'un montant antérieur",
     "annulerRevision": "Annuler cette révision",
     "annulerRevisionTitre": "Annuler la révision — {{description}}",
@@ -406,7 +406,7 @@
     "aucuneChargeCompte": "Aucune charge ventilée sur un compte pour ce membre."
   },
   "dashboard": {
-    "vueAnnuelle": "Vue année {{annee}}",
+    "vueAnnuelle": "Année {{annee}}",
     "periode": "Période",
     "moisPosVsNeg": "mois positifs vs négatifs",
     "resteAVivre": "Solde restant",

@@ -1,3 +1,13 @@
 <p-toast position="top-right" />
 <p-confirmdialog />
+<!--
+  `<p-tag>` invisible, monté une seule fois au niveau racine : PrimeNG ne charge le CSS/les
+  variables `--p-tag-*` d'un composant que lors de l'initialisation d'une instance réelle de ce
+  composant (cf. BaseComponent._loadThemeStyles). `app-tag` (TagComponent) réutilise ces mêmes
+  variables en mode `severity` sans jamais instancier de `<p-tag>` sur certaines pages (aucun
+  kpi-chip/objective-progress/stat-grid) : les variables restaient alors non définies et les
+  couleurs de `app-tag` ne s'appliquaient pas. Ce tag cache force leur chargement dès le démarrage,
+  sur toutes les routes.
+-->
+<p-tag class="hidden" aria-hidden="true" severity="secondary" />
 <router-outlet />

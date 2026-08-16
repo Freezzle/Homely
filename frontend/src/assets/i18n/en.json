@@ -271,7 +271,7 @@
     "revisionDateEffet": "Effective date",
     "revisionResume": "{{avant}} → {{apres}} ({{signe}}{{pct}}%), from {{date}}",
     "revisionHistoriqueTooltip": "History ({{count}} versions)",
-    "revisionTag": "Muted",
+    "revisionTag": "Revision",
     "revisionTagTooltip": "This entry results from a revision of a previous amount",
     "annulerRevision": "Cancel this revision",
     "annulerRevisionTitre": "Cancel revision — {{description}}",
@@ -406,7 +406,7 @@
     "aucuneChargeCompte": "No expense is assigned to an account for this member."
   },
   "dashboard": {
-    "vueAnnuelle": "Annual view {{annee}}",
+    "vueAnnuelle": "Year {{annee}}",
     "periode": "Period",
     "moisPosVsNeg": "positive vs negative months",
     "resteAVivre": "Remaining balance",

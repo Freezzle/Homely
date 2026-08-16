@@ -1526,7 +1526,7 @@ export class DashboardComponent {
       ? this.argentPocheMois().map((r) => r.montant ?? 0)
       : this.argentPocheFoyerMois().map((r) => r.total ?? 0);
     return {
-      labels: this.t.mois,
+      labels: this.t.moisLettre,
       datasets: [
         {
           type: 'line',

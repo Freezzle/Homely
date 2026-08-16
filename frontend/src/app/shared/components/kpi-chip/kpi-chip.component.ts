@@ -64,7 +64,7 @@ export interface KpiChip {
     .kpi-content {
       flex: 1 1 auto;
       min-width: 0;
-      padding: 0.85rem 0.95rem;
+      padding: 0.75rem 0.75rem;
       display: flex;
       flex-direction: column;
       gap: 0.3rem;
@@ -83,7 +83,6 @@ export interface KpiChip {
     :host ::ng-deep .kpi-action.p-button {
       flex: 0 0 auto;
       height: 100%;
-      width: 2.75rem;
       border-radius: 0;
       border-left: 1px solid var(--app-line);
       display: flex;
@@ -101,7 +100,7 @@ export interface KpiChip {
     }
 
     .kpi-value {
-      font-size: 17px;
+      font-size: 14px;
       line-height: 1.2;
       font-weight: 800;
       color: var(--app-ink);

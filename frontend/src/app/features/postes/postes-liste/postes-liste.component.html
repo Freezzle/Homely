@@ -264,11 +264,6 @@
                                     <span class="font-semibold whitespace-nowrap">
                     {{ p.montant | montant:p.devise }}
                   </span>
-                                    @if (afficheMontantMensualise(p)) {
-                                        <span class="text-surface-400 whitespace-nowrap">
-                      ({{ p.montantMensualise | montant:p.devise }}&thinsp;/mois)
-                    </span>
-                                    }
                                 </div>
                             </div>
 
