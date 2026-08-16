@@ -2,7 +2,6 @@ import { Component, inject, input, output, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DialogModule } from 'primeng/dialog';
-import { ButtonModule } from 'primeng/button';
 import { SliderModule } from 'primeng/slider';
 import { MessageService } from 'primeng/api';
 import { I18nService } from '../../../core/i18n/i18n.service';
@@ -10,6 +9,7 @@ import { ContexteService } from '../../../core/services/contexte.service';
 import { PosteService } from '../../../core/services/scenario-poste.service';
 import { CategorieDto, ChampGroupable } from '../../../core/models/api.models';
 import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
+import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { SelectComponent } from '../../../shared/components/form-fields';
 
 /**
@@ -21,7 +21,7 @@ import { SelectComponent } from '../../../shared/components/form-fields';
 @Component({
   selector: 'app-poste-bulk-champ-dialog',
   standalone: true,
-  imports: [CommonModule, FormsModule, DialogModule, ButtonModule, SelectComponent, SliderModule],
+  imports: [CommonModule, FormsModule, DialogModule, ButtonComponent, SelectComponent, SliderModule],
   templateUrl: './poste-bulk-champ-dialog.component.html',
 })
 export class PosteBulkChampDialogComponent {

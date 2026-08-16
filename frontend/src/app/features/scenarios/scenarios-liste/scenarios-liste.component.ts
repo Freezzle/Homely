@@ -2,9 +2,7 @@ import { Component, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { TableModule } from 'primeng/table';
-import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
-import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
@@ -17,13 +15,15 @@ import { RepartitionPeriodesComponent } from '../repartition-periodes/repartitio
 import { arrondirSommeRepartition, sommeRepartitionValide as estSommeRepartitionValide } from '../../../core/utils/repartition.util';
 import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
 import { InputNumberComponent, InputTextComponent } from '../../../shared/components/form-fields';
+import { ButtonComponent } from '../../../shared/components/button/button.component';
+import { TagComponent } from '../../../shared/components/tag/tag.component';
 
 @Component({
   selector: 'app-scenarios-liste',
   standalone: true,
   providers: [ConfirmationService],
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, TableModule, ButtonModule,
-    DialogModule, TagModule, TooltipModule, ConfirmDialogModule,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, TableModule, ButtonComponent,
+    DialogModule, TagComponent, TooltipModule, ConfirmDialogModule,
     InputTextComponent, InputNumberComponent, MontantPipe, RepartitionPeriodesComponent],
   templateUrl: './scenarios-liste.component.html',
 })

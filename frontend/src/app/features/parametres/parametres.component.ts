@@ -2,7 +2,6 @@ import { Component, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CardModule } from 'primeng/card';
-import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { Router } from '@angular/router';
@@ -10,6 +9,7 @@ import { ContexteService } from '../../core/services/contexte.service';
 import { FoyerService } from '../../core/services/referentiel.service';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { DEFAULT_BASE_CURRENCY, SUPPORTED_FOYER_BASE_CURRENCIES } from '../../core/constants/devises.constants';
+import { ButtonComponent } from '../../shared/components/button/button.component';
 import { InputTextComponent, SelectComponent } from '../../shared/components/form-fields';
 
 /** T10.2 — Paramètres du foyer (OWNER) */
@@ -19,7 +19,7 @@ import { InputTextComponent, SelectComponent } from '../../shared/components/for
   providers: [ConfirmationService],
   imports: [
     CommonModule, ReactiveFormsModule,
-    CardModule, ButtonModule, InputTextComponent, SelectComponent,
+    CardModule, ButtonComponent, InputTextComponent, SelectComponent,
     ConfirmDialogModule,
   ],
   templateUrl: './parametres.component.html',

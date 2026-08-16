@@ -47,7 +47,7 @@
                       [ngModel]="membres()[i].couleur"
                       (ngModelChange)="updateMembreCouleur(i, $event)"
                       [ariaLabel]="t.referentiels.membre.couleur" />
-                    <p-button
+                    <app-button
                       icon="pi pi-times"
                       [text]="true"
                       severity="danger"
@@ -60,7 +60,7 @@
               </div>
 
               <div>
-                <p-button
+                <app-button
                   icon="pi pi-plus"
                   [text]="true"
                   [label]="t.foyer.onboarding.boutons.ajouter"
@@ -70,7 +70,7 @@
             </div>
 
             <div class="flex justify-end">
-              <p-button
+              <app-button
                 [label]="t.foyer.onboarding.boutons.suivant"
                 icon="pi pi-arrow-right"
                 iconPos="right"
@@ -122,7 +122,7 @@
                       optionLabel="label"
                       optionValue="value" />
                   </div>
-                  <p-button
+                  <app-button
                     icon="pi pi-times"
                     [text]="true"
                     severity="danger"
@@ -135,7 +135,7 @@
             </div>
 
             <div>
-              <p-button
+              <app-button
                 icon="pi pi-plus"
                 [text]="true"
                 [label]="t.foyer.onboarding.boutons.ajouter"
@@ -148,12 +148,12 @@
             }
 
             <div class="flex justify-between">
-              <p-button
+              <app-button
                 [label]="t.foyer.onboarding.boutons.retour"
                 icon="pi pi-arrow-left"
                 severity="secondary"
                 (click)="activateCallback(1)" />
-              <p-button
+              <app-button
                 [label]="t.foyer.onboarding.boutons.suivant"
                 icon="pi pi-arrow-right"
                 iconPos="right"
@@ -182,12 +182,12 @@
                       [label]="t.foyer.onboarding.champs.libelleCategorie"
                       [ngModel]="categoriesRevenu()[i].libelle"
                       (ngModelChange)="updateCategorieLibelle('REVENU', i, $event)" />
-                    <p-button icon="pi pi-times" [text]="true" severity="danger" size="small"
+                    <app-button icon="pi pi-times" [text]="true" severity="danger" size="small"
                       [ariaLabel]="t.foyer.onboarding.champs.supprimerLigne"
                       (click)="supprimerCategorie('REVENU', i)" />
                   </div>
                 }
-                <p-button icon="pi pi-plus" [text]="true" size="small"
+                <app-button icon="pi pi-plus" [text]="true" size="small"
                   [label]="t.foyer.onboarding.boutons.ajouter"
                   (click)="ajouterCategorie('REVENU')" />
               </div>
@@ -202,12 +202,12 @@
                       [label]="t.foyer.onboarding.champs.libelleCategorie"
                       [ngModel]="categoriesCharge()[i].libelle"
                       (ngModelChange)="updateCategorieLibelle('CHARGE', i, $event)" />
-                    <p-button icon="pi pi-times" [text]="true" severity="danger" size="small"
+                    <app-button icon="pi pi-times" [text]="true" severity="danger" size="small"
                       [ariaLabel]="t.foyer.onboarding.champs.supprimerLigne"
                       (click)="supprimerCategorie('CHARGE', i)" />
                   </div>
                 }
-                <p-button icon="pi pi-plus" [text]="true" size="small"
+                <app-button icon="pi pi-plus" [text]="true" size="small"
                   [label]="t.foyer.onboarding.boutons.ajouter"
                   (click)="ajouterCategorie('CHARGE')" />
               </div>
@@ -222,24 +222,24 @@
                       [label]="t.foyer.onboarding.champs.libelleCategorie"
                       [ngModel]="categoriesReserve()[i].libelle"
                       (ngModelChange)="updateCategorieLibelle('RESERVE', i, $event)" />
-                    <p-button icon="pi pi-times" [text]="true" severity="danger" size="small"
+                    <app-button icon="pi pi-times" [text]="true" severity="danger" size="small"
                       [ariaLabel]="t.foyer.onboarding.champs.supprimerLigne"
                       (click)="supprimerCategorie('RESERVE', i)" />
                   </div>
                 }
-                <p-button icon="pi pi-plus" [text]="true" size="small"
+                <app-button icon="pi pi-plus" [text]="true" size="small"
                   [label]="t.foyer.onboarding.boutons.ajouter"
                   (click)="ajouterCategorie('RESERVE')" />
               </div>
             </div>
 
             <div class="flex justify-between">
-              <p-button
+              <app-button
                 [label]="t.foyer.onboarding.boutons.retour"
                 icon="pi pi-arrow-left"
                 severity="secondary"
                 (click)="activateCallback(2)" />
-              <p-button
+              <app-button
                 [label]="t.foyer.onboarding.boutons.suivant"
                 icon="pi pi-arrow-right"
                 iconPos="right"
@@ -307,12 +307,12 @@
             }
 
             <div class="flex justify-between">
-              <p-button
+              <app-button
                 [label]="t.foyer.onboarding.boutons.retour"
                 icon="pi pi-arrow-left"
                 severity="secondary"
                 (click)="activateCallback(3)" />
-              <p-button
+              <app-button
                 [label]="t.foyer.onboarding.boutons.creer"
                 icon="pi pi-check"
                 [loading]="enCours()"

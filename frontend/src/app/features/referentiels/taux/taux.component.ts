@@ -2,9 +2,7 @@ import { Component, inject, computed, Signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
-import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
-import { TagModule } from 'primeng/tag';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ContexteService } from '../../../core/services/contexte.service';
@@ -13,7 +11,9 @@ import { TauxChangeDto } from '../../../core/models/api.models';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { creerChargementReactif } from '../../../core/utils/reference-data.util';
 import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
+import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { InputNumberComponent, InputTextComponent } from '../../../shared/components/form-fields';
+import { TagComponent } from '../../../shared/components/tag/tag.component';
 
 /** T10.2 — Taux de change (CRUD upsert) */
 @Component({
@@ -22,7 +22,7 @@ import { InputNumberComponent, InputTextComponent } from '../../../shared/compon
   providers: [ConfirmationService],
   imports: [
     CommonModule, ReactiveFormsModule,
-    TableModule, ButtonModule, DialogModule, TagModule,
+    TableModule, ButtonComponent, DialogModule, TagComponent,
     InputTextComponent, InputNumberComponent,
     ConfirmDialogModule,
   ],
@@ -120,5 +120,4 @@ export class TauxComponent {
     });
   }
 }
-
 

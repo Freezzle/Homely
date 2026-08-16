@@ -26,8 +26,7 @@ export interface PageNavSelection {
           class="pn-chip"
           [class.cur]="selection().mode === 'annee'"
           (click)="selectAnnee()">
-          <span>{{ t.dashboard.vueDensemble }}</span>
-          <span class="pn-s pn-s-pos">{{ annee() }}</span>
+          <span>{{ i18n.instant('dashboard.vueAnnuelle', { annee: annee() }) }}</span>
         </button>
         @for (m of months(); track m.mois) {
           <button
@@ -50,8 +49,7 @@ export interface PageNavSelection {
           class="pn-item"
           [class.cur]="selection().mode === 'annee'"
           (click)="selectAnnee()">
-          <span>{{ t.dashboard.vueDensemble }}</span>
-          <span class="pn-s pn-s-pos">{{ annee() }}</span>
+          <span>{{ i18n.instant('dashboard.vueAnnuelle', { annee: annee() }) }}</span>
         </button>
         @for (m of months(); track m.mois) {
           <button
@@ -184,7 +182,7 @@ export interface PageNavSelection {
   `],
 })
 export class PageNavComponent implements OnInit {
-  private readonly i18n = inject(I18nService);
+  readonly i18n = inject(I18nService);
   protected readonly viewport = inject(ViewportService);
   readonly t = this.i18n.translations();
 

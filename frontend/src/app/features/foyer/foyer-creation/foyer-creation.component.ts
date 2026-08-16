@@ -5,7 +5,7 @@ import { Router } from '@angular/router';
 
 // PrimeNG
 import { StepperModule } from 'primeng/stepper';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { MessageModule } from 'primeng/message';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
@@ -67,7 +67,7 @@ interface ScenarioLocal {
     CommonModule,
     FormsModule,
     StepperModule,
-    ButtonModule,
+    ButtonComponent,
     MessageModule,
     ToastModule,
     InputTextComponent,

@@ -4,7 +4,6 @@ import { startWith } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { DialogModule } from 'primeng/dialog';
-import { ButtonModule } from 'primeng/button';
 import { MessageService } from 'primeng/api';
 import { MontantPipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
@@ -14,6 +13,7 @@ import { PosteDto } from '../../../core/models/api.models';
 import { toIsoDateLocal, parseIsoDateLocal } from '../../../core/utils/date.util';
 import { formatPeriodeMois, formaterMontantSimple, localeCouranteDeLangue } from '../../../core/utils/format-affichage.util';
 import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
+import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { DatePickerComponent, InputNumberComponent } from '../../../shared/components/form-fields';
 
 /**
@@ -26,7 +26,7 @@ import { DatePickerComponent, InputNumberComponent } from '../../../shared/compo
 @Component({
   selector: 'app-poste-revision-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, DialogModule, ButtonModule, InputNumberComponent, DatePickerComponent, MontantPipe],
+  imports: [CommonModule, ReactiveFormsModule, DialogModule, ButtonComponent, InputNumberComponent, DatePickerComponent, MontantPipe],
   templateUrl: './poste-revision-dialog.component.html',
 })
 export class PosteRevisionDialogComponent {

@@ -1,7 +1,7 @@
 import { Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DialogModule } from 'primeng/dialog';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../button/button.component';
 
 /**
  * Dialog de confirmation de suppression réutilisable, pour les cas où une simple
@@ -14,7 +14,7 @@ import { ButtonModule } from 'primeng/button';
 @Component({
   selector: 'app-dialog-suppression',
   standalone: true,
-  imports: [CommonModule, DialogModule, ButtonModule],
+  imports: [CommonModule, DialogModule, ButtonComponent],
   templateUrl: './dialog-suppression.component.html',
 })
 export class DialogSuppressionComponent {

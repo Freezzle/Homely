@@ -1,13 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject, input } from '@angular/core';
 import { CardModule } from 'primeng/card';
-import { TagModule } from 'primeng/tag';
 import { DividerModule } from 'primeng/divider';
 import { MontantPipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { MetricRingSegment } from '../metric-ring/metric-ring.component';
 import { MetricBarComponent, MetricBarSegment } from '../metric-bar/metric-bar.component';
 import { formatTaux } from '../../utils/format-taux.util';
+import { TagComponent } from '../tag/tag.component';
 
 /** Zone du taux de plaisirs — deux échelles distinctes selon le point de vue :
  *  - "charges" : part des plaisirs parmi l'ensemble des charges nécessité connue
@@ -60,7 +60,7 @@ export interface BesoinsPlaisirsCardData {
 @Component({
   selector: 'app-besoins-plaisirs-card',
   standalone: true,
-  imports: [CommonModule, CardModule, TagModule, DividerModule, MontantPipe, MetricBarComponent],
+  imports: [CommonModule, CardModule, TagComponent, DividerModule, MontantPipe, MetricBarComponent],
   templateUrl: './besoins-plaisirs-card.component.html',
   styleUrl: './besoins-plaisirs-card.component.scss',
 })

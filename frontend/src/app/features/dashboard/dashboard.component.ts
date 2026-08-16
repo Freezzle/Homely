@@ -3,7 +3,6 @@ import { Component, computed, effect, inject, input, numberAttribute, signal, un
 import { Router } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { forkJoin } from 'rxjs';
-import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { SkeletonModule } from 'primeng/skeleton';
 import { DialogModule } from 'primeng/dialog';
@@ -43,6 +42,7 @@ import { PageNavComponent, PageNavMonthSummary, PageNavSelection } from '../../s
 import { TimelineItem } from '../../shared/components/timeline/timeline.component';
 import { MatriceBudgetaireLabels } from '../../shared/components/matrice-budgetaire/matrice-budgetaire.component';
 import { SelectComponent, InputNumberComponent, InputTextComponent } from '../../shared/components/form-fields';
+import { ButtonComponent } from '../../shared/components/button/button.component';
 import { DashboardSectionComponent } from './shared/components/dashboard-section/dashboard-section.component';
 import { IndicatorCardComponent } from './shared/components/indicator-card/indicator-card.component';
 import { IndicatorDrawerComponent } from './shared/components/indicator-drawer/indicator-drawer.component';
@@ -84,7 +84,7 @@ const ZERO_AGREGAT: { revenus: number; charges: number; reserves: number; soldeD
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    ButtonModule,
+    ButtonComponent,
     CardModule,
     SkeletonModule,
     DialogModule,

@@ -7,8 +7,8 @@
     </p>
 
     <ng-template #footer>
-        <p-button [label]="t.commun.annuler" severity="secondary" (click)="fermer()"/>
-        <p-button [label]="t.commun.supprimer" severity="danger" (click)="confirmer()"
-                  [loading]="enregistrementEnCours"/>
+        <app-button [label]="t.commun.annuler" severity="secondary" (click)="fermer()"/>
+        <app-button [label]="t.commun.supprimer" severity="danger" (click)="confirmer()"
+                    [loading]="enregistrementEnCours"/>
     </ng-template>
 </p-dialog>

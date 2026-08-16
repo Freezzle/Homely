@@ -2,8 +2,6 @@ import { Component, inject, signal, computed, input, effect } from '@angular/cor
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
-import { ButtonModule } from 'primeng/button';
-import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { SkeletonModule } from 'primeng/skeleton';
@@ -17,6 +15,8 @@ import { MontantPipe, PeriodicitePipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { localeDeLangue } from '../../../core/i18n/locale.util';
 import { MembresTagsComponent } from '../../../shared/components/membres-tags/membres-tags.component';
+import { ButtonComponent } from '../../../shared/components/button/button.component';
+import { TagComponent } from '../../../shared/components/tag/tag.component';
 import { CheckboxComponent, InputTextComponent, MultiSelectComponent, SelectComponent } from '../../../shared/components/form-fields';
 import { toIsoDateLocal } from '../../../core/utils/date.util';
 import { formatPeriodeMois, formaterMontantSimple } from '../../../core/utils/format-affichage.util';
@@ -49,9 +49,9 @@ interface PosteAffiche extends PosteDto {
   selector: 'app-postes-liste',
   standalone: true,
   providers: [ConfirmationService],
-  imports: [CommonModule, FormsModule, TableModule, ButtonModule,
+  imports: [CommonModule, FormsModule, TableModule, ButtonComponent,
             InputTextComponent, SelectComponent, MultiSelectComponent,
-            TagModule, TooltipModule, ConfirmDialogModule, SkeletonModule, CheckboxComponent,
+            TagComponent, TooltipModule, ConfirmDialogModule, SkeletonModule, CheckboxComponent,
             MenuModule,
             MontantPipe, PeriodicitePipe, MembresTagsComponent, PosteApercuDialogComponent, PosteHistoriqueDrawerComponent, PosteRevisionDialogComponent, PosteClotureDialogComponent, PosteDecalageDialogComponent, PosteFormDialogComponent,
             PosteBulkChampDialogComponent, PosteBulkSuppressionDialogComponent],

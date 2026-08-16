@@ -129,8 +129,10 @@ fait côté frontend via `Intl.NumberFormat`.
 frontend/src/app
 ├── core/     guards, interceptors (jwt, date), services (ContexteService, I18nService…),
 │             pipes (montant/date/pct/périodicité), constants, models
-├── shared/   composants réutilisables (carte-bilan, tag, tab-group, page-nav, metric-ring,
-│             stat-grid, kpi-chip(-row), event-grid, objective-progress, taux-effort-card)
+├── shared/   composants réutilisables (button, carte-bilan, tag, tab-group, page-nav,
+│             metric-ring, stat-grid, kpi-chip(-row), event-grid, objective-progress,
+│             taux-effort-card) — `button`/`tag` wrappent `p-button`/`p-tag` (API restreinte
+│             au sous-ensemble utilisé, `tag` supporte couleur libre ou `severity`)
 ├── shell/    topbar, sidebar-menu, foyer-scenario-switcher
 └── features/ auth, foyer, referentiels, scenarios, postes, argent-poche, dashboard,
               parametres

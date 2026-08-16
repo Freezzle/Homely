@@ -1,18 +1,18 @@
 import { Component, inject, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DialogModule } from 'primeng/dialog';
-import { ButtonModule } from 'primeng/button';
 import { MessageService } from 'primeng/api';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { ContexteService } from '../../../core/services/contexte.service';
 import { PosteService } from '../../../core/services/scenario-poste.service';
 import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
+import { ButtonComponent } from '../../../shared/components/button/button.component';
 
 /** Dialog de confirmation pour la suppression groupée de postes, avec le nombre concerné. */
 @Component({
   selector: 'app-poste-bulk-suppression-dialog',
   standalone: true,
-  imports: [CommonModule, DialogModule, ButtonModule],
+  imports: [CommonModule, DialogModule, ButtonComponent],
   templateUrl: './poste-bulk-suppression-dialog.component.html',
 })
 export class PosteBulkSuppressionDialogComponent {

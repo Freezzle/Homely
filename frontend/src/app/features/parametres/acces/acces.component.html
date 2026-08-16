@@ -3,7 +3,7 @@
   <div class="flex items-center gap-4">
     <h1 class="text-2xl font-bold flex-1">{{ t.acces.titre }}</h1>
     @if (contexte.estOwner()) {
-      <p-button icon="pi pi-user-plus" [label]="t.acces.inviter" (click)="ouvrirInvitation()" />
+      <app-button icon="pi pi-user-plus" [label]="t.acces.inviter" (click)="ouvrirInvitation()" />
     }
   </div>
 
@@ -21,16 +21,16 @@
          <td class="font-medium">{{ a.nomComplet }}</td>
          <td class="text-surface-500">{{ a.email }}</td>
          <td>
-           <p-tag [value]="roleLabel(a.role)"
-                  [severity]="a.role === 'OWNER' ? 'warn' : a.role === 'EDITOR' ? 'info' : 'secondary'" />
+           <app-tag [texte]="roleLabel(a.role)"
+                    [severity]="a.role === 'OWNER' ? 'warn' : a.role === 'EDITOR' ? 'info' : 'secondary'" />
          </td>
          <td>
            <div class="flex gap-1">
              @if (contexte.estOwner() && a.role !== 'OWNER') {
-               <p-button icon="pi pi-cog" [text]="true" size="small"
-                         [pTooltip]="t.acces.changerRole" (click)="ouvrirChangerRole(a)" />
-               <p-button icon="pi pi-user-minus" [text]="true" severity="danger" size="small"
-                         [pTooltip]="t.acces.retirer" (click)="retirer(a)" />
+               <app-button icon="pi pi-cog" [text]="true" size="small"
+                           [pTooltip]="t.acces.changerRole" (click)="ouvrirChangerRole(a)" />
+               <app-button icon="pi pi-user-minus" [text]="true" severity="danger" size="small"
+                           [pTooltip]="t.acces.retirer" (click)="retirer(a)" />
              }
            </div>
          </td>
@@ -60,8 +60,8 @@
       class="w-full" />
   </form>
   <ng-template #footer>
-    <p-button [label]="t.commun.annuler" severity="secondary" (click)="inviteVisible = false" />
-    <p-button [label]="t.acces.inviter" (click)="inviter()" [disabled]="inviteForm.invalid || enCours()" [loading]="enCours()" />
+    <app-button [label]="t.commun.annuler" severity="secondary" (click)="inviteVisible = false" />
+    <app-button [label]="t.acces.inviter" (click)="inviter()" [disabled]="inviteForm.invalid || enCours()" [loading]="enCours()" />
   </ng-template>
 </p-dialog>
 
@@ -76,7 +76,7 @@
       class="w-full" />
   </div>
   <ng-template #footer>
-    <p-button [label]="t.commun.annuler" severity="secondary" (click)="roleVisible = false" />
-    <p-button [label]="t.commun.enregistrer" (click)="changerRole()" [disabled]="enCours()" [loading]="enCours()" />
+    <app-button [label]="t.commun.annuler" severity="secondary" (click)="roleVisible = false" />
+    <app-button [label]="t.commun.enregistrer" (click)="changerRole()" [disabled]="enCours()" [loading]="enCours()" />
   </ng-template>
 </p-dialog>

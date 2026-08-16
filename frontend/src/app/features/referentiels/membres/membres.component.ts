@@ -2,7 +2,6 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
-import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
@@ -11,6 +10,7 @@ import { MembreService } from '../../../core/services/referentiel.service';
 import { MembreDto } from '../../../core/models/api.models';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { creerCrudReferentiel } from '../../../core/utils/crud-referentiel.util';
+import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { ColorInputComponent, InputTextComponent } from '../../../shared/components/form-fields';
 
 /** T10.2 — CRUD Membres */
@@ -20,7 +20,7 @@ import { ColorInputComponent, InputTextComponent } from '../../../shared/compone
   providers: [ConfirmationService],
   imports: [
     CommonModule, ReactiveFormsModule,
-    TableModule, ButtonModule, DialogModule,
+    TableModule, ButtonComponent, DialogModule,
     InputTextComponent, ColorInputComponent,
     ConfirmDialogModule,
   ],

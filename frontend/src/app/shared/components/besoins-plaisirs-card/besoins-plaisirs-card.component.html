@@ -1,9 +1,9 @@
 <p-card>
   <div class="status-row status-row-end">
     @if (montantTotal() > 0) {
-      <p-tag [value]="labelMap()[zoneBudget()]" [severity]="severityMap[zoneBudget()]"></p-tag>
+      <app-tag [texte]="labelMap()[zoneBudget()]" [severity]="severityMap[zoneBudget()]"></app-tag>
     } @else {
-      <p-tag [value]="t.dashboard.besoinsPlaisirsNA" severity="secondary"></p-tag>
+      <app-tag [texte]="t.dashboard.besoinsPlaisirsNA" severity="secondary"></app-tag>
     }
   </div>
 

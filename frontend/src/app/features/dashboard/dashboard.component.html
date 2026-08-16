@@ -5,21 +5,21 @@
                 <h1 class="m-0 text-xl sm:text-2xl font-extrabold leading-tight">{{ titrePage() }}</h1>
             </div>
             <div class="flex gap-1 items-center shrink-0 self-end sm:self-auto">
-                <p-button
+                <app-button
                         icon="pi pi-chevron-left"
                         [text]="true"
                         [rounded]="true"
                         [disabled]="!peutReculer()"
                         [ariaLabel]="vue() === 'mois' ? t.projection.moisPrecedent : t.projection.anneePrecedente"
-                        (onClick)="reculer()"/>
+                        (click)="reculer()"/>
                 {{ periodeLabel() }}
-                <p-button
+                <app-button
                         icon="pi pi-chevron-right"
                         [text]="true"
                         [rounded]="true"
                         [disabled]="!peutAvancer()"
                         [ariaLabel]="vue() === 'mois' ? t.projection.moisSuivant : t.projection.anneeSuivante"
-                        (onClick)="avancer()"/>
+                        (click)="avancer()"/>
             </div>
         </div>
         @if (viewport.estCompact()) {
@@ -170,10 +170,10 @@
   </form>
 
   <ng-template #footer>
-    <p-button [label]="t.commun.annuler" severity="secondary"
+    <app-button [label]="t.commun.annuler" severity="secondary"
               (click)="dialogArgentPocheVisible = false"/>
     @if (contexte.estEditor()) {
-      <p-button [label]="t.commun.enregistrer" (click)="enregistrerAllocationArgentPoche()"
+      <app-button [label]="t.commun.enregistrer" (click)="enregistrerAllocationArgentPoche()"
                 [disabled]="formAllocationArgentPoche.invalid"/>
     }
   </ng-template>

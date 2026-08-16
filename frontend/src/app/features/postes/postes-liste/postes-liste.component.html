@@ -14,24 +14,24 @@
             </span>
 
             <div class="flex items-center gap-1 flex-wrap ml-auto">
-                <p-button icon="pi pi-tag" [text]="true" [rounded]="true" severity="secondary"
+                <app-button icon="pi pi-tag" [text]="true" [rounded]="true" severity="secondary"
                           [pTooltip]="t.poste.bulk.actionCategorie" [ariaLabel]="t.poste.bulk.actionCategorie"
                           (click)="ouvrirBulkChamp('CATEGORIE')"/>
-                <p-button icon="pi pi-heart" [text]="true" [rounded]="true" severity="secondary"
+                <app-button icon="pi pi-heart" [text]="true" [rounded]="true" severity="secondary"
                           [pTooltip]="t.poste.bulk.actionImportance" [ariaLabel]="t.poste.bulk.actionImportance"
                           (click)="ouvrirBulkChamp('IMPORTANCE')"/>
-                <p-button icon="pi pi-arrows-h" [text]="true" [rounded]="true" severity="secondary"
+                <app-button icon="pi pi-arrows-h" [text]="true" [rounded]="true" severity="secondary"
                           [pTooltip]="t.poste.bulk.actionPotentiel" [ariaLabel]="t.poste.bulk.actionPotentiel"
                           (click)="ouvrirBulkChamp('POTENTIEL_OPTIMISATION')"/>
-                <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger"
+                <app-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger"
                           [disabled]="selectionContientChaine()"
                           [pTooltip]="selectionContientChaine() ? t.poste.bulk.supprimerDesactiveTooltip : t.poste.bulk.actionSupprimer"
                           [ariaLabel]="t.poste.bulk.actionSupprimer"
                           (click)="ouvrirBulkSuppression()"/>
-                <p-button icon="pi pi-eraser" [text]="true" [rounded]="true" severity="secondary"
+                <app-button icon="pi pi-eraser" [text]="true" [rounded]="true" severity="secondary"
                           [pTooltip]="t.poste.bulk.annulerSelection" [ariaLabel]="t.poste.bulk.annulerSelection"
                           (click)="effacerSelection()"/>
-                <p-button icon="pi pi-times" [text]="true" [rounded]="true" severity="secondary"
+                <app-button icon="pi pi-times" [text]="true" [rounded]="true" severity="secondary"
                           [pTooltip]="t.poste.bulk.quitterSelection" [ariaLabel]="t.poste.bulk.quitterSelection"
                           (click)="toggleModeSelection()"/>
             </div>
@@ -51,7 +51,7 @@
 
             <div class="flex justify-end">
                 @if (contexte.estEditor()) {
-                    <p-button icon="pi pi-plus" [label]="t.commun.creer" (click)="ouvrirCreation()"
+                    <app-button icon="pi pi-plus" [label]="t.commun.creer" (click)="ouvrirCreation()"
                               class="shrink-0"/>
                 }
             </div>
@@ -80,7 +80,7 @@
 
             <div class="flex justify-end gap-1">
                 @if (contexte.estEditor()) {
-                    <p-button icon="pi pi-check-square"
+                    <app-button icon="pi pi-check-square"
                               [ariaLabel]="modeSelection() ? t.poste.bulk.quitterSelection : t.poste.bulk.activerSelection"
                               [pTooltip]="modeSelection() ? t.poste.bulk.quitterSelection : t.poste.bulk.activerSelection"
                               [severity]="modeSelection() ? 'primary' : 'secondary'"
@@ -88,7 +88,7 @@
                               (click)="toggleModeSelection()"/>
                 }
                 <div>
-                    <p-button icon="pi pi-sliders-h"
+                    <app-button icon="pi pi-sliders-h"
                               [ariaLabel]="t.commun.actions"
                               severity="secondary"
                               [text]="true"
@@ -179,7 +179,7 @@
             <i class="pi pi-inbox text-5xl opacity-30"></i>
             <span class="text-sm">{{ t.commun.aucunResultat }}</span>
             @if (contexte.estEditor()) {
-                <p-button icon="pi pi-plus" [label]="t.commun.creer" severity="secondary"
+                <app-button icon="pi pi-plus" [label]="t.commun.creer" severity="secondary"
                           size="small" (click)="ouvrirCreation()"/>
             }
         </div>
@@ -226,17 +226,17 @@
                   {{ p.description }}
                 </span>
                                     @if (categorieLabel(p.categorieId) !== '–' && triActuel() !== 'CATEGORIE') {
-                                        <p-tag [value]="categorieLabel(p.categorieId)"
+                                        <app-tag [texte]="categorieLabel(p.categorieId)"
                                                severity="secondary"
                                                class="text-[10px] py-0.5 shrink-0"/>
                                     }
                                     @if (p.nature === 'ESTIMATION') {
-                                        <p-tag [value]="natureAffichee(p)"
+                                        <app-tag [texte]="natureAffichee(p)"
                                                [severity]="'warn'"
                                                class="text-[10px] py-0.5 shrink-0"/>
                                     }
                                     @if (p.posteOrigineId) {
-                                        <p-tag [value]="t.poste.revisionTag"
+                                        <app-tag [texte]="t.poste.revisionTag"
                                                [severity]="'info'"
                                                [pTooltip]="t.poste.revisionTagTooltip"
                                                class="text-[10px] py-0.5 shrink-0"/>
@@ -288,8 +288,8 @@
                                     @let membresAffiches = membresAffichesPoste(p);
                                     @if (membresAffiches.length > 0) {
                                         @for (rep of membresAffiches; track rep.membreId) {
-                                            <p-tag [value]="rep.label"
-                                                   [style]="{ 'background-color': rep.couleur, color: rep.couleurTexte }"
+                                            <app-tag [texte]="rep.label"
+                                                   [couleur]="rep.couleur"
                                                    class="text-xs py-1 px-2 border-none max-w-full"/>
                                         }
                                     }
@@ -329,7 +329,7 @@
                                     [inputId]="'select-' + p.id"
                                     class="m-2"/>
                             } @else {
-                                <p-button icon="pi pi-cog"
+                                <app-button icon="pi pi-cog"
                                           [rounded]="true"
                                           [text]="true"
                                           severity="secondary"

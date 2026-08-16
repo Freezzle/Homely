@@ -11,8 +11,6 @@ import { AppTranslations } from '../../../../core/i18n/i18n.types';
  * tous les comptes.
  */
 export function virementsComptesIndicator(cle: string, recaps: CompteRecapMensuelDto[], totalFormate: string, t: AppTranslations): Indicator {
-  const infoColor: IconColor = recaps.some((r) => r.soldeRestant < 0) ? 'red' : 'gray';
-
   return {
     key: cle,
     icon: 'pi pi-wallet',
@@ -20,7 +18,7 @@ export function virementsComptesIndicator(cle: string, recaps: CompteRecapMensue
     title: t.dashboard.indicateurVirementsComptesTitre,
     subtitle: t.dashboard.indicateurVirementsComptesSousTitre,
     info: totalFormate,
-    infoColor,
+    infoColor: 'gray',
     infoSubtitle: t.dashboard.indicateurVirementsComptesInfoSousTitre,
     drawerContent: VirementsComptesDrawerContentComponent,
   };

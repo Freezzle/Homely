@@ -4,7 +4,6 @@ import { startWith } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormArray, FormsModule, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
 import { DialogModule } from 'primeng/dialog';
-import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
 import { TooltipModule } from 'primeng/tooltip';
 import { StepperModule } from 'primeng/stepper';
@@ -22,6 +21,7 @@ import { arrondirSommeRepartition, sommeRepartitionValide as estSommeRepartition
 import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
 import { normaliserCouleur, couleurTexteContraste } from '../../../shared/utils/couleur.util';
 import { MembresTagsComponent } from '../../../shared/components/membres-tags/membres-tags.component';
+import { ButtonComponent } from '../../../shared/components/button/button.component';
 import {
   DatePickerComponent,
   InputNumberComponent,
@@ -52,7 +52,7 @@ type Etape = 0 | 1 | 2 | 3 | 4;
   standalone: true,
   providers: [ConfirmationService],
   imports: [
-    CommonModule, FormsModule, ReactiveFormsModule, DialogModule, ButtonModule, InputTextComponent,
+    CommonModule, FormsModule, ReactiveFormsModule, DialogModule, ButtonComponent, InputTextComponent,
     InputNumberComponent, SelectComponent, SelectButtonComponent, DatePickerComponent, MessageModule,
     TooltipModule, StepperModule, ConfirmDialogModule, SliderModule, MembresTagsComponent, MontantPipe, PeriodicitePipe,
   ],

@@ -23,8 +23,8 @@
         </form>
     }
     <ng-template #footer>
-        <p-button [label]="t.commun.annuler" severity="secondary" (click)="fermer()"/>
-        <p-button [label]="t.poste.clotureValider" (click)="enregistrer()"
-                  [disabled]="!valide() || enregistrementEnCours" [loading]="enregistrementEnCours"/>
+        <app-button [label]="t.commun.annuler" severity="secondary" (click)="fermer()"/>
+        <app-button [label]="t.poste.clotureValider" (click)="enregistrer()"
+                    [disabled]="!valide() || enregistrementEnCours" [loading]="enregistrementEnCours"/>
     </ng-template>
 </p-dialog>

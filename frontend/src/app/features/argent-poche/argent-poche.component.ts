@@ -5,11 +5,9 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin, of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 
-import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { SkeletonModule } from 'primeng/skeleton';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { TagModule } from 'primeng/tag';
 import { AvatarModule } from 'primeng/avatar';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageModule } from 'primeng/message';
@@ -37,6 +35,8 @@ import {
   DatePickerComponent, InputNumberComponent, InputTextComponent,
   SelectComponent, SelectButtonComponent, MultiSelectComponent,
 } from '../../shared/components/form-fields';
+import { ButtonComponent } from '../../shared/components/button/button.component';
+import { TagComponent } from '../../shared/components/tag/tag.component';
 
 /** Discrimine les deux natures d'items affichés dans la liste unique. */
 export type TypeArgentPoche = 'POLITIQUE' | 'ALLOCATION';
@@ -87,7 +87,7 @@ export interface ArgentPocheAffiche {
   providers: [ConfirmationService],
   imports: [
     CommonModule, FormsModule, ReactiveFormsModule,
-    ButtonModule, DialogModule, TagModule,
+    ButtonComponent, DialogModule, TagComponent,
     SkeletonModule, ConfirmDialogModule, AvatarModule, TooltipModule, MessageModule,
     MenuModule, MeterGroupModule, SliderModule,
     InputTextComponent, InputNumberComponent, DatePickerComponent,

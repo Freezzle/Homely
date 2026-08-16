@@ -1,10 +1,8 @@
 import { Component, inject, input, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormArray, Validators } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { TableModule } from 'primeng/table';
-import { TagModule } from 'primeng/tag';
 import { MessageModule } from 'primeng/message';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
@@ -14,6 +12,7 @@ import { RepartitionPeriodeService } from '../../../core/services/scenario-poste
 import { RepartitionPeriodeDto } from '../../../core/models/api.models';
 import { PctPipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
+import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { TagComponent } from '../../../shared/components/tag/tag.component';
 import { toIsoDateLocal, parseIsoDateLocal } from '../../../core/utils/date.util';
 import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
@@ -31,8 +30,8 @@ import { DatePickerComponent, InputNumberComponent } from '../../../shared/compo
   /* display: contents rend le host transparent afin que le bouton
      reçoive le même contexte de layout que les autres boutons du tableau */
   styles: [`:host { display: contents; }`],
-  imports: [CommonModule, ReactiveFormsModule, ButtonModule, DialogModule,
-    TableModule, TagModule, MessageModule, ConfirmDialogModule, TooltipModule,
+  imports: [CommonModule, ReactiveFormsModule, ButtonComponent, DialogModule,
+    TableModule, MessageModule, ConfirmDialogModule, TooltipModule,
     DatePickerComponent, InputNumberComponent, PctPipe, TagComponent],
   templateUrl: './repartition-periodes.component.html',
 })
@@ -217,7 +216,6 @@ export class RepartitionPeriodesComponent {
 
   private toIso(d: Date): string { return toIsoDateLocal(d); }
 }
-
 
 
 

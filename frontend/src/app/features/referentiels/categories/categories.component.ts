@@ -2,17 +2,17 @@ import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
-import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
-import { TagModule } from 'primeng/tag';
 import { MessageModule } from 'primeng/message';
 import { MessageService } from 'primeng/api';
 import { ContexteService } from '../../../core/services/contexte.service';
 import { CategorieService } from '../../../core/services/referentiel.service';
 import { CategorieDto, TypeCategorie } from '../../../core/models/api.models';
 import { I18nService } from '../../../core/i18n/i18n.service';
+import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { DialogSuppressionComponent } from '../../../shared/components/dialog-suppression/dialog-suppression.component';
 import { InputTextComponent, SelectComponent } from '../../../shared/components/form-fields';
+import { TagComponent } from '../../../shared/components/tag/tag.component';
 import { creerCrudReferentiel } from '../../../core/utils/crud-referentiel.util';
 import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
 
@@ -22,7 +22,7 @@ import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
   standalone: true,
   imports: [
     CommonModule, ReactiveFormsModule,
-    TableModule, ButtonModule, DialogModule, TagModule, MessageModule,
+    TableModule, ButtonComponent, DialogModule, TagComponent, MessageModule,
     InputTextComponent, SelectComponent, FormsModule,
     DialogSuppressionComponent,
   ],

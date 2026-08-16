@@ -404,7 +404,7 @@
     "aucuneChargeCompte": "No expense is assigned to an account for this member."
   },
   "dashboard": {
-    "vueDensemble": "Overview",
+    "vueAnnuelle": "Annual view {{annee}}",
     "periode": "Period",
     "moisPosVsNeg": "positive vs negative months",
     "resteAVivre": "Remaining balance",

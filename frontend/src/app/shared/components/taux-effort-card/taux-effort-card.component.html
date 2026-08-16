@@ -6,12 +6,12 @@
       <span></span>
     }
     @if (data().revenusTotal > 0) {
-      <p-tag
-        [value]="labelMap()[zone()]"
+      <app-tag
+        [texte]="labelMap()[zone()]"
         [severity]="severityMap[zone()]">
-      </p-tag>
+      </app-tag>
     } @else {
-      <p-tag [value]="t.projection.effortCardZoneNA" severity="secondary"></p-tag>
+      <app-tag [texte]="t.projection.effortCardZoneNA" severity="secondary"></app-tag>
     }
   </div>
 

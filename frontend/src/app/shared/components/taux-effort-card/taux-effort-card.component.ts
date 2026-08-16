@@ -1,7 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject, input } from '@angular/core';
 import { CardModule } from 'primeng/card';
-import { TagModule } from 'primeng/tag';
 import { DividerModule } from 'primeng/divider';
 import { MontantPipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
@@ -48,7 +47,7 @@ export interface TauxEffortCardData {
 @Component({
   selector: 'app-taux-effort-card',
   standalone: true,
-  imports: [CommonModule, CardModule, TagModule, DividerModule, MontantPipe, TagComponent],
+  imports: [CommonModule, CardModule, DividerModule, MontantPipe, TagComponent],
   templateUrl: './taux-effort-card.component.html',
   styleUrl: './taux-effort-card.component.scss',
 })

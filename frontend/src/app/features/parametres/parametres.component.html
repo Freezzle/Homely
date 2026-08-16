@@ -15,9 +15,9 @@
         [options]="devises"
         class="w-full" />
       <div class="flex justify-end">
-        <p-button [label]="t.parametres.enregistrer" icon="pi pi-save"
-                  (click)="enregistrer()" [disabled]="form.invalid || !contexte.estOwner()"
-                  [loading]="sauvegarde()" />
+        <app-button [label]="t.parametres.enregistrer" icon="pi pi-save"
+                    (click)="enregistrer()" [disabled]="form.invalid || !contexte.estOwner()"
+                    [loading]="sauvegarde()" />
       </div>
     </form>
   </p-card>
@@ -29,8 +29,8 @@
           <div class="font-semibold text-red-600">{{ t.parametres.zoneDangereuse }}</div>
           <div class="text-sm text-surface-500 mt-1">{{ t.parametres.confirmerSuppression }}</div>
         </div>
-        <p-button [label]="t.parametres.supprimer" icon="pi pi-trash" severity="danger"
-                  (click)="supprimerFoyer()" />
+        <app-button [label]="t.parametres.supprimer" icon="pi pi-trash" severity="danger"
+                    (click)="supprimerFoyer()" />
       </div>
     </p-card>
   }

@@ -1,6 +1,6 @@
 import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../shared/components/button/button.component';
 import { TooltipModule } from 'primeng/tooltip';
 import { AvatarModule } from 'primeng/avatar';
 import { MenuModule } from 'primeng/menu';
@@ -14,7 +14,7 @@ import { FoyerScenarioSwitcherComponent } from '../foyer-scenario-switcher/foyer
 @Component({
   selector: 'app-topbar',
   standalone: true,
-  imports: [CommonModule, ButtonModule, TooltipModule, AvatarModule, MenuModule, SidebarModule, FoyerScenarioSwitcherComponent],
+  imports: [CommonModule, ButtonComponent, TooltipModule, AvatarModule, MenuModule, SidebarModule, FoyerScenarioSwitcherComponent],
   templateUrl: './topbar.component.html',
 })
 export class TopbarComponent implements OnInit {

@@ -2,7 +2,6 @@ import { Component, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
-import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageModule } from 'primeng/message';
@@ -13,6 +12,7 @@ import { CompteService, MembreService, TauxChangeService } from '../../../core/s
 import { CompteDto, MembreDto } from '../../../core/models/api.models';
 import { MontantPipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
+import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { TagComponent } from '../../../shared/components/tag/tag.component';
 import {
   InputNumberComponent,
@@ -31,7 +31,7 @@ import { notifierErreur } from '../../../core/utils/toast.util';
   providers: [ConfirmationService],
   imports: [
       CommonModule, ReactiveFormsModule,
-      TableModule, ButtonModule, DialogModule, MessageModule, TooltipModule,
+      TableModule, ButtonComponent, DialogModule, MessageModule, TooltipModule,
       InputTextComponent, InputNumberComponent, SelectComponent, MultiSelectComponent,
       ConfirmDialogModule, MontantPipe, TagComponent,
   ],

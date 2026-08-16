@@ -2,7 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { MessageModule } from 'primeng/message';
 import { CardModule } from 'primeng/card';
 import { AuthService } from '../../../core/services/auth.service';
@@ -13,7 +13,7 @@ import { InputTextComponent } from '../../../shared/components/form-fields';
   selector: 'app-register',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink,
-    CardModule, InputTextComponent, ButtonModule, MessageModule],
+    CardModule, InputTextComponent, ButtonComponent, MessageModule],
   templateUrl: './register.component.html',
 })
 export class RegisterComponent {

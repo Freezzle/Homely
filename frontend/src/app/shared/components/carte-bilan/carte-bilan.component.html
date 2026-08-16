@@ -24,9 +24,9 @@
             {{ row.libelle }}
               @if (row.tags?.length) {
                   @for (tag of row.tags; track tag.membreId) {
-                      <p-tag [value]="tag.label"
-                             [style]="{ 'background-color': tag.couleur, color: tag.couleurTexte }"
-                             class="text-xs py-0.5 me-1 px-2 border-none max-w-full"/>
+                      <app-tag [texte]="tag.label"
+                               [couleur]="tag.couleur"
+                               class="text-xs py-0.5 me-1 px-2 border-none max-w-full"/>
                   }
               }
           </span>

@@ -2,9 +2,9 @@
 
 <!-- Bouton déclencheur : icône seule + tooltip, style cohérent avec les autres actions -->
 @if (membres().length > 1) {
-  <p-button icon="pi pi-calendar-plus" [text]="true" size="small"
-            [pTooltip]="t.scenario.gererPeriodes" tooltipPosition="top"
-            (click)="ouvrirDialog()"/>
+  <app-button icon="pi pi-calendar-plus" [text]="true" size="small"
+              [pTooltip]="t.scenario.gererPeriodes" tooltipPosition="top"
+              (click)="ouvrirDialog()"/>
 }
 
 <!-- Dialog liste des périodes -->
@@ -28,7 +28,7 @@
             <td>{{ p.debut | date:'dd.MM.yyyy' }}</td>
             <td>
               @if (!p.fin) {
-                <p-tag [value]="t.scenario.periodeOuverte" severity="success"/>
+                <app-tag [texte]="t.scenario.periodeOuverte" severity="success"/>
               } @else {
                 {{ p.fin | date:'dd.MM.yyyy' }}
               }
@@ -43,10 +43,10 @@
             <td>
               @if (contexte.estEditor()) {
                 <div class="flex gap-1 justify-end">
-                  <p-button icon="pi pi-pencil" [text]="true" size="small"
-                            (click)="ouvrirEdition(p)"/>
-                  <p-button icon="pi pi-trash" [text]="true" severity="danger" size="small"
-                            (click)="confirmerSuppression(p)"/>
+                  <app-button icon="pi pi-pencil" [text]="true" size="small"
+                              (click)="ouvrirEdition(p)"/>
+                  <app-button icon="pi pi-trash" [text]="true" severity="danger" size="small"
+                              (click)="confirmerSuppression(p)"/>
                 </div>
               }
             </td>
@@ -58,8 +58,8 @@
     }
 
     @if (contexte.estEditor()) {
-      <p-button [label]="t.scenario.nouvellePeriode" icon="pi pi-plus"
-                size="small" (click)="ouvrirCreation()"/>
+      <app-button [label]="t.scenario.nouvellePeriode" icon="pi pi-plus"
+                  size="small" (click)="ouvrirCreation()"/>
     }
   </div>
 </p-dialog>
@@ -117,8 +117,8 @@
     </div>
   </form>
   <ng-template #footer>
-    <p-button [label]="t.commun.annuler" severity="secondary" (click)="formVisible = false"/>
-    <p-button [label]="t.commun.enregistrer" (click)="enregistrer()"
-              [disabled]="form.invalid || !sommePartsValide || !periodeValide"/>
+    <app-button [label]="t.commun.annuler" severity="secondary" (click)="formVisible = false"/>
+    <app-button [label]="t.commun.enregistrer" (click)="enregistrer()"
+                [disabled]="form.invalid || !sommePartsValide || !periodeValide"/>
   </ng-template>
 </p-dialog>

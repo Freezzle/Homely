@@ -3,9 +3,7 @@ import { toObservable, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
-import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
-import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
@@ -16,7 +14,9 @@ import { FoyerService } from '../../../core/services/referentiel.service';
 import { AccesFoyerDto, RoleFoyer } from '../../../core/models/api.models';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
+import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { InputTextComponent, SelectComponent } from '../../../shared/components/form-fields';
+import { TagComponent } from '../../../shared/components/tag/tag.component';
 
 /** T10.2 — Gestion des accès (OWNER uniquement) */
 @Component({
@@ -25,7 +25,7 @@ import { InputTextComponent, SelectComponent } from '../../../shared/components/
   providers: [ConfirmationService],
   imports: [
     CommonModule, ReactiveFormsModule, FormsModule,
-    TableModule, ButtonModule, DialogModule, TagModule, TooltipModule,
+    TableModule, ButtonComponent, DialogModule, TagComponent, TooltipModule,
     InputTextComponent, SelectComponent,
     ConfirmDialogModule,
   ],

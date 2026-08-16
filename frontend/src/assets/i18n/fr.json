@@ -404,7 +404,7 @@
     "aucuneChargeCompte": "Aucune charge ventilée sur un compte pour ce membre."
   },
   "dashboard": {
-    "vueDensemble": "Vue d'ensemble",
+    "vueAnnuelle": "Vue année {{annee}}",
     "periode": "Période",
     "moisPosVsNeg": "mois positifs vs négatifs",
     "resteAVivre": "Solde restant",

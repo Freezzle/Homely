@@ -14,7 +14,7 @@
         @if (erreur()) {
           <p-message severity="error">{{ erreur() }}</p-message>
         }
-        <p-button type="submit" [label]="t.auth.registerBtn" class="w-full"
+        <app-button type="submit" [label]="t.auth.registerBtn" class="w-full"
                   [loading]="chargement()" [disabled]="form.invalid" />
         <div class="text-center text-sm text-surface-500">
           {{ t.auth.alreadyAccount }}

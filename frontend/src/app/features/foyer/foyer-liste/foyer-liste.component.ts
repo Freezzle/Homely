@@ -2,7 +2,7 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { CardModule } from 'primeng/card';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { FoyerService } from '../../../core/services/referentiel.service';
 import { ContexteService } from '../../../core/services/contexte.service';
 import { FoyerDto } from '../../../core/models/api.models';
@@ -11,7 +11,7 @@ import { I18nService } from '../../../core/i18n/i18n.service';
 @Component({
   selector: 'app-foyer-liste',
   standalone: true,
-  imports: [CommonModule, CardModule, ButtonModule],
+  imports: [CommonModule, CardModule, ButtonComponent],
   templateUrl: './foyer-liste.component.html',
 })
 export class FoyerListeComponent implements OnInit {

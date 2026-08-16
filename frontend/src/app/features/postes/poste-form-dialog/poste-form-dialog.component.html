@@ -544,16 +544,16 @@
     </form>
 
     <ng-template #footer>
-        <p-button [label]="t.commun.annuler" severity="secondary" [text]="true" (click)="fermer()"/>
+        <app-button [label]="t.commun.annuler" severity="secondary" [text]="true" (click)="fermer()"/>
         <span class="flex-1"></span>
-        <p-button [label]="t.commun.precedent" severity="secondary" [outlined]="true"
+        <app-button [label]="t.commun.precedent" severity="secondary" [outlined]="true"
                   [disabled]="etapeActive() === 0" (click)="precedent()"/>
         @if (etapeActive() < 4) {
-            <p-button [label]="t.commun.suivant" [disabled]="!etapeValide(etapeActive())" (click)="suivant()"/>
+            <app-button [label]="t.commun.suivant" [disabled]="!etapeValide(etapeActive())" (click)="suivant()"/>
         } @else {
-            <p-button [label]="t.commun.enregistrerEtNouveau" [outlined]="true"
+            <app-button [label]="t.commun.enregistrerEtNouveau" [outlined]="true"
                       [disabled]="!formulaireValide() || enregistrementEnCours()" (click)="enregistrer(true)"/>
-            <p-button [label]="t.commun.enregistrer"
+            <app-button [label]="t.commun.enregistrer"
                       [disabled]="!formulaireValide() || enregistrementEnCours()" [loading]="enregistrementEnCours()"
                       (click)="enregistrer(false)"/>
         }

@@ -2,9 +2,9 @@
 <div class="flex flex-col gap-4">
   <div class="flex items-center gap-4">
     <h1 class="text-2xl font-bold flex-1">{{ t.referentiels.taux.titre }}</h1>
-    <p-tag [value]="t.foyer.deviseBase + ' : ' + contexte.deviseBase()" severity="info" />
+    <app-tag [texte]="t.foyer.deviseBase + ' : ' + contexte.deviseBase()" severity="info" />
     @if (contexte.estEditor()) {
-      <p-button icon="pi pi-plus" [label]="t.commun.creer" (click)="ouvrirCreation()" />
+      <app-button icon="pi pi-plus" [label]="t.commun.creer" (click)="ouvrirCreation()" />
     }
   </div>
 
@@ -23,8 +23,8 @@
         <td>
           <div class="flex gap-1">
             @if (contexte.estEditor()) {
-              <p-button icon="pi pi-pencil" [text]="true" size="small" (click)="ouvrirEdition(tx)" />
-              <p-button icon="pi pi-trash" [text]="true" severity="danger" size="small" (click)="supprimer(tx)" />
+              <app-button icon="pi pi-pencil" [text]="true" size="small" (click)="ouvrirEdition(tx)" />
+              <app-button icon="pi pi-trash" [text]="true" severity="danger" size="small" (click)="supprimer(tx)" />
             }
           </div>
         </td>
@@ -55,7 +55,7 @@
       [hint]="form.get('tauxVersBase')?.disabled ? t.referentiels.taux.tauxDeviseBaseVerrouille : egaliteTauxVersBase()" />
   </form>
   <ng-template #footer>
-    <p-button [label]="t.commun.annuler" severity="secondary" (click)="dialogVisible = false" />
-    <p-button [label]="t.commun.enregistrer" (click)="enregistrer()" [disabled]="form.invalid" />
+    <app-button [label]="t.commun.annuler" severity="secondary" (click)="dialogVisible = false" />
+    <app-button [label]="t.commun.enregistrer" (click)="enregistrer()" [disabled]="form.invalid" />
   </ng-template>
 </p-dialog>

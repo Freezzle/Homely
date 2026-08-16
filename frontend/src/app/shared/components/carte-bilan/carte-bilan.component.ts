@@ -4,9 +4,9 @@ import { CardModule } from 'primeng/card';
 import { AvatarModule } from 'primeng/avatar';
 import { DividerModule } from 'primeng/divider';
 import { MeterGroupModule } from 'primeng/metergroup';
-import { TagModule } from 'primeng/tag';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { localeDeLangue } from '../../../core/i18n/locale.util';
+import { TagComponent } from '../tag/tag.component';
 
 /** Tag membre (nom + couleur) affiché sur une ligne de décomposition « Compte » (co-titulaires). */
 export interface MembreTagInfo { membreId: string; label: string; couleur: string; couleurTexte: string; }
@@ -28,7 +28,7 @@ export interface LigneDecomposition {
 @Component({
   selector: 'app-carte-bilan',
   standalone: true,
-  imports: [CommonModule, CardModule, AvatarModule, DividerModule, MeterGroupModule, TagModule],
+  imports: [CommonModule, CardModule, AvatarModule, DividerModule, MeterGroupModule, TagComponent],
   templateUrl: './carte-bilan.component.html',
 })
 export class CarteBilanComponent {

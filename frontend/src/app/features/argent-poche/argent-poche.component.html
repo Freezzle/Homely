@@ -6,7 +6,7 @@
     <h1 class="text-2xl font-bold flex-1">{{ t.argentPoche.titre }}</h1>
     @if (contexte.estEditor()) {
       <div>
-        <p-button icon="pi pi-plus" [label]="t.commun.creer" (click)="menuCreation.toggle($event)" />
+        <app-button icon="pi pi-plus" [label]="t.commun.creer" (click)="menuCreation.toggle($event)" />
         <p-menu #menuCreation [popup]="true" [model]="creationMenuItems" appendTo="body" />
       </div>
     }
@@ -107,14 +107,14 @@
                   </span>
                   @let membreCompte = membreCompteLabel(i);
                   @if (membreCompte) {
-                    <p-tag [value]="membreCompte.label"
-                           [style]="{ 'background-color': membreCompte.couleur, color: membreCompte.couleurTexte }"
-                           class="text-xs py-1 px-2 border-none max-w-full" />
+                    <app-tag [texte]="membreCompte.label"
+                             [couleur]="membreCompte.couleur"
+                             class="text-xs py-1 px-2 border-none max-w-full" />
                   }
                 </div>
                 <div class="flex items-center flex-wrap gap-1 text-sm md:justify-end">
-                    <p-tag [value]="modeLabel(i)" [severity]="typeSeverity(i)"
-                           class="text-[10px] py-0.5 shrink-0" />
+                    <app-tag [texte]="modeLabel(i)" [severity]="typeSeverity(i)"
+                             class="text-[10px] py-0.5 shrink-0" />
                 </div>
               </div>
             </div>
@@ -122,9 +122,9 @@
             <!-- Colonne 2 : actions -->
             <div class="flex items-center justify-end shrink-0">
               @if (contexte.estEditor()) {
-                <p-button icon="pi pi-cog" [rounded]="true" [text]="true" severity="secondary" size="small"
-                          [ariaLabel]="t.commun.actions" [pTooltip]="t.commun.actions"
-                          (click)="menuActions.toggle($event)" />
+                <app-button icon="pi pi-cog" [rounded]="true" [text]="true" severity="secondary" size="small"
+                            [ariaLabel]="t.commun.actions" [pTooltip]="t.commun.actions"
+                            (click)="menuActions.toggle($event)" />
                 <p-menu #menuActions [popup]="true" [model]="actionItemsFor(i)" appendTo="body" />
               }
             </div>
@@ -230,10 +230,10 @@
   </form>
 
   <ng-template #footer>
-    <p-button [label]="t.commun.annuler" severity="secondary"
-              (click)="dialogPolitiqueVisible = false" />
-    <p-button [label]="t.commun.enregistrer" (click)="enregistrerPolitique()"
-              [disabled]="formPolitique.invalid" />
+    <app-button [label]="t.commun.annuler" severity="secondary"
+                (click)="dialogPolitiqueVisible = false" />
+    <app-button [label]="t.commun.enregistrer" (click)="enregistrerPolitique()"
+                [disabled]="formPolitique.invalid" />
   </ng-template>
 </p-dialog>
 
@@ -267,9 +267,9 @@
   </form>
 
   <ng-template #footer>
-    <p-button [label]="t.commun.annuler" severity="secondary"
-              (click)="dialogAllocationVisible = false" />
-    <p-button [label]="t.commun.enregistrer" (click)="enregistrerAllocation()"
-              [disabled]="formAllocation.invalid" />
+    <app-button [label]="t.commun.annuler" severity="secondary"
+                (click)="dialogAllocationVisible = false" />
+    <app-button [label]="t.commun.enregistrer" (click)="enregistrerAllocation()"
+                [disabled]="formAllocation.invalid" />
   </ng-template>
 </p-dialog>
