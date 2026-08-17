@@ -44,7 +44,7 @@
           [class.border-surface-200]="d.diffArgentPoche"
           [class.dark:border-surface-700]="d.diffArgentPoche">
         <span class="flex items-center gap-2 text-sm text-surface-600">
-          <i class="pi pi-wallet text-xs" style="color: var(--app-reserve)"></i>
+          <i class="pi pi-money-bill text-xs" style="color: var(--app-reserve)"></i>
           {{ t.projection.reserves }}
         </span>
         <span class="font-bold" [style.color]="diffColor(d.diffReserves(), true)">
@@ -58,7 +58,7 @@
       @if (d.diffArgentPoche; as diffArgentPoche) {
         <li class="flex items-center justify-between gap-3 py-2">
           <span class="flex items-center gap-2 text-sm text-surface-600">
-            <i class="pi pi-money-bill text-xs" style="color: var(--app-argent-poche)"></i>
+            <i class="pi pi-wallet text-xs" style="color: var(--app-argent-poche)"></i>
             {{ t.dashboard.argentPocheMois }}
           </span>
           <span class="font-bold" [style.color]="diffColor(diffArgentPoche(), true)">

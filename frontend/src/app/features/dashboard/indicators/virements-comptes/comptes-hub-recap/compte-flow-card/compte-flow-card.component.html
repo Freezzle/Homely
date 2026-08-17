@@ -2,9 +2,6 @@
 
   <!-- Header : nom du compte + badge Hub -->
   <div class="flow-card-header">
-    <div class="flow-card-avatar">
-      <i class="pi pi-wallet"></i>
-    </div>
     <div class="flow-card-name">
         {{ compte().libelleCompte }}
     </div>
@@ -48,7 +45,7 @@
     @if (showReserves()) {
       <div class="flow-row reserve">
         <span class="flow-label">
-          <i class="pi pi-wallet"></i>{{ t.dashboard.comptesReservesEchues }}
+          <i class="pi pi-money-bill"></i>{{ t.dashboard.comptesReservesEchues }}
         </span>
         <span class="flow-value">+{{ compte().reservesEchues | montant:devise() }}</span>
       </div>

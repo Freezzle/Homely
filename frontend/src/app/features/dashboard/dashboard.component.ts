@@ -1374,7 +1374,7 @@ export class DashboardComponent {
         label: this.t.dashboard.reservesTotalesAnnuelles,
         value: this.formatMontant(total.reserves),
         color: colors.reserve,
-        icon: 'pi pi-wallet',
+        icon: 'pi pi-money-bill',
       },
     ];
     // PR6.d — Argent de poche agrégée : en mode foyer, total de tous les
@@ -1385,7 +1385,7 @@ export class DashboardComponent {
         label: this.t.dashboard.argentPocheAnnee,
         value: this.formatMontant(this.argentPocheTotalAnnuel()),
         color: colors.argentPoche,
-        icon: 'pi pi-money-bill',
+        icon: 'pi pi-wallet',
         hint: this.i18n.instant('dashboard.argentPocheAnneeHint', { mois: this.argentPocheMoisConfigures() }),
       });
     } else if (!this.estModeMembre() && this.argentPocheFoyerMoisConfigures() > 0) {
@@ -1427,7 +1427,7 @@ export class DashboardComponent {
         label: this.t.projection.reserves,
         value: this.formatMontant(agregat.reserves),
         color: colors.reserve,
-        icon: 'pi pi-wallet',
+        icon: 'pi pi-money-bill',
       },
     ];
     // PR6.b — Argent de poche du mois : toujours affiché en mode membre
@@ -1447,7 +1447,7 @@ export class DashboardComponent {
         label: this.t.dashboard.argentPocheMois,
         value: this.formatMontant(poche?.montant ?? 0),
         color: colors.argentPoche,
-        icon: 'pi pi-money-bill',
+        icon: 'pi pi-wallet',
         hint: this.t.argentPoche.source[source],
         action,
       });
