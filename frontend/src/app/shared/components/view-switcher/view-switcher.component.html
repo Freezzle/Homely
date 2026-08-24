@@ -1,0 +1,26 @@
+<div class="vs-shell" [attr.lang]="i18n.currentLang()">
+  <div class="vs-bar" role="toolbar" [attr.aria-label]="toolbarLabel()">
+    @for (view of views(); track view.key) {
+      <button
+        type="button"
+        class="vs-button"
+        [class.is-active]="isActive(view.key)"
+        [attr.aria-label]="view.label"
+        [attr.aria-pressed]="isActive(view.key)"
+        [pTooltip]="view.label"
+        tooltipPosition="top"
+        (click)="select(view.key)">
+        <svg class="vs-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path class="s" [attr.d]="iconFor(view).secondary"></path>
+          <path class="p" [attr.d]="iconFor(view).primary"></path>
+        </svg>
+
+        @if (hasBadge(view.badge)) {
+          <span class="vs-badge" [attr.aria-label]="view.badge" aria-hidden="true">
+            {{ badgeLabel(view.badge) }}
+          </span>
+        }
+      </button>
+    }
+  </div>
+</div>

@@ -146,6 +146,7 @@
     "montantMensualise": "Mensual.",
     "cacherInactifs": "Masquer les inactifs",
     "cacherFuturs": "Masquer les postes futurs",
+    "cacherDetails": "Masquer les détails secondaires",
     "posteCount": "poste(s)",
     "devise": "Devise",
     "periodicite": "Périodicité",
@@ -414,7 +415,6 @@
     "echeances": "Échéances",
     "evenement": "Événement",
     "fluxMensuel": "Flux mensuel",
-    "fluxMensuelDescription": "Flux mensuel, mois par mois, sur l'horizon des postes scénarisés.",
     "tresorerieTitle": "Trésorerie cumulée",
     "tresorerieCumulee": "Trésorerie cumulée prévue",
     "tresorerieCumuleeReel": "Trésorerie cumulée réelle (échéances)",
@@ -447,7 +447,6 @@
     "soldeMedianRobuste": "Solde médian",
     "soldeMedianRobusteHint": "Moyenne sur 10 mois, pire et meilleur mois exclus",
     "ceQuiChange": "Ce qui change",
-    "cliquezBarre": "Cliquez une barre pour ouvrir le détail du mois.",
     "tresoCumuleeDescription": "Trésorerie cumulée, mois par mois, sur l'horizon du scénario : vision prévue et réelle (échéances).",
     "soldeRestant": "Solde restant",
     "tauxDeReserve": "Part épargnée (%)",
@@ -500,6 +499,12 @@
     "comptesPostesQuotePart": "quote-part",
     "groupeCommentSePasseCeMois": "Comment se passe ce mois",
     "groupeCommentSePasseCetteAnnee": "Comment se passe cette année",
+    "views": {
+      "apercu": "Aperçu",
+      "comptes": "Comptes",
+      "postes": "Postes",
+      "membres": "Membres"
+    },
     "sectionTauxEffortInfoSousTitre": "charges + réserves",
     "groupePourAllerPlusLoin": "Pour aller plus loin",
     "indicateurVentilationPostesTitre": "Ventilations des postes",
@@ -720,6 +725,21 @@
       "plafondInferieurSocle": "Le plafond doit être supérieur ou égal au socle.",
       "chevauchement": "Cette période chevauche une politique existante pour ce membre.",
       "allocationDoublon": "Une allocation existe déjà pour ce membre et ce mois."
+    }
+  },
+  "periodRail": {
+    "boutonAnnee": "Ann\u00e9e",
+    "vueMensuelle": "vue mensuelle",
+    "vueAnnuelleResume": "12 mois cumul\u00e9s",
+    "railLabel": "S\u00e9lecteur de p\u00e9riode",
+    "soldeLabel": "solde",
+    "monthTooltip": "{{amount}} \u00b7 {{level}}",
+    "monthAriaLabel": "{{month}} {{year}}, {{soldeLabel}} {{amount}}, {{level}}",
+    "yearAriaLabel": "{{year}}, {{soldeLabel}} {{amount}}, {{level}}",
+    "levels": {
+      "low": "tendu",
+      "mid": "stable",
+      "high": "confortable"
     }
   },
   "mois": [

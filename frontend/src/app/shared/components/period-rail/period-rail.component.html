@@ -1,0 +1,56 @@
+<div class="pr-shell" [class.pr-shell--year-mode]="isYearMode()" [class.pr-shell--mobile]="viewport.estMobile()">
+  <div class="pr-bar md:gap-2">
+    <div class="pr-year-block w-full mb-2 md:mb-0">
+      <p-button
+        icon="pi pi-chevron-left"
+        [text]="true"
+        [rounded]="true"
+        size="small"
+        [disabled]="!canGoPrevYear()"
+        [ariaLabel]="t.projection.anneePrecedente"
+        (onClick)="changeYear(-1)" />
+
+        <button
+                type="button"
+                class="pr-month-btn pr-year-toggle-btn w-full"
+                [class.is-active]="isYearMode()"
+                [attr.aria-pressed]="isYearMode()"
+                [attr.aria-label]="yearSummary().ariaLabel"
+                [pTooltip]="yearSummary().tooltip"
+                tooltipPosition="top"
+                (click)="toggleYearMode()">
+            <span class="pr-month-label">{{ yearSummary().label }}</span>
+            <span class="pr-month-health" [attr.data-level]="yearSummary().level"></span>
+        </button>
+
+      <p-button
+        icon="pi pi-chevron-right"
+        [text]="true"
+        [rounded]="true"
+        size="small"
+        [disabled]="!canGoNextYear()"
+        [ariaLabel]="t.projection.anneeSuivante"
+        (onClick)="changeYear(1)" />
+    </div>
+
+    <div class="pr-rail-wrap">
+      <div class="pr-rail" [attr.aria-label]="t.periodRail.railLabel">
+        @for (month of months(); track monthTrackBy($index, month)) {
+          <button
+            type="button"
+            class="pr-month-btn"
+            [class.is-active]="month.active"
+            [attr.aria-pressed]="month.active"
+            [attr.aria-label]="month.ariaLabel"
+            [attr.data-month-index]="month.monthIndex"
+            [pTooltip]="month.tooltip"
+            tooltipPosition="top"
+            (click)="selectMonth(month.monthIndex)">
+            <span class="pr-month-label">{{ month.label }}</span>
+            <span class="pr-month-health" [attr.data-level]="month.level"></span>
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+</div>

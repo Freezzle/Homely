@@ -146,6 +146,7 @@
     "montantMensualise": "Monthly.",
     "cacherInactifs": "Hide inactive",
     "cacherFuturs": "Hide future items",
+    "cacherDetails": "Hide secondary details",
     "posteCount": "item(s)",
     "devise": "Currency",
     "periodicite": "Frequency",
@@ -414,7 +415,6 @@
     "echeances": "Due dates",
     "evenement": "Event",
     "fluxMensuel": "Monthly flow",
-    "fluxMensuelDescription": "Monthly flow, month by month, over the scenario horizon.",
     "tresorerieTitle": "Cumulative cash flow",
     "tresorerieCumulee": "Cumulative planned cash flow",
     "tresorerieCumuleeReel": "Actual cumulative cash flow (due dates)",
@@ -447,7 +447,6 @@
     "soldeMedianRobuste": "Median balance",
     "soldeMedianRobusteHint": "Average over 10 months, worst and best month excluded",
     "ceQuiChange": "What's changing",
-    "cliquezBarre": "Click a bar to open the month's detail.",
     "tresoCumuleeDescription": "Cumulative cash flow, month by month, over the scenario horizon: planned and actual (due dates) view.",
     "soldeRestant": "Remaining balance",
     "tauxDeReserve": "Percentage saved",
@@ -500,6 +499,12 @@
     "comptesPostesQuotePart": "share",
     "groupeCommentSePasseCeMois": "How this month is going",
     "groupePourAllerPlusLoin": "Go further",
+    "views": {
+      "apercu": "Overview",
+      "comptes": "Accounts",
+      "postes": "Items",
+      "membres": "Members"
+    },
     "indicateurVentilationPostesTitre": "Budget breakdown",
     "indicateurVentilationPostesSousTitre": "How your spending is split by item",
     "indicateurEvolutionGraphiqueTitre": "Chart trends",
@@ -720,6 +725,21 @@
       "plafondInferieurSocle": "Cap must be greater than or equal to base.",
       "chevauchement": "This period overlaps an existing policy for this member.",
       "allocationDoublon": "An allowance already exists for this member and month."
+    }
+  },
+  "periodRail": {
+    "boutonAnnee": "Year",
+    "vueMensuelle": "monthly view",
+    "vueAnnuelleResume": "12 months combined",
+    "railLabel": "Period selector",
+    "soldeLabel": "balance",
+    "monthTooltip": "{{amount}} \u00b7 {{level}}",
+    "monthAriaLabel": "{{month}} {{year}}, {{soldeLabel}} {{amount}}, {{level}}",
+    "yearAriaLabel": "{{year}}, {{soldeLabel}} {{amount}}, {{level}}",
+    "levels": {
+      "low": "tight",
+      "mid": "steady",
+      "high": "comfortable"
     }
   },
   "mois": [

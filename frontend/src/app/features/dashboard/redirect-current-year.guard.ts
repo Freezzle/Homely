@@ -31,11 +31,11 @@ const obtenirMembres = (
 };
 
 /**
- * Redirige les URLs de dashboard incomplètes vers `.../dashboard/<sujet>/<annee>/<mois>` :
- * - `/f/:foyerId/dashboard`               → `.../dashboard/<sujet>/<anneeCourante>/<moisCourant>`,
+ * Redirige les URLs de dashboard incomplètes vers `.../dashboard/<sujet>/<annee>/<mois>/apercu` :
+ * - `/f/:foyerId/dashboard`               → `.../dashboard/<sujet>/<anneeCourante>/<moisCourant>/apercu`,
  *   où `<sujet>` vaut l'id du membre unique du foyer (mono-membre) ou `foyer` sinon.
- * - `/f/:foyerId/dashboard/:sujetId`      → `.../dashboard/:sujetId/<anneeCourante>/<moisCourant>` ou,
- *   si `sujetId` est une année (URL héritée), `.../dashboard/foyer/<annee>`.
+ * - `/f/:foyerId/dashboard/:sujetId`      → `.../dashboard/:sujetId/<anneeCourante>/<moisCourant>/apercu` ou,
+ *   si `sujetId` est une année (URL héritée), `.../dashboard/foyer/<annee>/apercu`.
  * Les query params sont conservés (ex. `scenarioId`).
  */
 export const redirectToCurrentYearGuard: CanActivateFn = (
@@ -56,12 +56,12 @@ export const redirectToCurrentYearGuard: CanActivateFn = (
       if (estLegacyAnnee) {
         // URL héritée /dashboard/<annee> : on conserve l'année demandée (pas de mois connu).
         const sujet = resoudreSujet('foyer', membres);
-        return router.createUrlTree(['f', foyerId, 'dashboard', sujet, sujetIdParam!], {
+        return router.createUrlTree(['f', foyerId, 'dashboard', sujet, sujetIdParam!, 'apercu'], {
           queryParamsHandling: 'preserve',
         });
       }
       const sujet = resoudreSujet(sujetIdParam ?? 'foyer', membres);
-      return router.createUrlTree(['f', foyerId, 'dashboard', sujet, anneeCourante, moisCourant], {
+      return router.createUrlTree(['f', foyerId, 'dashboard', sujet, anneeCourante, moisCourant, 'apercu'], {
         queryParamsHandling: 'preserve',
       });
     }),
@@ -71,7 +71,7 @@ export const redirectToCurrentYearGuard: CanActivateFn = (
 /**
  * Sur les routes `dashboard/:sujetId/:annee[/:mois]`, redirige l'URL héritée
  * `dashboard/<annee>[/<mois>]` (où `sujetId` est en fait une année) vers
- * `dashboard/foyer/<annee>[/<mois>]` (ou vers le membre unique en mono-membre).
+ * `dashboard/foyer/<annee>[/<mois>]/apercu` (ou vers le membre unique en mono-membre).
  * Sinon, laisse le composant s'activer.
  */
 export const dashboardLegacyRedirectGuard: CanActivateFn = (route) => {
@@ -92,6 +92,7 @@ export const dashboardLegacyRedirectGuard: CanActivateFn = (route) => {
       const segments = ['f', foyerId, 'dashboard', sujet, sujetIdParam!];
       if (anneeParam) segments.push(anneeParam);
       if (moisParam) segments.push(moisParam);
+      segments.push('apercu');
       return router.createUrlTree(segments, { queryParamsHandling: 'preserve' });
     }),
   );

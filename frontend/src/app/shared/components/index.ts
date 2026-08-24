@@ -1,6 +1,5 @@
 export * from './tab-group/tab-group.component';
 export * from './tab-group/tab-panel.component';
-export * from './page-nav/page-nav.component';
 export * from './metric-ring/metric-ring.component';
 export * from './kpi-chip/kpi-chip.component';
 export * from './kpi-chip-row/kpi-chip-row.component';
@@ -10,6 +9,8 @@ export * from './objective-progress/objective-progress.component';
 export * from './timeline/timeline.component';
 export * from './event-grid/event-grid.component';
 export * from './duel-picker/duel-picker.component';
+export * from './view-switcher/view-switcher.component';
 export * from './matrice-budgetaire/matrice-budgetaire.component';
 export * from './icon-text/icon-text.component';
 export * from './form-fields';
+export * from './period-rail/period-rail.component';

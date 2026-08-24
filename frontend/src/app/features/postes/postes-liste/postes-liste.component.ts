@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, input, effect } from '@angular/core';
+import { Component, inject, signal, computed, input, effect, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -42,6 +42,14 @@ interface PosteAffiche extends PosteDto {
   _nbVersions?: number;
   _clefSeparateur?: string;
   _labelSeparateur?: string;
+}
+
+/**
+ * Item du menu de visibilité : associe directement le libellé i18n au signal
+ * booléen qu'il pilote, pour éviter tout branchement conditionnel côté template.
+ */
+interface VisibiliteMenuItem extends MenuItem {
+  etat: WritableSignal<boolean>;
 }
 
 
@@ -198,6 +206,7 @@ export class PostesListeComponent {
   triActuel = signal<'DATE' | 'CATEGORIE' | 'DESCRIPTION'>('CATEGORIE');
   cacherInactifs = signal(true);
   cacherFuturs = signal(false);
+  cacherDetails = signal(false);
   filtreCompteIds = signal<string[]>([]);
   filtreMembreIds = signal<string[]>([]);
   filtreCategorieIds = signal<string[]>([]);
@@ -209,9 +218,10 @@ export class PostesListeComponent {
     { label: this.t.poste.triOptions.DESCRIPTION, value: 'DESCRIPTION' as const },
   ];
 
-  visibiliteMenuItems: MenuItem[] = [
-    { label: this.t.poste.cacherInactifs, data: 'cacher-inactifs' },
-    { label: this.t.poste.cacherFuturs, data: 'cacher-futurs' },
+  visibiliteMenuItems: VisibiliteMenuItem[] = [
+    { label: this.t.poste.cacherInactifs, data: 'cacher-inactifs', etat: this.cacherInactifs },
+    { label: this.t.poste.cacherFuturs, data: 'cacher-futurs', etat: this.cacherFuturs },
+    { label: this.t.poste.cacherDetails, data: 'cacher-details', etat: this.cacherDetails },
   ];
 
 

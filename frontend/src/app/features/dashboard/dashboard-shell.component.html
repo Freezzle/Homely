@@ -1,0 +1,80 @@
+<div class="flex min-h-0 flex-col gap-2 pb-24">
+  <div class="flex min-w-0 flex-col gap-2">
+    <h1 class="m-0 text-xl font-extrabold leading-tight sm:text-2xl">{{ facade.titrePage() }}</h1>
+
+    <hly-period-rail
+      [value]="facade.periodValue()"
+      [monthsHealth]="facade.monthsHealth()"
+      [minYear]="facade.minYear()"
+      [maxYear]="facade.maxYear()"
+      (valueChange)="facade.onPeriodChange($event)" />
+  </div>
+
+  @if (facade.chargement()) {
+    @if (facade.vue() === 'annee') {
+      <p-skeleton height="220px" borderRadius="12px" />
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        @for (i of [1, 2, 3, 4]; track i) {
+          <p-skeleton height="110px" borderRadius="12px" />
+        }
+      </div>
+      <p-skeleton height="340px" borderRadius="12px" />
+      <p-skeleton height="480px" borderRadius="12px" />
+    } @else {
+      <p-skeleton height="220px" borderRadius="12px" />
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        @for (i of [1, 2]; track i) {
+          <p-skeleton height="110px" borderRadius="12px" />
+        }
+      </div>
+      <p-skeleton height="420px" borderRadius="12px" />
+    }
+  } @else {
+    <router-outlet />
+  }
+
+  <hly-view-switcher
+    [views]="dashboardViews()"
+    [active]="currentViewKey()"
+    (activeChange)="onViewChange($event)" />
+</div>
+
+<app-indicator-drawer />
+
+<p-dialog [(visible)]="facade.dialogArgentPocheVisible"
+          [header]="facade.t.dashboard.argentPocheMois"
+          [modal]="true"
+          class="w-full max-w-md">
+  <form [formGroup]="facade.formAllocationArgentPoche" class="flex flex-col gap-4 pt-2">
+    <div class="flex items-center gap-2 text-sm text-surface-500">
+      <i class="pi pi-user"></i>{{ facade.titrePage() }}
+      <span class="mx-1">?</span>
+      <i class="pi pi-calendar"></i>{{ facade.periodeLabel() }}
+    </div>
+    <app-select [label]="facade.t.argentPoche.champs.compte"
+                [required]="true"
+                formControlName="compteId"
+                [options]="facade.comptes()"
+                optionLabel="libelle"
+                optionValue="id" />
+    <div class="grid grid-cols-2 gap-3">
+      <app-input-number [label]="facade.t.argentPoche.champs.montant"
+                        [required]="true"
+                        formControlName="montant"
+                        mode="decimal"
+                        [minFractionDigits]="2" />
+      <app-input-text [label]="facade.t.argentPoche.champs.raison" formControlName="raison" />
+    </div>
+  </form>
+
+  <ng-template #footer>
+    <app-button [label]="facade.t.commun.annuler"
+                severity="secondary"
+                (clickEvent)="facade.dialogArgentPocheVisible = false" />
+    @if (facade.contexte.estEditor()) {
+      <app-button [label]="facade.t.commun.enregistrer"
+                  [disabled]="facade.formAllocationArgentPoche.invalid"
+                  (clickEvent)="facade.enregistrerAllocationArgentPoche()" />
+    }
+  </ng-template>
+</p-dialog>

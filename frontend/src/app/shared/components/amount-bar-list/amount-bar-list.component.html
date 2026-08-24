@@ -1,0 +1,31 @@
+<div class="amount-bar-list" [attr.lang]="locale()">
+  @for (item of items(); track item.key) {
+    <div
+      class="bar"
+      [class.bar--emphasis]="item.emphasis === true"
+      [style.--fill]="percent(item) + '%'"
+      [style.--color]="item.color">
+      <span class="bar__fill" aria-hidden="true"></span>
+
+      <span class="bar__label">
+        @if (item.icon) {
+          <i [class]="'bar__icon ' + item.icon" aria-hidden="true"></i>
+        } @else {
+          <i class="bar__dot" [style.background]="item.color" aria-hidden="true"></i>
+        }
+
+        <span class="bar__label-text">{{ item.label }}</span>
+
+        @if (item.helpText) {
+          <i
+            class="pi pi-question-circle bar__help"
+            [pTooltip]="item.helpText"
+            tooltipPosition="top"
+            tabindex="0"></i>
+        }
+      </span>
+
+      <span class="bar__amount">{{ item.amount | montant: devise() }}</span>
+    </div>
+  }
+</div>

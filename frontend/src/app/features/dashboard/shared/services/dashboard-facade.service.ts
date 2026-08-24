@@ -1,19 +1,15 @@
-import { CommonModule } from '@angular/common';
-import { Component, computed, effect, inject, input, numberAttribute, signal, untracked } from '@angular/core';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Router } from '@angular/router';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, Validators } from '@angular/forms';
 import { forkJoin } from 'rxjs';
-import { CardModule } from 'primeng/card';
-import { SkeletonModule } from 'primeng/skeleton';
-import { DialogModule } from 'primeng/dialog';
 import { MessageService } from 'primeng/api';
-import { ContexteService } from '../../core/services/contexte.service';
-import { DashboardConfigService } from '../../core/services/dashboard-config.service';
-import { ProjectionService } from '../../core/services/projection.service';
-import { CategorieService, CompteService } from '../../core/services/referentiel.service';
-import { PosteService } from '../../core/services/scenario-poste.service';
-import { AllocationArgentPocheService, ResolutionArgentPocheService } from '../../core/services/argent-poche.service';
-import { DecompositionService, VentilationLike } from '../../core/services/decomposition.service';
+import { ContexteService } from '../../../../core/services/contexte.service';
+import { DashboardConfigService } from '../../../../core/services/dashboard-config.service';
+import { ProjectionService } from '../../../../core/services/projection.service';
+import { CategorieService, CompteService } from '../../../../core/services/referentiel.service';
+import { PosteService } from '../../../../core/services/scenario-poste.service';
+import { AllocationArgentPocheService, ResolutionArgentPocheService } from '../../../../core/services/argent-poche.service';
+import { DecompositionService, VentilationLike } from '../../../../core/services/decomposition.service';
 import {
   AggregatDto,
   CompteRecapMensuelDto,
@@ -28,47 +24,40 @@ import {
   TypePoste,
   VentilationAggregatDto,
   ResolutionArgentPocheFoyerMoisDto,
-} from '../../core/models/api.models';
-import { I18nService } from '../../core/i18n/i18n.service';
-import { localeDeLangue } from '../../core/i18n/locale.util';
-import { ViewportService } from '../../core/services/viewport.service';
-import { creerChargementReactif } from '../../core/utils/reference-data.util';
-import { LigneDecomposition, MembreTagInfo } from '../../shared/components/carte-bilan/carte-bilan.component';
-import { TauxEffortCardData } from '../../shared/components/taux-effort-card/taux-effort-card.component';
-import { KpiChip } from '../../shared/components/kpi-chip/kpi-chip.component';
-import { MetricRingSegment } from '../../shared/components/metric-ring/metric-ring.component';
-import { MetricBarComponent, MetricBarSegment } from '../../shared/components/metric-bar/metric-bar.component';
-import { PageNavComponent, PageNavMonthSummary, PageNavSelection } from '../../shared/components/page-nav/page-nav.component';
-import { TimelineItem } from '../../shared/components/timeline/timeline.component';
-import { MatriceBudgetaireLabels } from '../../shared/components/matrice-budgetaire/matrice-budgetaire.component';
-import { SelectComponent, InputNumberComponent, InputTextComponent } from '../../shared/components/form-fields';
-import { ButtonComponent } from '../../shared/components/button/button.component';
-import { DashboardSectionComponent } from './shared/components/dashboard-section/dashboard-section.component';
-import { IndicatorCardComponent } from './shared/components/indicator-card/indicator-card.component';
-import { IndicatorDrawerComponent } from './shared/components/indicator-drawer/indicator-drawer.component';
-import { IndicatorDrawerService } from './shared/services/indicator-drawer.service';
-import { Indicator } from './shared/models/indicator.model';
-import { tauxEffortMembreIndicator } from './indicators/taux-effort-membre/taux-effort-membre.indicator';
-import { ventilationPostesIndicator } from './indicators/ventilation-postes/ventilation-postes.indicator';
-import { VentilationPostesDrawerData } from './indicators/ventilation-postes/ventilation-postes-drawer-content.component';
-import { evolutionGraphiqueIndicator } from './indicators/evolution-graphique/evolution-graphique.indicator';
-import { EvolutionGraphiqueDrawerData } from './indicators/evolution-graphique/evolution-graphique-drawer-content.component';
-import { postesAOptimiserIndicator } from './indicators/postes-a-optimiser/postes-a-optimiser.indicator';
-import { PostesAOptimiserDrawerData } from './indicators/postes-a-optimiser/postes-a-optimiser-drawer-content.component';
-import { evenementsIndicator } from './indicators/evenements/evenements.indicator';
-import { EvenementsDrawerData } from './indicators/evenements/evenements-drawer-content.component';
-import { virementsComptesIndicator } from './indicators/virements-comptes/virements-comptes.indicator';
-import { VirementsComptesDrawerData } from './indicators/virements-comptes/virements-comptes-drawer-content.component';
-import { besoinsPlaisirsIndicator } from './indicators/besoins-plaisirs/besoins-plaisirs.indicator';
-import { BesoinsPlaisirsCardData } from '../../shared/components/besoins-plaisirs-card/besoins-plaisirs-card.component';
-import { prorataPartageIndicator, aDesDonneesProrataPartage } from './indicators/prorata-partage/prorata-partage.indicator';
-import { moisARisqueIndicator } from './indicators/mois-a-risque/mois-a-risque.indicator';
-import { MoisARisqueDrawerData, MoisARisqueItem } from './indicators/mois-a-risque/mois-a-risque-drawer-content.component';
-import { comparaisonPeriodeIndicator } from './indicators/comparaison-periode/comparaison-periode.indicator';
-import { ComparaisonPeriodeDrawerData } from './indicators/comparaison-periode/comparaison-periode-drawer-content.component';
-import { ChartModule } from 'primeng/chart';
-import { KpiChipRowComponent } from '../../shared/components/kpi-chip-row/kpi-chip-row.component';
-import { resolveAppColor, withAlpha } from '../../shared/utils/css-vars';
+} from '../../../../core/models/api.models';
+import { I18nService } from '../../../../core/i18n/i18n.service';
+import { localeDeLangue } from '../../../../core/i18n/locale.util';
+import { creerChargementReactif } from '../../../../core/utils/reference-data.util';
+import { LigneDecomposition, MembreTagInfo } from '../../../../shared/components/carte-bilan/carte-bilan.component';
+import { TauxEffortCardData } from '../../../../shared/components/taux-effort-card/taux-effort-card.component';
+import { KpiChip } from '../../../../shared/components/kpi-chip/kpi-chip.component';
+import { MetricRingSegment } from '../../../../shared/components/metric-ring/metric-ring.component';
+import { MetricBarSegment } from '../../../../shared/components/metric-bar/metric-bar.component';
+import { AmountBarItem } from '../../../../shared/components/amount-bar-list/amount-bar-list.component';
+import { MonthHealth, PeriodValue } from '../../../../shared/components/period-rail/period-rail.component';
+import { TimelineItem } from '../../../../shared/components/timeline/timeline.component';
+import { MatriceBudgetaireLabels } from '../../../../shared/components/matrice-budgetaire/matrice-budgetaire.component';
+import { IndicatorDrawerService } from './indicator-drawer.service';
+import { Indicator } from '../models/indicator.model';
+import { tauxEffortMembreIndicator } from '../../indicators/taux-effort-membre/taux-effort-membre.indicator';
+import { ventilationPostesIndicator } from '../../indicators/ventilation-postes/ventilation-postes.indicator';
+import { VentilationPostesDrawerData } from '../../indicators/ventilation-postes/ventilation-postes-drawer-content.component';
+import { evolutionGraphiqueIndicator } from '../../indicators/evolution-graphique/evolution-graphique.indicator';
+import { EvolutionGraphiqueDrawerData } from '../../indicators/evolution-graphique/evolution-graphique-drawer-content.component';
+import { postesAOptimiserIndicator } from '../../indicators/postes-a-optimiser/postes-a-optimiser.indicator';
+import { PostesAOptimiserDrawerData } from '../../indicators/postes-a-optimiser/postes-a-optimiser-drawer-content.component';
+import { evenementsIndicator } from '../../indicators/evenements/evenements.indicator';
+import { EvenementsDrawerData } from '../../indicators/evenements/evenements-drawer-content.component';
+import { virementsComptesIndicator } from '../../indicators/virements-comptes/virements-comptes.indicator';
+import { VirementsComptesDrawerData } from '../../indicators/virements-comptes/virements-comptes-drawer-content.component';
+import { besoinsPlaisirsIndicator } from '../../indicators/besoins-plaisirs/besoins-plaisirs.indicator';
+import { BesoinsPlaisirsCardData } from '../../../../shared/components/besoins-plaisirs-card/besoins-plaisirs-card.component';
+import { prorataPartageIndicator, aDesDonneesProrataPartage } from '../../indicators/prorata-partage/prorata-partage.indicator';
+import { moisARisqueIndicator } from '../../indicators/mois-a-risque/mois-a-risque.indicator';
+import { MoisARisqueDrawerData, MoisARisqueItem } from '../../indicators/mois-a-risque/mois-a-risque-drawer-content.component';
+import { comparaisonPeriodeIndicator } from '../../indicators/comparaison-periode/comparaison-periode.indicator';
+import { ComparaisonPeriodeDrawerData } from '../../indicators/comparaison-periode/comparaison-periode-drawer-content.component';
+import { resolveAppColor, withAlpha } from '../../../../shared/utils/css-vars';
 
 type DashboardTimelineItem = TimelineItem & { mois: number };
 /** Sujet du tableau de bord affiché : le foyer entier (cumul de tous les membres) ou un
@@ -78,32 +67,18 @@ type SujetDashboard = { mode: 'foyer' } | { mode: 'membre'; membreId: string; me
 const ZERO_AGREGAT: { revenus: number; charges: number; reserves: number; soldeDisponible: number } =
   { revenus: 0, charges: 0, reserves: 0, soldeDisponible: 0 };
 
-@Component({
-  selector: 'app-dashboard',
-  standalone: true,
-             imports: [
-               CommonModule,
-               ReactiveFormsModule,
-               ButtonComponent,
-               CardModule,
-               SkeletonModule,
-               DialogModule,
-               MetricBarComponent,
-               PageNavComponent,
-               DashboardSectionComponent,
-               IndicatorCardComponent,
-               IndicatorDrawerComponent,
-               ChartModule,
-               KpiChipRowComponent,
-               SelectComponent,
-               InputNumberComponent,
-               InputTextComponent,
-             ],
-  templateUrl: './dashboard.component.html',
-})
-export class DashboardComponent {
+interface DashboardMonthSummary {
+  mois: number;
+  label: string;
+  solde: number;
+}
+
+export type DashboardViewKey = 'apercu' | 'comptes' | 'postes' | 'membres';
+
+@Injectable()
+export class DashboardFacadeService {
   private readonly i18n = inject(I18nService);
-  protected readonly contexte = inject(ContexteService);
+  readonly contexte = inject(ContexteService);
   private readonly dashboardConfig = inject(DashboardConfigService);
   private readonly projSvc = inject(ProjectionService);
   private readonly categorieSvc = inject(CategorieService);
@@ -112,7 +87,6 @@ export class DashboardComponent {
   private readonly argentPocheSvc = inject(ResolutionArgentPocheService);
   private readonly allocationArgentPocheSvc = inject(AllocationArgentPocheService);
   private readonly decomp = inject(DecompositionService);
-  protected readonly viewport = inject(ViewportService);
   private readonly router = inject(Router);
   private readonly indicatorDrawer = inject(IndicatorDrawerService);
   private readonly fb = inject(FormBuilder);
@@ -140,12 +114,12 @@ export class DashboardComponent {
     };
   });
 
-  readonly annee = input.required<number, string>({ transform: numberAttribute });
-  readonly mois = input<number | undefined, string | undefined>(undefined, {
-    transform: (v) => v !== undefined ? Number.parseInt(v, 10) : undefined,
-  });
+  readonly annee = signal<number>(new Date().getFullYear());
+  readonly mois = signal<number | undefined>(undefined);
   /** `'foyer'` ou l'id d'un membre — segment `:sujetId` de la route. */
-  readonly sujetId = input.required<string>();
+  readonly sujetId = signal<string>('foyer');
+  readonly currentViewKey = signal<DashboardViewKey>('apercu');
+  private readonly rememberedMonthIndex = signal<number>(new Date().getMonth());
 
   /** Sujet effectif : foyer, ou membre résolu depuis `sujetId` (fallback foyer si id inconnu). */
   readonly sujet = computed<SujetDashboard>(() => {
@@ -187,7 +161,13 @@ export class DashboardComponent {
   readonly ongletAnnee = signal('recapitulatifs');
   readonly ongletMois = signal('echeances');
   readonly vueDecomposition = signal<'CATEGORIE' | 'TYPE_POSTE' | 'COMPTE'>('TYPE_POSTE');
-  readonly pageNavSelectionForBinding = signal<PageNavSelection>({ mode: 'annee' });
+  readonly minYear = computed(() => this.annees()[0] ?? this.annee());
+  readonly maxYear = computed(() => this.annees()[this.annees().length - 1] ?? this.annee());
+  readonly periodValue = computed<PeriodValue>(() => ({
+    mode: this.vue(),
+    monthIndex: this.vue() === 'mois' ? (this.moisSelectionne() ?? 1) - 1 : this.rememberedMonthIndex(),
+    year: this.annee(),
+  }));
 
   readonly vueDecompositionOptions = [
     { label: this.t.projection.vueTypePoste, value: 'TYPE_POSTE' },
@@ -696,8 +676,6 @@ export class DashboardComponent {
     prevuVsReelOptions: this.prevuVsReelOptions,
     labels: {
       fluxMensuel: this.t.dashboard.fluxMensuel,
-      fluxMensuelDescription: this.t.dashboard.fluxMensuelDescription,
-      cliquezBarre: this.t.dashboard.cliquezBarre,
       tresorerieTitle: this.t.dashboard.tresorerieTitle,
       tresoCumuleeDescription: this.t.dashboard.tresoCumuleeDescription,
       prevuVsReel: this.t.dashboard.prevuVsReel,
@@ -934,32 +912,11 @@ export class DashboardComponent {
     return s.mode === 'membre' ? (p.moisParMembreReel[s.membreId] ?? []) : p.moisReel.map((m) => m.agregat);
   });
 
-  private pageNavInitialise = false;
-
-  private readonly _syncPageNavDepuisRoute = effect(() => {
-    const selection = this.vue() === 'mois' && this.moisSelectionne() !== undefined
-      ? { mode: 'mois' as const, mois: this.moisSelectionne() }
-      : { mode: 'annee' as const };
-    const courante = untracked(() => this.pageNavSelectionForBinding());
-    if (courante.mode !== selection.mode || courante.mois !== selection.mois) {
-      this.pageNavSelectionForBinding.set(selection);
+  private readonly _memorizeSelectedMonthEffect = effect(() => {
+    const mois = this.moisSelectionne();
+    if (mois !== undefined) {
+      this.rememberedMonthIndex.set(mois - 1);
     }
-    this.pageNavInitialise = true;
-  });
-
-  private readonly _syncPageNavVersRoute = effect(() => {
-    if (!this.pageNavInitialise) {
-      return;
-    }
-    const selection = this.pageNavSelectionForBinding();
-    const moisActuel = this.moisSelectionne();
-    if (selection.mode === this.vue() && (selection.mode !== 'mois' || selection.mois === moisActuel)) {
-      return;
-    }
-    if (selection.mode === 'mois' && selection.mois === undefined) {
-      return;
-    }
-    this.naviguerVersSelection(selection);
   });
 
   private localeCourante(): string {
@@ -1347,7 +1304,7 @@ export class DashboardComponent {
         stack: 'depenses',
       });
     }
-    return { labels: this.t.mois, datasets };
+    return { labels: this.t.moisLettre, datasets };
   }
 
   /** KPI chips affichés sous le graphique "revenus vs charges+réserves" en haut de la vue
@@ -1623,8 +1580,14 @@ export class DashboardComponent {
   readonly barSegmentsMois = computed<MetricBarSegment[]>(() => {
     const rav = this.agregatMoisCourant().soldeDisponible;
     const reserves = this.agregatMoisCourant().reserves;
+    const revenus = this.agregatMoisCourant().revenus;
     const argentDePoche = this.argentPocheMontantMoisSujet();
     return [
+      {
+        label: this.t.projection.revenus,
+        value: revenus,
+        color: 'var(--app-revenu)',
+      },
       {
         label: this.t.dashboard.chargesSures,
         value: this.chargesSuresMois(),
@@ -1647,6 +1610,16 @@ export class DashboardComponent {
       },
     ];
   });
+
+  readonly amountBarItems = computed<AmountBarItem[]>(() =>
+    this.barSegmentsMois().map((segment, index) => ({
+      key: `${index}-${segment.label.toLowerCase().replace(/\s+/g, '-')}`,
+      label: segment.label,
+      amount: segment.value,
+      color: segment.color,
+      emphasis: segment.label === this.t.dashboard.resteAVivre,
+    }))
+  );
 
 
   readonly tresorerieCumuleeValeurs = computed(() => this.serieTresorerie(this._tresorerieCumulee.donnees()?.mensualise));
@@ -2100,37 +2073,130 @@ export class DashboardComponent {
     setTimeout(() => window.dispatchEvent(new Event('resize')), 0);
   }
 
-  private naviguerVersSelection(selection: PageNavSelection): void {
-    if (selection.mode === 'mois' && selection.mois !== undefined) {
-      this.naviguerVersMois(this.annee(), selection.mois);
-      return;
+  private buildDashboardSegments(sujetId: string, annee: number, mois?: number): string[] {
+    const foyerId = this.contexte.foyerId();
+    if (!foyerId) return [];
+    const segments = ['/f', foyerId, 'dashboard', sujetId, String(annee)];
+    if (mois !== undefined) {
+      segments.push(String(mois).padStart(2, '0'));
     }
-    this.naviguerVersAnnee(this.annee());
+    segments.push(this.currentViewKey());
+    return segments;
   }
 
   private naviguerVersAnnee(annee: number): void {
-    const foyerId = this.contexte.foyerId();
-    if (!foyerId) return;
-    void this.router.navigate(['/f', foyerId, 'dashboard', this.sujetId(), String(annee)], { queryParamsHandling: 'preserve' });
+    const segments = this.buildDashboardSegments(this.sujetId(), annee);
+    if (!segments.length) return;
+    void this.router.navigate(segments, { queryParamsHandling: 'preserve' });
   }
 
   private naviguerVersMois(annee: number, mois: number): void {
-    const foyerId = this.contexte.foyerId();
-    if (!foyerId) return;
-    void this.router.navigate(['/f', foyerId, 'dashboard', this.sujetId(), String(annee), String(mois).padStart(2, '0')], { queryParamsHandling: 'preserve' });
+    const segments = this.buildDashboardSegments(this.sujetId(), annee, mois);
+    if (!segments.length) return;
+    void this.router.navigate(segments, { queryParamsHandling: 'preserve' });
   }
 
   /** Navigue vers un autre sujet (foyer ou membre) en conservant année/mois courants. */
   private naviguerVersSujet(sujetId: string): void {
-    const foyerId = this.contexte.foyerId();
-    if (!foyerId) return;
-    const segments = ['/f', foyerId, 'dashboard', sujetId, String(this.annee())];
     const mois = this.moisSelectionne();
-    if (mois !== undefined) segments.push(String(mois).padStart(2, '0'));
+    const segments = this.buildDashboardSegments(sujetId, this.annee(), mois);
+    if (!segments.length) return;
     void this.router.navigate(segments, { queryParamsHandling: 'preserve' });
   }
 
-  readonly moisSummary = computed<PageNavMonthSummary[]>(() => {
+  setRouteParams(params: { annee: number; mois?: number; sujetId: string }): void {
+    this.annee.set(params.annee);
+    this.mois.set(params.mois);
+    this.sujetId.set(params.sujetId);
+  }
+
+  setCurrentViewKey(viewKey: DashboardViewKey): void {
+    this.currentViewKey.set(viewKey);
+  }
+
+  onPeriodChange(value: PeriodValue): void {
+    this.rememberedMonthIndex.set(value.monthIndex);
+    if (value.mode === 'annee') {
+      this.naviguerVersAnnee(value.year);
+      return;
+    }
+    this.naviguerVersMois(value.year, value.monthIndex + 1);
+  }
+
+  readonly monthsHealth = computed<MonthHealth[]>(() => {
+    const seuil = this.seuils().moisARisqueSoldeMin;
+    return this.moisSummary().map((mois) => ({
+      monthIndex: mois.mois - 1,
+      amount: mois.solde,
+      level: mois.solde < seuil ? 'low' : mois.solde < seuil * 2 ? 'mid' : 'high',
+    }));
+  });
+
+  readonly apercuIndicators = computed(() => {
+    const items = [
+      this.comparaisonPeriodeIndicateur(),
+      this.evenementsIndicateur(),
+      this.besoinsPlaisirsIndicateur(),
+    ];
+
+    if (this.vue() === 'annee') {
+      return [this.moisARisqueIndicateurAnnee(), ...items];
+    }
+
+    return items;
+  });
+
+  readonly comptesIndicators = computed(() => {
+    const virements = this.virementsComptesIndicateurCourant();
+    const items: Array<{ indicator: Indicator; data: unknown }> = [];
+    if (virements) {
+      items.push(virements);
+    }
+    if (this.vue() === 'annee') {
+      items.push(this.evolutionGraphiqueIndicateur());
+    }
+    return items;
+  });
+
+  readonly postesIndicators = computed(() => [
+    this.ventilationPostesIndicateur(),
+    this.postesAOptimiserIndicateurCourant(),
+  ]);
+
+  readonly membresIndicators = computed(() => {
+    const prorata = this.prorataPartageIndicateur();
+    return [
+      ...this.tauxEffortIndicateursCourant(),
+      ...(prorata ? [prorata] : []),
+    ];
+  });
+
+  readonly comptesRecapCourant = computed(() => this.vue() === 'annee' ? this.comptesRecapAnnuelDto() : this.comptesRecapDto());
+  readonly comptesRecapCourantChargement = computed(() => this.vue() === 'annee' ? this.comptesRecapAnnuelChargement() : this.comptesRecapChargement());
+  readonly comptesRecapCourantCle = computed(() => this.vue() === 'annee' ? this._comptesRecapAnnuelCle() : this._comptesRecapCle());
+
+  readonly carteVentilationCourante = computed(() => this.vue() === 'annee' ? this.carteAnneeConfig() : this.carteMoisConfig());
+  readonly postesOptimisationCourants = computed(() => this.vue() === 'annee' ? this.postesMatriceAnnee() : this.postesMatriceMois());
+  readonly postesOptimisationChargementCourant = computed(() => this.vue() === 'annee' ? this.matriceChargement() : this.matriceMoisChargement());
+
+  readonly besoinsPlaisirsDataCourant = computed(() => this.vue() === 'annee' ? this.besoinsPlaisirsDataAnnee() : this.besoinsPlaisirsDataMois());
+  readonly tauxEffortCardsCourant = computed(() => this.vue() === 'annee' ? this.tauxEffortCardsAnnee() : this.tauxEffortCards());
+  readonly evolutionGraphiqueDrawerData = this.evolutionGraphiqueData;
+
+  readonly evenementsIndicateur = computed(() => this.vue() === 'annee' ? this.evenementsIndicateurAnnee() : this.evenementsIndicateurMois());
+  readonly comparaisonPeriodeIndicateur = computed(() => this.vue() === 'annee' ? this.comparaisonPeriodeIndicateurAnnee() : this.comparaisonPeriodeIndicateurMois());
+  readonly besoinsPlaisirsIndicateur = computed(() => this.vue() === 'annee' ? this.besoinsPlaisirsIndicateurAnnee() : this.besoinsPlaisirsIndicateurMois());
+  readonly virementsComptesIndicateurCourant = computed(() => this.vue() === 'annee' ? this.virementsComptesIndicateurAnnee() : this.virementsComptesIndicateur());
+  readonly ventilationPostesIndicateur = computed(() => this.vue() === 'annee' ? this.ventilationPostesIndicateurAnnee() : this.ventilationPostesIndicateurMois());
+  readonly postesAOptimiserIndicateurCourant = computed(() => this.vue() === 'annee' ? this.postesAOptimiserIndicateur() : this.postesAOptimiserIndicateurMois());
+  readonly tauxEffortIndicateursCourant = computed(() => this.vue() === 'annee' ? this.tauxEffortIndicateursAnnee() : this.tauxEffortIndicateursMois());
+  readonly prorataPartageIndicateur = computed(() => this.vue() === 'annee' ? this.prorataPartageIndicateurAnnee() : this.prorataPartageIndicateurMois());
+
+  dashboardViewLabel(viewKey: DashboardViewKey): string {
+    return this.t.dashboard.views[viewKey];
+  }
+
+  readonly moisSummary = computed<DashboardMonthSummary[]>(() => {
     const mois = this.moisAgregatsCourant();
     if (!mois.length) {
       return this.t.mois.map((label, index) => ({ mois: index + 1, label: label.slice(0, 3), solde: 0 }));

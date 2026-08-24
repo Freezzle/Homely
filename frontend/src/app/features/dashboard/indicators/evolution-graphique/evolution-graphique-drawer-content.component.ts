@@ -5,8 +5,6 @@ import { ChartModule } from 'primeng/chart';
 /** Textes traduits nécessaires au rendu (le composant partagé ne connaît aucune clé i18n). */
 export interface EvolutionGraphiqueLabels {
   fluxMensuel: string;
-  fluxMensuelDescription: string;
-  cliquezBarre: string;
   tresorerieTitle: string;
   tresoCumuleeDescription: string;
   prevuVsReel: string;

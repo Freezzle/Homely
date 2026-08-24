@@ -2,6 +2,26 @@ import { Routes } from '@angular/router';
 import { authGuard, roleGuard } from './core/guards/auth.guard';
 import { redirectToCurrentYearGuard, dashboardLegacyRedirectGuard } from './features/dashboard/redirect-current-year.guard';
 
+const dashboardChildren: Routes = [
+  { path: '', pathMatch: 'full', redirectTo: 'apercu' },
+  {
+    path: 'apercu',
+    loadComponent: () => import('./features/dashboard/views/apercu-view.component').then(m => m.ApercuViewComponent),
+  },
+  {
+    path: 'comptes',
+    loadComponent: () => import('./features/dashboard/views/comptes-view.component').then(m => m.ComptesViewComponent),
+  },
+  {
+    path: 'postes',
+    loadComponent: () => import('./features/dashboard/views/postes-view.component').then(m => m.PostesViewComponent),
+  },
+  {
+    path: 'membres',
+    loadComponent: () => import('./features/dashboard/views/membres-view.component').then(m => m.MembresViewComponent),
+  },
+];
+
 export const routes: Routes = [
   // ── Public ─────────────────────────────────────────────────────────────────
   {
@@ -47,12 +67,14 @@ export const routes: Routes = [
           {
             path: 'dashboard/:sujetId/:annee',
             canActivate: [dashboardLegacyRedirectGuard],
-            loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
+            loadComponent: () => import('./features/dashboard/dashboard-shell.component').then(m => m.DashboardShellComponent),
+            children: dashboardChildren,
           },
           {
             path: 'dashboard/:sujetId/:annee/:mois',
             canActivate: [dashboardLegacyRedirectGuard],
-            loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
+            loadComponent: () => import('./features/dashboard/dashboard-shell.component').then(m => m.DashboardShellComponent),
+            children: dashboardChildren,
           },
           {
             path: 'revenus',

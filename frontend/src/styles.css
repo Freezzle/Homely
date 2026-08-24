@@ -51,3 +51,11 @@ html, body {
   outline-offset: 2px;
 }
 
+/* p-card : pas d'ombre, bordure fine sur toute l'app (voir couche `components` > `primeng`). */
+@layer components {
+  .p-card {
+    box-shadow: none;
+    border: 1px solid var(--app-line);
+  }
+}
+

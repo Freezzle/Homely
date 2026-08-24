@@ -1,0 +1,187 @@
+:host {
+  --pr-health-low: var(--app-negatif);
+  --pr-health-mid: var(--app-warning);
+  --pr-health-high: var(--app-positif);
+
+  display: block;
+  outline: none;
+}
+
+:host:focus-visible .pr-shell {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--p-primary-color) 24%, transparent);
+}
+
+.pr-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.25rem;
+  background: var(--app-card);
+  transition: box-shadow 140ms ease;
+  border: 1px solid var(--app-line);
+}
+
+.pr-bar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: 'year rail toggle';
+  align-items: center;
+}
+
+.pr-year-block,
+.pr-toggle-block {
+  display: inline-flex;
+  align-items: center;
+}
+
+.pr-year-block {
+  grid-area: year;
+  gap: 0.2rem;
+  background: color-mix(in srgb, var(--app-card) 88%, var(--app-line-2));
+}
+
+.pr-toggle-block {
+  grid-area: toggle;
+}
+
+.pr-year-label {
+  min-width: 3.8rem;
+  text-align: center;
+  color: var(--app-ink);
+  font-size: 1rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.pr-rail-wrap {
+  grid-area: rail;
+  min-width: 0;
+  transition: opacity 160ms ease;
+}
+
+.pr-rail-wrap--faded {
+  opacity: 0.45;
+}
+
+.pr-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  gap: 0.35rem;
+  overflow-x: auto;
+  padding: 0.1rem;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+}
+
+.pr-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.pr-month-btn {
+  min-width: 4.3rem;
+  min-height: 3.1rem;
+  padding: 0.55rem 0.7rem 0.45rem;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-item);
+  background: var(--app-card);
+  color: var(--app-ink-muted);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  font: inherit;
+  line-height: 1.1;
+  white-space: nowrap;
+  scroll-snap-align: center;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+.pr-month-btn:hover {
+  background: var(--app-line-2);
+  color: var(--app-ink);
+}
+
+.pr-month-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--p-primary-color) 22%, transparent);
+}
+
+.pr-month-btn:active {
+  transform: translateY(1px);
+}
+
+.pr-month-btn.is-active {
+  border-color: var(--p-primary-color);
+  background: color-mix(in srgb, var(--p-primary-color) 12%, transparent);
+  color: var(--app-ink);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--p-primary-color) 16%, transparent);
+}
+
+.pr-month-btn.is-remembered:not(.is-active) {
+  border-color: color-mix(in srgb, var(--p-primary-color) 42%, var(--app-line));
+  color: var(--app-ink);
+}
+
+.pr-year-toggle-btn {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 5.6rem;
+}
+
+.pr-month-label {
+  font-size: 0.79rem;
+  font-weight: 700;
+}
+
+.pr-month-health {
+  width: 1.9rem;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--pr-health-mid);
+}
+
+.pr-month-health[data-level='low'] {
+  background: var(--pr-health-low);
+}
+
+.pr-month-health[data-level='mid'] {
+  background: var(--pr-health-mid);
+}
+
+.pr-month-health[data-level='high'] {
+  background: var(--pr-health-high);
+}
+
+.pr-title {
+  color: var(--app-ink);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+@media (max-width: 767.98px) {
+  .pr-bar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'year toggle'
+      'rail rail';
+    align-items: center;
+  }
+
+  .pr-toggle-block {
+    justify-self: end;
+  }
+
+  .pr-month-btn {
+    min-width: max(44px, 4rem);
+    min-height: 44px;
+  }
+}

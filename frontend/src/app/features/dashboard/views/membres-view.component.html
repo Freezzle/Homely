@@ -1,0 +1,19 @@
+<div class="flex flex-col gap-4">
+  <app-dashboard-section
+    [title]="facade.dashboardViewLabel('membres')"
+    [count]="facade.membresIndicators().length"
+    countColor="info">
+    @for (item of facade.membresIndicators(); track item.indicator.key) {
+      <app-indicator-card
+        [icon]="item.indicator.icon"
+        [iconColor]="item.indicator.iconColor"
+        [title]="item.indicator.title"
+        [subtitle]="item.indicator.subtitle ?? ''"
+        [info]="item.indicator.info ?? ''"
+        [infoColor]="item.indicator.infoColor ?? null"
+        [infoSubtitle]="item.indicator.infoSubtitle ?? ''"
+        [tags]="item.indicator.tags"
+        (cardClick)="openIndicator(item)" />
+    }
+  </app-dashboard-section>
+</div>

@@ -11,3 +11,6 @@ import type frTranslations from '../../../assets/i18n/fr.json';
  * la structure à la main comme le faisait l'ancien `type I18n = typeof FR`.
  */
 export type AppTranslations = typeof frTranslations;
+
+export type PeriodRailTranslations = AppTranslations['periodRail'];
+export type DashboardViewTranslations = AppTranslations['dashboard']['views'];
