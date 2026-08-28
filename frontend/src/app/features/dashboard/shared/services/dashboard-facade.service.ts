@@ -12,7 +12,6 @@ import { AllocationArgentPocheService, ResolutionArgentPocheService } from '../.
 import { DecompositionService, VentilationLike } from '../../../../core/services/decomposition.service';
 import {
   AggregatDto,
-  CompteRecapMensuelDto,
   EvenementDto,
   MembreDto,
   ModeComptabilisation,
@@ -24,6 +23,7 @@ import {
   TypePoste,
   VentilationAggregatDto,
   ResolutionArgentPocheFoyerMoisDto,
+  VirementCompteDto,
 } from '../../../../core/models/api.models';
 import { I18nService } from '../../../../core/i18n/i18n.service';
 import { localeDeLangue } from '../../../../core/i18n/locale.util';
@@ -134,6 +134,10 @@ export class DashboardFacadeService {
     const s = this.sujet();
     return s.mode === 'membre' ? s.membre : null;
   });
+
+  /** Id du membre courant (vue membre), `null` en vue foyer — utilisé pour désactiver la case
+   *  "fait" des virements dont le compte source ne l'inclut pas (voir `TableVirementsComptesComponent`). */
+  readonly membreActuelId = computed<string | null>(() => this.membreCourant()?.id ?? null);
 
   /** Si `sujetId` ne correspond à aucun membre connu du foyer (une fois les membres
    *  chargés), on redirige silencieusement vers la vue foyer plutôt que d'afficher une
@@ -471,43 +475,49 @@ export class DashboardFacadeService {
 
   /** Payload signaux transmis au drawer "Virements des comptes" (vue mois). */
   private readonly virementsComptesData = computed<VirementsComptesDrawerData>(() => ({
-    recaps: this.comptesRecapDto,
+    virements: this.virementsComptesDto,
+    comptes: this.comptes,
+    membres: this.membres,
+    virementsFaits: this.virementsComptesFaits,
+    membreActuelId: this.membreActuelId,
     devise: this.deviseBase,
-    chargement: this.comptesRecapChargement,
-    cle: this._comptesRecapCle,
+    chargement: this.virementsComptesChargement,
+    onBascule: (cle) => this.basculerVirementCompteFait(cle),
   }));
 
   /** Indicateur "Virements des comptes" (mois + vue membre uniquement, mêmes données que
    *  l'onglet "Comptes") — `null` si non applicable (vue foyer ou vue année). */
   readonly virementsComptesIndicateur = computed(() => {
     if (!this.afficherOngletComptes()) return null;
-    const recaps = this.comptesRecapDto();
-    const totalSortants = recaps.reduce((somme, r) => somme + r.virementsSortants, 0);
+    const virements = this.virementsComptesDto();
+    const totalSortants = virements.reduce((somme, v) => somme + v.montant, 0);
     return {
-      indicator: virementsComptesIndicator('virements-comptes-mois', recaps, this.formatMontant(totalSortants), this.t),
+      indicator: virementsComptesIndicator('virements-comptes-mois', virements, this.formatMontant(totalSortants), this.t),
       data: this.virementsComptesData(),
     };
   });
 
-  /** Payload signaux transmis au drawer "Virements des comptes" (vue année) — le drill-down
-   *  par poste (`ComptesHubRecapCle`) réutilise décembre comme mois de référence, seul mois
-   *  couvert par le solde restant fin d'année (voir `_comptesRecapAnnuelCle`). */
+  /** Payload signaux transmis au drawer "Virements des comptes" (vue année). */
   private readonly virementsComptesDataAnnee = computed<VirementsComptesDrawerData>(() => ({
-    recaps: this.comptesRecapAnnuelDto,
+    virements: this.virementsComptesAnnuelDto,
+    comptes: this.comptes,
+    membres: this.membres,
+    virementsFaits: this.virementsComptesFaits,
+    membreActuelId: this.membreActuelId,
     devise: this.deviseBase,
-    chargement: this.comptesRecapAnnuelChargement,
-    cle: this._comptesRecapAnnuelCle,
+    chargement: this.virementsComptesAnnuelChargement,
+    onBascule: (cle) => this.basculerVirementCompteFait(cle),
   }));
 
   /** Indicateur "Virements des comptes" (vue année, vue membre uniquement) — variante
-   *  annuelle de {@link virementsComptesIndicateur} : flux sommés sur les 12 mois, solde
-   *  restant = instantané fin décembre. `null` si non applicable (vue foyer). */
+   *  annuelle de {@link virementsComptesIndicateur} : montants des paires identiques sommés
+   *  sur les 12 mois. `null` si non applicable (vue foyer). */
   readonly virementsComptesIndicateurAnnee = computed(() => {
     if (!this.afficherOngletComptes()) return null;
-    const recaps = this.comptesRecapAnnuelDto();
-    const totalSortants = recaps.reduce((somme, r) => somme + r.virementsSortants, 0);
+    const virements = this.virementsComptesAnnuelDto();
+    const totalSortants = virements.reduce((somme, v) => somme + v.montant, 0);
     return {
-      indicator: virementsComptesIndicator('virements-comptes-annee', recaps, this.formatMontant(totalSortants), this.t),
+      indicator: virementsComptesIndicator('virements-comptes-annee', virements, this.formatMontant(totalSortants), this.t),
       data: this.virementsComptesDataAnnee(),
     };
   });
@@ -758,38 +768,64 @@ export class DashboardFacadeService {
    *  "Virements des comptes" a besoin de la donnée résolue même onglet fermé. */
   readonly afficherOngletComptes = computed(() => this.sujet().mode === 'membre');
 
-  private readonly _comptesRecapCle = computed<{ foyerId: string; scenarioId: string; annee: number; mois: number; membreId: string } | null>(() => {
+  /** Paires source → destination des virements de comptes (mois), filtrées côté serveur pour
+   *  ne conserver que celles dont le compte destination inclut le membre courant (un membre ne
+   *  voit jamais les transferts d'un autre membre vers des comptes dont il n'est pas
+   *  co-titulaire). Gatée comme le récap comptes (vue membre uniquement). */
+  private readonly _virementsComptesCle = computed<{ foyerId: string; scenarioId: string; annee: number; mois: number; membreId: string } | null>(() => {
     if (!this.afficherOngletComptes()) return null;
     const ventCle = this._ventilationsMoisCle();
     const s = this.sujet();
     return ventCle && s.mode === 'membre' ? { ...ventCle, membreId: s.membreId } : null;
   });
 
-  private readonly _comptesRecap = creerChargementReactif(this._comptesRecapCle, ({ foyerId, scenarioId, annee, mois, membreId }) =>
-    this.projSvc.comptesRecap(foyerId, scenarioId, annee, mois, membreId),
+  private readonly _virementsComptes = creerChargementReactif(this._virementsComptesCle, ({ foyerId, scenarioId, annee, mois, membreId }) =>
+    this.projSvc.virementsComptes(foyerId, scenarioId, annee, mois, membreId),
   );
 
-  readonly comptesRecapDto = computed<CompteRecapMensuelDto[]>(() => this._comptesRecap.donnees() ?? []);
+  readonly virementsComptesDto = computed<VirementCompteDto[]>(() => this._virementsComptes.donnees() ?? []);
 
-  readonly comptesRecapChargement = computed(() => this._comptesRecap.chargement());
+  readonly virementsComptesChargement = computed(() => this._virementsComptes.chargement());
 
-  /** Variante annuelle du récap comptes (vue membre) : flux sommés sur les 12 mois, scopée
-   *  à `_projectionAnnuelleCle` (pas de `mois`). Le `cle` transmis au drawer (drill-down par
-   *  poste) fige `mois: 12` (décembre), seul mois couvert par le solde restant fin d'année. */
-  private readonly _comptesRecapAnnuelCle = computed<{ foyerId: string; scenarioId: string; annee: number; mois: number; membreId: string } | null>(() => {
+  /** Variante annuelle — sommée sur les 12 mois, mêmes gates que `_comptesRecapAnnuelCle`. */
+  private readonly _virementsComptesAnnuelCle = computed<{ foyerId: string; scenarioId: string; annee: number; membreId: string } | null>(() => {
     if (!this.afficherOngletComptes()) return null;
     const projCle = this._projectionAnnuelleCle();
     const s = this.sujet();
-    return projCle && s.mode === 'membre' ? { ...projCle, mois: 12, membreId: s.membreId } : null;
+    return projCle && s.mode === 'membre' ? { ...projCle, membreId: s.membreId } : null;
   });
 
-  private readonly _comptesRecapAnnuel = creerChargementReactif(this._comptesRecapAnnuelCle, ({ foyerId, scenarioId, annee, membreId }) =>
-    this.projSvc.comptesRecapAnnuel(foyerId, scenarioId, annee, membreId),
+  private readonly _virementsComptesAnnuel = creerChargementReactif(this._virementsComptesAnnuelCle, ({ foyerId, scenarioId, annee, membreId }) =>
+    this.projSvc.virementsComptesAnnuel(foyerId, scenarioId, annee, membreId),
   );
 
-  readonly comptesRecapAnnuelDto = computed<CompteRecapMensuelDto[]>(() => this._comptesRecapAnnuel.donnees() ?? []);
+  readonly virementsComptesAnnuelDto = computed<VirementCompteDto[]>(() => this._virementsComptesAnnuel.donnees() ?? []);
 
-  readonly comptesRecapAnnuelChargement = computed(() => this._comptesRecapAnnuel.chargement());
+  readonly virementsComptesAnnuelChargement = computed(() => this._virementsComptesAnnuel.chargement());
+
+  readonly virementsComptesCourant = computed(() => this.vue() === 'annee' ? this.virementsComptesAnnuelDto() : this.virementsComptesDto());
+  readonly virementsComptesCourantChargement = computed(() => this.vue() === 'annee' ? this.virementsComptesAnnuelChargement() : this.virementsComptesChargement());
+
+  /** Statut "fait/pas fait" des virements — état purement local (non persisté), remis à zéro
+   *  à chaque changement de contexte (mois/année/membre) puisque la clé n'a alors plus de
+   *  sens. Clé = `compteSourceId::compteDestinationId` (voir `TableVirementsComptesComponent`). */
+  private readonly _virementsComptesFaits = signal<ReadonlySet<string>>(new Set());
+  readonly virementsComptesFaits = this._virementsComptesFaits.asReadonly();
+
+  private readonly _resetVirementsComptesFaits = effect(() => {
+    this.virementsComptesCourant();
+    untracked(() => this._virementsComptesFaits.set(new Set()));
+  });
+
+  basculerVirementCompteFait(cle: string): void {
+    const courant = new Set(this._virementsComptesFaits());
+    if (courant.has(cle)) {
+      courant.delete(cle);
+    } else {
+      courant.add(cle);
+    }
+    this._virementsComptesFaits.set(courant);
+  }
 
   private mapperTauxEffortCards(dtos: TauxEffortMembreDto[] | null | undefined): TauxEffortCardData[] {
     return (dtos ?? []).map((dto) => ({
@@ -2171,9 +2207,6 @@ export class DashboardFacadeService {
     ];
   });
 
-  readonly comptesRecapCourant = computed(() => this.vue() === 'annee' ? this.comptesRecapAnnuelDto() : this.comptesRecapDto());
-  readonly comptesRecapCourantChargement = computed(() => this.vue() === 'annee' ? this.comptesRecapAnnuelChargement() : this.comptesRecapChargement());
-  readonly comptesRecapCourantCle = computed(() => this.vue() === 'annee' ? this._comptesRecapAnnuelCle() : this._comptesRecapCle());
 
   readonly carteVentilationCourante = computed(() => this.vue() === 'annee' ? this.carteAnneeConfig() : this.carteMoisConfig());
   readonly postesOptimisationCourants = computed(() => this.vue() === 'annee' ? this.postesMatriceAnnee() : this.postesMatriceMois());

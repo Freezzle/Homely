@@ -1,30 +1,31 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, Signal, input } from '@angular/core';
-import { CompteRecapMensuelDto } from '../../../../core/models/api.models';
-import { ComptesHubRecapComponent } from './comptes-hub-recap/comptes-hub-recap.component';
+import { CompteDto, MembreDto, VirementCompteDto } from '../../../../core/models/api.models';
+import { TableVirementsComptesComponent } from '../../shared/components/table-virements-comptes/table-virements-comptes.component';
 
 /**
  * Payload transmis via `IndicatorDrawerService.open({ data })` — références de signaux pour
  * rester réactif (changement de mois).
  */
 export interface VirementsComptesDrawerData {
-  recaps: Signal<CompteRecapMensuelDto[]>;
+  virements: Signal<VirementCompteDto[]>;
+  comptes: Signal<readonly CompteDto[]>;
+  membres: Signal<readonly MembreDto[]>;
+  virementsFaits: Signal<ReadonlySet<string>>;
+  membreActuelId: Signal<string | null>;
   devise: Signal<string>;
   chargement: Signal<boolean>;
-  /** Contexte requis pour charger le détail des postes d'un compte sélectionné —
-   *  `null` si non applicable (cohérent avec le gating de `_comptesRecapCle`). */
-  cle: Signal<{ foyerId: string; scenarioId: string; annee: number; mois: number; membreId: string } | null>;
+  onBascule: (cle: string) => void;
 }
 
 /**
  * Contenu du drawer pour l'indicateur "Virements des comptes" : enveloppe fine autour de
- * `<app-comptes-hub-recap>` (vue "Hub & Rayons" en `p-organization-chart`), sans le retirer
- * de l'onglet "Comptes" d'origine.
+ * `<app-table-virements-comptes>` (table à sous-en-têtes groupée par compte source).
  */
 @Component({
   selector: 'app-virements-comptes-drawer-content',
   standalone: true,
-  imports: [CommonModule, ComptesHubRecapComponent],
+  imports: [CommonModule, TableVirementsComptesComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './virements-comptes-drawer-content.component.html',
 })

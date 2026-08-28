@@ -1,0 +1,137 @@
+:host {
+  display: block;
+}
+
+.virements-table__skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.virements-table {
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-card);
+  overflow: hidden;
+
+  // ─── Header de colonnes (thead) ───
+  ::ng-deep .p-datatable-thead > tr > th {
+    background: var(--app-bg);
+    color: var(--app-ink-muted);
+    font-size: 0.625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.625rem 0.75rem;
+    border-bottom: 1px solid var(--app-line);
+  }
+
+  &__col-amount { text-align: right; width: 5.625rem; }
+  &__col-status { width: 2.5rem; }
+
+  // ─── Ligne de subheader (compte source) ───
+  &__subheader td {
+    padding: 0.625rem 0.75rem;
+    background: var(--app-line-2);
+    border-top: 1px solid var(--app-line);
+    border-bottom: 1px solid var(--app-line);
+  }
+  // La toute première subheader ne prend pas de border-top (elle touche le thead)
+  &__subheader:first-of-type td { border-top: none; }
+
+  &__subheader-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+  }
+
+  &__subheader-text {
+    flex: 1;
+    min-width: 0;
+  }
+  &__subheader-name {
+    font-weight: 700;
+    font-size: 0.78125rem;
+    line-height: 1.2;
+    color: var(--app-ink);
+  }
+  &__subheader-count {
+    font-size: 0.625rem;
+    color: var(--app-ink-muted);
+    margin-top: 0.0625rem;
+  }
+
+  &__subheader-total { text-align: right; }
+  &__subheader-total-value {
+    font-size: 0.875rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    color: var(--app-ink);
+  }
+  &__subheader-total-label {
+    font-size: 0.5625rem;
+    color: var(--app-ink-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  // ─── Ligne de données (virement) ───
+  &__row td {
+    border-bottom: 1px solid var(--app-line-2);
+    vertical-align: middle;
+  }
+  &__row:hover td { background: var(--app-bg); }
+
+  // Indentation légère des lignes de données par rapport aux subheaders
+  &__cell-dest { padding-left: 1.5rem !important; }
+
+  &__dest { display: flex; align-items: center; gap: 0.5rem; }
+  &__dest-name { font-weight: 700; font-size: 0.75rem; line-height: 1.2; color: var(--app-ink); }
+  &__dest-context {
+    font-size: 0.59375rem;
+    color: var(--app-ink-muted);
+    margin-top: 0.0625rem;
+  }
+
+  &__cell-amount {
+    text-align: right;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    font-size: 0.84375rem;
+    white-space: nowrap;
+    color: var(--app-ink);
+  }
+
+  // ─── Case "fait" (app-checkbox) ───
+  &__cell-status {
+    ::ng-deep app-checkbox { margin-bottom: 0; }
+  }
+
+  // ─── Badge remboursement ───
+  &__tag-reimburse {
+    background: var(--app-remboursement-bg) !important;
+    color: var(--app-remboursement) !important;
+    font-size: 0.59375rem;
+    font-weight: 700;
+    padding: 0.125rem 0.4375rem;
+    border-radius: var(--app-radius-pill);
+  }
+
+  &__empty {
+    text-align: center;
+    padding: 1.5rem;
+    color: var(--app-ink-muted);
+    font-size: 0.8125rem;
+  }
+}
+
+// ─── Responsive : reste lisible entre 360px et 768px (mobile → tablette portrait) ───
+@media (max-width: 480px) {
+  .virements-table {
+    &__col-amount { width: 4.5rem; }
+    &__cell-dest { padding-left: 1.5rem !important; }
+    &__subheader-name { font-size: 0.71875rem; }
+    &__cell-amount { font-size: 0.75rem; }
+  }
+}

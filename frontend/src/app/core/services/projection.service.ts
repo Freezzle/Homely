@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import {
   ProjectionAnnuelleDto, VentilationsDto, VentilationAnnuelleDto, EvenementDto, TauxEffortMembreDto,
   CompteRecapMensuelDto, ComptePosteDetailDto, ProrataPartageMembreDto,
-  TresorerieCumuleeDto,
+  TresorerieCumuleeDto, VirementCompteDto,
 } from '../models/api.models';
 
 /** T9.3 — Service HTTP projection scopé par foyer/scénario. */
@@ -90,6 +90,24 @@ export class ProjectionService {
   comptePostes(foyerId: string, scenarioId: string, annee: number, mois: number, membreId: string, compteId: string) {
     return this.http.get<ComptePosteDetailDto[]>(
       `${this.base(foyerId, scenarioId)}/comptes-recap/postes`, { params: { annee, mois, membreId, compteId } }
+    );
+  }
+
+  /** Virements inter-comptes simulés pour un mois (dashboard "Virements des comptes") : paires
+   *  compte source (primaire) → compte destination (crédité), filtrées côté serveur pour ne
+   *  conserver que celles dont le compte destination inclut `membreId` (un membre ne voit jamais
+   *  les transferts d'un autre membre vers des comptes dont il n'est pas co-titulaire). */
+  virementsComptes(foyerId: string, scenarioId: string, annee: number, mois: number, membreId: string) {
+    return this.http.get<VirementCompteDto[]>(
+      `${this.base(foyerId, scenarioId)}/virements-comptes`, { params: { annee, mois, membreId } }
+    );
+  }
+
+  /** Variante annuelle de {@link virementsComptes} : montants des paires identiques sommés
+   *  sur les 12 mois de l'année. */
+  virementsComptesAnnuel(foyerId: string, scenarioId: string, annee: number, membreId: string) {
+    return this.http.get<VirementCompteDto[]>(
+      `${this.base(foyerId, scenarioId)}/virements-comptes-annuel`, { params: { annee, membreId } }
     );
   }
 

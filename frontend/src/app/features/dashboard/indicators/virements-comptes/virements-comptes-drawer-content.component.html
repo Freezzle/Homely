@@ -1,7 +1,11 @@
 @if (data(); as d) {
-  <app-comptes-hub-recap
-          [recaps]="d.recaps()"
+  <app-table-virements-comptes
+          [virements]="d.virements()"
+          [comptes]="d.comptes()"
+          [membres]="d.membres()"
+          [virementsFaits]="d.virementsFaits()"
+          [membreActuelId]="d.membreActuelId()"
           [devise]="d.devise()"
           [chargement]="d.chargement()"
-          [cle]="d.cle()"/>
+          (virementBascule)="d.onBascule($event.virementId)"/>
 }

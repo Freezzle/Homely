@@ -1,0 +1,98 @@
+@if (chargement()) {
+  <div class="virements-table__skeleton">
+    @for (i of [1, 2, 3]; track i) {
+      <p-skeleton height="2.5rem" borderRadius="8px" />
+    }
+  </div>
+} @else {
+<p-table
+  [value]="lignes()"
+  styleClass="virements-table"
+  [tableStyle]="{ 'min-width': '100%' }"
+>
+  <ng-template #header>
+    <tr>
+      <th></th>
+      <th class="virements-table__col-amount"></th>
+      <th class="virements-table__col-status"></th>
+    </tr>
+  </ng-template>
+
+  <ng-template #body let-ligne>
+    <!-- SUBHEADER : bannière groupe (compte source) -->
+    @if (ligne.type === 'subheader') {
+      <tr class="virements-table__subheader">
+        <td colspan="3">
+          <div class="virements-table__subheader-inner">
+            @if (ligne.groupe.compteSource.proprietaires[0]; as premierProprietaire) {
+              <p-avatar
+                [label]="initiales(premierProprietaire)"
+                shape="circle"
+                [style]="{ 'background-color': premierProprietaire.couleur, 'color': '#fff' }"
+              />
+            }
+            <div class="virements-table__subheader-text">
+              <div class="virements-table__subheader-name">
+                {{ ligne.groupe.compteSource.libelle }}
+              </div>
+              <div class="virements-table__subheader-count">
+                {{ ligne.groupe.virements.length }}
+                {{ ligne.groupe.virements.length > 1 ? t.dashboard.comptesTableVirementSortantPluriel : t.dashboard.comptesTableVirementSortantSingulier }}
+              </div>
+            </div>
+            <div class="virements-table__subheader-total">
+              <div class="virements-table__subheader-total-value">
+                {{ ligne.groupe.total | montant:devise() }}
+              </div>
+              <div class="virements-table__subheader-total-label">{{ t.dashboard.comptesTableAEnvoyer }}</div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    }
+
+    <!-- DATA : ligne de virement -->
+    @if (ligne.type === 'data') {
+      <tr class="virements-table__row">
+        <td class="virements-table__cell-dest">
+          <div class="virements-table__dest">
+            <p-avatar-group>
+              @for (m of ligne.virement.destination.proprietaires; track m.id) {
+                <p-avatar
+                  [label]="initiales(m)"
+                  shape="circle"
+                  size="normal"
+                  [style]="{ 'background-color': m.couleur, 'color': '#fff' }"
+                />
+              }
+            </p-avatar-group>
+            <div class="virements-table__dest-text">
+              <div class="virements-table__dest-name">
+                {{ ligne.virement.destination.libelle }}
+              </div>
+            </div>
+          </div>
+        </td>
+        <td class="virements-table__cell-amount">
+          {{ ligne.virement.montant | montant:devise() }}
+        </td>
+        <td class="virements-table__cell-status">
+          <app-checkbox
+            [inputId]="'virement-fait-' + ligne.virement.id"
+            [ngModel]="ligne.virement.fait"
+            (ngModelChange)="onBasculerStatut(ligne.virement, $event)"
+            [disabled]="ligne.virement.basculeDesactivee"
+            [attr.aria-label]="ligne.virement.fait ? t.dashboard.comptesTableMarquerNonFait : t.dashboard.comptesTableMarquerFait"
+          />
+        </td>
+      </tr>
+    }
+  </ng-template>
+
+  <ng-template #emptymessage>
+    <tr>
+      <td colspan="3" class="virements-table__empty">{{ t.dashboard.comptesTableAucunVirement }}</td>
+    </tr>
+  </ng-template>
+</p-table>
+}

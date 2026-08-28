@@ -170,4 +170,29 @@ public class ProjectionController {
         multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
         return projectionService.recapComptePostes(foyerId, scenarioId, annee, mois, membreId, compteId);
     }
+
+    /** Virements inter-comptes simulés pour un mois (dashboard "Virements des comptes") : paires
+     * compte source (primaire) → compte destination (crédité), filtrées pour ne conserver que
+     * celles dont le compte destination inclut {@code membreId} (un membre ne voit jamais les
+     * transferts d'un autre membre vers des comptes dont il n'est pas co-titulaire). */
+    @GetMapping("/virements-comptes")
+    public List<VirementCompteDto> virementsComptes(@PathVariable UUID foyerId,
+                                                      @PathVariable UUID scenarioId,
+                                                      @RequestParam int annee,
+                                                      @RequestParam int mois,
+                                                      @RequestParam UUID membreId) {
+        multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
+        return projectionService.virementsComptes(foyerId, scenarioId, annee, mois, membreId);
+    }
+
+    /** Variante annuelle de {@link #virementsComptes} : montants des paires identiques sommés
+     * sur les 12 mois de l'année. */
+    @GetMapping("/virements-comptes-annuel")
+    public List<VirementCompteDto> virementsComptesAnnuel(@PathVariable UUID foyerId,
+                                                            @PathVariable UUID scenarioId,
+                                                            @RequestParam int annee,
+                                                            @RequestParam UUID membreId) {
+        multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
+        return projectionService.virementsComptesAnnuel(foyerId, scenarioId, annee, membreId);
+    }
 }

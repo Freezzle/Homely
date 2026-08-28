@@ -751,6 +751,86 @@ public class ProjectionService {
         return resultat;
     }
 
+    /**
+     * Virements inter-comptes simulés pour un mois donné (dashboard "Virements des comptes") :
+     * paires compte source (primaire) → compte destination (crédité), montant agrégé. Filtré
+     * pour ne conserver que les paires dont le compte destination inclut {@code membreId}
+     * (co-titulaire) : un membre ne doit voir que les virements qui le concernent réellement
+     * (destination = un de ses comptes), pas les transferts d'un autre membre vers des comptes
+     * dont il n'est pas co-titulaire.
+     */
+    @Cacheable(value = "projections",
+               key = "#scenarioId + '-virements-comptes-' + #annee + '-' + #mois + '-' + #membreId + '-' + T(ch.homely.projection.ProjectionService).versionKey(#foyerId, #scenarioId, @scenarioRepository)")
+    public List<VirementCompteDto> virementsComptes(UUID foyerId, UUID scenarioId, int annee, int mois, UUID membreId) {
+        ParametresScenario params = chargerParametres(foyerId, scenarioId);
+        List<Compte> tousComptes = compteRepo.findAllByFoyerIdAndActifTrueOrderByLibelleAsc(foyerId);
+        Map<UUID, UUID> primairesParMembre = chargerPrimairesParMembre(foyerId);
+
+        Map<YearMonth, List<ComptesFluxSimulateur.VirementPaire>> paires = ComptesFluxSimulateur.simulerPaires(
+                params, tousComptes, primairesParMembre, annee, mois, argentPocheService, scenarioId);
+        List<ComptesFluxSimulateur.VirementPaire> paireDuMois = paires.getOrDefault(YearMonth.of(annee, mois), List.of());
+
+        return toVirementCompteDtos(filtrerParDestinataire(paireDuMois, tousComptes, membreId), tousComptes);
+    }
+
+    /**
+     * Variante annuelle de {@link #virementsComptes} : les montants des paires identiques
+     * (même compte source, même compte destination) sont sommés sur les 12 mois de l'année.
+     */
+    @Cacheable(value = "projections",
+               key = "#scenarioId + '-virements-comptes-annuel-' + #annee + '-' + #membreId + '-' + T(ch.homely.projection.ProjectionService).versionKey(#foyerId, #scenarioId, @scenarioRepository)")
+    public List<VirementCompteDto> virementsComptesAnnuel(UUID foyerId, UUID scenarioId, int annee, UUID membreId) {
+        ParametresScenario params = chargerParametres(foyerId, scenarioId);
+        List<Compte> tousComptes = compteRepo.findAllByFoyerIdAndActifTrueOrderByLibelleAsc(foyerId);
+        Map<UUID, UUID> primairesParMembre = chargerPrimairesParMembre(foyerId);
+
+        Map<YearMonth, List<ComptesFluxSimulateur.VirementPaire>> paires = ComptesFluxSimulateur.simulerPaires(
+                params, tousComptes, primairesParMembre, annee, 12, argentPocheService, scenarioId);
+
+        Map<UUID, Map<UUID, Double>> agregeParPaire = new LinkedHashMap<>();
+        paires.forEach((ym, liste) -> {
+            if (ym.getYear() != annee) return;
+            for (ComptesFluxSimulateur.VirementPaire p : liste) {
+                agregeParPaire.computeIfAbsent(p.compteSourceId(), k -> new LinkedHashMap<>())
+                        .merge(p.compteDestinationId(), p.montant(), Double::sum);
+            }
+        });
+
+        List<ComptesFluxSimulateur.VirementPaire> paireAnnee = new ArrayList<>();
+        agregeParPaire.forEach((source, destinations) -> destinations.forEach((destination, montant) ->
+                paireAnnee.add(new ComptesFluxSimulateur.VirementPaire(source, destination, montant))));
+
+        return toVirementCompteDtos(filtrerParDestinataire(paireAnnee, tousComptes, membreId), tousComptes);
+    }
+
+    /** Ne conserve que les paires dont le compte destination inclut {@code membreId} parmi ses
+     *  co-titulaires — un membre ne voit ainsi jamais les transferts d'un autre membre vers des
+     *  comptes qui ne le concernent pas. */
+    private List<ComptesFluxSimulateur.VirementPaire> filtrerParDestinataire(
+            List<ComptesFluxSimulateur.VirementPaire> paires, List<Compte> tousComptes, UUID membreId) {
+        Set<UUID> comptesDuMembre = tousComptes.stream()
+                .filter(c -> c.getMembres().stream().anyMatch(m -> m.getId().equals(membreId)))
+                .map(Compte::getId)
+                .collect(java.util.stream.Collectors.toSet());
+        return paires.stream()
+                .filter(p -> comptesDuMembre.contains(p.compteDestinationId()))
+                .toList();
+    }
+
+    private List<VirementCompteDto> toVirementCompteDtos(List<ComptesFluxSimulateur.VirementPaire> paires, List<Compte> tousComptes) {
+        Map<UUID, String> libelleParCompte = new HashMap<>();
+        for (Compte c : tousComptes) libelleParCompte.put(c.getId(), c.getLibelle());
+
+        List<VirementCompteDto> resultat = new ArrayList<>();
+        for (ComptesFluxSimulateur.VirementPaire p : paires) {
+            resultat.add(new VirementCompteDto(
+                    p.compteSourceId(), libelleParCompte.get(p.compteSourceId()),
+                    p.compteDestinationId(), libelleParCompte.get(p.compteDestinationId()),
+                    bd(p.montant())));
+        }
+        return resultat;
+    }
+
     /** Charge, pour tous les membres actifs du foyer, l'id de leur compte primaire
      *  configuré (absent de la map = aucun primaire, mode "legacy"). */
     private Map<UUID, UUID> chargerPrimairesParMembre(UUID foyerId) {

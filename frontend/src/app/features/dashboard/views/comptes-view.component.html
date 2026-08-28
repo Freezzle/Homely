@@ -1,11 +1,15 @@
 <div class="flex flex-col gap-4">
   @if (facade.afficherOngletComptes()) {
     <p-card>
-      <app-comptes-hub-recap
-        [recaps]="facade.comptesRecapCourant()"
+      <app-table-virements-comptes
+        [virements]="facade.virementsComptesCourant()"
+        [comptes]="facade.comptes()"
+        [membres]="facade.membres()"
+        [virementsFaits]="facade.virementsComptesFaits()"
+        [membreActuelId]="facade.membreActuelId()"
         [devise]="facade.deviseBase()"
-        [chargement]="facade.comptesRecapCourantChargement()"
-        [cle]="facade.comptesRecapCourantCle()" />
+        [chargement]="facade.virementsComptesCourantChargement()"
+        (virementBascule)="onVirementBascule($event)" />
     </p-card>
   }
 

@@ -382,5 +382,170 @@ final class ComptesFluxSimulateur {
 
     /** Montant d'argent de poche à financer depuis le compte primaire du membre (voir ci-dessus). */
     private record PocheAFinancer(UUID membreId, UUID compteCible, UUID comptePrimaire, double montant) {}
+
+    /**
+     * Paire de virement simulée pour un mois donné : {@code compteSourceId} (compte primaire qui
+     * finance) → {@code compteDestinationId} (compte crédité), pour un {@code montant} agrégé
+     * (tous membres/postes/argent de poche confondus) — vue foyer, pas scopée à un membre, à la
+     * différence de {@link #simuler}/{@link CompteFluxMensuel}.
+     */
+    record VirementPaire(UUID compteSourceId, UUID compteDestinationId, double montant) {}
+
+    /**
+     * Simule, mois par mois depuis {@code params.anneeDepart()} jusqu'à {@code (anneeCible,
+     * moisCible)} inclus, les paires de virement inter-comptes réellement simulées (compte
+     * primaire → compte crédité) à l'échelle du foyer entier (tous membres confondus, pas de
+     * {@code membreCible}). Utilisé par le dashboard "Virements des comptes" (table à
+     * sous-en-têtes groupée par compte source) — remplace l'ancienne vue hub/satellite qui ne
+     * disposait que d'agrégats entrants/sortants par compte, sans le détail des paires.
+     *
+     * <p>Réimplémente volontairement, en parallèle de {@link #simulerMois}, le sous-ensemble du
+     * calcul nécessaire à la détermination des paires (chaînage de trésorerie par compte,
+     * comblement "topUp", financement depuis un primaire différent) plutôt que de faire muter
+     * {@link #simulerMois} pour y ajouter un accumulateur de paires : cela évite tout risque de
+     * régression sur la simulation par membre déjà validée par les vecteurs golden.</p>
+     */
+    static Map<YearMonth, List<VirementPaire>> simulerPaires(
+            ParametresScenario params, List<Compte> tousComptes, Map<UUID, UUID> primairesParMembre,
+            int anneeCible, int moisCible, ArgentPocheService argentPocheService, UUID scenarioId) {
+
+        Set<UUID> comptesActifsIds = new HashSet<>();
+        Map<UUID, Double> cumulTotalParCompte = new LinkedHashMap<>();
+        for (Compte c : tousComptes) {
+            comptesActifsIds.add(c.getId());
+            cumulTotalParCompte.put(c.getId(), c.getSoldeInitial().doubleValue());
+        }
+
+        Map<YearMonth, List<VirementPaire>> resultat = new LinkedHashMap<>();
+        int y = params.anneeDepart();
+        int m = 1;
+        while (y < anneeCible || (y == anneeCible && m <= moisCible)) {
+            resultat.put(YearMonth.of(y, m), simulerPairesMois(
+                    params, tousComptes, comptesActifsIds, primairesParMembre, cumulTotalParCompte,
+                    y, m, argentPocheService, scenarioId));
+            if (m == 12) { m = 1; y++; } else { m++; }
+        }
+        return resultat;
+    }
+
+    private static List<VirementPaire> simulerPairesMois(
+            ParametresScenario params, List<Compte> tousComptes, Set<UUID> comptesActifsIds,
+            Map<UUID, UUID> primairesParMembre, Map<UUID, Double> cumulTotalParCompte,
+            int annee, int mois, ArgentPocheService argentPocheService, UUID scenarioId) {
+
+        VentilationsCompteDetail detail = MoteurCalcul.ventilationsCompteMembreDetail(params, annee, mois);
+        Map<UUID, Map<UUID, DetailCompteMembre>> parCompteMembreDetail = new LinkedHashMap<>();
+        detail.parCompteMembre().forEach((compteId, memMap) -> parCompteMembreDetail.put(compteId, new LinkedHashMap<>(memMap)));
+
+        List<PocheAFinancer> pochesAFinancer = fusionnerArgentPocheDansDetail(
+                params, parCompteMembreDetail, argentPocheService, scenarioId, annee, mois,
+                primairesParMembre, comptesActifsIds);
+
+        Map<UUID, Double> entreesParCompte = new HashMap<>();
+        Map<UUID, Double> baseParCompte = new HashMap<>();
+        Map<UUID, Double> echuParCompte = new HashMap<>();
+        Map<UUID, Map<UUID, Double>> baseShareParCompte = new HashMap<>();
+        Map<UUID, Map<UUID, Double>> echuShareParCompte = new HashMap<>();
+
+        for (Compte c : tousComptes) {
+            Map<UUID, DetailCompteMembre> parMembre = parCompteMembreDetail.getOrDefault(c.getId(), Map.of());
+            double entrees = 0, base = 0, echu = 0;
+            Map<UUID, Double> baseShares = new LinkedHashMap<>();
+            Map<UUID, Double> echuShares = new LinkedHashMap<>();
+            for (Map.Entry<UUID, DetailCompteMembre> e : parMembre.entrySet()) {
+                DetailCompteMembre d = e.getValue();
+                entrees += d.revenusEchu();
+                base += d.chargesReservesMensualise();
+                echu += d.chargesReservesEchu();
+                baseShares.put(e.getKey(), d.chargesReservesMensualise());
+                echuShares.put(e.getKey(), d.chargesReservesEchu());
+            }
+            entreesParCompte.put(c.getId(), entrees);
+            baseParCompte.put(c.getId(), base);
+            echuParCompte.put(c.getId(), echu);
+            baseShareParCompte.put(c.getId(), baseShares);
+            echuShareParCompte.put(c.getId(), echuShares);
+        }
+
+        Map<UUID, Double> topUpParCompte = new HashMap<>();
+        for (Compte c : tousComptes) {
+            double treasoAvant = cumulTotalParCompte.get(c.getId());
+            double flowAvant = treasoAvant + entreesParCompte.get(c.getId()) + baseParCompte.get(c.getId())
+                    - echuParCompte.get(c.getId());
+            topUpParCompte.put(c.getId(), Math.max(0, -flowAvant));
+        }
+
+        Map<UUID, Double> virementsEntrantsTotalParCompte = new HashMap<>();
+        Map<UUID, Double> virementsSortantsTotalParCompte = new HashMap<>();
+        Map<UUID, Map<UUID, Double>> paires = new LinkedHashMap<>(); // source -> destination -> montant
+        for (Compte c : tousComptes) {
+            virementsEntrantsTotalParCompte.put(c.getId(), 0.0);
+            virementsSortantsTotalParCompte.put(c.getId(), 0.0);
+        }
+
+        for (Compte c : tousComptes) {
+            UUID compteId = c.getId();
+            Map<UUID, Double> baseShares = baseShareParCompte.get(compteId);
+            Map<UUID, Double> echuShares = echuShareParCompte.get(compteId);
+            double totalBase = baseParCompte.get(compteId);
+            double totalEchu = echuParCompte.get(compteId);
+            double topUp = topUpParCompte.get(compteId);
+
+            Set<UUID> membreIds = new LinkedHashSet<>();
+            membreIds.addAll(baseShares.keySet());
+            membreIds.addAll(echuShares.keySet());
+            if (membreIds.isEmpty()) continue;
+
+            for (UUID membreId : membreIds) {
+                double baseShare = baseShares.getOrDefault(membreId, 0.0);
+                double echuShare = echuShares.getOrDefault(membreId, 0.0);
+
+                double baseProportion = totalBase != 0 ? baseShare / totalBase : 1.0 / membreIds.size();
+                double echuProportion = totalEchu != 0 ? echuShare / totalEchu : baseProportion;
+                double montantFinance = baseShare + topUp * echuProportion;
+
+                UUID primaireId = primairesParMembre.get(membreId);
+
+                if (primaireId == null || !comptesActifsIds.contains(primaireId)) {
+                    virementsEntrantsTotalParCompte.merge(compteId, baseShare, Double::sum);
+                } else if (primaireId.equals(compteId)) {
+                    // Auto-financé : aucun virement à simuler pour cette part.
+                } else {
+                    virementsEntrantsTotalParCompte.merge(compteId, montantFinance, Double::sum);
+                    virementsSortantsTotalParCompte.merge(primaireId, montantFinance, Double::sum);
+                    if (montantFinance > 0) {
+                        paires.computeIfAbsent(primaireId, k -> new LinkedHashMap<>())
+                                .merge(compteId, montantFinance, Double::sum);
+                    }
+                }
+            }
+        }
+
+        for (PocheAFinancer p : pochesAFinancer) {
+            virementsEntrantsTotalParCompte.merge(p.compteCible(), p.montant(), Double::sum);
+            virementsSortantsTotalParCompte.merge(p.comptePrimaire(), p.montant(), Double::sum);
+            if (p.montant() > 0) {
+                paires.computeIfAbsent(p.comptePrimaire(), k -> new LinkedHashMap<>())
+                        .merge(p.compteCible(), p.montant(), Double::sum);
+            }
+        }
+
+        // Chaînage de la trésorerie cumulée par compte (indépendant du membre cible — identique
+        // à la logique de simulerMois, nécessaire pour un comblement "topUp" correct au mois suivant).
+        for (Compte c : tousComptes) {
+            UUID compteId = c.getId();
+            double soldeRestantTotal = entreesParCompte.get(compteId) + virementsEntrantsTotalParCompte.get(compteId)
+                    - echuParCompte.get(compteId) - virementsSortantsTotalParCompte.get(compteId);
+            cumulTotalParCompte.put(compteId, cumulTotalParCompte.get(compteId) + soldeRestantTotal);
+        }
+
+        List<VirementPaire> resultatMois = new ArrayList<>();
+        paires.forEach((source, destinations) -> destinations.forEach((destination, montant) -> {
+            if (montant > 0.005) {
+                resultatMois.add(new VirementPaire(source, destination, montant));
+            }
+        }));
+        return resultatMois;
+    }
 }
 

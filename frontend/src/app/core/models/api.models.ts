@@ -377,6 +377,18 @@ export interface CompteRecapMensuelDto {
  *  lorsqu'un compte est sélectionné dans la vue "Virements des comptes" (org-chart hub
  *  & rayons). `posteId`/`libelle` sont `null` si `argentPoche` est vrai (pas un poste).
  *  `quotePart` est `null` pour l'argent de poche (pas de notion de prorata). */
+/** Virement inter-comptes simulé (dashboard "Virements des comptes") : paire compte source
+ *  (primaire qui finance) → compte destination (crédité), vue foyer entier (pas scopée à un
+ *  membre, à la différence de {@link CompteRecapMensuelDto}). Ne porte pas d'état "fait/pas
+ *  fait" : ce statut est géré côté frontend uniquement (état local, non persisté). */
+export interface VirementCompteDto {
+  compteSourceId: string;
+  libelleCompteSource: string;
+  compteDestinationId: string;
+  libelleCompteDestination: string;
+  montant: number;
+}
+
 export interface ComptePosteDetailDto {
   posteId: string | null;
   libelle: string | null;

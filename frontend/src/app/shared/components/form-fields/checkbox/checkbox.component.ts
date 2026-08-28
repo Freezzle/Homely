@@ -43,6 +43,13 @@ export class CheckboxComponent implements ControlValueAccessor {
   protected readonly value = signal(false);
   protected readonly disabled = signal(false);
 
+  /** Permet de désactiver la case directement via un binding `[disabled]`, en plus du
+   *  mécanisme standard `ControlValueAccessor.setDisabledState` (reactive/template forms). */
+  @Input('disabled')
+  set disabledInput(value: boolean) {
+    this.disabled.set(!!value);
+  }
+
   private onChange: (value: boolean) => void = () => {};
   protected onTouched: () => void = () => {};
 
