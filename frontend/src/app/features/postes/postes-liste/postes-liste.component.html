@@ -110,18 +110,18 @@
             </div>
         </div>
 
-        <!-- Ligne 3 : les 3 filtres -->
-        <div class="grid gap-2 lg:grid-cols-3">
-            <!-- Filtre catégories -->
+        <!-- Ligne 3 : les 2 filtres -->
+        <div class="grid gap-2 lg:grid-cols-2">
+            <!-- Filtre membres -->
             <app-multi-select
-                [ngModel]="filtreCategorieIds()"
-                (ngModelChange)="filtreCategorieIds.set($event)"
-                [options]="categories()"
-                optionLabel="libelle"
-                optionValue="id"
-                [label]="t.poste.filtreCategories"
-                [showClear]="true"
-                class="w-full text-sm"/>
+                    [ngModel]="filtreMembreIds()"
+                    (ngModelChange)="filtreMembreIds.set($event)"
+                    [options]="membres()"
+                    optionLabel="nom"
+                    optionValue="id"
+                    [label]="t.poste.filtreMembres"
+                    [showClear]="true"
+                    class="w-full text-xs"/>
 
             <!-- Filtre comptes -->
             <app-multi-select
@@ -132,7 +132,7 @@
                 optionValue="id"
                 [label]="t.poste.filtreComptes"
                 [showClear]="true"
-                class="w-full text-sm">
+                class="w-full text-xs">
                 <ng-template #item let-compte>
                     <div class="flex items-center gap-2 flex-wrap">
                         <span>{{ compte.libelle }}</span>
@@ -140,17 +140,6 @@
                     </div>
                 </ng-template>
             </app-multi-select>
-
-            <!-- Filtre membres -->
-            <app-multi-select
-                [ngModel]="filtreMembreIds()"
-                (ngModelChange)="filtreMembreIds.set($event)"
-                [options]="membres()"
-                optionLabel="nom"
-                optionValue="id"
-                [label]="t.poste.filtreMembres"
-                [showClear]="true"
-                class="w-full text-sm"/>
         </div>
     </div>
 
@@ -269,9 +258,8 @@
 
                             <!-- Ligne 2 : période de validité + membres/comptes (gauche) · périodicité (droite sur desktop) -->
                             <div class="grid gap-1 md:gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-                                <div class="min-w-0 flex items-center flex-wrap gap-2 text-sm text-surface-500 dark:text-surface-400">
+                                <div class="min-w-0 flex items-center flex-wrap gap-2 text-xs text-surface-500 dark:text-surface-400">
                                     <span class="flex items-center gap-1 min-w-0">
-                    <i class="pi pi-calendar text-xs text-surface-400"></i>
                                         @if (p.periodiciteMois === 0) {
                                             <span class="truncate">{{ formatPeriode(p.debut) }}</span>
                                         } @else {
@@ -290,7 +278,7 @@
                                     }
                                 </div>
 
-                                <div class="flex items-center flex-wrap gap-1 text-sm md:justify-end">
+                                <div class="flex items-center flex-wrap gap-1 text-xs md:justify-end">
                                     @if (p.periodiciteMois === 0) {
                                         <span class="flex items-center gap-1 text-surface-500 dark:text-surface-400">
                       <i class="pi pi-bolt text-xs text-purple-500" [pTooltip]="t.poste.oneShot"></i>
