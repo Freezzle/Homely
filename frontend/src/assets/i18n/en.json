@@ -261,6 +261,31 @@
     "filtreComptes": "Filter by account",
     "filtreMembres": "Filter by member",
     "filtreDescription": "Search…",
+    "etatOptions": {
+      "ACTIF": "Active",
+      "A_VENIR": "Upcoming",
+      "TERMINE": "Ended"
+    },
+    "barreFiltres": {
+      "rechercheLabel": "Search a line item",
+      "effacerRecherche": "Clear search",
+      "trier": "Sort",
+      "filtres": "Filters",
+      "critereTri": "Sort by",
+      "regrouperPar": "Group by",
+      "regrouperOptions": {
+        "DATE": "Month",
+        "CATEGORIE": "Category",
+        "DESCRIPTION": "Alphabetically"
+      },
+      "regrouperAucun": "None",
+      "sectionEtat": "Status",
+      "toutEffacer": "Clear all",
+      "nResultats": "{{n}} result(s)",
+      "voirResultats": "See {{n}} item(s)",
+      "aucunResultatFiltre": "No line item matches your search or filters",
+      "effacerFiltresEtRecherche": "Clear search and filters ({{n}})"
+    },
     "oneShot": "One-off",
     "contribution": "Contribution",
     "reviserMontant": "Revise amount",
@@ -560,6 +585,7 @@
   },
   "commun": {
     "actions": "Actions",
+    "options": "Options",
     "nom": "Name",
     "statut": "Status",
     "de": "of",

@@ -261,6 +261,31 @@
     "filtreComptes": "Filtre par compte",
     "filtreMembres": "Filtre par membre",
     "filtreDescription": "Rechercher…",
+    "etatOptions": {
+      "ACTIF": "Actifs",
+      "A_VENIR": "À venir",
+      "TERMINE": "Terminés"
+    },
+    "barreFiltres": {
+      "rechercheLabel": "Rechercher un poste",
+      "effacerRecherche": "Effacer la recherche",
+      "trier": "Trier",
+      "filtres": "Filtres",
+      "critereTri": "Trier par",
+      "regrouperPar": "Regrouper par",
+      "regrouperOptions": {
+        "DATE": "Mois",
+        "CATEGORIE": "Catégorie",
+        "DESCRIPTION": "Alphabet"
+      },
+      "regrouperAucun": "Aucun",
+      "sectionEtat": "État",
+      "toutEffacer": "Tout effacer",
+      "nResultats": "{{n}} résultat(s)",
+      "voirResultats": "Voir {{n}} poste(s)",
+      "aucunResultatFiltre": "Aucun poste ne correspond à votre recherche ou vos filtres",
+      "effacerFiltresEtRecherche": "Effacer la recherche et les filtres ({{n}})"
+    },
     "oneShot": "Ponctuel",
     "contribution": "Contribution",
     "reviserMontant": "Réviser le montant",
@@ -560,6 +585,7 @@
   },
   "commun": {
     "actions": "Actions",
+    "options": "Options",
     "nom": "Nom",
     "statut": "Statut",
     "de": "de",

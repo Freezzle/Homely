@@ -1,26 +1,30 @@
 import { Component, inject, signal, computed, input, effect, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router, ActivatedRoute } from '@angular/router';
 import { TableModule } from 'primeng/table';
 import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { SkeletonModule } from 'primeng/skeleton';
 import { MenuModule } from 'primeng/menu';
+import { PopoverModule } from 'primeng/popover';
+import { DrawerModule } from 'primeng/drawer';
 import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
 import { ContexteService } from '../../../core/services/contexte.service';
+import { ViewportService } from '../../../core/services/viewport.service';
 import { PosteService } from '../../../core/services/scenario-poste.service';
 import { CategorieService, CompteService } from '../../../core/services/referentiel.service';
 import { PosteDto, CategorieDto, CompteDto, MembreDto, VentilationCompteDto, TypePoste, ChampGroupable } from '../../../core/models/api.models';
 import { MontantPipe, PeriodicitePipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { localeDeLangue } from '../../../core/i18n/locale.util';
-import { MembresTagsComponent } from '../../../shared/components/membres-tags/membres-tags.component';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { TagComponent } from '../../../shared/components/tag/tag.component';
-import { CheckboxComponent, InputTextComponent, MultiSelectComponent, SelectComponent } from '../../../shared/components/form-fields';
+import { CheckboxComponent } from '../../../shared/components/form-fields';
 import { toIsoDateLocal } from '../../../core/utils/date.util';
 import { formatPeriodeMois, formaterMontantSimple } from '../../../core/utils/format-affichage.util';
 import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
+import { contientInsensibleAccents, surlignerFragment } from '../../../core/utils/normalisation-texte.util';
 import { PosteApercuDialogComponent } from '../poste-apercu-dialog/poste-apercu-dialog.component';
 import { PosteHistoriqueDrawerComponent, MaillonHistorique } from '../poste-historique-drawer/poste-historique-drawer.component';
 import { PosteRevisionDialogComponent } from '../poste-revision-dialog/poste-revision-dialog.component';
@@ -29,6 +33,14 @@ import { PosteDecalageDialogComponent } from '../poste-decalage-dialog/poste-dec
 import { PosteFormDialogComponent } from '../poste-form-dialog/poste-form-dialog.component';
 import { PosteBulkChampDialogComponent } from '../poste-bulk-champ-dialog/poste-bulk-champ-dialog.component';
 import { PosteBulkSuppressionDialogComponent } from '../poste-bulk-suppression-dialog/poste-bulk-suppression-dialog.component';
+import { PostesBarreFiltresComponent } from './postes-barre-filtres/postes-barre-filtres.component';
+import {
+  EtatFiltresPostes, FiltreEtatPoste, OptionFacette, ETAT_FILTRES_PAR_DEFAUT, compterFiltresActifs, CritereTri,
+} from './etat-filtres-postes.model';
+import {
+  etatFiltresDepuisQueryParams, etatFiltresVersQueryParams,
+  lirePreferencesAffichage, ecrirePreferencesAffichage, assurerCoherenceTri,
+} from './etat-filtres-postes.util';
 
 /**
  * Poste enrichi de métadonnées d'affichage calculées côté front pour le regroupement
@@ -58,10 +70,9 @@ interface VisibiliteMenuItem extends MenuItem {
   standalone: true,
   providers: [ConfirmationService],
   imports: [CommonModule, FormsModule, TableModule, ButtonComponent,
-            InputTextComponent, SelectComponent, MultiSelectComponent,
             TagComponent, TooltipModule, ConfirmDialogModule, SkeletonModule, CheckboxComponent,
-            MenuModule,
-            MontantPipe, PeriodicitePipe, MembresTagsComponent, PosteApercuDialogComponent, PosteHistoriqueDrawerComponent, PosteRevisionDialogComponent, PosteClotureDialogComponent, PosteDecalageDialogComponent, PosteFormDialogComponent,
+            MenuModule, PopoverModule, DrawerModule, PostesBarreFiltresComponent,
+            MontantPipe, PeriodicitePipe, PosteApercuDialogComponent, PosteHistoriqueDrawerComponent, PosteRevisionDialogComponent, PosteClotureDialogComponent, PosteDecalageDialogComponent, PosteFormDialogComponent,
             PosteBulkChampDialogComponent, PosteBulkSuppressionDialogComponent],
   templateUrl: './postes-liste.component.html',
 })
@@ -71,11 +82,14 @@ export class PostesListeComponent {
   readonly type = input<TypePoste>('REVENU');
   readonly Math = Math; // Exposition pour le template
   contexte = inject(ContexteService);
+  readonly viewport = inject(ViewportService);
   private posteSvc = inject(PosteService);
   private categorieSvc = inject(CategorieService);
   private compteSvc = inject(CompteService);
   private toast = inject(MessageService);
   private confirm = inject(ConfirmationService);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   postes = signal<PosteDto[]>([]);
   categories = signal<CategorieDto[]>([]);
@@ -203,26 +217,63 @@ export class PostesListeComponent {
     this.charger();
   }
 
-  triActuel = signal<'DATE' | 'CATEGORIE' | 'DESCRIPTION'>('CATEGORIE');
-  cacherInactifs = signal(true);
-  cacherFuturs = signal(false);
-  cacherDetails = signal(false);
-  filtreCompteIds = signal<string[]>([]);
-  filtreMembreIds = signal<string[]>([]);
-  filtreCategorieIds = signal<string[]>([]);
-  filtreDescription = signal<string>('');
+  /**
+   * État unifié de la barre filtres/tri (§10 du spec) : synchronisé avec l'URL au
+   * chargement (retour arrière du navigateur cohérent, vue partageable) et à chaque
+   * changement (voir `_syncUrlEffect`). `recherche`/`filtre*` ne sont jamais mémorisés
+   * au-delà de l'URL courante ; `tri`/`sens`/`regrouperPar` (et `cacherDetails`, réglage
+   * d'affichage) sont en plus repris depuis les préférences localStorage de l'utilisateur
+   * quand l'URL ne les précise pas.
+   */
+  private readonly _prefsAffichage = lirePreferencesAffichage();
+  etat = signal<EtatFiltresPostes>(assurerCoherenceTri({
+    ...etatFiltresDepuisQueryParams(this.route.snapshot.queryParams),
+    ...(this._prefsAffichage && !this.route.snapshot.queryParams['tri'] ? { tri: this._prefsAffichage.tri } : {}),
+    ...(this._prefsAffichage && !this.route.snapshot.queryParams['regrouper'] ? { regrouperPar: this._prefsAffichage.regrouperPar } : {}),
+  }));
 
-  triOptions = [
-    { label: this.t.poste.triOptions.DATE,        value: 'DATE' as const },
-    { label: this.t.poste.triOptions.CATEGORIE,   value: 'CATEGORIE' as const },
-    { label: this.t.poste.triOptions.DESCRIPTION, value: 'DESCRIPTION' as const },
-  ];
+  /** Densité d'affichage (masque les détails secondaires) : réglage d'affichage, pas un filtre — ne fait pas partie de `etat` ni de l'URL. */
+  cacherDetails = signal(this._prefsAffichage?.cacherDetails ?? false);
+
+  /** Exposé au template pour l'action « Effacer les filtres et la recherche » de l'état vide filtré (§9). */
+  protected readonly etatFiltresParDefaut = ETAT_FILTRES_PAR_DEFAUT;
+
+  private readonly _syncUrlEffect = effect(() => {
+    const params = etatFiltresVersQueryParams(this.etat());
+    void this.router.navigate([], { relativeTo: this.route, queryParams: params, replaceUrl: true });
+  });
+
+  private readonly _syncPrefsEffect = effect(() => {
+    ecrirePreferencesAffichage({
+      tri: this.etat().tri,
+      regrouperPar: this.etat().regrouperPar,
+      cacherDetails: this.cacherDetails(),
+    });
+  });
 
   visibiliteMenuItems: VisibiliteMenuItem[] = [
-    { label: this.t.poste.cacherInactifs, data: 'cacher-inactifs', etat: this.cacherInactifs },
-    { label: this.t.poste.cacherFuturs, data: 'cacher-futurs', etat: this.cacherFuturs },
     { label: this.t.poste.cacherDetails, data: 'cacher-details', etat: this.cacherDetails },
   ];
+
+  /**
+   * Menu « Options » (visibilité des colonnes) : popover ancré sur desktop, feuille du
+   * bas sur mobile — même schéma que le menu Trier/Filtres de `postes-barre-filtres`
+   * (§8, §11). `_elementDeclencheurOptions` permet de restaurer le focus à la fermeture.
+   */
+  menuOptionsOuvert = signal(false);
+  private _elementDeclencheurOptions: HTMLElement | null = null;
+
+  ouvrirMenuOptions(event: Event, popoverOptions: { toggle: (e: Event) => void }): void {
+    this._elementDeclencheurOptions = event.currentTarget as HTMLElement;
+    this.menuOptionsOuvert.set(true);
+    if (!this.viewport.estMobile()) popoverOptions.toggle(event);
+  }
+
+  fermerMenuOptions(): void {
+    this.menuOptionsOuvert.set(false);
+    this._elementDeclencheurOptions?.focus();
+    this._elementDeclencheurOptions = null;
+  }
 
 
   // ── Helpers fenêtre de validité ──────────────────────────
@@ -233,9 +284,23 @@ export class PostesListeComponent {
   })();
   private readonly _aujourdHuiIso = this.toIso(this._now);
 
-  /** Comparateur de tri appliqué au « représentant » d'un poste isolé ou d'une chaîne. */
-  private comparerPostes = (a: PosteDto, b: PosteDto): number => {
-    switch (this.triActuel()) {
+  /** État d'activité d'un poste dérivé de sa fenêtre de validité (§6 — section "État"). */
+  etatPoste(p: PosteDto): FiltreEtatPoste {
+    if (p.debut && p.debut.substring(0, 7) > this._moisCourant) return 'A_VENIR';
+    if (p.fin && p.fin.substring(0, 7) < this._moisCourant) return 'TERMINE';
+    return 'ACTIF';
+  }
+
+  private compteLabelSimple(id: string): string {
+    return this.comptes().find(c => c.id === id)?.libelle ?? '';
+  }
+
+  /**
+   * Comparateur de valeur pour un critère donné (DATE/CATEGORIE/DESCRIPTION), toujours
+   * croissant (pas de sens configurable — voir docs/features/feature_3.md §5).
+   */
+  private comparerParCritere(a: PosteDto, b: PosteDto, critere: CritereTri): number {
+    switch (critere) {
       case 'DATE': {
         const da = a.debut ?? '9999-12'; const db = b.debut ?? '9999-12';
         if (da !== db) return da.localeCompare(db);
@@ -253,11 +318,26 @@ export class PostesListeComponent {
       }
       default: return 0;
     }
+  }
+
+  /**
+   * Comparateur appliqué au « représentant » d'un poste isolé ou d'une chaîne : le
+   * regroupement fait foi (§5, demande utilisateur du 2026-08-29) — les blocs sont
+   * d'abord ordonnés selon `regrouperPar`, puis, à l'intérieur d'un même groupe,
+   * selon le critère `tri`. Si `regrouperPar` vaut 'AUCUN', seul `tri` s'applique.
+   */
+  private comparerPostes = (a: PosteDto, b: PosteDto): number => {
+    const regrouperPar = this.etat().regrouperPar;
+    if (regrouperPar !== 'AUCUN') {
+      const cGroupe = this.comparerParCritere(a, b, regrouperPar);
+      if (cGroupe !== 0) return cGroupe;
+    }
+    return this.comparerParCritere(a, b, this.etat().tri);
   };
 
-  /** Clé + libellé de séparateur pour un poste « représentant » selon le tri actuel. */
+  /** Clé + libellé de séparateur pour un poste « représentant » selon le regroupement actuel. */
   private clefSeparateur(p: PosteDto): { clef: string; label: string } {
-    switch (this.triActuel()) {
+    switch (this.etat().regrouperPar) {
       case 'DATE':
         return { clef: p.debut?.substring(0, 7) ?? '–', label: this.formatPeriode(p.debut ?? null) };
       case 'CATEGORIE': {
@@ -287,51 +367,108 @@ export class PostesListeComponent {
     return courant.id;
   }
 
-  /** Liste filtrée (avant tri/regroupement) selon les options de masquage et les filtres actifs. */
+  /**
+   * Prédicat de correspondance d'un poste avec l'état des filtres/recherche courant.
+   * `excludeDim` permet d'ignorer une dimension pour calculer le volume (compteur)
+   * qu'afficherait chaque valeur de cette dimension si elle était sélectionnée en plus
+   * des autres filtres déjà actifs (facettage, §6 : « chaque valeur affiche son volume »).
+   */
+  private posteCorrespond(p: PosteDto, etat: EtatFiltresPostes, excludeDim?: 'ETAT' | 'NATURE' | 'CATEGORIE' | 'COMPTE' | 'MEMBRE'): boolean {
+    if (excludeDim !== 'ETAT' && etat.filtreEtat.length && !etat.filtreEtat.includes(this.etatPoste(p))) return false;
+    if (excludeDim !== 'NATURE' && etat.filtreNature.length && !etat.filtreNature.includes(p.nature)) return false;
+    if (excludeDim !== 'CATEGORIE' && etat.filtreCategorieIds.length && !etat.filtreCategorieIds.includes(p.categorieId ?? '')) return false;
+
+    if (excludeDim !== 'COMPTE' && etat.filtreCompteIds.length) {
+      const match = (p.ventilations ?? []).some(v => etat.filtreCompteIds.includes(v.compteId));
+      if (!match) return false;
+    }
+
+    // Filtre membres (AND) :
+    //   CUSTOM       → tous les membres sélectionnés doivent avoir quotePart > 0
+    //   AUTO / REVERSE_AUTO → tous les membres actifs sont implicitement concernés ;
+    //                         conserver si chaque membre sélectionné appartient au foyer
+    if (excludeDim !== 'MEMBRE' && etat.filtreMembreIds.length) {
+      const tousMembreIds = this.membres().map(m => m.id);
+      let match: boolean;
+      if (p.typeRepartition === 'CUSTOM') {
+        match = etat.filtreMembreIds.every(id => (p.repartitions ?? []).some(r => r.quotePart > 0 && r.membreId === id));
+      } else {
+        match = etat.filtreMembreIds.every(id => tousMembreIds.includes(id));
+      }
+      if (!match) return false;
+    }
+
+    // Recherche élargie (§4) : description, catégorie et compte, insensible aux accents/casse.
+    const recherche = etat.recherche.trim();
+    if (recherche) {
+      const dansDescription = contientInsensibleAccents(p.description, recherche);
+      const dansCategorie = contientInsensibleAccents(this.categorieLabel(p.categorieId), recherche);
+      const dansCompte = (p.ventilations ?? []).some(v => contientInsensibleAccents(this.compteLabelSimple(v.compteId), recherche));
+      if (!dansDescription && !dansCategorie && !dansCompte) return false;
+    }
+
+    return true;
+  }
+
+  /** Liste filtrée (avant tri/regroupement) selon l'état unifié de la barre filtres/tri. */
   private postesFiltres = computed(() => {
-    const compteIds     = this.filtreCompteIds();
-    const membreIds     = this.filtreMembreIds();
-    const categorieIds  = this.filtreCategorieIds();
-    const texteDescription = this.filtreDescription().trim().toLowerCase();
-    const tousMembreIds = this.membres().map(m => m.id);
-
-    return this.postes().filter(p => {
-      const estInactif = !!p.fin && p.fin.substring(0, 7) < this._moisCourant;
-      const estFutur   = !!p.debut && p.debut.substring(0, 7) > this._moisCourant;
-
-      if (this.cacherInactifs() && estInactif) return false;
-      if (this.cacherFuturs()   && estFutur)   return false;
-
-      // Filtre catégories
-      if (categorieIds.length > 0 && !categorieIds.includes(p.categorieId ?? '')) return false;
-
-      // Filtre texte libre sur la description
-      if (texteDescription && !p.description.toLowerCase().includes(texteDescription)) return false;
-
-      // Filtre comptes : au moins une ventilation rattachée à un compte sélectionné
-      if (compteIds.length > 0) {
-        const match = (p.ventilations ?? []).some(v => compteIds.includes(v.compteId));
-        if (!match) return false;
-      }
-
-      // Filtre membres (AND) :
-      //   CUSTOM       → tous les membres sélectionnés doivent avoir quotePart > 0
-      //   AUTO / REVERSE_AUTO → tous les membres actifs sont implicitement concernés ;
-      //                         conserver si chaque membre sélectionné appartient au foyer
-      if (membreIds.length > 0) {
-        let match: boolean;
-        if (p.typeRepartition === 'CUSTOM') {
-          match = membreIds.every(id => (p.repartitions ?? []).some(r => r.quotePart > 0 && r.membreId === id));
-        } else {
-          // AUTO / REVERSE_AUTO : tous les membres du foyer sont concernés
-          match = membreIds.every(id => tousMembreIds.includes(id));
-        }
-        if (!match) return false;
-      }
-
-      return true;
-    });
+    const etat = this.etat();
+    return this.postes().filter(p => this.posteCorrespond(p, etat));
   });
+
+  /** Construit les options d'une facette (avec compteur) en excluant sa propre dimension du filtrage. */
+  private construireFacette<T extends string>(
+    valeurs: T[],
+    labelDe: (v: T) => string,
+    excludeDim: 'ETAT' | 'NATURE' | 'CATEGORIE' | 'COMPTE' | 'MEMBRE',
+  ): OptionFacette[] {
+    const etat = this.etat();
+    const base = this.postes().filter(p => this.posteCorrespond(p, etat, excludeDim));
+    return valeurs.map(v => ({
+      id: v,
+      label: labelDe(v),
+      count: base.filter(p => this.correspondValeur(p, excludeDim, v)).length,
+    }));
+  }
+
+  private correspondValeur(p: PosteDto, dim: 'ETAT' | 'NATURE' | 'CATEGORIE' | 'COMPTE' | 'MEMBRE', valeur: string): boolean {
+    switch (dim) {
+      case 'ETAT': return this.etatPoste(p) === valeur;
+      case 'NATURE': return p.nature === valeur;
+      case 'CATEGORIE': return (p.categorieId ?? '') === valeur;
+      case 'COMPTE': return (p.ventilations ?? []).some(v => v.compteId === valeur);
+      case 'MEMBRE': return p.typeRepartition === 'CUSTOM'
+        ? (p.repartitions ?? []).some(r => r.quotePart > 0 && r.membreId === valeur)
+        : this.membres().some(m => m.id === valeur);
+      default: return false;
+    }
+  }
+
+  /** Options de la section « État » du menu Filtres, avec leur volume respectif (§6). */
+  optionsEtat = computed<OptionFacette[]>(() => this.construireFacette<FiltreEtatPoste>(
+    ['ACTIF', 'A_VENIR', 'TERMINE'], v => this.t.poste.etatOptions[v], 'ETAT',
+  ));
+
+  /** Options de la section « Nature » du menu Filtres. */
+  optionsNature = computed<OptionFacette[]>(() => this.construireFacette<'EFFECTIF' | 'ESTIMATION'>(
+    ['EFFECTIF', 'ESTIMATION'], v => this.t.poste.natureOptions[v], 'NATURE',
+  ));
+
+  /** Options de la section « Catégorie » du menu Filtres. */
+  optionsCategorieFacette = computed<OptionFacette[]>(() => this.construireFacette<string>(
+    this.categories().map(c => c.id), id => this.categorieLabel(id), 'CATEGORIE',
+  ));
+
+  /** Options de la section « Compte » du menu Filtres. */
+  optionsCompteFacette = computed<OptionFacette[]>(() => this.construireFacette<string>(
+    this.comptes().map(c => c.id), id => this.compteLabelSimple(id), 'COMPTE',
+  ));
+
+  /** Options de la section « Membre » du menu Filtres. */
+  optionsMembreFacette = computed<OptionFacette[]>(() => this.construireFacette<string>(
+    this.membres().map(m => m.id), id => this.membres().find(m => m.id === id)?.nom ?? '', 'MEMBRE',
+  ));
+
 
   // ── Séparateurs de groupe ─────────────────────────────────
   /** Type discriminant : un élément de la liste est soit un poste, soit un séparateur. */
@@ -397,8 +534,14 @@ export class PostesListeComponent {
     return resultat;
   });
 
-  /** Liste affichée avec séparateurs de groupe insérés (clé/libellé du représentant de chaque bloc). */
+  /**
+   * Liste affichée avec séparateurs de groupe insérés (clé/libellé du représentant de
+   * chaque bloc). Aucun séparateur si le regroupement est désactivé (§5 : tri et
+   * regroupement sont deux réglages distincts).
+   */
   postesAvecSeparateurs = computed<(PosteAffiche | { separator: string })[]>(() => {
+    if (this.etat().regrouperPar === 'AUCUN') return this.postesVisibles();
+
     const result: (PosteAffiche | { separator: string })[] = [];
     let lastKey: string | null = null;
 
@@ -427,6 +570,20 @@ export class PostesListeComponent {
     }
   });
 
+  /**
+   * « Filtre devenu vide » (§9) : si un filtre catégorie pointe vers une catégorie
+   * supprimée entre-temps, le retirer silencieusement de l'état plutôt que d'afficher
+   * une liste vide inexplicable.
+   */
+  private readonly _nettoyageCategoriesOrphelines = effect(() => {
+    const idsExistants = new Set(this.categories().map(c => c.id));
+    const filtreActuel = this.etat().filtreCategorieIds;
+    const filtreNettoye = filtreActuel.filter(id => idsExistants.has(id));
+    if (filtreNettoye.length !== filtreActuel.length) {
+      this.etat.update(e => ({ ...e, filtreCategorieIds: filtreNettoye }));
+    }
+  });
+
   charger(): void {
     const foyerId = this.contexte.foyerId();
     const scenarioId = this.contexte.scenarioId();
@@ -440,6 +597,11 @@ export class PostesListeComponent {
 
   categorieLabel(id?: string): string {
     return this.categories().find(c => c.id === id)?.libelle ?? '–';
+  }
+
+  /** Description avec surlignage (`<mark>`) du fragment trouvé par la recherche courante (§4). */
+  descriptionSurlignee(p: PosteDto): string {
+    return surlignerFragment(p.description, this.etat().recherche);
   }
 
   natureAffichee(p: PosteDto): string {
@@ -601,11 +763,6 @@ export class PostesListeComponent {
       const label = compte ? `${m.nom} · ${compte}` : m.nom;
       return { membreId: m.id, label, couleur, couleurTexte };
     });
-  }
-
-  /** Membres rattachés à un compte (pour l'affichage dans le filtre). */
-  membresForCompte(compte: CompteDto): MembreDto[] {
-    return this.membres().filter(m => compte.membreIds?.includes(m.id));
   }
 
 

@@ -5,5 +5,6 @@ export * from './select/select.component';
 export * from './multi-select/multi-select.component';
 export * from './date-picker/date-picker.component';
 export * from './checkbox/checkbox.component';
+export * from './radio-button/radio-button.component';
 export * from './select-button/select-button.component';
 export * from './color-input/color-input.component';

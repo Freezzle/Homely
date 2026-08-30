@@ -57,90 +57,62 @@
             </div>
         </div>
 
-        <!-- Ligne 2 : tri et recherche description à gauche, menu à droite -->
-        <div class="grid gap-2 grid-cols-[minmax(0,1fr)_auto] md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center">
-            <div class="flex justify-start">
-                <app-select
-                    [ngModel]="triActuel()"
-                    (ngModelChange)="triActuel.set($event)"
-                    [options]="triOptions"
-                    optionLabel="label"
-                    optionValue="value"
-                    class="w-full text-sm"/>
-            </div>
+        <!-- Ligne 2 : barre unique recherche + Trier + Filtres, avec sélection multiple et
+             menu de visibilité projetés en fin de ligne (docs/features/feature_3.md) -->
+        <app-postes-barre-filtres
+            [t]="t"
+            [etat]="etat()"
+            (etatChange)="etat.set($event)"
+            [nbResultats]="postesVisibles().length"
+            [optionsEtat]="optionsEtat()"
+            [optionsNature]="optionsNature()"
+            [optionsCategorie]="optionsCategorieFacette()"
+            [optionsCompte]="optionsCompteFacette()"
+            [optionsMembre]="optionsMembreFacette()">
+            <div class="shrink-0">
+                <app-button icon="pi pi-sliders-h"
+                          [ariaLabel]="t.commun.options"
+                          [tooltip]="t.commun.options"
+                          severity="secondary"
+                          [outlined]="true"
+                          [attr.aria-expanded]="menuOptionsOuvert()" aria-haspopup="true"
+                          (clickEvent)="ouvrirMenuOptions($event, popoverOptions)"/>
 
-            <div class="flex justify-start col-span-2 md:col-span-1">
-                <app-input-text
-                    type="text"
-                    [ngModel]="filtreDescription()"
-                    (ngModelChange)="filtreDescription.set($event)"
-                    [label]="t.poste.filtreDescription"
-                    class="w-full text-sm"/>
-            </div>
-
-            <div class="flex justify-end gap-1">
-                @if (contexte.estEditor()) {
-                    <app-button icon="pi pi-check-square"
-                              [ariaLabel]="modeSelection() ? t.poste.bulk.quitterSelection : t.poste.bulk.activerSelection"
-                              [tooltip]="modeSelection() ? t.poste.bulk.quitterSelection : t.poste.bulk.activerSelection"
-                              [severity]="modeSelection() ? 'primary' : 'secondary'"
-                              [text]="!modeSelection()"
-                              (clickEvent)="toggleModeSelection()"/>
-                }
-                <div>
-                    <app-button icon="pi pi-sliders-h"
-                              [ariaLabel]="t.commun.actions"
-                              severity="secondary"
-                              [text]="true"
-                              (clickEvent)="menuVisibilite.toggle($event)"/>
-                    <p-menu #menuVisibilite [popup]="true" [model]="visibiliteMenuItems" appendTo="body"
-                            class="w-72">
-                        <ng-template #item let-item>
-                            <div class="flex items-center gap-3 px-2 py-1.5" (click)="$event.stopPropagation()">
-                                <app-checkbox
-                                    [inputId]="item.data"
-                                    [label]="item.label"
-                                    [ngModel]="item.etat()"
-                                    (ngModelChange)="item.etat.set($event)"
-                                    (click)="$event.stopPropagation()"/>
-                            </div>
-                        </ng-template>
-                    </p-menu>
-                </div>
-            </div>
-        </div>
-
-        <!-- Ligne 3 : les 2 filtres -->
-        <div class="grid gap-2 lg:grid-cols-2">
-            <!-- Filtre membres -->
-            <app-multi-select
-                    [ngModel]="filtreMembreIds()"
-                    (ngModelChange)="filtreMembreIds.set($event)"
-                    [options]="membres()"
-                    optionLabel="nom"
-                    optionValue="id"
-                    [label]="t.poste.filtreMembres"
-                    [showClear]="true"
-                    class="w-full text-xs"/>
-
-            <!-- Filtre comptes -->
-            <app-multi-select
-                [ngModel]="filtreCompteIds()"
-                (ngModelChange)="filtreCompteIds.set($event)"
-                [options]="comptes()"
-                optionLabel="libelle"
-                optionValue="id"
-                [label]="t.poste.filtreComptes"
-                [showClear]="true"
-                class="w-full text-xs">
-                <ng-template #item let-compte>
-                    <div class="flex items-center gap-2 flex-wrap">
-                        <span>{{ compte.libelle }}</span>
-                        <app-membres-tags [membres]="membresForCompte(compte)"/>
-                    </div>
+                <ng-template #menuOptionsContenu>
+                    <div class="text-xs font-semibold uppercase text-surface-500 mb-1">{{ t.commun.options }}</div>
+                    @for (item of visibiliteMenuItems; track item['data']) {
+                        <app-checkbox
+                            [inputId]="item['data']"
+                            [label]="item.label ?? ''"
+                            [ngModel]="item.etat()"
+                            (ngModelChange)="item.etat.set($event)"/>
+                    }
                 </ng-template>
-            </app-multi-select>
-        </div>
+
+                <p-popover #popoverOptions [ariaLabel]="t.commun.options" (onHide)="fermerMenuOptions()">
+                    <div class="w-72 flex flex-col p-2">
+                        <ng-container *ngTemplateOutlet="menuOptionsContenu"/>
+                    </div>
+                </p-popover>
+
+                <p-drawer position="bottom"
+                        [visible]="viewport.estMobile() && menuOptionsOuvert()"
+                        (visibleChange)="!$event ? fermerMenuOptions() : null"
+                        [header]="t.commun.options"
+                          styleClass="!h-auto max-h-[85vh] pb-[env(safe-area-inset-bottom)]">
+                    <ng-container *ngTemplateOutlet="menuOptionsContenu"/>
+                </p-drawer>
+            </div>
+            @if (contexte.estEditor()) {
+                <app-button icon="pi pi-check-square"
+                            [ariaLabel]="modeSelection() ? t.poste.bulk.quitterSelection : t.poste.bulk.activerSelection"
+                            [tooltip]="modeSelection() ? t.poste.bulk.quitterSelection : t.poste.bulk.activerSelection"
+                            [severity]="modeSelection() ? 'primary' : 'secondary'"
+                            [outlined]="true"
+                            class="shrink-0"
+                            (clickEvent)="toggleModeSelection()"/>
+            }
+        </app-postes-barre-filtres>
     </div>
 
     <!-- ── État chargement (skeletons) ──────────────────────── -->
@@ -166,10 +138,17 @@
               rounded-xl border border-dashed border-surface-300 dark:border-surface-700
               bg-surface-50 dark:bg-surface-900 text-surface-400">
             <i class="pi pi-inbox text-5xl opacity-30"></i>
-            <span class="text-sm">{{ t.commun.aucunResultat }}</span>
-            @if (contexte.estEditor()) {
-                <app-button icon="pi pi-plus" [label]="t.commun.creer" severity="secondary"
-                          size="small" (clickEvent)="ouvrirCreation()"/>
+            @if (postes().length === 0) {
+                <span class="text-sm">{{ t.commun.aucunResultat }}</span>
+                @if (contexte.estEditor()) {
+                    <app-button icon="pi pi-plus" [label]="t.commun.creer" severity="secondary"
+                              size="small" (clickEvent)="ouvrirCreation()"/>
+                }
+            } @else {
+                <span class="text-sm">{{ t.poste.barreFiltres.aucunResultatFiltre }}</span>
+                <app-button icon="pi pi-filter-slash" [label]="t.poste.barreFiltres.effacerFiltresEtRecherche"
+                          severity="secondary" [text]="true" size="small"
+                          (clickEvent)="etat.set({ ...etatFiltresParDefaut, tri: etat().tri, regrouperPar: etat().regrouperPar })"/>
             }
         </div>
 
@@ -211,10 +190,11 @@
                             <!-- Ligne 1 : identité (gauche) · montant (droite sur desktop) -->
                             <div class="grid gap-1 md:gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
                                 <div class="min-w-0 flex items-center gap-2 flex-wrap">
-                <span class="font-medium leading-snug wrap-break-word">
-                  {{ p.description }}
+                <span class="font-medium leading-snug wrap-break-word
+                  [&_mark]:bg-amber-200 [&_mark]:dark:bg-amber-900/50 [&_mark]:rounded-sm [&_mark]:px-0.5"
+                      [innerHTML]="descriptionSurlignee(p)">
                 </span>
-                                    @if (!cacherDetails() && categorieLabel(p.categorieId) !== '–' && triActuel() !== 'CATEGORIE') {
+                                    @if (!cacherDetails() && categorieLabel(p.categorieId) !== '–' && etat().regrouperPar !== 'CATEGORIE') {
                                         <app-tag [texte]="categorieLabel(p.categorieId)"
                                                severity="secondary"
                                                class="text-[10px] py-0.5 shrink-0"/>

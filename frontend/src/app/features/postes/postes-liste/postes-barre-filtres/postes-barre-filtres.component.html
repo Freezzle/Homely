@@ -1,0 +1,175 @@
+<!-- ── Barre unique : recherche + Trier + Filtres, hauteur fixe ─────────────
+     Ne grandit jamais : ce qui ne tient pas dans la ligne va dans un popover
+     (desktop) ou une feuille du bas (mobile), jamais sur une 2e ligne. ── -->
+<div class="flex items-center gap-2 h-11">
+    <p-iconfield class="flex-1 min-w-0">
+        <p-inputicon><i class="pi pi-search"></i></p-inputicon>
+        <input type="text" pInputText
+               [ngModel]="rechercheLocale()"
+               (ngModelChange)="rechercheLocale.set($event)"
+               [attr.aria-label]="t().poste.barreFiltres.rechercheLabel"
+               [placeholder]="t().poste.filtreDescription"
+               class="w-full"/>
+        @if (rechercheLocale()) {
+            <p-inputicon [attr.aria-label]="t().poste.barreFiltres.effacerRecherche"
+                       (click)="effacerRecherche()">
+                <i class="pi pi-times cursor-pointer"></i>
+            </p-inputicon>
+        }
+    </p-iconfield>
+
+    @if (!viewport.estMobile()) {
+        <app-button [label]="t().poste.barreFiltres.trier" icon="pi pi-sort-alt"
+                  severity="secondary" [outlined]="true" class="shrink-0"
+                  [attr.aria-expanded]="menuActif() === 'TRIER'" aria-haspopup="true"
+                  (clickEvent)="ouvrirMenu('TRIER', $event, triPopover, filtresPopover)"/>
+
+        <p-overlay-badge severity="danger" badgeSize="small" [value]="nbFiltresActifs()" [badgeDisabled]="nbFiltresActifs() === 0" class="shrink-0">
+            <app-button [label]="t().poste.barreFiltres.filtres" icon="pi pi-filter"
+                      severity="secondary" [outlined]="true"
+                      [attr.aria-expanded]="menuActif() === 'FILTRES'" aria-haspopup="true"
+                      (clickEvent)="ouvrirMenu('FILTRES', $event, triPopover, filtresPopover)"/>
+        </p-overlay-badge>
+    } @else {
+        <app-button icon="pi pi-sort-alt" severity="secondary" [outlined]="true"
+                  [ariaLabel]="t().poste.barreFiltres.trier"
+                  [attr.aria-expanded]="menuActif() === 'TRIER'" aria-haspopup="true"
+                  (clickEvent)="ouvrirMenu('TRIER', $event, triPopover, filtresPopover)"/>
+
+        <p-overlay-badge severity="danger" badgeSize="small" [value]="nbFiltresActifs()"  [badgeDisabled]="nbFiltresActifs() === 0" class="shrink-0">
+            <app-button icon="pi pi-filter" severity="secondary" [outlined]="true"
+                      [ariaLabel]="t().poste.barreFiltres.filtres"
+                      [attr.aria-expanded]="menuActif() === 'FILTRES'" aria-haspopup="true"
+                      (clickEvent)="ouvrirMenu('FILTRES', $event, triPopover, filtresPopover)"/>
+        </p-overlay-badge>
+    }
+
+    <p-popover #triPopover [ariaLabel]="t().poste.barreFiltres.trier" (onHide)="onPopoverHide()">
+        <div class="w-72 flex flex-col gap-4 p-2">
+            <ng-container *ngTemplateOutlet="menuTrierContenu"/>
+        </div>
+    </p-popover>
+
+    <p-popover #filtresPopover [ariaLabel]="t().poste.barreFiltres.filtres" (onHide)="onPopoverHide()">
+        <div class="w-80 max-h-[70vh] overflow-y-auto flex flex-col gap-4 p-2">
+            <ng-container *ngTemplateOutlet="menuFiltresContenu"/>
+        </div>
+    </p-popover>
+
+    <!-- Actions additionnelles projetées par le parent (ex. sélection multiple, menu
+         de visibilité des colonnes) : restent sur la même ligne, en fin de barre. -->
+    <ng-content/>
+</div>
+
+<!-- Région de politesse : annonce le nombre de résultats à chaque changement de filtre (§11) -->
+<span class="sr-only" aria-live="polite">
+    {{ t().poste.barreFiltres.nResultats.replace('{{n}}', String(nbResultats())) }}
+</span>
+
+<!-- ── Feuille mobile : mêmes contenus, présentés en bas d'écran (§8) ── -->
+<p-drawer position="bottom"
+        [visible]="viewport.estMobile() && menuActif() !== 'AUCUN'"
+        (visibleChange)="!$event ? fermerDrawerMobile() : null"
+        [header]="menuActif() === 'TRIER' ? t().poste.barreFiltres.trier : t().poste.barreFiltres.filtres"
+        styleClass="!h-auto max-h-[85vh] pb-[env(safe-area-inset-bottom)]">
+    @if (menuActif() === 'TRIER') {
+        <ng-container *ngTemplateOutlet="menuTrierContenu"/>
+    } @else if (menuActif() === 'FILTRES') {
+        <ng-container *ngTemplateOutlet="menuFiltresContenu"/>
+    }
+    <ng-template #footer>
+        @if (menuActif() === 'FILTRES') {
+            <app-button [label]="t().poste.barreFiltres.voirResultats.replace('{{n}}', String(nbResultats()))"
+                      class="w-full" (clickEvent)="fermerDrawerMobile()"/>
+        }
+    </ng-template>
+</p-drawer>
+
+<!-- ── Contenu du menu Trier (partagé popover desktop / feuille mobile) ──
+     Liste verticale de boutons radio (comme les cases à cocher du menu Filtres), le
+     regroupement fait foi : le tri ne s'applique qu'au sein d'un même groupe (§5). ── -->
+<ng-template #menuTrierContenu>
+    <div>
+        <div class="text-xs font-semibold uppercase text-surface-500 mb-2">{{ t().poste.barreFiltres.regrouperPar }}</div>
+        @for (opt of regroupementOptions(); track opt.value) {
+            <app-radio-button [inputId]="'regrouper-' + opt.value" [label]="opt.label" [optionValue]="opt.value"
+                             [ngModel]="etat().regrouperPar" (ngModelChange)="changerRegroupement(asCritereRegroupement($event))"/>
+        }
+    </div>
+    <div>
+        <div class="text-xs font-semibold uppercase text-surface-500 mb-2">{{ t().poste.barreFiltres.critereTri }}</div>
+        @for (opt of triCritereOptions(); track opt.value) {
+            <app-radio-button [inputId]="'tri-' + opt.value" [label]="opt.label" [optionValue]="opt.value"
+                             [disabled]="opt.disabled"
+                             [ngModel]="etat().tri" (ngModelChange)="changerTri(asCritereTri($event))"/>
+        }
+    </div>
+</ng-template>
+
+<!-- ── Contenu du menu Filtres (partagé popover desktop / feuille mobile) ──
+     Reste ouvert pendant la sélection multiple : chaque case coche/décoche sans
+     fermer le menu, la liste se met à jour derrière en temps réel (§6). ── -->
+<ng-template #menuFiltresContenu>
+    <div class="flex flex-col gap-4">
+        @if (optionsEtat().length) {
+            <div>
+                <div class="text-xs font-semibold uppercase text-surface-500 mb-1">{{ t().poste.barreFiltres.sectionEtat }}</div>
+                @for (opt of optionsEtat(); track opt.id) {
+                    <app-checkbox [inputId]="'filtre-etat-' + opt.id"
+                                [label]="opt.label + ' · ' + opt.count"
+                                [ngModel]="etat().filtreEtat.includes(asEtatPoste(opt.id))"
+                                (ngModelChange)="toggleEtat(asEtatPoste(opt.id))"/>
+                }
+            </div>
+        }
+        @if (optionsNature().length) {
+            <div>
+                <div class="text-xs font-semibold uppercase text-surface-500 mb-1">{{ t().poste.nature }}</div>
+                @for (opt of optionsNature(); track opt.id) {
+                    <app-checkbox [inputId]="'filtre-nature-' + opt.id"
+                                [label]="opt.label + ' · ' + opt.count"
+                                [ngModel]="etat().filtreNature.includes(asNaturePoste(opt.id))"
+                                (ngModelChange)="toggleNature(asNaturePoste(opt.id))"/>
+                }
+            </div>
+        }
+        @if (optionsCategorie().length) {
+            <div>
+                <div class="text-xs font-semibold uppercase text-surface-500 mb-1">{{ t().poste.categorie }}</div>
+                @for (opt of optionsCategorie(); track opt.id) {
+                    <app-checkbox [inputId]="'filtre-categorie-' + opt.id"
+                                [label]="opt.label + ' · ' + opt.count"
+                                [ngModel]="etat().filtreCategorieIds.includes(opt.id)"
+                                (ngModelChange)="toggleCategorie(opt.id)"/>
+                }
+            </div>
+        }
+        @if (optionsCompte().length) {
+            <div>
+                <div class="text-xs font-semibold uppercase text-surface-500 mb-1">{{ t().poste.filtreComptes }}</div>
+                @for (opt of optionsCompte(); track opt.id) {
+                    <app-checkbox [inputId]="'filtre-compte-' + opt.id"
+                                [label]="opt.label + ' · ' + opt.count"
+                                [ngModel]="etat().filtreCompteIds.includes(opt.id)"
+                                (ngModelChange)="toggleCompte(opt.id)"/>
+                }
+            </div>
+        }
+        @if (optionsMembre().length) {
+            <div>
+                <div class="text-xs font-semibold uppercase text-surface-500 mb-1">{{ t().poste.filtreMembres }}</div>
+                @for (opt of optionsMembre(); track opt.id) {
+                    <app-checkbox [inputId]="'filtre-membre-' + opt.id"
+                                [label]="opt.label + ' · ' + opt.count"
+                                [ngModel]="etat().filtreMembreIds.includes(opt.id)"
+                                (ngModelChange)="toggleMembre(opt.id)"/>
+                }
+            </div>
+        }
+
+        <div class="flex justify-end pt-2 border-t border-surface-200 dark:border-surface-700">
+            <app-button [label]="t().poste.barreFiltres.toutEffacer" [text]="true" severity="secondary"
+                      [disabled]="nbFiltresActifs() === 0" (clickEvent)="effacerTousLesFiltres()"/>
+        </div>
+    </div>
+</ng-template>
