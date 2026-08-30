@@ -155,17 +155,19 @@
         <!-- ── Liste de cartes ──────────────────────────────────── -->
     } @else {
         <div class="flex flex-col gap-2">
-            @for (item of postesAvecSeparateurs(); track $index) {
+            @for (groupe of groupesAffiches(); track $index) {
+                <div class="flex flex-col gap-2">
+                    @if (groupe.separator !== null) {
+                        <!-- ── Séparateur de groupe ── -->
+                        <div class="separateur-groupe select-none" [style.background]="separateurAccent().bg">
+                            <span class="separateur-groupe__label uppercase">{{ groupe.separator }}</span>
+                            <span class="separateur-groupe__count">
+                                {{ i18n.instant('poste.nbPostesGroupe', { n: groupe.nbPostes }) }}
+                            </span>
+                        </div>
+                    }
 
-                @if (isSeparator(item)) {
-                    <!-- ── Séparateur de groupe ── -->
-                    <div class="text-xs font-bold uppercase tracking-wider bg-surface-700 text-surface-0
-                    px-3 pt-3 pb-3 select-none">
-                        {{ item.separator }}
-                    </div>
-
-                } @else {
-                    @let p = asPoste(item);
+                    @for (p of groupe.postes; track p.id) {
                     <!-- ── Maillon d'une chaîne de révisions : cartes fusionnées verticalement,
                          reliées par une bordure gauche continue (« spine »). Le maillon actif
                          a une spine pleine opacité, les maillons historiques une spine atténuée. ── -->
@@ -304,7 +306,8 @@
                             }
                         </div>
                     </div>
-                }
+                    }
+                </div>
             }
         </div>
     }

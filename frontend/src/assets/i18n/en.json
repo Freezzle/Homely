@@ -286,6 +286,7 @@
       "aucunResultatFiltre": "No line item matches your search or filters",
       "effacerFiltresEtRecherche": "Clear search and filters ({{n}})"
     },
+    "nbPostesGroupe": "{{n}} item(s)",
     "oneShot": "One-off",
     "contribution": "Contribution",
     "reviserMontant": "Revise amount",

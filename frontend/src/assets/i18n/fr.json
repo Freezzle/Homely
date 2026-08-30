@@ -286,6 +286,7 @@
       "aucunResultatFiltre": "Aucun poste ne correspond à votre recherche ou vos filtres",
       "effacerFiltresEtRecherche": "Effacer la recherche et les filtres ({{n}})"
     },
+    "nbPostesGroupe": "{{n}} poste(s)",
     "oneShot": "Ponctuel",
     "contribution": "Contribution",
     "reviserMontant": "Réviser le montant",

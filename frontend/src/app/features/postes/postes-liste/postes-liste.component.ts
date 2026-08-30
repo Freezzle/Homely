@@ -75,6 +75,7 @@ interface VisibiliteMenuItem extends MenuItem {
             MontantPipe, PeriodicitePipe, PosteApercuDialogComponent, PosteHistoriqueDrawerComponent, PosteRevisionDialogComponent, PosteClotureDialogComponent, PosteDecalageDialogComponent, PosteFormDialogComponent,
             PosteBulkChampDialogComponent, PosteBulkSuppressionDialogComponent],
   templateUrl: './postes-liste.component.html',
+  styleUrl: './postes-liste.component.scss',
 })
 export class PostesListeComponent {
   readonly i18n = inject(I18nService);
@@ -471,14 +472,28 @@ export class PostesListeComponent {
 
 
   // ── Séparateurs de groupe ─────────────────────────────────
-  /** Type discriminant : un élément de la liste est soit un poste, soit un séparateur. */
-  isSeparator(item: PosteAffiche | { separator: string }): item is { separator: string } {
-    return 'separator' in item;
-  }
+  /**
+   * Paire de tokens (fond doux / accent plein) pour le bandeau de regroupement, selon
+   * le type de la liste (docs/features/feature_4.md §3). Nouveau computed dédié : ne
+   * pas réutiliser/modifier `typeAccentClass`, utilisé ailleurs (spine des chaînes de
+   * révision).
+   */
+  separateurAccent = computed<{ bg: string; fg: string }>(() => {
+    switch (this.type()) {
+      case 'REVENU':  return { bg: 'var(--app-revenu-bg)',  fg: 'var(--app-revenu)' };
+      case 'CHARGE':  return { bg: 'var(--app-charge-bg)',  fg: 'var(--app-charge)' };
+      case 'RESERVE': return { bg: 'var(--app-reserve-bg)', fg: 'var(--app-reserve)' };
+      default:        return { bg: 'var(--app-revenu-bg)',  fg: 'var(--app-revenu)' };
+    }
+  });
 
-  /** Cast sûr côté template après discrimination par isSeparator(). */
-  asPoste(item: PosteAffiche | { separator: string }): PosteAffiche {
-    return item as PosteAffiche;
+  /** 1-2 lettres du libellé de groupe pour le monogramme du bandeau, accents retirés. */
+  libelleMonogramme(label: string): string {
+    return label
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .slice(0, 2)
+      .toUpperCase();
   }
 
   /**
@@ -535,25 +550,40 @@ export class PostesListeComponent {
   });
 
   /**
-   * Liste affichée avec séparateurs de groupe insérés (clé/libellé du représentant de
-   * chaque bloc). Aucun séparateur si le regroupement est désactivé (§5 : tri et
-   * regroupement sont deux réglages distincts).
+   * Liste affichée regroupée en blocs consécutifs : chaque bloc porte son bandeau de
+   * séparateur (`separator: null` si le regroupement est désactivé — §5, aucun
+   * bandeau alors) et les postes qu'il contient. Regrouper chaque bloc dans son
+   * propre conteneur (au lieu d'une liste plate poste/séparateur) est nécessaire pour
+   * que le bandeau `position: sticky` se désépingle correctement au profit du bloc
+   * suivant lors du scroll : sans conteneur borné par bloc, le sticky n'a pas de
+   * limite basse et TOUS les bandeaux déjà défilés restent épinglés en haut,
+   * superposés (visibles par transparence du fond).
    */
-  postesAvecSeparateurs = computed<(PosteAffiche | { separator: string })[]>(() => {
-    if (this.etat().regrouperPar === 'AUCUN') return this.postesVisibles();
+  groupesAffiches = computed<{ separator: string | null; nbPostes: number; postes: PosteAffiche[] }[]>(() => {
+    const visibles = this.postesVisibles();
+    if (this.etat().regrouperPar === 'AUCUN') {
+      return visibles.length ? [{ separator: null, nbPostes: 0, postes: visibles }] : [];
+    }
 
-    const result: (PosteAffiche | { separator: string })[] = [];
+    // Nombre de postes par clé de séparateur, calculé une fois.
+    const comptesParClef = new Map<string, number>();
+    for (const p of visibles) {
+      const clef = p._clefSeparateur ?? '';
+      comptesParClef.set(clef, (comptesParClef.get(clef) ?? 0) + 1);
+    }
+
+    const groupes: { separator: string | null; nbPostes: number; postes: PosteAffiche[] }[] = [];
     let lastKey: string | null = null;
 
-    for (const p of this.postesVisibles()) {
+    for (const p of visibles) {
       const key = p._clefSeparateur ?? '';
-      if (key !== lastKey) {
-        result.push({ separator: p._labelSeparateur ?? '' });
+      if (key !== lastKey || groupes.length === 0) {
+        groupes.push({ separator: p._labelSeparateur ?? '', nbPostes: comptesParClef.get(key) ?? 0, postes: [] });
         lastKey = key;
       }
-      result.push(p);
+      groupes[groupes.length - 1].postes.push(p);
     }
-    return result;
+    return groupes;
   });
 
 

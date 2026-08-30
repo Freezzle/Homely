@@ -1,0 +1,29 @@
+/*
+ * Bandeau de regroupement (docs/features/feature_4.md) : sticky, coloré selon le
+ * type de la liste. Le fond (bg) et l'accent du monogramme (fg) sont posés en
+ * `[style.*]` par le template (valeurs dynamiques, cf. `separateurAccent`) — ce
+ * fichier ne définit que la structure/typo, pas les couleurs elles-mêmes.
+ */
+.separateur-groupe {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--app-line);
+
+  &__label {
+    font-weight: 600;
+    color: var(--app-ink);
+  }
+
+  &__count {
+    margin-left: auto;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--app-ink-muted);
+    white-space: nowrap;
+  }
+}
