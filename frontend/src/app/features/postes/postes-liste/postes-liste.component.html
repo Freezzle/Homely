@@ -1,5 +1,11 @@
 <p-confirmdialog/>
-<div class="flex flex-col gap-4" [class.pb-16]="selection().size > 0" [class.md:pb-0]="true">
+<!--
+  Conteneur racine borné en hauteur (h-full de la zone <main>) : le scroll ne se fait
+  plus sur toute la page (dont le padding décalait les séparateurs sticky vers le bas),
+  mais sur la seule zone liste ci-dessous (overflow-y-auto sans padding en haut), pour
+  que `.separateur-groupe` (position: sticky; top: 0) s'épingle réellement en haut.
+-->
+<div class="flex flex-col gap-4 h-full min-h-0" [class.pb-16]="selection().size > 0" [class.md:pb-0]="true">
 
     <!-- ── Barre d'actions groupées ─────────────────────────── -->
     <!-- Ancrée en haut (sticky) sur desktop, collée en bas (fixed) sur mobile pour rester
@@ -115,6 +121,8 @@
         </app-postes-barre-filtres>
     </div>
 
+    <!-- ── Zone liste, seule région scrollable (cf. commentaire racine ci-dessus) ── -->
+    <div class="flex-1 min-h-0 overflow-y-auto">
     <!-- ── État chargement (skeletons) ──────────────────────── -->
     @if (chargement()) {
         <div class="flex flex-col gap-2">
@@ -160,7 +168,7 @@
                     @if (groupe.separator !== null) {
                         <!-- ── Séparateur de groupe ── -->
                         <div class="separateur-groupe select-none" [style.background]="separateurAccent().bg">
-                            <span class="separateur-groupe__label uppercase">{{ groupe.separator }}</span>
+                            <span class="separateur-groupe__label" [style.color]="separateurAccent().fg">{{ groupe.separator }}</span>
                             <span class="separateur-groupe__count">
                                 {{ i18n.instant('poste.nbPostesGroupe', { n: groupe.nbPostes }) }}
                             </span>
@@ -311,6 +319,7 @@
             }
         </div>
     }
+    </div>
 </div>
 
 <!-- ── Dialog formulaire poste ──────────────────────────────── -->

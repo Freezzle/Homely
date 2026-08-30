@@ -1,8 +1,8 @@
 /*
- * Bandeau de regroupement (docs/features/feature_4.md) : sticky, coloré selon le
- * type de la liste. Le fond (bg) et l'accent du monogramme (fg) sont posés en
- * `[style.*]` par le template (valeurs dynamiques, cf. `separateurAccent`) — ce
- * fichier ne définit que la structure/typo, pas les couleurs elles-mêmes.
+ * Bandeau de regroupement (sur le modèle de `postes-liste.component.scss`) :
+ * sticky, coloré selon l'accent dédié à l'écran Argent de poche
+ * (`--app-argent-poche` / `--app-argent-poche-bg`, posés en `[style.*]` par le
+ * template) — ce fichier ne définit que la structure/typo, pas les couleurs.
  */
 .separateur-groupe {
   position: sticky;

@@ -701,6 +701,7 @@
     "aucuneAllocation": "No one-off allowance.",
     "aucunResultat": "No item matches the active filters.",
     "allocationSansRaison": "One-off allowance",
+    "nbElementsGroupe": "{{n}} item(s)",
     "regroupementOptions": {
       "MEMBRE": "By member",
       "TYPE": "By type",
@@ -712,6 +713,19 @@
     },
     "filtreType": "Filter by type",
     "filtreMembres": "Filter by member",
+    "barreFiltres": {
+      "rechercheLabel": "Search an item",
+      "rechercheEmplacement": "Search…",
+      "effacerRecherche": "Clear search",
+      "regrouperPar": "Group by",
+      "filtres": "Filters",
+      "sectionType": "Type",
+      "sectionMembre": "Member",
+      "toutEffacer": "Clear all",
+      "nResultats": "{{n}} result(s)",
+      "voirResultats": "See {{n}} item(s)",
+      "aucunResultatFiltre": "No item matches your search or filters"
+    },
     "champs": {
       "nom": "Name",
       "membre": "Member",

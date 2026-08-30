@@ -2,45 +2,32 @@
 
 <div class="flex flex-col gap-4">
   <!-- ── En-tête ─────────────────────────────────────────── -->
-  <div class="flex items-center gap-4">
-    <h1 class="text-2xl font-bold flex-1">{{ t.argentPoche.titre }}</h1>
-    @if (contexte.estEditor()) {
-      <div>
-        <app-button icon="pi pi-plus" [label]="t.commun.creer" (clickEvent)="menuCreation.toggle($event)" />
-        <p-menu #menuCreation [popup]="true" [model]="creationMenuItems" appendTo="body" />
-      </div>
-    }
-  </div>
+  <div class="flex flex-col gap-3">
 
-  <!-- ── Regroupement + filtres ──────────────────────────── -->
-  <div class="grid gap-2 lg:grid-cols-3">
-    <app-select
-      [ngModel]="regroupement()"
-      (ngModelChange)="regroupement.set($event)"
-      [options]="regroupementOptions"
-      optionLabel="label"
-      optionValue="value"
-      class="w-full text-sm" />
+    <!-- Ligne 1 : titre à gauche, créer à droite -->
+    <div class="flex items-center gap-4">
+      <h1 class="text-2xl font-bold flex-1">{{ t.argentPoche.titre }}</h1>
+      @if (contexte.estEditor()) {
+        <div>
+          <app-button icon="pi pi-plus" [label]="t.commun.creer" (clickEvent)="menuCreation.toggle($event)" />
+          <p-menu #menuCreation [popup]="true" [model]="creationMenuItems" appendTo="body" />
+        </div>
+      }
+    </div>
 
-    <app-multi-select
-      [ngModel]="filtreTypes()"
-      (ngModelChange)="filtreTypes.set($event)"
-      [options]="filtreTypeOptions"
-      optionLabel="label"
-      optionValue="value"
-      [label]="t.argentPoche.filtreType"
-      [showClear]="true"
-      class="w-full text-sm" />
-
-    <app-multi-select
-      [ngModel]="filtreMembreIds()"
-      (ngModelChange)="filtreMembreIds.set($event)"
-      [options]="membres()"
-      optionLabel="nom"
-      optionValue="id"
-      [label]="t.argentPoche.filtreMembres"
-      [showClear]="true"
-      class="w-full text-sm" />
+    <!-- Ligne 2 : barre unique recherche + Regrouper par + Filtres, façon PostesListeComponent -->
+    <app-argent-poche-barre-filtres
+      [t]="t"
+      [regroupement]="regroupement()"
+      (regroupementChange)="regroupement.set($event)"
+      [filtreTypes]="filtreTypes()"
+      (filtreTypesChange)="filtreTypes.set($event)"
+      [filtreMembreIds]="filtreMembreIds()"
+      (filtreMembreIdsChange)="filtreMembreIds.set($event)"
+      [recherche]="recherche()"
+      (rechercheChange)="recherche.set($event)"
+      [membres]="membres()"
+      [nbResultats]="nbElementsAffiches()" />
   </div>
 
   <!-- ── État chargement (skeletons) ──────────────────────── -->
@@ -60,7 +47,7 @@
     </div>
 
     <!-- ── État vide ────────────────────────────────────────── -->
-  } @else if (itemsAvecSeparateurs().length === 0) {
+  } @else if (nbElementsAffiches() === 0) {
     <div class="flex flex-col items-center justify-center gap-3 py-16
           rounded-xl border border-dashed border-surface-300 dark:border-surface-700
           bg-surface-50 dark:bg-surface-900 text-surface-400">
@@ -68,68 +55,68 @@
       <span class="text-sm">{{ t.argentPoche.aucunResultat }}</span>
     </div>
 
-    <!-- ── Liste de lignes ──────────────────────────────────── -->
+    <!-- ── Liste de groupes ─────────────────────────────────── -->
   } @else {
     <div class="flex flex-col gap-2">
-      @for (item of itemsAvecSeparateurs(); track $index) {
-
-        @if (isSeparator(item)) {
-          <!-- ── Séparateur de groupe ── -->
-          <div class="text-xs font-bold uppercase tracking-wider bg-surface-700 text-surface-0
-              px-3 pt-3 pb-3 select-none">
-            {{ item.separator }}
+      @for (groupe of groupesAffiches(); track $index) {
+        <div class="flex flex-col gap-2">
+          <!-- ── Séparateur de groupe (sticky), façon PostesListeComponent ── -->
+          <div class="separateur-groupe select-none" [style.background]="separateurAccent.bg">
+            <span class="separateur-groupe__label" [style.color]="separateurAccent.fg">{{ groupe.separator }}</span>
+            <span class="separateur-groupe__count">
+              {{ i18n.instant('argentPoche.nbElementsGroupe', { n: groupe.nbElements }) }}
+            </span>
           </div>
 
-        } @else {
-          @let i = asItem(item);
-          <div class="grid gap-3 px-4 py-2.5 md:py-2 grid-cols-[minmax(0,1fr)_auto]
-              border-y border-r border-l border-surface-200 dark:border-surface-700
-              bg-white dark:bg-surface-900 hover:shadow-sm transition-all duration-300">
+          @for (i of groupe.items; track i.id) {
+            <div class="grid gap-3 px-4 py-2.5 md:py-2 grid-cols-[minmax(0,1fr)_auto]
+                border-y border-r border-l border-surface-200 dark:border-surface-700
+                bg-white dark:bg-surface-900 hover:shadow-sm transition-all duration-300">
 
-            <!-- Colonne 1 : contenu -->
-            <div class="min-w-0 flex flex-col gap-1.5 md:gap-1">
-              <!-- Ligne 1 : identité (gauche) · montant (droite sur desktop) -->
-              <div class="grid gap-1 md:gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-                <div class="min-w-0 flex items-center gap-2 flex-wrap">
-                  <span class="font-medium leading-snug wrap-break-word">{{ i.libellePrincipal }}</span>
+              <!-- Colonne 1 : contenu -->
+              <div class="min-w-0 flex flex-col gap-1.5 md:gap-1">
+                <!-- Ligne 1 : identité (gauche) · montant (droite sur desktop) -->
+                <div class="grid gap-1 md:gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                  <div class="min-w-0 flex items-center gap-2 flex-wrap">
+                    <span class="font-medium leading-snug wrap-break-word">{{ i.libellePrincipal }}</span>
+                  </div>
+                  <div class="min-w-0 flex items-center flex-wrap gap-x-2 gap-y-1 text-sm md:justify-end">
+                    <span class="font-semibold whitespace-nowrap">{{ i.montantLibelle }}</span>
+                  </div>
                 </div>
-                <div class="min-w-0 flex items-center flex-wrap gap-x-2 gap-y-1 text-sm md:justify-end">
-                  <span class="font-semibold whitespace-nowrap">{{ i.montantLibelle }}</span>
+
+                <!-- Ligne 2 : période/mois + membre+compte (gauche) · périodicité (droite sur desktop) -->
+                <div class="grid gap-1 md:gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                  <div class="min-w-0 flex items-center flex-wrap gap-2 text-xs text-surface-500 dark:text-surface-400">
+                    <span class="flex items-center gap-1 min-w-0">
+                      <i class="pi pi-calendar text-xs text-surface-400"></i>
+                      <span class="truncate">{{ i.libelleSecondaire }}</span>
+                    </span>
+                    @let membreCompte = membreCompteLabel(i);
+                    @if (membreCompte) {
+                      <app-tag [texte]="membreCompte.label"
+                               [couleur]="membreCompte.couleur"
+                               class="text-xs py-1 px-2 border-none max-w-full" />
+                    }
+                  </div>
+                  <div class="flex items-center flex-wrap gap-1 md:justify-end text-xs text-surface-500 dark:text-surface-400">
+                      <span>{{ modeLabel(i) }}</span>
+                  </div>
                 </div>
               </div>
 
-              <!-- Ligne 2 : période/mois + membre+compte (gauche) · périodicité (droite sur desktop) -->
-              <div class="grid gap-1 md:gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-                <div class="min-w-0 flex items-center flex-wrap gap-2 text-sm text-surface-500 dark:text-surface-400">
-                  <span class="flex items-center gap-1 min-w-0">
-                    <i class="pi pi-calendar text-xs text-surface-400"></i>
-                    <span class="truncate">{{ i.libelleSecondaire }}</span>
-                  </span>
-                  @let membreCompte = membreCompteLabel(i);
-                  @if (membreCompte) {
-                    <app-tag [texte]="membreCompte.label"
-                             [couleur]="membreCompte.couleur"
-                             class="text-xs py-1 px-2 border-none max-w-full" />
-                  }
-                </div>
-                <div class="flex items-center flex-wrap gap-1 text-sm md:justify-end">
-                    <app-tag [texte]="modeLabel(i)" [severity]="typeSeverity(i)"
-                             class="text-[10px] py-0.5 shrink-0" />
-                </div>
+              <!-- Colonne 2 : actions -->
+              <div class="flex items-center justify-end shrink-0">
+                @if (contexte.estEditor()) {
+                  <app-button icon="pi pi-cog" [rounded]="true" [text]="true" severity="secondary" size="small"
+                              [ariaLabel]="t.commun.actions" [tooltip]="t.commun.actions"
+                              (clickEvent)="menuActions.toggle($event)" />
+                  <p-menu #menuActions [popup]="true" [model]="actionItemsFor(i)" appendTo="body" />
+                }
               </div>
             </div>
-
-            <!-- Colonne 2 : actions -->
-            <div class="flex items-center justify-end shrink-0">
-              @if (contexte.estEditor()) {
-                <app-button icon="pi pi-cog" [rounded]="true" [text]="true" severity="secondary" size="small"
-                            [ariaLabel]="t.commun.actions" [tooltip]="t.commun.actions"
-                            (clickEvent)="menuActions.toggle($event)" />
-                <p-menu #menuActions [popup]="true" [model]="actionItemsFor(i)" appendTo="body" />
-              }
-            </div>
-          </div>
-        }
+          }
+        </div>
       }
     </div>
   }

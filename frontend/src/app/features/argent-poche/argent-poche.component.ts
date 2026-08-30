@@ -33,10 +33,11 @@ import {
 } from '../../core/models/api.models';
 import {
   DatePickerComponent, InputNumberComponent, InputTextComponent,
-  SelectComponent, SelectButtonComponent, MultiSelectComponent,
+  SelectComponent, SelectButtonComponent,
 } from '../../shared/components/form-fields';
 import { ButtonComponent } from '../../shared/components/button/button.component';
 import { TagComponent } from '../../shared/components/tag/tag.component';
+import { ArgentPocheBarreFiltresComponent } from './argent-poche-barre-filtres/argent-poche-barre-filtres.component';
 
 /** Discrimine les deux natures d'items affichés dans la liste unique. */
 export type TypeArgentPoche = 'POLITIQUE' | 'ALLOCATION';
@@ -91,13 +92,14 @@ export interface ArgentPocheAffiche {
     SkeletonModule, ConfirmDialogModule, AvatarModule, TooltipModule, MessageModule,
     MenuModule, MeterGroupModule, SliderModule,
     InputTextComponent, InputNumberComponent, DatePickerComponent,
-    SelectComponent, SelectButtonComponent, MultiSelectComponent,
-    MontantPipe,
+    SelectComponent, SelectButtonComponent,
+    MontantPipe, ArgentPocheBarreFiltresComponent,
   ],
   templateUrl: './argent-poche.component.html',
+  styleUrl: './argent-poche.component.scss',
 })
 export class ArgentPocheComponent {
-  private readonly i18n = inject(I18nService);
+  readonly i18n = inject(I18nService);
   readonly t = this.i18n.translations();
   contexte = inject(ContexteService);
   private politiqueSvc = inject(PolitiqueArgentPocheService);
@@ -144,17 +146,7 @@ export class ArgentPocheComponent {
   readonly regroupement = signal<'MEMBRE' | 'TYPE' | 'MOIS_DEBUT'>('MEMBRE');
   readonly filtreTypes = signal<TypeArgentPoche[]>([]);
   readonly filtreMembreIds = signal<string[]>([]);
-
-  readonly regroupementOptions = [
-    { label: this.t.argentPoche.regroupementOptions.MEMBRE,     value: 'MEMBRE' as const },
-    { label: this.t.argentPoche.regroupementOptions.TYPE,       value: 'TYPE' as const },
-    { label: this.t.argentPoche.regroupementOptions.MOIS_DEBUT, value: 'MOIS_DEBUT' as const },
-  ];
-
-  readonly filtreTypeOptions = [
-    { label: this.t.argentPoche.typeOptions.POLITIQUE,  value: 'POLITIQUE' as TypeArgentPoche },
-    { label: this.t.argentPoche.typeOptions.ALLOCATION, value: 'ALLOCATION' as TypeArgentPoche },
-  ];
+  readonly recherche = signal<string>('');
 
   /** Menu popup du bouton "+" (choix entre politique et allocation). */
   readonly creationMenuItems: MenuItem[] = [
@@ -309,16 +301,21 @@ export class ArgentPocheComponent {
     return [...politiques, ...allocations];
   });
 
-  /** Liste filtrée selon le type et les membres sélectionnés. */
+  /** Liste filtrée selon le type, les membres sélectionnés et la recherche libre. */
   private readonly _itemsFiltres = computed<ArgentPocheAffiche[]>(() => {
     const types = this.filtreTypes();
     const membreIds = this.filtreMembreIds();
+    const recherche = this.recherche().trim().toLowerCase();
     return this._itemsFusionnes().filter(item => {
       if (types.length > 0 && !types.includes(item._type)) return false;
       if (membreIds.length > 0 && !membreIds.includes(item.membreId)) return false;
+      if (recherche && !item.libellePrincipal.toLowerCase().includes(recherche)) return false;
       return true;
     });
   });
+
+  /** Nombre total d'éléments affichés (tous groupes confondus), pour le badge résultats et l'état vide. */
+  readonly nbElementsAffiches = computed(() => this._itemsFiltres().length);
 
   /** Clé + libellé de séparateur d'un item selon le regroupement actif. */
   private _clefSeparateur(item: ArgentPocheAffiche): { clef: string; label: string } {
@@ -339,11 +336,14 @@ export class ArgentPocheComponent {
   }
 
   /**
-   * Liste finale affichée : filtrée, regroupée (mois de début croissant à
-   * l'intérieur de chaque groupe) puis enrichie de séparateurs de groupe —
-   * sur le modèle de {@code postesAvecSeparateurs}.
+   * Liste finale affichée, regroupée en blocs consécutifs : filtrée, triée (mois
+   * de début croissant à l'intérieur de chaque groupe) puis découpée en groupes
+   * portant chacun leur bandeau de séparateur (sticky) et le nombre d'éléments
+   * — sur le modèle de {@code groupesAffiches} dans {@code PostesListeComponent}
+   * (un conteneur par bloc, nécessaire pour que le `position: sticky` se
+   * désépingle correctement au profit du bloc suivant lors du scroll).
    */
-  readonly itemsAvecSeparateurs = computed<(ArgentPocheAffiche | { separator: string })[]>(() => {
+  readonly groupesAffiches = computed<{ separator: string; nbElements: number; items: ArgentPocheAffiche[] }[]>(() => {
     const filtres = [...this._itemsFiltres()].sort((a, b) => a.dateDebutTri.localeCompare(b.dateDebutTri));
 
     const groupes = new Map<string, { label: string; items: ArgentPocheAffiche[] }>();
@@ -362,23 +362,16 @@ export class ArgentPocheComponent {
       entrees.sort((a, b) => a[1].label.localeCompare(b[1].label, 'fr'));
     }
 
-    const resultat: (ArgentPocheAffiche | { separator: string })[] = [];
-    for (const [, groupe] of entrees) {
-      resultat.push({ separator: groupe.label });
-      resultat.push(...groupe.items);
-    }
-    return resultat;
+    return entrees.map(([, groupe]) => ({ separator: groupe.label, nbElements: groupe.items.length, items: groupe.items }));
   });
 
-  /** Type discriminant pour le template : un élément est un item ou un séparateur. */
-  isSeparator(item: ArgentPocheAffiche | { separator: string }): item is { separator: string } {
-    return 'separator' in item;
-  }
-
-  /** Cast sûr côté template après discrimination par isSeparator(). */
-  asItem(item: ArgentPocheAffiche | { separator: string }): ArgentPocheAffiche {
-    return item as ArgentPocheAffiche;
-  }
+  /**
+   * Paire de tokens (fond doux / accent plein) pour le bandeau de regroupement,
+   * sur le modèle de {@code separateurAccent} dans {@code PostesListeComponent}
+   * — ici fixe (pas de dimension "type" comme REVENU/CHARGE/RESERVE), avec le
+   * token dédié à l'écran Argent de poche.
+   */
+  readonly separateurAccent = { bg: 'var(--app-argent-poche-bg)', fg: 'var(--app-argent-poche)' };
 
   /** Menu d'actions (icône + popup), routé vers la bonne méthode selon le type. */
   actionItemsFor(item: ArgentPocheAffiche): MenuItem[] {

@@ -701,6 +701,7 @@
     "aucuneAllocation": "Aucune allocation ponctuelle.",
     "aucunResultat": "Aucun élément ne correspond aux filtres actifs.",
     "allocationSansRaison": "Allocation ponctuelle",
+    "nbElementsGroupe": "{{n}} élément(s)",
     "regroupementOptions": {
       "MEMBRE": "Par membre",
       "TYPE": "Par type",
@@ -712,6 +713,19 @@
     },
     "filtreType": "Filtre par type",
     "filtreMembres": "Filtre par membre",
+    "barreFiltres": {
+      "rechercheLabel": "Rechercher un élément",
+      "rechercheEmplacement": "Rechercher…",
+      "effacerRecherche": "Effacer la recherche",
+      "regrouperPar": "Regrouper par",
+      "filtres": "Filtres",
+      "sectionType": "Type",
+      "sectionMembre": "Membre",
+      "toutEffacer": "Tout effacer",
+      "nResultats": "{{n}} résultat(s)",
+      "voirResultats": "Voir {{n}} élément(s)",
+      "aucunResultatFiltre": "Aucun élément ne correspond à votre recherche ou vos filtres"
+    },
     "champs": {
       "nom": "Nom",
       "membre": "Membre",

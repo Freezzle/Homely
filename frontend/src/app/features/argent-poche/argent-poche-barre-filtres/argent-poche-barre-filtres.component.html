@@ -1,0 +1,128 @@
+<!-- ── Barre unique : recherche + Regrouper par + Filtres, hauteur fixe ─────
+     Sur le modèle de `postes-barre-filtres.component.html` : ce qui ne tient
+     pas dans la ligne va dans un popover (desktop) ou une feuille du bas
+     (mobile), jamais sur une 2e ligne. ── -->
+<div class="flex items-center gap-2 h-11">
+    <p-iconfield class="flex-1 min-w-0">
+        <p-inputicon><i class="pi pi-search"></i></p-inputicon>
+        <input type="text" pInputText
+               [ngModel]="rechercheLocale()"
+               (ngModelChange)="rechercheLocale.set($event)"
+               [attr.aria-label]="t().argentPoche.barreFiltres.rechercheLabel"
+               [placeholder]="t().argentPoche.barreFiltres.rechercheEmplacement"
+               class="w-full"/>
+        @if (rechercheLocale()) {
+            <p-inputicon [attr.aria-label]="t().argentPoche.barreFiltres.effacerRecherche"
+                       (click)="effacerRecherche()">
+                <i class="pi pi-times cursor-pointer"></i>
+            </p-inputicon>
+        }
+    </p-iconfield>
+
+    @if (!viewport.estMobile()) {
+        <app-button [label]="t().argentPoche.barreFiltres.regrouperPar" icon="pi pi-sort-alt"
+                  severity="secondary" [outlined]="true" class="shrink-0"
+                  [attr.aria-expanded]="menuActif() === 'REGROUPER'" aria-haspopup="true"
+                  (clickEvent)="ouvrirMenu('REGROUPER', $event, regrouperPopover, filtresPopover)"/>
+
+        <p-overlay-badge severity="danger" badgeSize="small" [value]="nbFiltresActifs()" [badgeDisabled]="nbFiltresActifs() === 0" class="shrink-0">
+            <app-button [label]="t().argentPoche.barreFiltres.filtres" icon="pi pi-filter"
+                      severity="secondary" [outlined]="true"
+                      [attr.aria-expanded]="menuActif() === 'FILTRES'" aria-haspopup="true"
+                      (clickEvent)="ouvrirMenu('FILTRES', $event, regrouperPopover, filtresPopover)"/>
+        </p-overlay-badge>
+    } @else {
+        <app-button icon="pi pi-sort-alt" severity="secondary" [outlined]="true"
+                  [ariaLabel]="t().argentPoche.barreFiltres.regrouperPar"
+                  [attr.aria-expanded]="menuActif() === 'REGROUPER'" aria-haspopup="true"
+                  (clickEvent)="ouvrirMenu('REGROUPER', $event, regrouperPopover, filtresPopover)"/>
+
+        <p-overlay-badge severity="danger" badgeSize="small" [value]="nbFiltresActifs()" [badgeDisabled]="nbFiltresActifs() === 0" class="shrink-0">
+            <app-button icon="pi pi-filter" severity="secondary" [outlined]="true"
+                      [ariaLabel]="t().argentPoche.barreFiltres.filtres"
+                      [attr.aria-expanded]="menuActif() === 'FILTRES'" aria-haspopup="true"
+                      (clickEvent)="ouvrirMenu('FILTRES', $event, regrouperPopover, filtresPopover)"/>
+        </p-overlay-badge>
+    }
+
+    <p-popover #regrouperPopover [ariaLabel]="t().argentPoche.barreFiltres.regrouperPar" (onHide)="onPopoverHide()">
+        <div class="w-72 flex flex-col gap-4 p-2">
+            <ng-container *ngTemplateOutlet="menuRegrouperContenu"/>
+        </div>
+    </p-popover>
+
+    <p-popover #filtresPopover [ariaLabel]="t().argentPoche.barreFiltres.filtres" (onHide)="onPopoverHide()">
+        <div class="w-80 max-h-[70vh] overflow-y-auto flex flex-col gap-4 p-2">
+            <ng-container *ngTemplateOutlet="menuFiltresContenu"/>
+        </div>
+    </p-popover>
+
+    <!-- Actions additionnelles projetées par le parent (ex. bouton de création). -->
+    <ng-content/>
+</div>
+
+<!-- Région de politesse : annonce le nombre de résultats à chaque changement de filtre. -->
+<span class="sr-only" aria-live="polite">
+    {{ t().argentPoche.barreFiltres.nResultats.replace('{{n}}', String(nbResultats())) }}
+</span>
+
+<!-- ── Feuille mobile : mêmes contenus, présentés en bas d'écran ── -->
+<p-drawer position="bottom"
+        [visible]="viewport.estMobile() && menuActif() !== 'AUCUN'"
+        (visibleChange)="!$event ? fermerDrawerMobile() : null"
+        [header]="menuActif() === 'REGROUPER' ? t().argentPoche.barreFiltres.regrouperPar : t().argentPoche.barreFiltres.filtres"
+        styleClass="!h-auto max-h-[85vh] pb-[env(safe-area-inset-bottom)]">
+    @if (menuActif() === 'REGROUPER') {
+        <ng-container *ngTemplateOutlet="menuRegrouperContenu"/>
+    } @else if (menuActif() === 'FILTRES') {
+        <ng-container *ngTemplateOutlet="menuFiltresContenu"/>
+    }
+    <ng-template #footer>
+        @if (menuActif() === 'FILTRES') {
+            <app-button [label]="t().argentPoche.barreFiltres.voirResultats.replace('{{n}}', String(nbResultats()))"
+                      class="w-full" (clickEvent)="fermerDrawerMobile()"/>
+        }
+    </ng-template>
+</p-drawer>
+
+<!-- ── Contenu du menu Regrouper par (partagé popover desktop / feuille mobile) ── -->
+<ng-template #menuRegrouperContenu>
+    <div>
+        @for (opt of regroupementOptions(); track opt.value) {
+            <app-radio-button [inputId]="'argent-poche-regrouper-' + opt.value" [label]="opt.label" [optionValue]="opt.value"
+                             [ngModel]="regroupement()" (ngModelChange)="changerRegroupement(asRegroupement($event))"/>
+        }
+    </div>
+</ng-template>
+
+<!-- ── Contenu du menu Filtres (partagé popover desktop / feuille mobile) : reste
+     ouvert pendant la sélection, chaque case coche/décoche sans fermer le menu. ── -->
+<ng-template #menuFiltresContenu>
+    <div class="flex flex-col gap-4">
+        <div>
+            <div class="text-xs font-semibold uppercase text-surface-500 mb-1">{{ t().argentPoche.barreFiltres.sectionType }}</div>
+            @for (opt of typeOptions(); track opt.value) {
+                <app-checkbox [inputId]="'argent-poche-filtre-type-' + opt.value"
+                            [label]="opt.label"
+                            [ngModel]="filtreTypes().includes(opt.value)"
+                            (ngModelChange)="toggleType(opt.value)"/>
+            }
+        </div>
+        @if (membres().length) {
+            <div>
+                <div class="text-xs font-semibold uppercase text-surface-500 mb-1">{{ t().argentPoche.barreFiltres.sectionMembre }}</div>
+                @for (membre of membres(); track membre.id) {
+                    <app-checkbox [inputId]="'argent-poche-filtre-membre-' + membre.id"
+                                [label]="membre.nom"
+                                [ngModel]="filtreMembreIds().includes(membre.id)"
+                                (ngModelChange)="toggleMembre(membre.id)"/>
+                }
+            </div>
+        }
+
+        <div class="flex justify-end pt-2 border-t border-surface-200 dark:border-surface-700">
+            <app-button [label]="t().argentPoche.barreFiltres.toutEffacer" [text]="true" severity="secondary"
+                      [disabled]="nbFiltresActifs() === 0" (clickEvent)="effacerTousLesFiltres()"/>
+        </div>
+    </div>
+</ng-template>
