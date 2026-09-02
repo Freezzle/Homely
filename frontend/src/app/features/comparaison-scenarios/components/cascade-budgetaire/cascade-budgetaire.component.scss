@@ -1,0 +1,124 @@
+.cb-scroll {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.cb-table {
+  min-width: 760px;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.875rem;
+}
+
+.cb-corner {
+  text-align: left;
+  font-weight: 600;
+  padding: 0.5rem 0.75rem 0.5rem 0;
+  white-space: nowrap;
+  color: var(--app-ink-muted);
+  background: var(--app-card);
+  position: sticky;
+  left: 0;
+  z-index: 1;
+}
+
+.cb-col-head {
+  text-align: left;
+  font-weight: 500;
+  padding: 0.5rem 0.75rem;
+  white-space: nowrap;
+  color: var(--app-ink-muted);
+  min-width: 8.5rem;
+}
+
+.cb-op {
+  display: inline-block;
+  color: var(--app-ink-muted);
+  margin-right: 0.35rem;
+  font-weight: 600;
+}
+
+.cb-col-resultat {
+  border-left: 1px dashed var(--app-line);
+  padding-left: 1rem;
+}
+
+.cb-row-head {
+  text-align: left;
+  font-weight: 600;
+  padding: 0.6rem 0.75rem 0.6rem 0;
+  white-space: nowrap;
+  background: var(--app-card);
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.cb-row-head-ecart {
+  color: var(--app-ink-muted);
+  font-weight: 500;
+}
+
+.cb-puce {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.cb-puce-a { background: var(--app-success); }
+.cb-puce-b { background: var(--app-info); }
+
+.cb-cell {
+  padding: 0.35rem 0.75rem;
+  vertical-align: middle;
+  min-width: 8.5rem;
+}
+
+.cb-bar-track {
+  position: relative;
+  height: 1.6rem;
+  border-radius: 4px;
+  background: var(--p-surface-100);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+:host-context(.dark) .cb-bar-track {
+  background: var(--p-surface-800);
+}
+
+.cb-bar-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 4px;
+  transition: width 0.25s ease;
+}
+
+.cb-bar-label {
+  position: relative;
+  z-index: 1;
+  margin-left: auto;
+  padding: 0 0.5rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  color: var(--app-ink);
+}
+
+.cb-cell-ecart {
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 0.5rem 0.75rem;
+}
+
+.cb-row-ecart {
+  border-top: 1px solid var(--app-line);
+}

@@ -13,7 +13,7 @@ import { toIsoDateLocal, parseIsoDateLocal } from '../../../core/utils/date.util
 import { formatPeriodeMois, formaterMontantSimple, localeCouranteDeLangue } from '../../../core/utils/format-affichage.util';
 import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
-import { DatePickerComponent } from '../../../shared/components/form-fields';
+import { DatePickerComponent, InputTextComponent } from '../../../shared/components/form-fields';
 
 /**
  * Dialog autonome de décalage de la date d'effet entre un maillon (poste) et son
@@ -25,7 +25,7 @@ import { DatePickerComponent } from '../../../shared/components/form-fields';
 @Component({
   selector: 'app-poste-decalage-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, DialogModule, ButtonComponent, DatePickerComponent],
+  imports: [CommonModule, ReactiveFormsModule, DialogModule, ButtonComponent, DatePickerComponent, InputTextComponent],
   templateUrl: './poste-decalage-dialog.component.html',
 })
 export class PosteDecalageDialogComponent {
@@ -47,6 +47,7 @@ export class PosteDecalageDialogComponent {
   enregistrementEnCours = false;
 
   form = this.fb.group({
+    dateDebutActuelle: [{ value: '', disabled: true }],
     nouvelleDateEffet: [null as Date | null, Validators.required],
   });
 
@@ -59,7 +60,10 @@ export class PosteDecalageDialogComponent {
   private readonly _resetSurOuverture = effect(() => {
     const p = this.poste();
     if (this.visible() && p) {
-      this.form.reset({ nouvelleDateEffet: p.debut ? parseIsoDateLocal(p.debut) : null });
+      this.form.reset({
+        dateDebutActuelle: p.debut ? formatPeriodeMois(p.debut, this.localeCourante()) : '',
+        nouvelleDateEffet: p.debut ? parseIsoDateLocal(p.debut) : null,
+      });
     }
   });
 

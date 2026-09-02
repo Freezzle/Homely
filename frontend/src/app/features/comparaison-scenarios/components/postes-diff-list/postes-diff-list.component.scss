@@ -1,0 +1,99 @@
+.pdl-compteur {
+  font-size: 0.75rem;
+  color: var(--app-ink-muted);
+  margin-left: auto;
+}
+
+.pdl-lignes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pdl-ligne {
+  display: grid;
+  grid-template-columns: 1.75rem 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-left: 3px solid;
+  border-radius: 4px;
+  background: var(--app-card);
+  font-size: 0.875rem;
+  transition: opacity 0.15s ease;
+}
+
+.pdl-ligne-inchange {
+  opacity: 0.72;
+}
+
+.pdl-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  color: var(--app-ink-muted);
+
+  .pi { font-size: 0.75rem; }
+}
+
+.pdl-center {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.pdl-titre {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.pdl-description {
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+.pdl-meta {
+  font-size: 0.75rem;
+  color: var(--app-ink-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pdl-montants {
+  text-align: right;
+  min-width: 10rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+}
+
+.pdl-montant-ligne {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.pdl-ancien {
+  text-decoration: line-through;
+  color: var(--app-ink-muted);
+  font-size: 0.8125rem;
+}
+
+.pdl-nouveau {
+  font-weight: 700;
+  color: var(--app-ink);
+}
+
+.pdl-effet {
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}

@@ -10,6 +10,14 @@ import ch.homely.membre.Membre;
 import ch.homely.membre.MembreRepository;
 import ch.homely.moteur.MoteurCalcul;
 import ch.homely.moteur.RepartitionCalcul;
+import ch.homely.poche.AllocationArgentPoche;
+import ch.homely.poche.AllocationArgentPocheRepository;
+import ch.homely.poche.PolitiqueArgentPoche;
+import ch.homely.poche.PolitiqueArgentPocheRepository;
+import ch.homely.poste.Poste;
+import ch.homely.poste.PosteRepository;
+import ch.homely.poste.RepartitionPoste;
+import ch.homely.poste.VentilationCompte;
 import ch.homely.scenario.dto.RepartitionPeriodeDto;
 import ch.homely.scenario.dto.ScenarioDto;
 import ch.homely.scenario.dto.ScenarioRequest;
@@ -19,7 +27,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /** T7.1 — CRUD Scénarios (+ période de répartition ouverte) + dupliquer + définir référence. */
@@ -31,16 +42,25 @@ public class ScenarioService {
     private final FoyerRepository foyerRepo;
     private final MembreRepository membreRepo;
     private final RepartitionPeriodeRepository periodeRepo;
+    private final PosteRepository posteRepo;
+    private final PolitiqueArgentPocheRepository politiqueArgentPocheRepo;
+    private final AllocationArgentPocheRepository allocationArgentPocheRepo;
     private final MultiTenantService multiTenant;
 
     public ScenarioService(ScenarioRepository scenarioRepo, FoyerRepository foyerRepo,
                            MembreRepository membreRepo,
                            RepartitionPeriodeRepository periodeRepo,
+                           PosteRepository posteRepo,
+                           PolitiqueArgentPocheRepository politiqueArgentPocheRepo,
+                           AllocationArgentPocheRepository allocationArgentPocheRepo,
                            MultiTenantService multiTenant) {
         this.scenarioRepo = scenarioRepo;
         this.foyerRepo    = foyerRepo;
         this.membreRepo   = membreRepo;
         this.periodeRepo  = periodeRepo;
+        this.posteRepo    = posteRepo;
+        this.politiqueArgentPocheRepo   = politiqueArgentPocheRepo;
+        this.allocationArgentPocheRepo  = allocationArgentPocheRepo;
         this.multiTenant  = multiTenant;
     }
 
@@ -101,7 +121,13 @@ public class ScenarioService {
         scenarioRepo.delete(s);
     }
 
-    /** T7.3 — Dupliquer un scénario (copie profonde incluant les périodes). */
+    /**
+     * T7.3 — Dupliquer un scénario (copie profonde). Copie l'intégralité des données
+     * scénario-scopées : périodes de répartition (+ quotes-parts), postes (+ répartitions
+     * par membre et ventilations par compte, avec remap des chaînes de révision), politiques
+     * d'argent de poche et allocations ponctuelles. Les référentiels foyer (membres, comptes,
+     * catégories) sont réutilisés par référence, sans être eux-mêmes dupliqués.
+     */
     public ScenarioDto dupliquer(UUID foyerId, UUID scenarioId) {
         multiTenant.verifierAcces(foyerId, RoleFoyer.EDITOR);
         Scenario src = trouver(foyerId, scenarioId);
@@ -114,7 +140,7 @@ public class ScenarioService {
         copie.setHorizonAnnees(src.getHorizonAnnees());
         copie.setEstReference(false);
 
-        // Copie des périodes
+        // Copie des périodes de répartition (+ quotes-parts)
         List<RepartitionPeriode> srcPeriodes = periodeRepo.findByScenarioId(src.getId());
         for (RepartitionPeriode sp : srcPeriodes) {
             RepartitionPeriode pc = new RepartitionPeriode();
@@ -132,7 +158,133 @@ public class ScenarioService {
             copie.getRepartitionsPeriodes().add(pc);
         }
 
-        return toDto(scenarioRepo.save(copie));
+        Scenario saved = scenarioRepo.save(copie);
+
+        dupliquerPostes(src.getId(), saved);
+        dupliquerPolitiquesArgentPoche(src.getId(), saved);
+        dupliquerAllocationsArgentPoche(src.getId(), saved);
+
+        return toDto(saved);
+    }
+
+    /**
+     * Copie tous les postes du scénario source (+ répartitions par membre et ventilations
+     * par compte). Les chaînes de révision de montant ({@code posteOrigineId}) sont
+     * remappées vers les nouveaux postes copiés, afin que la copie reste autonome et ne
+     * pointe pas vers des postes du scénario source.
+     *
+     * <p>Chaque copie reçoit en outre un {@code sourcePosteId} pointant vers la racine
+     * de la chaîne de duplication (le premier poste jamais créé, avant toute copie de
+     * scénario) : ce lien cross-scénario permet à l'écran de comparaison de scénarios
+     * d'apparier fiablement un poste et sa copie, même en cas de renommage ou de
+     * doublons de description (feature_5_bis §9).</p>
+     */
+    private void dupliquerPostes(UUID srcScenarioId, Scenario copie) {
+        List<Poste> srcPostes = posteRepo.findAllByScenarioIdOrderByOrdre(srcScenarioId);
+        List<Poste> nouveauxPostes = new ArrayList<>();
+
+        for (Poste sp : srcPostes) {
+            Poste pc = new Poste();
+            pc.setScenario(copie);
+            pc.setType(sp.getType());
+            pc.setDescription(sp.getDescription());
+            pc.setCategorie(sp.getCategorie());
+            pc.setMontant(sp.getMontant());
+            pc.setDevise(sp.getDevise());
+            pc.setPeriodiciteMois(sp.getPeriodiciteMois());
+            pc.setDebut(sp.getDebut());
+            pc.setFin(sp.getFin());
+            pc.setMode(sp.getMode());
+            pc.setMoment(sp.getMoment());
+            pc.setNature(sp.getNature());
+            pc.setEstimPourcentage(sp.getEstimPourcentage());
+            pc.setTypeRepartition(sp.getTypeRepartition());
+            pc.setOrdre(sp.getOrdre());
+            pc.setImportance(sp.getImportance());
+            pc.setPotentielOptimisation(sp.getPotentielOptimisation());
+            pc.setInclureProrataTheorique(sp.isInclureProrataTheorique());
+            // sourcePosteId = racine de la chaîne de duplication (jamais le poste
+            // intermédiaire) : si sp est déjà une copie, on repropage sa racine,
+            // sinon sp devient lui-même la racine (première duplication).
+            pc.setSourcePosteId(sp.getSourcePosteId() != null ? sp.getSourcePosteId() : sp.getId());
+            // posteOrigineId remappé ci-dessous, une fois tous les postes copiés et sauvés
+
+            for (RepartitionPoste rp : sp.getRepartitions()) {
+                RepartitionPoste rpc = new RepartitionPoste();
+                rpc.setPoste(pc);
+                rpc.setMembre(rp.getMembre());
+                rpc.setQuotePart(rp.getQuotePart());
+                pc.getRepartitions().add(rpc);
+            }
+            for (VentilationCompte vc : sp.getVentilations()) {
+                VentilationCompte vcc = new VentilationCompte();
+                vcc.setPoste(pc);
+                vcc.setMembre(vc.getMembre());
+                vcc.setCompte(vc.getCompte());
+                pc.getVentilations().add(vcc);
+            }
+            nouveauxPostes.add(pc);
+        }
+
+        posteRepo.saveAll(nouveauxPostes);
+
+        // Remap des chaînes de révision (posteOrigineId) vers les nouveaux ids copiés
+        Map<UUID, UUID> ancienVersNouveauId = new HashMap<>();
+        for (int i = 0; i < srcPostes.size(); i++) {
+            ancienVersNouveauId.put(srcPostes.get(i).getId(), nouveauxPostes.get(i).getId());
+        }
+        boolean remapNecessaire = false;
+        for (int i = 0; i < srcPostes.size(); i++) {
+            UUID origine = srcPostes.get(i).getPosteOrigineId();
+            if (origine != null && ancienVersNouveauId.containsKey(origine)) {
+                nouveauxPostes.get(i).setPosteOrigineId(ancienVersNouveauId.get(origine));
+                remapNecessaire = true;
+            }
+        }
+        if (remapNecessaire) {
+            posteRepo.saveAll(nouveauxPostes);
+        }
+    }
+
+    /** Copie toutes les politiques d'argent de poche du scénario source. */
+    private void dupliquerPolitiquesArgentPoche(UUID srcScenarioId, Scenario copie) {
+        List<PolitiqueArgentPoche> srcPolitiques =
+                politiqueArgentPocheRepo.findAllByScenarioIdOrderByMembreIdAscDateDebutAsc(srcScenarioId);
+        List<PolitiqueArgentPoche> nouvelles = new ArrayList<>();
+        for (PolitiqueArgentPoche sp : srcPolitiques) {
+            PolitiqueArgentPoche pc = new PolitiqueArgentPoche();
+            pc.setScenario(copie);
+            pc.setMembre(sp.getMembre());
+            pc.setCompte(sp.getCompte());
+            pc.setNom(sp.getNom());
+            pc.setDateDebut(sp.getDateDebut());
+            pc.setDateFin(sp.getDateFin());
+            pc.setMode(sp.getMode());
+            pc.setSocle(sp.getSocle());
+            pc.setPourcentage(sp.getPourcentage());
+            pc.setPlafond(sp.getPlafond());
+            pc.setMontantFixe(sp.getMontantFixe());
+            nouvelles.add(pc);
+        }
+        politiqueArgentPocheRepo.saveAll(nouvelles);
+    }
+
+    /** Copie toutes les allocations d'argent de poche ponctuelles du scénario source. */
+    private void dupliquerAllocationsArgentPoche(UUID srcScenarioId, Scenario copie) {
+        List<AllocationArgentPoche> srcAllocations =
+                allocationArgentPocheRepo.findAllByScenarioIdOrderByMoisDesc(srcScenarioId);
+        List<AllocationArgentPoche> nouvelles = new ArrayList<>();
+        for (AllocationArgentPoche sa : srcAllocations) {
+            AllocationArgentPoche ac = new AllocationArgentPoche();
+            ac.setScenario(copie);
+            ac.setMembre(sa.getMembre());
+            ac.setCompte(sa.getCompte());
+            ac.setMois(sa.getMois());
+            ac.setMontant(sa.getMontant());
+            ac.setRaison(sa.getRaison());
+            nouvelles.add(ac);
+        }
+        allocationArgentPocheRepo.saveAll(nouvelles);
     }
 
     /** T7.3 — Définir comme référence (une seule référence par foyer). */

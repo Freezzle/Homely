@@ -1,0 +1,72 @@
+<div class="flex flex-col gap-3">
+  <div class="flex flex-wrap items-center gap-4">
+    <app-select-button
+      [options]="typeOptions()"
+      optionLabel="label"
+      optionValue="value"
+      [ngModel]="filtreType()"
+      (ngModelChange)="filtreType.set($event)"
+    />
+    <div class="ml-auto">
+      <app-checkbox
+        [label]="t.comparaisonScenarios.categories.ecartsUniquement"
+        inputId="cet-ecarts-uniquement"
+        [ngModel]="ecartsUniquement()"
+        (ngModelChange)="ecartsUniquement.set($event)"
+      />
+    </div>
+  </div>
+
+  <p-table [value]="rowsTriees()" [rows]="50" dataKey="categorieId" styleClass="p-datatable-sm cet-table">
+    <ng-template #header>
+      <tr>
+        <th class="cursor-pointer select-none" (click)="trierPar('libelle')">
+          {{ t.comparaisonScenarios.categories.colonneCategorie }}
+          @if (triColonne() === 'libelle') {
+            <i class="pi" [class.pi-sort-alpha-down]="triDirection() === 1" [class.pi-sort-alpha-up-alt]="triDirection() === -1"></i>
+          }
+        </th>
+        <th>{{ t.comparaisonScenarios.categories.colonneType }}</th>
+        <th class="cursor-pointer select-none text-right" (click)="trierPar('effet')">
+          {{ t.comparaisonScenarios.categories.colonneEcart }}
+          @if (triColonne() === 'effet') {
+            <i class="pi" [class.pi-sort-amount-down]="triDirection() === -1" [class.pi-sort-amount-up-alt]="triDirection() === 1"></i>
+          }
+        </th>
+        <th class="cet-col-poids">{{ t.comparaisonScenarios.categories.colonnePoids }}</th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-row>
+      <tr>
+        <td class="font-semibold">{{ row.libelle }}</td>
+        <td>
+          <app-tag [severity]="severite(row.type)" [texte]="typeLabel(row.type)" />
+        </td>
+        <td
+          class="text-right font-semibold tabular-nums"
+          [style.color]="signe(row.effet) === 'positif' ? 'var(--app-positif)' : (signe(row.effet) === 'negatif' ? 'var(--app-negatif)' : 'var(--app-ink-muted)')"
+        >
+          {{ ecartFormate(row.ecart) }}
+        </td>
+        <td class="cet-col-poids">
+          <div class="cet-bar-track">
+            <span class="cet-bar-center" aria-hidden="true"></span>
+            @if (row.effet >= 0) {
+              <span class="cet-bar-fill cet-bar-pos" [style.width.%]="largeur(row)"></span>
+            } @else {
+              <span class="cet-bar-fill cet-bar-neg" [style.width.%]="largeur(row)"></span>
+            }
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="4" class="text-center text-surface-500 py-8">
+          {{ t.comparaisonScenarios.categories.aucunEcart }}
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+

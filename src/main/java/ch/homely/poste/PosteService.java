@@ -553,6 +553,7 @@ public class PosteService {
                 p.getEstimPourcentage(),
                 p.getTypeRepartition(),
                 p.getOrdre(), p.getImportance(), p.getPotentielOptimisation(), reps, vents,
-                p.getPosteOrigineId(), successeurParOrigine.get(p.getId()), p.isInclureProrataTheorique());
+                p.getPosteOrigineId(), successeurParOrigine.get(p.getId()), p.getSourcePosteId(),
+                p.isInclureProrataTheorique());
     }
 }

@@ -1,0 +1,60 @@
+<div class="flex flex-col gap-3">
+  <div class="flex flex-wrap items-center gap-3">
+    <app-select-button
+      [options]="filtreOptions()"
+      optionLabel="label"
+      optionValue="value"
+      [ngModel]="filtre()"
+      (ngModelChange)="filtre.set($event)"
+    />
+    <span class="pdl-compteur">{{ compteurTexte() }}</span>
+  </div>
+
+  @if (lignesFiltrees().length === 0) {
+    <p-message severity="info">{{ t.comparaisonScenarios.postesDiff.aucunePoste }}</p-message>
+  } @else {
+    <div class="pdl-lignes">
+      @for (ligne of lignesFiltrees(); track ligne.cle) {
+        <div
+          class="pdl-ligne"
+          [class.pdl-ligne-inchange]="ligne.statut === 'INCHANGE'"
+          [style.border-left-color]="couleurBordure(ligne.statut)"
+        >
+          <div class="pdl-badge">
+            <i class="pi" [class]="icone(ligne.statut)" aria-hidden="true"></i>
+          </div>
+
+          <div class="pdl-center">
+            <div class="pdl-titre">
+              <span class="pdl-description">{{ ligne.description }}</span>
+              <app-tag [severity]="severite(ligne.statut)" [texte]="libelleStatut(ligne.statut)" />
+              @if (ligne.estRevision) {
+                <app-tag severity="info" [texte]="t.comparaisonScenarios.postesDiff.revision" />
+              }
+            </div>
+            <div class="pdl-meta">
+              {{ metadonnees(ligne) }}{{ suffixeModif(ligne) }}
+            </div>
+          </div>
+
+          <div class="pdl-montants">
+            <div class="pdl-montant-ligne">
+              @if (ligne.statut !== 'AJOUTE' && ligne.montantAnnuelA !== null) {
+                <span class="pdl-ancien">{{ montant(ligne.montantAnnuelA) }}</span>
+              }
+              @if (ligne.statut === 'SUPPRIME') {
+                <span class="pdl-nouveau">—</span>
+              } @else {
+                <span class="pdl-nouveau">{{ montant(ligne.montantAnnuelB) }}</span>
+              }
+            </div>
+            <div class="pdl-effet" [style.color]="couleurEffet(ligne)">
+              {{ effetTexte(ligne) }}
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
+

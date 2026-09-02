@@ -72,6 +72,7 @@ export class SidebarMenuComponent {
         label: this.t.nav.sections.pilotage,
         items: [
           dashboardItem,
+          { label: this.t.nav.comparaisonScenarios, icon: 'pi pi-arrows-h', route: `${base}/comparaison-scenarios` },
           { label: this.t.nav.scenarios,  icon: 'pi pi-sitemap',    route: `${base}/scenarios` },
         ],
       },

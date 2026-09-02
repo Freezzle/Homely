@@ -1,0 +1,136 @@
+<div class="cs-page">
+  <header class="cs-header">
+    <h1 class="text-xl font-semibold">{{ t.comparaisonScenarios.titre }}</h1>
+    <p class="text-sm text-surface-500">{{ t.comparaisonScenarios.sousTitre }}</p>
+  </header>
+
+  @if (pasAssezDeScenarios()) {
+    <p class="text-sm text-surface-500">{{ t.comparaisonScenarios.filtres.pasAssezDeScenarios }}</p>
+  } @else if (scenarioA() && scenarioB()) {
+    <app-filtres-comparaison
+      [scenarios]="scenarios()"
+      [annees]="anneesOptions()"
+      [perimetreOptions]="perimetreOptions()"
+      [scenarioA]="scenarioA()"
+      [scenarioB]="scenarioB()"
+      [annee]="annee()"
+      [perimetre]="perimetre()"
+      (scenarioAChange)="changerScenarioA($event)"
+      (scenarioBChange)="changerScenarioB($event)"
+      (anneeChange)="annee.set($event)"
+      (perimetreChange)="perimetre.set($event)"
+    />
+  }
+
+  @if (anneesOptions().length === 0 && scenarioA() && scenarioB()) {
+    <p class="text-sm text-orange-600">{{ t.comparaisonScenarios.filtres.aucuneAnneeCommune }}</p>
+  } @else if (annee() !== null) {
+    <p-card styleClass="cs-card">
+      <ng-template #header>
+        <div class="cs-card-header">
+          <h2>{{ t.comparaisonScenarios.graphique.titre }}</h2>
+          <p>{{ t.comparaisonScenarios.graphique.sousTitre }}</p>
+        </div>
+      </ng-template>
+      <app-solde-mensuel-chart
+        [soldesA]="soldesA()"
+        [soldesB]="soldesB()"
+        [labelsMois]="labelsMois()"
+        [labels]="{ soldeA: t.comparaisonScenarios.graphique.soldeA, soldeB: t.comparaisonScenarios.graphique.soldeB, ecart: t.comparaisonScenarios.graphique.ecart }"
+        [devise]="devise()"
+      />
+    </p-card>
+
+    <p-card styleClass="cs-card">
+      <ng-template #header>
+        <div class="cs-card-header">
+          <h2>{{ t.comparaisonScenarios.cascade.titre }}</h2>
+          <p>{{ t.comparaisonScenarios.cascade.sousTitre }}</p>
+        </div>
+      </ng-template>
+
+      <div class="cs-cascade-toolbar">
+        <app-select-button
+          [options]="vueCascadeOptions()"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="vueCascade()"
+          (ngModelChange)="vueCascade.set($event)"
+        />
+        <div class="cs-mois-nav" [class.cs-hidden]="vueCascade() !== 'MOIS'">
+          <p-button
+            icon="pi pi-chevron-left"
+            [text]="true"
+            [rounded]="true"
+            size="small"
+            [ariaLabel]="t.comparaisonScenarios.cascade.moisPrecedent"
+            (onClick)="moisPrecedent()"
+          />
+          <app-select-button
+            [options]="moisOptions()"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="moisCascade()"
+            (ngModelChange)="moisCascade.set($event)"
+          />
+          <p-button
+            icon="pi pi-chevron-right"
+            [text]="true"
+            [rounded]="true"
+            size="small"
+            [ariaLabel]="t.comparaisonScenarios.cascade.moisSuivant"
+            (onClick)="moisSuivant()"
+          />
+        </div>
+      </div>
+
+      <app-cascade-budgetaire
+        [etapes]="cascadeEtapes()"
+        [labelA]="scenarioA()?.nom ?? ''"
+        [labelB]="scenarioB()?.nom ?? ''"
+        [labelEcart]="t.comparaisonScenarios.cascade.ecart"
+        [enTetePeriode]="cascadeEnTete()"
+      />
+    </p-card>
+
+      <p-card styleClass="cs-card">
+          <ng-template #header>
+              <div class="cs-card-header">
+                  <h2>{{ t.comparaisonScenarios.categories.titre }}</h2>
+                  <p>{{ t.comparaisonScenarios.categories.sousTitre }}</p>
+              </div>
+          </ng-template>
+          <app-categories-ecart-table [rows]="categoriesEcart()" [devise]="devise()" />
+      </p-card>
+
+    <p-card styleClass="cs-card">
+      <ng-template #header>
+        <div class="cs-card-header">
+          <h2>{{ t.comparaisonScenarios.heatmap.titre }}</h2>
+          <p>{{ t.comparaisonScenarios.heatmap.sousTitre }}</p>
+        </div>
+      </ng-template>
+      @if (heatmapLignes().length === 0) {
+        <p class="text-sm text-surface-500 py-4 text-center">{{ t.comparaisonScenarios.heatmap.aucunEcart }}</p>
+      } @else {
+        <app-heatmap-ecart
+          [lignes]="heatmapLignes()"
+          [labelsMois]="labelsMois()"
+          [devise]="devise()"
+          [tooltipTemplate]="t.comparaisonScenarios.heatmap.tooltip"
+        />
+      }
+    </p-card>
+
+    <p-card styleClass="cs-card">
+      <ng-template #header>
+        <div class="cs-card-header">
+          <h2>{{ t.comparaisonScenarios.postesDiff.titre }}</h2>
+          <p>{{ t.comparaisonScenarios.postesDiff.sousTitre }}</p>
+        </div>
+      </ng-template>
+      <app-postes-diff-list [lignes]="postesDiff()" [devise]="devise()" />
+    </p-card>
+  }
+</div>
+

@@ -1,0 +1,33 @@
+<p-card styleClass="ie-card">
+  <div class="ie-content" [attr.data-favorable]="favorable()">
+    <div class="ie-label">{{ label() }}</div>
+
+    <div class="ie-ecart">
+      <i class="pi" [class]="icone()" aria-hidden="true"></i>
+      <span class="ie-ecart-valeur">{{ ecartFormate() }}</span>
+      @if (pourcentageFormate()) {
+        <span class="ie-ecart-pct">{{ pourcentageFormate() }}</span>
+      }
+    </div>
+
+    <div class="ie-separateur"></div>
+
+    <div class="ie-lignes">
+      <div class="ie-ligne">
+        <span class="ie-puce ie-puce-a" aria-hidden="true"></span>
+        <span class="ie-nom">{{ nomA() }}</span>
+        <span class="ie-valeur">{{ valeurFormatee(valeurA()) }}</span>
+      </div>
+      <div class="ie-ligne">
+        <span class="ie-puce ie-puce-b" aria-hidden="true"></span>
+        <span class="ie-nom">{{ nomB() }}</span>
+        <span class="ie-valeur">{{ valeurFormatee(valeurB()) }}</span>
+      </div>
+    </div>
+
+    @if (note()) {
+      <div class="ie-note">{{ note() }}</div>
+    }
+  </div>
+</p-card>
+

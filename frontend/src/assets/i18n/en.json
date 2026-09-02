@@ -20,6 +20,7 @@
     "charges": "Expenses",
     "reserves": "Savings",
     "scenarios": "Scenarios",
+    "comparaisonScenarios": "Scenario comparison",
     "argentPoche": "Pocket money",
     "referentiels": "Reference data",
     "comptes": "Accounts",
@@ -305,7 +306,8 @@
     "annulerRevisionConfirmationAvecFin": "The current version ({{montant}}) will be deleted. \"{{description}}\" will stay at {{montantPrecedent}}, until {{finPrecedente}}.",
     "decalerDateEffet": "Shift the effective date",
     "decalerDateEffetTitre": "Shift effective date — {{description}}",
-    "decalerDateEffetLabel": "New effective date",
+    "decalerDateEffetLabel": "Starts on",
+    "decalerDateEffetDateActuelle": "Current date",
     "decalerDateEffetResume": "{{descriptionPrecedente}} at {{montantPrecedent}} until {{finPrecedente}}, then {{montantActuel}} from {{debutActuel}}",
     "decalerDateEffetAucunMoisDisponible": "No month is available: the two links are only one month apart, there is no room to shift the boundary.",
     "terminer": "Stop",
@@ -624,7 +626,8 @@
     "langueAnglais": "English",
     "groupeMode": "Appearance",
     "modeLumineux": "Light",
-    "modeSombre": "Dark"
+    "modeSombre": "Dark",
+    "tous": "All"
   },
   "referentiels": {
     "membre": {
@@ -817,5 +820,105 @@
     "O",
     "N",
     "D"
-  ]
+  ],
+  "comparaisonScenarios": {
+    "titre": "Scenario comparison",
+    "sousTitre": "Compare two scenarios for the same year and perimeter.",
+    "filtres": {
+      "scenarioA": "Left scenario",
+      "scenarioB": "Right scenario",
+      "annee": "Year",
+      "perimetre": "Perimeter",
+      "perimetreFoyer": "Household",
+      "reference": "reference",
+      "aucuneAnneeCommune": "These two scenarios have no year in common.",
+      "pasAssezDeScenarios": "You need at least two scenarios in this household to compare them."
+    },
+    "indicateurs": {
+      "revenus": "Income",
+      "charges": "Expenses",
+      "reserves": "Savings",
+      "argentPoche": "Pocket money",
+      "soldeDisponible": "Available balance",
+      "noteReserves": "internal transfer",
+      "noteArgentPoche": "reduces available balance",
+      "noteSoldeDisponible": "after pocket money"
+    },
+    "graphique": {
+      "titre": "Available balance by month",
+      "sousTitre": "Income − expenses − savings − pocket money, over the 12 months of the year.",
+      "soldeA": "Balance A",
+      "soldeB": "Balance B",
+      "ecart": "Difference (B − A)"
+    },
+    "categories": {
+      "titre": "Totals by category",
+      "sousTitre": "Yearly difference between the two scenarios, by category.",
+      "colonneCategorie": "Category",
+      "colonneType": "Type",
+      "colonneEcart": "Difference",
+      "colonnePoids": "Weight of the difference",
+      "ecartsUniquement": "Differences only",
+      "aucunEcart": "No category matches this filter. Broaden the selection to see rows."
+    },
+    "cascade": {
+      "titre": "Budget cascade",
+      "sousTitre": "One row per scenario: compare bar lengths, column by column, to spot where the difference arises — for a single month or the whole year.",
+      "revenus": "Income",
+      "charges": "Expenses",
+      "reserves": "Savings",
+      "rav": "Living balance",
+      "argentPoche": "Pocket money",
+      "soldeDisponible": "Available balance",
+      "ecart": "Difference",
+      "vueMois": "Month",
+      "vueAnnee": "Year",
+      "moisPrecedent": "Previous month",
+      "moisSuivant": "Next month",
+      "enTeteAnnee": "Year {annee}",
+      "enTeteMois": "{mois} {annee}"
+    },
+    "heatmap": {
+      "titre": "Where the difference lies",
+      "sousTitre": "Monthly difference on the balance, by category. Green: the right scenario does better. Red: it costs more.",
+      "aucunEcart": "No significant difference this month.",
+      "tooltip": "{categorie} · {mois}: {montant} {devise} on the balance"
+    },
+    "postesDiff": {
+      "titre": "What changes across items",
+      "sousTitre": "Item-by-item comparison between the two scenarios, as yearly amounts.",
+      "filtreChangements": "Changes",
+      "filtreTout": "All",
+      "filtreAjoutes": "Added",
+      "filtreSupprimes": "Removed",
+      "filtreModifies": "Modified",
+      "statutAjoute": "Added",
+      "statutSupprime": "Removed",
+      "statutModifie": "Modified",
+      "statutInchange": "Unchanged",
+      "revision": "revision",
+      "aucunePoste": "No item matches this filter. Choose «All» to display every item.",
+      "compteur": "{ajoute} {mAjoute} · {supprime} {mSupprime} · {modifie} {mModifie} · {inchange} {mInchange}",
+      "mAjouteSingulier": "added",
+      "mAjoutePluriel": "added",
+      "mSupprimeSingulier": "removed",
+      "mSupprimePluriel": "removed",
+      "mModifieSingulier": "modified",
+      "mModifiePluriel": "modified",
+      "mInchangeSingulier": "unchanged",
+      "mInchangePluriel": "unchanged",
+      "periodicitePonctuel": "one-off",
+      "periodiciteMensuel": "monthly",
+      "periodicitePeriodique": "{n} months · due {moment}",
+      "periodiciteMensualise": "{n} months · spread",
+      "momentDebut": "at start of period",
+      "momentFin": "at end of period",
+      "des": "from {date}",
+      "jusquAu": "until {date}",
+      "estimation": "estimate",
+      "montantChange": "amount {ancien} → {nouveau} {devise}",
+      "effetAn": "/ yr",
+      "sansEffet": "no impact"
+    }
+  }
 }

@@ -98,6 +98,7 @@ export interface PosteDto {
   ventilations: VentilationCompteDto[];
   posteOrigineId?: string;   // Poste dont ce poste est issu par révision de montant
   posteSuivantId?: string;   // Poste qui a remplacé celui-ci par révision de montant (calculé)
+  sourcePosteId?: string;    // Poste "racine" dont ce poste est issu par duplication de scénario (comparaison de scénarios)
   inclureProrataTheorique: boolean;  // pris en compte dans le prorata théorique des membres (pertinent si type=REVENU et foyer multi-membres)
 }
 export interface PosteRequest {

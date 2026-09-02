@@ -1,0 +1,49 @@
+<p-toolbar styleClass="fc-toolbar">
+  <ng-template #start>
+    <div class="fc-groupe-gauche">
+      <div class="fc-champ">
+        <label class="fc-label" for="fc-scenario-a">{{ t.comparaisonScenarios.filtres.scenarioA }}</label>
+        <app-select
+          [options]="optionsScenarios()"
+          optionLabel="libelle"
+          dataKey="id"
+          [ngModel]="scenarioA()"
+          (ngModelChange)="scenarioAChange.emit($event)"
+        />
+      </div>
+
+      <div class="fc-champ">
+        <label class="fc-label" for="fc-scenario-b">{{ t.comparaisonScenarios.filtres.scenarioB }}</label>
+        <app-select
+          [options]="optionsScenarios()"
+          optionLabel="libelle"
+          dataKey="id"
+          [ngModel]="scenarioB()"
+          (ngModelChange)="scenarioBChange.emit($event)"
+        />
+      </div>
+
+      <div class="fc-champ">
+        <label class="fc-label" for="fc-annee">{{ t.comparaisonScenarios.filtres.annee }}</label>
+        <app-select
+          [options]="annees()"
+          [ngModel]="annee()"
+          (ngModelChange)="anneeChange.emit($event)"
+        />
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #end>
+    <div class="fc-champ">
+      <label class="fc-label">{{ t.comparaisonScenarios.filtres.perimetre }}</label>
+      <app-select-button
+        [options]="perimetreOptions()"
+        optionLabel="label"
+        optionValue="value"
+        [ngModel]="perimetre()"
+        (ngModelChange)="perimetreChange.emit($event)"
+      />
+    </div>
+  </ng-template>
+</p-toolbar>

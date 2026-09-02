@@ -1,0 +1,52 @@
+:host { display: block; }
+
+.cs-page {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.cs-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.cs-card-header {
+  padding: 1rem 1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+
+  h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  p {
+    font-size: 0.8125rem;
+    color: var(--app-ink-muted);
+    margin: 0;
+  }
+}
+
+.cs-cascade-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.cs-mois-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  overflow-x: auto;
+
+  &.cs-hidden { display: none; }
+}

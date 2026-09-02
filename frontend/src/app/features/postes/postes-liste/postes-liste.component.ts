@@ -120,18 +120,18 @@ export class PostesListeComponent {
 
   // ── Décaler la date d'effet (frontière entre un maillon et son prédécesseur) ──
   decalerDialogVisible = false;
-  posteEnDecalage: PosteDto | null = null;
+  posteEnDecalage = signal<PosteDto | null>(null);
 
   /** Prédécesseur immédiat du maillon en cours de décalage. */
   precedentEnDecalage = computed(() => {
-    const p = this.posteEnDecalage;
+    const p = this.posteEnDecalage();
     if (!p?.posteOrigineId) return null;
     return this.postes().find(x => x.id === p.posteOrigineId) ?? null;
   });
 
   /** Successeur éventuel (maillon suivant), qui fige la borne haute s'il existe. */
   successeurEnDecalage = computed(() => {
-    const p = this.posteEnDecalage;
+    const p = this.posteEnDecalage();
     if (!p) return null;
     return this.postes().find(x => x.posteOrigineId === p.id) ?? null;
   });
@@ -949,14 +949,14 @@ export class PostesListeComponent {
   }
 
   ouvrirDecalage(p: PosteDto): void {
-    this.posteEnDecalage = p;
+    this.posteEnDecalage.set(p);
     this.decalerDialogVisible = true;
   }
 
   /** Suit la fermeture (par la croix ou l'overlay) du dialog décalage, en plus du bouton Annuler. */
   onDecalageVisibleChange(visible: boolean): void {
     this.decalerDialogVisible = visible;
-    if (!visible) this.posteEnDecalage = null;
+    if (!visible) this.posteEnDecalage.set(null);
   }
 
   /**

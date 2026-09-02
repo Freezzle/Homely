@@ -20,6 +20,7 @@
     "charges": "Charges",
     "reserves": "Réserves",
     "scenarios": "Scénarios",
+    "comparaisonScenarios": "Comparaison de scénarios",
     "argentPoche": "Argent de poche",
     "referentiels": "Référentiels",
     "comptes": "Comptes",
@@ -305,7 +306,8 @@
     "annulerRevisionConfirmationAvecFin": "La version actuelle ({{montant}}) sera supprimée. « {{description}} » restera à {{montantPrecedent}}, jusqu'au {{finPrecedente}}.",
     "decalerDateEffet": "Décaler la date d'effet",
     "decalerDateEffetTitre": "Décaler la date d'effet — {{description}}",
-    "decalerDateEffetLabel": "Nouvelle date d'effet",
+    "decalerDateEffetLabel": "Débute le",
+    "decalerDateEffetDateActuelle": "Date actuelle",
     "decalerDateEffetResume": "{{descriptionPrecedente}} à {{montantPrecedent}} jusqu'en {{finPrecedente}}, puis {{montantActuel}} dès {{debutActuel}}",
     "decalerDateEffetAucunMoisDisponible": "Aucun mois n'est disponible : les deux maillons ne sont séparés que d'un mois, il n'y a pas de marge pour décaler la frontière.",
     "terminer": "Terminer",
@@ -624,7 +626,8 @@
     "langueAnglais": "Anglais",
     "groupeMode": "Apparence",
     "modeLumineux": "Lumineux",
-    "modeSombre": "Sombre"
+    "modeSombre": "Sombre",
+    "tous": "Tous"
   },
   "referentiels": {
     "membre": {
@@ -817,5 +820,105 @@
     "O",
     "N",
     "D"
-  ]
+  ],
+  "comparaisonScenarios": {
+    "titre": "Comparaison de scénarios",
+    "sousTitre": "Comparez deux scénarios pour la même année et le même périmètre.",
+    "filtres": {
+      "scenarioA": "Scénario de gauche",
+      "scenarioB": "Scénario de droite",
+      "annee": "Année",
+      "perimetre": "Périmètre",
+      "perimetreFoyer": "Foyer",
+      "reference": "référence",
+      "aucuneAnneeCommune": "Ces deux scénarios n'ont aucune année en commun.",
+      "pasAssezDeScenarios": "Il faut au moins deux scénarios dans ce foyer pour pouvoir les comparer."
+    },
+    "indicateurs": {
+      "revenus": "Revenus",
+      "charges": "Charges",
+      "reserves": "Réserves",
+      "argentPoche": "Argent de poche",
+      "soldeDisponible": "Solde disponible",
+      "noteReserves": "mouvement interne",
+      "noteArgentPoche": "réduit le disponible",
+      "noteSoldeDisponible": "après argent de poche"
+    },
+    "graphique": {
+      "titre": "Solde disponible mois par mois",
+      "sousTitre": "Revenus − charges − réserves − argent de poche, sur les 12 mois de l'année.",
+      "soldeA": "Solde A",
+      "soldeB": "Solde B",
+      "ecart": "Écart (B − A)"
+    },
+    "categories": {
+      "titre": "Totaux par catégorie",
+      "sousTitre": "Écart annuel entre les deux scénarios, par catégorie.",
+      "colonneCategorie": "Catégorie",
+      "colonneType": "Type",
+      "colonneEcart": "Écart",
+      "colonnePoids": "Poids de l'écart",
+      "ecartsUniquement": "Écarts uniquement",
+      "aucunEcart": "Aucune catégorie ne correspond à ce filtre. Élargissez la sélection pour voir des lignes."
+    },
+    "cascade": {
+      "titre": "Cascade budgétaire",
+      "sousTitre": "Une ligne par scénario : comparez la longueur des barres, colonne par colonne, pour repérer où naît l'écart — sur un mois ou sur l'année complète.",
+      "revenus": "Revenus",
+      "charges": "Charges",
+      "reserves": "Réserves",
+      "rav": "Reste à vivre",
+      "argentPoche": "Argent de poche",
+      "soldeDisponible": "Solde disponible",
+      "ecart": "Écart",
+      "vueMois": "Mois",
+      "vueAnnee": "Année",
+      "moisPrecedent": "Mois précédent",
+      "moisSuivant": "Mois suivant",
+      "enTeteAnnee": "Année {annee}",
+      "enTeteMois": "{mois} {annee}"
+    },
+    "heatmap": {
+      "titre": "Où se situe l'écart",
+      "sousTitre": "Écart mensuel sur le solde, par catégorie. Vert : le scénario de droite fait mieux. Rouge : il coûte plus.",
+      "aucunEcart": "Aucun écart significatif ce mois-ci.",
+      "tooltip": "{categorie} · {mois} : {montant} {devise} sur le solde"
+    },
+    "postesDiff": {
+      "titre": "Ce qui change dans les postes",
+      "sousTitre": "Comparaison poste à poste entre les deux scénarios, en montant annuel.",
+      "filtreChangements": "Changements",
+      "filtreTout": "Tout",
+      "filtreAjoutes": "Ajoutés",
+      "filtreSupprimes": "Supprimés",
+      "filtreModifies": "Modifiés",
+      "statutAjoute": "Ajouté",
+      "statutSupprime": "Supprimé",
+      "statutModifie": "Modifié",
+      "statutInchange": "Inchangé",
+      "revision": "révision",
+      "aucunePoste": "Aucun poste ne correspond à ce filtre. Choisissez « Tout » pour afficher l'ensemble des postes.",
+      "compteur": "{ajoute} {mAjoute} · {supprime} {mSupprime} · {modifie} {mModifie} · {inchange} {mInchange}",
+      "mAjouteSingulier": "ajouté",
+      "mAjoutePluriel": "ajoutés",
+      "mSupprimeSingulier": "supprimé",
+      "mSupprimePluriel": "supprimés",
+      "mModifieSingulier": "modifié",
+      "mModifiePluriel": "modifiés",
+      "mInchangeSingulier": "inchangé",
+      "mInchangePluriel": "inchangés",
+      "periodicitePonctuel": "ponctuel",
+      "periodiciteMensuel": "mensuel",
+      "periodicitePeriodique": "{n} mois · échéance {moment}",
+      "periodiciteMensualise": "{n} mois · mensualisé",
+      "momentDebut": "début de période",
+      "momentFin": "fin de période",
+      "des": "dès {date}",
+      "jusquAu": "jusqu'au {date}",
+      "estimation": "estimation",
+      "montantChange": "montant {ancien} → {nouveau} {devise}",
+      "effetAn": "/ an",
+      "sansEffet": "sans effet"
+    }
+  }
 }

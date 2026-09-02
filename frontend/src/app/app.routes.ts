@@ -96,6 +96,10 @@ export const routes: Routes = [
             loadComponent: () => import('./features/scenarios/scenarios-liste/scenarios-liste.component').then(m => m.ScenariosListeComponent),
           },
           {
+            path: 'comparaison-scenarios',
+            loadComponent: () => import('./features/comparaison-scenarios/comparaison-scenarios.component').then(m => m.ComparaisonScenariosComponent),
+          },
+          {
             path: 'argent-poche',
             loadComponent: () => import('./features/argent-poche/argent-poche.component').then(m => m.ArgentPocheComponent),
           },

@@ -115,6 +115,18 @@ public class Poste {
     private UUID posteOrigineId;
 
     /**
+     * Id du poste "racine" dont ce poste est une copie par duplication de
+     * scénario (comparaison de scénarios, feature_5_bis §9). Transitif : si A
+     * est dupliqué en B puis B en C, {@code C.sourcePosteId == A.id} (jamais
+     * {@code B.id}) — cf. {@link ch.homely.scenario.ScenarioService}. Null si
+     * ce poste n'a jamais été dupliqué (créé directement dans son scénario).
+     * Volontairement sans contrainte de clé étrangère : peut pointer vers un
+     * poste d'un scénario supprimé entre-temps sans affecter cette copie.
+     */
+    @Column(name = "source_poste_id")
+    private UUID sourcePosteId;
+
+    /**
      * Prise en compte du poste dans le calcul du prorata théorique des membres
      * (part de revenus de chacun dans le total du foyer — cf.
      * {@link ch.homely.projection.ProjectionService#prorataPartage}). Défaut {@code true}.

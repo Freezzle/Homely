@@ -33,7 +33,7 @@ export const ETAT_FILTRES_PAR_DEFAUT: EtatFiltresPostes = {
   recherche: '',
   tri: 'DESCRIPTION',
   regrouperPar: 'CATEGORIE',
-  filtreEtat: ['ACTIF'],
+  filtreEtat: [],
   filtreNature: [],
   filtreCategorieIds: [],
   filtreCompteIds: [],

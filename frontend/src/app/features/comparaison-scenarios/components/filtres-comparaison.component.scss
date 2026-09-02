@@ -1,0 +1,25 @@
+:host { display: block; }
+
+::ng-deep .fc-toolbar {
+  padding: 0.75rem 1rem;
+}
+
+.fc-groupe-gauche {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.fc-champ {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 10rem;
+}
+
+.fc-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--app-ink-muted);
+}

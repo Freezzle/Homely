@@ -1,0 +1,42 @@
+.cet-col-poids {
+  min-width: 80px;
+}
+
+.cet-bar-track {
+  position: relative;
+  min-width: 80px;
+  height: 0.5rem;
+  background: var(--p-surface-100);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+:host-context(.dark) .cet-bar-track {
+  background: var(--p-surface-800);
+}
+
+.cet-bar-center {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: var(--app-line);
+}
+
+.cet-bar-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+}
+
+.cet-bar-pos {
+  left: 50%;
+  background: var(--app-positif);
+}
+
+.cet-bar-neg {
+  right: 50%;
+  background: var(--app-negatif);
+}

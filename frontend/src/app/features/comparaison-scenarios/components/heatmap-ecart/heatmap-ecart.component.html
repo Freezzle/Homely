@@ -1,0 +1,21 @@
+<div class="he-scroll">
+  <div class="he-grid">
+    <div class="he-cell he-corner"></div>
+    @for (label of labelsMois(); track label; let i = $index) {
+      <div class="he-cell he-head">{{ label }}</div>
+    }
+    @for (ligne of lignes(); track ligne.cle) {
+      <div class="he-cell he-libelle">{{ ligne.libelle }}</div>
+      @for (valeur of ligne.valeursParMois; track $index) {
+        <div
+          class="he-cell he-val"
+          [ngStyle]="style(valeur)"
+          [pTooltip]="tooltip(ligne, valeur, $index)"
+        >
+          {{ texte(valeur) }}
+        </div>
+      }
+    }
+  </div>
+</div>
+

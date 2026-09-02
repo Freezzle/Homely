@@ -1,0 +1,71 @@
+<div class="cb-scroll">
+  <table class="cb-table">
+    <thead>
+      <tr>
+        <th class="cb-corner">{{ enTetePeriode() }}</th>
+        @for (etape of etapes(); track etape.cle) {
+          <th
+            class="cb-col-head"
+            [class.cb-col-resultat]="etape.estResultat"
+          >
+            @if (etape.operateur) {
+              <span class="cb-op" aria-hidden="true">{{ etape.operateur }}</span>
+            }
+            <span>{{ etape.label }}</span>
+          </th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="cb-row-scenario">
+        <th scope="row" class="cb-row-head">
+          <span class="cb-puce cb-puce-a" aria-hidden="true"></span>
+          <span>{{ labelA() }}</span>
+        </th>
+        @for (etape of etapes(); track etape.cle) {
+          <td class="cb-cell" [class.cb-col-resultat]="etape.estResultat">
+            <div class="cb-bar-track">
+              <span
+                class="cb-bar-fill"
+                [style.width.%]="largeur(etape, etape.valeurA)"
+                [style.background-color]="couleurBarre(etape, etape.valeurA)"
+              ></span>
+              <span class="cb-bar-label">{{ montant(etape.valeurA) }}</span>
+            </div>
+          </td>
+        }
+      </tr>
+      <tr class="cb-row-scenario">
+        <th scope="row" class="cb-row-head">
+          <span class="cb-puce cb-puce-b" aria-hidden="true"></span>
+          <span>{{ labelB() }}</span>
+        </th>
+        @for (etape of etapes(); track etape.cle) {
+          <td class="cb-cell" [class.cb-col-resultat]="etape.estResultat">
+            <div class="cb-bar-track">
+              <span
+                class="cb-bar-fill"
+                [style.width.%]="largeur(etape, etape.valeurB)"
+                [style.background-color]="couleurBarre(etape, etape.valeurB)"
+              ></span>
+              <span class="cb-bar-label">{{ montant(etape.valeurB) }}</span>
+            </div>
+          </td>
+        }
+      </tr>
+      <tr class="cb-row-ecart">
+        <th scope="row" class="cb-row-head cb-row-head-ecart">{{ labelEcart() }}</th>
+        @for (etape of etapes(); track etape.cle) {
+          <td
+            class="cb-cell cb-cell-ecart"
+            [class.cb-col-resultat]="etape.estResultat"
+            [style.color]="couleurEcart(etape)"
+          >
+            {{ ecartFormate(etape) }}
+          </td>
+        }
+      </tr>
+    </tbody>
+  </table>
+</div>
+

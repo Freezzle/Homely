@@ -333,7 +333,7 @@
     (enregistre)="onDialogEnregistre()" />
 
 <!-- Dialog mini-formulaire : décaler la date d'effet entre un maillon et son prédécesseur -->
-<app-poste-decalage-dialog [poste]="posteEnDecalage" [precedent]="precedentEnDecalage()" [successeur]="successeurEnDecalage()"
+<app-poste-decalage-dialog [poste]="posteEnDecalage()" [precedent]="precedentEnDecalage()" [successeur]="successeurEnDecalage()"
     [visible]="decalerDialogVisible" (visibleChange)="onDecalageVisibleChange($event)" (enregistre)="onDialogEnregistre()" />
 
 <!-- Dialog mini-formulaire : clôture rapide d'un poste (action « Terminer ») -->
