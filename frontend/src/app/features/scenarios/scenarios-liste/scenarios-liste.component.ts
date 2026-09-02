@@ -11,7 +11,6 @@ import { ScenarioService } from '../../../core/services/scenario-poste.service';
 import { ScenarioDto } from '../../../core/models/api.models';
 import { MontantPipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
-import { RepartitionPeriodesComponent } from '../repartition-periodes/repartition-periodes.component';
 import { arrondirSommeRepartition, sommeRepartitionValide as estSommeRepartitionValide } from '../../../core/utils/repartition.util';
 import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
 import { InputNumberComponent, InputTextComponent } from '../../../shared/components/form-fields';
@@ -24,7 +23,7 @@ import { TagComponent } from '../../../shared/components/tag/tag.component';
   providers: [ConfirmationService],
   imports: [CommonModule, FormsModule, ReactiveFormsModule, TableModule, ButtonComponent,
     DialogModule, TagComponent, TooltipModule, ConfirmDialogModule,
-    InputTextComponent, InputNumberComponent, MontantPipe, RepartitionPeriodesComponent],
+    InputTextComponent, InputNumberComponent, MontantPipe],
   templateUrl: './scenarios-liste.component.html',
 })
 export class ScenariosListeComponent {
@@ -83,7 +82,7 @@ export class ScenariosListeComponent {
     this.scenarioEnEdition = s;
     this.form.patchValue({ nom: s.nom, anneeDepart: s.anneeDepart, tresorerieInitiale: s.tresorerieInitiale, horizonAnnees: s.horizonAnnees });
     // La répartition ne se modifie pas depuis ce formulaire : elle se gère via les
-    // périodes de prorata dédiées (app-repartition-periodes). On n'affiche rien et on
+    // périodes de prorata dédiées (page "Prorata des membres"). On n'affiche rien et on
     // n'en tient pas compte à l'enregistrement.
     this.repsMap = {};
     this.dialogVisible = true;

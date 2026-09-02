@@ -1,0 +1,56 @@
+<p-dialog [visible]="visible()" (visibleChange)="visibleChange.emit($event)"
+          [header]="t.prorata.revisionTitre"
+          [modal]="true" class="w-full max-w-lg">
+    @if (periode(); as p) {
+        <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
+            <app-date-picker
+                [label]="t.prorata.revisionDateEffet"
+                [required]="true"
+                formControlName="dateEffet"
+                view="month"
+                dateFormat="mm/yy"
+                [minDate]="dateMin()"
+                [maxDate]="dateMax()"
+                [showButtonBar]="true"/>
+
+            @if (!sommePartsValide) {
+                <p-message severity="warn">{{ t.commun.repartitionInvalide }}</p-message>
+            }
+
+            <div class="flex flex-col gap-2">
+                <div class="flex items-center justify-between">
+                    <label class="text-sm font-medium">{{ t.poste.repartition }} *
+                        <span class="ml-2 font-normal text-xs"
+                              [class.text-green-600]="sommePartsValide"
+                              [class.text-red-500]="!sommePartsValide">
+                            {{ sommeParts }}%
+                        </span>
+                    </label>
+                </div>
+                <div formArrayName="parts" class="flex flex-col gap-2">
+                    @for (ctrl of partsArray.controls; track ctrl; let i = $index) {
+                        <div [formGroupName]="i" class="grid grid-cols-2 items-center gap-3">
+                            <span class="text-sm">{{ membres()[i]?.nom }}</span>
+                            <app-input-number
+                                formControlName="quotePart"
+                                [min]="0"
+                                [max]="100"
+                                suffix="%"
+                                [minFractionDigits]="0"
+                                [maxFractionDigits]="2"/>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="text-sm rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-primary-700 dark:text-primary-300">
+                {{ resume() }}
+            </div>
+        </form>
+    }
+    <ng-template #footer>
+        <app-button [label]="t.commun.annuler" severity="secondary" (clickEvent)="fermer()"/>
+        <app-button [label]="t.commun.enregistrer" (clickEvent)="enregistrer()"
+                    [disabled]="!valide() || enregistrementEnCours" [loading]="enregistrementEnCours"/>
+    </ng-template>
+</p-dialog>

@@ -34,10 +34,6 @@
                <app-button icon="pi pi-pencil" [text]="true" size="small" (clickEvent)="ouvrirEdition(s)" />
                <app-button icon="pi pi-copy" [text]="true" size="small" [tooltip]="t.scenario.dupliquer" (clickEvent)="dupliquer(s)" />
              }
-             <!-- Bouton périodes de prorata (masqué si mono-membre) -->
-             @if (membres().length > 1) {
-               <app-repartition-periodes [scenarioId]="s.id" />
-             }
              @if (contexte.estOwner() && !s.estReference) {
                <app-button icon="pi pi-star" [text]="true" severity="warn" size="small"
                            [tooltip]="t.scenario.definirReference" (clickEvent)="definirReference(s)" />

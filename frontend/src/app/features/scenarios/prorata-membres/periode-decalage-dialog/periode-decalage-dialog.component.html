@@ -1,0 +1,37 @@
+<p-dialog [visible]="visible()" (visibleChange)="visibleChange.emit($event)"
+          [header]="t.prorata.decalerDateEffetTitre"
+          [modal]="true" class="w-full max-w-md">
+    @if (periode() && predecesseur()) {
+        <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
+            @if (intervalleVide()) {
+                <p class="text-sm text-red-600 dark:text-red-400">{{ t.prorata.decalerDateEffetAucunMoisDisponible }}</p>
+            } @else {
+                <div class="flex flex-row gap-4 items-start">
+                    <app-input-text
+                        class="flex-1"
+                        [label]="t.prorata.decalerDateEffetDateActuelle"
+                        formControlName="dateDebutActuelle"/>
+                    <app-date-picker
+                        class="flex-1"
+                        [label]="t.prorata.decalerDateEffetLabel"
+                        [required]="true"
+                        formControlName="nouvelleDateEffet"
+                        view="month"
+                        dateFormat="mm/yy"
+                        [minDate]="borneMin()"
+                        [maxDate]="borneMax()"
+                        [showButtonBar]="true"/>
+                </div>
+
+                <div class="text-sm rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-primary-700 dark:text-primary-300">
+                    {{ resume() }}
+                </div>
+            }
+        </form>
+    }
+    <ng-template #footer>
+        <app-button [label]="t.commun.annuler" severity="secondary" (clickEvent)="fermer()"/>
+        <app-button [label]="t.commun.enregistrer" (clickEvent)="enregistrer()"
+                    [disabled]="!valide() || enregistrementEnCours" [loading]="enregistrementEnCours"/>
+    </ng-template>
+</p-dialog>

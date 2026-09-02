@@ -27,6 +27,7 @@
     "categories": "Catégories",
     "taux": "Taux de change",
     "membres": "Membres",
+    "prorataMembres": "Prorata des membres",
     "parametres": "Paramètres",
     "acces": "Accès",
     "ouvrirMenu": "Ouvrir le menu",
@@ -34,7 +35,7 @@
     "sections": {
       "pilotage": "Pilotage",
       "budget": "Données du scénario",
-      "reglages": "Réglages"
+      "reglages": "Réglages du foyer"
     }
   },
   "foyer": {
@@ -139,6 +140,25 @@
     "periodeChevauche": "Cette période chevauche une période existante.",
     "periodeOuverteDejaExistante": "Il existe déjà une période ouverte (sans date de fin) ; fermez-la d'abord.",
     "horizonAnneesUnite": "ans"
+  },
+  "prorata": {
+    "titre": "Prorata des membres",
+    "aucunResultat": "Aucune période de répartition définie.",
+    "aucunScenario": "Aucun scénario sélectionné.",
+    "monoMembreNonApplicable": "Le prorata ne s'applique pas aux foyers à un seul membre.",
+    "reviserTaux": "Réviser les taux",
+    "revisionTitre": "Réviser les taux",
+    "revisionDateEffet": "Effet dès le",
+    "revisionResume": "{{avant}} → {{apres}}, dès {{date}}",
+    "annulerRevision": "Annuler cette révision",
+    "annulerRevisionTitre": "Annuler la révision",
+    "annulerRevisionConfirmation": "La période actuelle sera supprimée : la période précédente reprendra ses taux jusqu'à la fin de la période actuelle.",
+    "decalerDateEffet": "Décaler la date d'effet",
+    "decalerDateEffetTitre": "Décaler la date d'effet",
+    "decalerDateEffetLabel": "Débute le",
+    "decalerDateEffetDateActuelle": "Date actuelle",
+    "decalerDateEffetResume": "Frontière déplacée du {{debutActuel}} au {{nouvelleDate}}",
+    "decalerDateEffetAucunMoisDisponible": "Aucun mois n'est disponible : les deux périodes ne sont séparées que d'un mois, il n'y a pas de marge pour décaler la frontière."
   },
   "poste": {
     "description": "Description",

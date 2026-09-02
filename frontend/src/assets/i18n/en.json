@@ -27,6 +27,7 @@
     "categories": "Categories",
     "taux": "Exchange rates",
     "membres": "Members",
+    "prorataMembres": "Members' proration",
     "parametres": "Settings",
     "acces": "Access",
     "ouvrirMenu": "Open menu",
@@ -34,7 +35,7 @@
     "sections": {
       "pilotage": "Overview",
       "budget": "Scenario data",
-      "reglages": "Settings"
+      "reglages": "Household's settings"
     }
   },
   "foyer": {
@@ -139,6 +140,25 @@
     "periodeChevauche": "This period overlaps an existing period.",
     "periodeOuverteDejaExistante": "An open period (no end date) already exists; close it first.",
     "horizonAnneesUnite": "years"
+  },
+  "prorata": {
+    "titre": "Members' proration",
+    "aucunResultat": "No split period defined.",
+    "aucunScenario": "No scenario selected.",
+    "monoMembreNonApplicable": "Proration does not apply to single-member households.",
+    "reviserTaux": "Revise rates",
+    "revisionTitre": "Revise rates",
+    "revisionDateEffet": "Effective date",
+    "revisionResume": "{{avant}} → {{apres}}, from {{date}}",
+    "annulerRevision": "Cancel this revision",
+    "annulerRevisionTitre": "Cancel revision",
+    "annulerRevisionConfirmation": "The current period will be deleted: the previous period will take over its rates until the end of the current period.",
+    "decalerDateEffet": "Shift the effective date",
+    "decalerDateEffetTitre": "Shift the effective date",
+    "decalerDateEffetLabel": "Starts on",
+    "decalerDateEffetDateActuelle": "Current date",
+    "decalerDateEffetResume": "Boundary shifted from {{debutActuel}} to {{nouvelleDate}}",
+    "decalerDateEffetAucunMoisDisponible": "No month is available: the two periods are only one month apart, there is no room to shift the boundary."
   },
   "poste": {
     "description": "Description",

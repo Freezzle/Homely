@@ -1,0 +1,161 @@
+<p-confirmdialog/>
+
+<div class="flex flex-col gap-4">
+  <!-- ── En-tête ─────────────────────────────────────────── -->
+  <div class="flex items-center gap-4">
+    <h1 class="text-2xl font-bold flex-1">{{ t.prorata.titre }}</h1>
+    @if (contexte.estEditor() && !monoMembre && scenarioCourant()) {
+      <app-button icon="pi pi-plus" [label]="t.scenario.nouvellePeriode" (clickEvent)="ouvrirCreation()" />
+    }
+  </div>
+
+  <!-- ── Foyer mono-membre : non applicable ───────────────── -->
+  @if (monoMembre) {
+    <p-message severity="info">{{ t.prorata.monoMembreNonApplicable }}</p-message>
+
+    <!-- ── Aucun scénario courant ────────────────────────────── -->
+  } @else if (!scenarioCourant()) {
+    <p-message severity="info">{{ t.prorata.aucunScenario }}</p-message>
+
+    <!-- ── État chargement (skeletons) ──────────────────────── -->
+  } @else if (chargement()) {
+    <div class="flex flex-col gap-2">
+      @for (_ of [1, 2, 3]; track $index) {
+        <div class="flex items-center gap-3 px-4 py-3 rounded-xl border border-surface-200
+              dark:border-surface-700 bg-white dark:bg-surface-900">
+          <div class="flex-1 flex flex-col gap-2">
+            <p-skeleton width="35%" height="1rem" />
+            <p-skeleton width="55%" height="0.75rem" />
+          </div>
+          <p-skeleton width="90px" height="1.25rem" class="shrink-0" />
+          <p-skeleton width="36px" height="2rem" class="shrink-0 rounded-lg" />
+        </div>
+      }
+    </div>
+
+    <!-- ── État vide ────────────────────────────────────────── -->
+  } @else if (periodes().length === 0) {
+    <div class="flex flex-col items-center justify-center gap-3 py-16
+          rounded-xl border border-dashed border-surface-300 dark:border-surface-700
+          bg-surface-50 dark:bg-surface-900 text-surface-400">
+      <i class="pi pi-inbox text-5xl opacity-30"></i>
+      <span class="text-sm">{{ t.prorata.aucunResultat }}</span>
+    </div>
+
+    <!-- ── Liste des périodes ────────────────────────────────── -->
+  } @else {
+    <div class="flex flex-col gap-2">
+      @for (p of periodes(); track p.id) {
+        <div class="grid gap-3 px-4 py-2.5 md:py-2 grid-cols-[minmax(0,1fr)_auto]
+            border border-surface-200 dark:border-surface-700
+            bg-white dark:bg-surface-900 hover:shadow-sm transition-all duration-300 rounded-xl">
+
+          <!-- Colonne 1 : contenu -->
+          <div class="min-w-0 flex flex-col gap-1.5 md:gap-1">
+            <!-- Ligne 1 : période -->
+            <div class="min-w-0 flex items-center gap-2 flex-wrap">
+              <span class="font-medium leading-snug">
+                {{ p.debut | date:'dd.MM.yyyy' }} → {{ p.fin ? (p.fin | date:'dd.MM.yyyy') : '' }}
+              </span>
+              @if (!p.fin) {
+                <app-tag [texte]="t.scenario.periodeOuverte" severity="success"/>
+              }
+            </div>
+
+            <!-- Ligne 2 : parts par membre -->
+            <div class="min-w-0 flex items-center flex-wrap gap-1">
+              @for (part of p.parts; track part.membreId) {
+                <app-tag [couleur]="part.couleurMembre" [texte]="part.nomMembre + ' · ' + (part.quotePart | pct)" />
+              }
+            </div>
+          </div>
+
+          <!-- Colonne 2 : actions -->
+          <div class="flex items-center justify-end shrink-0">
+            @if (contexte.estEditor()) {
+              <app-button icon="pi pi-cog" [rounded]="true" [text]="true" severity="secondary" size="small"
+                          [ariaLabel]="t.commun.actions" [tooltip]="t.commun.actions"
+                          (clickEvent)="menuActions.toggle($event)" />
+              <p-menu #menuActions [popup]="true" [model]="actionItemsFor(p)" appendTo="body" />
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<!-- Dialog formulaire période -->
+<p-dialog [(visible)]="formVisible"
+          [header]="periodeEnEdition ? t.commun.modifier : t.commun.creer"
+          [modal]="true" class="w-full max-w-lg">
+  <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
+    <div class="grid grid-cols-2 gap-4">
+      <app-date-picker
+        [label]="t.scenario.debutPeriode"
+        [required]="true"
+        formControlName="debut"
+        dateFormat="dd.mm.yy"
+        [showButtonBar]="true" />
+      <app-date-picker
+        [label]="t.scenario.finPeriode"
+        formControlName="fin"
+        dateFormat="dd.mm.yy"
+        [showButtonBar]="true"
+        [showClear]="true" />
+    </div>
+    @if (periodeErreur) {
+      <p-message severity="warn">{{ periodeErreur }}</p-message>
+    }
+
+    <div class="flex flex-col gap-2">
+      <div class="flex items-center justify-between">
+        <label class="text-sm font-medium">{{ t.poste.repartition }} *
+          <span class="ml-2 font-normal text-xs"
+                [class.text-green-600]="sommePartsValide"
+                [class.text-red-500]="!sommePartsValide">
+            {{ sommeParts }}%
+          </span>
+        </label>
+      </div>
+      @if (!sommePartsValide) {
+        <p-message severity="warn">{{ t.commun.repartitionInvalide }}</p-message>
+      }
+      <div formArrayName="parts" class="flex flex-col gap-2">
+        @for (ctrl of partsArray.controls; track ctrl; let i = $index) {
+          <div [formGroupName]="i" class="grid grid-cols-2 items-center gap-3">
+            <span class="text-sm">{{ membres()[i]?.nom }}</span>
+            <app-input-number
+              formControlName="quotePart"
+              [min]="0"
+              [max]="100"
+              suffix="%"
+              [minFractionDigits]="0"
+              [maxFractionDigits]="2" />
+          </div>
+        }
+      </div>
+    </div>
+  </form>
+  <ng-template #footer>
+    <app-button [label]="t.commun.annuler" severity="secondary" (clickEvent)="formVisible = false"/>
+    <app-button [label]="t.commun.enregistrer" (clickEvent)="enregistrer()"
+                [disabled]="form.invalid || !sommePartsValide || !periodeValide"/>
+  </ng-template>
+</p-dialog>
+
+<!-- Dialog révision des taux -->
+<app-periode-revision-dialog
+  [periode]="periodeEnRevision"
+  [membres]="membres()"
+  [visible]="revisionDialogVisible"
+  (visibleChange)="onRevisionVisibleChange($event)"
+  (enregistre)="onDialogEnregistre()" />
+
+<!-- Dialog décalage de la date d'effet -->
+<app-periode-decalage-dialog
+  [periode]="periodeEnDecalage"
+  [predecesseur]="predecesseurEnDecalage"
+  [visible]="decalageDialogVisible"
+  (visibleChange)="onDecalageVisibleChange($event)"
+  (enregistre)="onDialogEnregistre()" />

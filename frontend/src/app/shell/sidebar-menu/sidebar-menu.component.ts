@@ -73,7 +73,6 @@ export class SidebarMenuComponent {
         items: [
           dashboardItem,
           { label: this.t.nav.comparaisonScenarios, icon: 'pi pi-arrows-h', route: `${base}/comparaison-scenarios` },
-          { label: this.t.nav.scenarios,  icon: 'pi pi-sitemap',    route: `${base}/scenarios` },
         ],
       },
       {
@@ -83,6 +82,7 @@ export class SidebarMenuComponent {
           { label: this.t.nav.charges,   icon: 'pi pi-arrow-down-right',   route: `${base}/charges` },
           { label: this.t.nav.reserves,  icon: 'pi pi-money-bill',     route: `${base}/reserves` },
           { label: this.t.nav.argentPoche, icon: 'pi pi-wallet', route: `${base}/argent-poche` },
+          { label: this.t.nav.prorataMembres, icon: 'pi pi-chart-pie', route: `${base}/prorata-membres` },
         ],
       },
       {
@@ -91,6 +91,7 @@ export class SidebarMenuComponent {
           {
             label: this.t.nav.referentiels, icon: 'pi pi-cog', defaultOpen: !this.viewport.estMobile(),
             children: [
+              { label: this.t.nav.scenarios,  icon: 'pi pi-sitemap',    route: `${base}/scenarios` },
               { label: this.t.nav.membres,    icon: 'pi pi-users',       route: `${base}/referentiels/membres` },
               { label: this.t.nav.comptes,    icon: 'pi pi-credit-card', route: `${base}/referentiels/comptes` },
               { label: this.t.nav.categories, icon: 'pi pi-tags',        route: `${base}/referentiels/categories` },

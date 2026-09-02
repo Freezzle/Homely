@@ -104,6 +104,10 @@ export const routes: Routes = [
             loadComponent: () => import('./features/argent-poche/argent-poche.component').then(m => m.ArgentPocheComponent),
           },
           {
+            path: 'prorata-membres',
+            loadComponent: () => import('./features/scenarios/prorata-membres/prorata-membres.component').then(m => m.ProrataMembresComponent),
+          },
+          {
             path: 'referentiels/membres',
             loadComponent: () => import('./features/referentiels/membres/membres.component').then(m => m.MembresComponent),
           },
