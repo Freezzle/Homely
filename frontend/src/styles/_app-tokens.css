@@ -42,10 +42,10 @@
     --app-line-3: var(--p-surface-300);
 
     /* Sémantique — montants métier */
-    --app-revenu: var(--p-primary-800);
-    --app-charge: var(--p-red-800);
-    --app-reserve: var(--p-blue-800);
-    --app-argent-poche: var(--p-amber-800);
+    --app-revenu: var(--p-primary-500);
+    --app-charge: var(--p-red-500);
+    --app-reserve: var(--p-blue-500);
+    --app-argent-poche: var(--p-amber-500);
     --app-neutre: var(--app-ink-muted);
 
     /* Sémantique — signe brut (fallback quand pas de contexte métier) */

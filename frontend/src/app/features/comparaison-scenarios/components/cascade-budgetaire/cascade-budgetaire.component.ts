@@ -57,7 +57,7 @@ export class CascadeBudgetaireComponent {
   /** Couleur de la barre pour une valeur donnée : rouge si négative, sinon
    *  la couleur de la colonne (feature_5_bis §7). */
   protected couleurBarre(etape: CascadeEtape, valeur: number): string {
-    if (valeur < 0) return 'var(--p-red-500)';
+    if (valeur < 0) return 'var(--app-negatif)';
     return etape.couleurBarre;
   }
 

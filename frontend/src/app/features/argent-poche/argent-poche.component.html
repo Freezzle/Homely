@@ -62,7 +62,7 @@
         <div class="flex flex-col gap-2">
           <!-- ── Séparateur de groupe (sticky), façon PostesListeComponent ── -->
           <div class="separateur-groupe select-none" [style.background]="separateurAccent.bg">
-            <span class="separateur-groupe__label" [style.color]="separateurAccent.fg">{{ groupe.separator }}</span>
+            <span class="separateur-groupe__label">{{ groupe.separator }}</span>
             <span class="separateur-groupe__count">
               {{ i18n.instant('argentPoche.nbElementsGroupe', { n: groupe.nbElements }) }}
             </span>

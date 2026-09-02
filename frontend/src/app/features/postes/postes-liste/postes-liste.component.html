@@ -168,7 +168,7 @@
                     @if (groupe.separator !== null) {
                         <!-- ── Séparateur de groupe ── -->
                         <div class="separateur-groupe select-none" [style.background]="separateurAccent().bg">
-                            <span class="separateur-groupe__label" [style.color]="separateurAccent().fg">{{ groupe.separator }}</span>
+                            <span class="separateur-groupe__label">{{ groupe.separator }}</span>
                             <span class="separateur-groupe__count">
                                 {{ i18n.instant('poste.nbPostesGroupe', { n: groupe.nbPostes }) }}
                             </span>

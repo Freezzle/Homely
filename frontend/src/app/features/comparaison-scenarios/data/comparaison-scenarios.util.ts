@@ -94,17 +94,17 @@ export function construireCascade(
 ): CascadeEtape[] {
   return [
     { cle: 'revenus', label: labels.revenus, valeurA: a.revenus, valeurB: b.revenus,
-      sensFavorable: 1, operateur: '', estResultat: false, couleurBarre: 'var(--p-primary-500)' },
+      sensFavorable: 1, operateur: '', estResultat: false, couleurBarre: 'var(--app-revenu)' },
     { cle: 'charges', label: labels.charges, valeurA: a.charges, valeurB: b.charges,
-      sensFavorable: -1, operateur: '−', estResultat: false, couleurBarre: 'var(--p-red-500)' },
+      sensFavorable: -1, operateur: '−', estResultat: false, couleurBarre: 'var(--app-charge)' },
     { cle: 'reserves', label: labels.reserves, valeurA: a.reserves, valeurB: b.reserves,
-      sensFavorable: -1, operateur: '−', estResultat: false, couleurBarre: 'var(--p-blue-500)' },
+      sensFavorable: -1, operateur: '−', estResultat: false, couleurBarre: 'var(--app-reserve)' },
     { cle: 'rav', label: labels.rav, valeurA: a.ravBrut, valeurB: b.ravBrut,
-      sensFavorable: 1, operateur: '=', estResultat: true, couleurBarre: 'var(--p-surface-400)' },
+      sensFavorable: 1, operateur: '=', estResultat: true, couleurBarre: 'var(--app-neutre)' },
     { cle: 'argentPoche', label: labels.argentPoche, valeurA: a.argentPoche, valeurB: b.argentPoche,
-      sensFavorable: -1, operateur: '−', estResultat: false, couleurBarre: 'var(--p-amber-500)' },
+      sensFavorable: -1, operateur: '−', estResultat: false, couleurBarre: 'var(--app-argent-poche)' },
     { cle: 'soldeDisponible', label: labels.soldeDisponible, valeurA: a.soldeDisponible, valeurB: b.soldeDisponible,
-      sensFavorable: 1, operateur: '=', estResultat: true, couleurBarre: 'var(--p-surface-400)' },
+      sensFavorable: 1, operateur: '=', estResultat: true, couleurBarre: 'var(--app-neutre)' },
   ];
 }
 
