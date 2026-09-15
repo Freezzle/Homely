@@ -1,6 +1,7 @@
-import { CategorieDto, PosteDto } from '../../../core/models/api.models';
+import { CategorieDto, PosteDto, ProjectionAnnuelleDto, VentilationAnnuelleDto } from '../../../core/models/api.models';
 import {
-  anneesCommunes, construireCategoriesEcart, construireHeatmap, construirePostesDiff, filtrerPostesDiff,
+  anneesCommunes, construireCategoriesEcart, construireDonneesScenario,
+  construireHeatmap, construirePostesDiff, filtrerPostesDiff,
 } from './comparaison-scenarios.util';
 
 function poste(overrides: Partial<PosteDto>): PosteDto {
@@ -125,6 +126,62 @@ describe('comparaison-scenarios.util', () => {
       expect(lignes.map(l => l.cle)).toEqual(['cat-1']);
       // Charge qui augmente de 200 => effet négatif sur le solde disponible.
       expect(lignes[0].valeursParMois[0]).toBe(-200);
+    });
+  });
+
+  describe('construireDonneesScenario — cascade budgétaire arithmétiquement cohérente', () => {
+    function agregat(revenus: number, charges: number, reserves: number, soldeDisponible: number) {
+      return { revenus, charges, reserves, soldeDisponible };
+    }
+
+    function projectionFoyer(total: { revenus: number; charges: number; reserves: number; soldeDisponible: number }): ProjectionAnnuelleDto {
+      const moisAgregat = { revenus: total.revenus / 12, charges: total.charges / 12, reserves: total.reserves / 12, soldeDisponible: total.soldeDisponible / 12 };
+      const mois = Array.from({ length: 12 }, (_, i) => ({ numero: i + 1, agregat: moisAgregat }));
+      return {
+        annee: 2027,
+        mois,
+        moisReel: mois,
+        totalAnnuel: total,
+        parMembre: {},
+        moisParMembre: {},
+        moisParMembreReel: {},
+      };
+    }
+
+    const ventilationVide: VentilationAnnuelleDto = {
+      annee: 2027, agregat: agregat(0, 0, 0, 0),
+      parMembre: {}, parCategorie: {}, parCategorieMembre: {}, parCompteMembre: {}, parMembreSplit: {},
+    };
+
+    it('garantit RàV = Rev − Ch − Res et Solde = RàV − Poche même si le solde du back diffère de Rev − Ch − Res − Poche(résolution)', () => {
+      // Reproduit le cas rapporté (« Dylan 80 % ») : Rev − Ch − Res = 25 798 mais
+      // soldeDisponible = 11 878 (donc poche implicite du moteur = 13 920, alors qu'une
+      // résolution séparée donnerait 16 320). La cascade doit rester cohérente en
+      // utilisant l'agrégat de projection comme source unique.
+      const projection = projectionFoyer({ revenus: 120430, charges: 86232, reserves: 8400, soldeDisponible: 11878 });
+      const donnees = construireDonneesScenario(projection, ventilationVide, [] as PosteDto[], 'foyer');
+
+      const t = donnees.totalAnnuel;
+      expect(t.revenus).toBe(120430);
+      expect(t.charges).toBe(86232);
+      expect(t.reserves).toBe(8400);
+      // RàV strictement = Rev − Ch − Res
+      expect(t.ravBrut).toBeCloseTo(25798, 6);
+      // Poche dérivée = RàV − Solde (jamais reprise d'un endpoint tiers)
+      expect(t.argentPoche).toBeCloseTo(13920, 6);
+      expect(t.soldeDisponible).toBe(11878);
+      // Identités arithmétiques de la cascade (§7)
+      expect(t.revenus - t.charges - t.reserves).toBeCloseTo(t.ravBrut, 6);
+      expect(t.ravBrut - t.argentPoche).toBeCloseTo(t.soldeDisponible, 6);
+    });
+
+    it('respecte les mêmes identités pour chaque mois', () => {
+      const projection = projectionFoyer({ revenus: 12000, charges: 6000, reserves: 1200, soldeDisponible: 3600 });
+      const donnees = construireDonneesScenario(projection, ventilationVide, [] as PosteDto[], 'foyer');
+      for (const m of donnees.moisAgregats) {
+        expect(m.revenus - m.charges - m.reserves).toBeCloseTo(m.ravBrut, 6);
+        expect(m.ravBrut - m.argentPoche).toBeCloseTo(m.soldeDisponible, 6);
+      }
     });
   });
 });

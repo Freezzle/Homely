@@ -31,6 +31,7 @@ public record PosteRequest(
         int ordre,
         @Min(1) @Max(5) Integer importance,  // null → 3 (neutre)
         @Min(1) @Max(5) Integer potentielOptimisation,  // null → 3 (neutre)
+        @Min(1) @Max(5) Integer deriveExterne,  // null → 3 (neutre — aucune variation attendue)
         @Valid List<RepartitionPosteDto> repartitions,
         @Valid List<VentilationCompteDto> ventilations,
         Boolean inclureProrataTheorique  // null → true ; pertinent seulement si type=REVENU et foyer multi-membres

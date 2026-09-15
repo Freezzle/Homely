@@ -31,6 +31,8 @@ import {
 } from '../../../shared/components/form-fields';
 import { CheckboxComponent } from '../../../shared/components/form-fields/checkbox/checkbox.component';
 import { MontantPipe, PeriodicitePipe } from '../../../core/pipes/format.pipes';
+import { EcheancierMultiAnneesComponent } from '../../../shared/components/echeancier-annuel/echeancier-multi-annees.component';
+import { PosteEcheancier } from '../../../shared/components/echeancier-annuel/echeancier.model';
 
 /**
  * Validateur de groupe : la date de fin (si renseignée) ne peut pas être
@@ -56,7 +58,7 @@ type Etape = 0 | 1 | 2 | 3 | 4;
     CommonModule, FormsModule, ReactiveFormsModule, DialogModule, ButtonComponent, InputTextComponent,
     InputNumberComponent, SelectComponent, SelectButtonComponent, DatePickerComponent, MessageModule,
     TooltipModule, StepperModule, ConfirmDialogModule, SliderModule, MembresTagsComponent, MontantPipe, PeriodicitePipe,
-    CheckboxComponent,
+    CheckboxComponent, EcheancierMultiAnneesComponent,
   ],
   templateUrl: './poste-form-dialog.component.html',
 })
@@ -105,6 +107,7 @@ export class PosteFormDialogComponent {
     estimPourcentage: [null as number | null, [Validators.min(0), Validators.max(100)]],
     importance:      [3, [Validators.required, Validators.min(1), Validators.max(5)]],
     potentielOptimisation: [3, [Validators.required, Validators.min(1), Validators.max(5)]],
+    deriveExterne: [3, [Validators.required, Validators.min(1), Validators.max(5)]],
     typeRepartition: ['AUTO' as TypeRepartition],
     debut:           [null as Date | null, Validators.required],
     fin:             [null as Date | null],
@@ -198,6 +201,27 @@ export class PosteFormDialogComponent {
 
   /** Vrai si moment=INCONNU (date de paiement effective non connue) : impose mode=MENSUALISE. */
   momentEstInconnu = computed(() => this.momentValue() === 'INCONNU');
+
+  /**
+   * Aperçu du rythme affiché en bas de l'étape 2 (« Le rythme »). Renvoie
+   * `null` tant que la date de début n'est pas renseignée : le wrapper
+   * affichera alors une réglette vide sur l'année courante.
+   */
+  apercuPoste = computed<PosteEcheancier | null>(() => {
+    const v = this.formValue();
+    if (!(v.debut instanceof Date)) return null;
+    const debut = toIsoDateLocal(v.debut);
+    const fin = v.fin instanceof Date ? toIsoDateLocal(v.fin) : null;
+    const mode = (v.mode === 'PERIODIQUE' ? 'PERIODIQUE' : 'MENSUALISE') as PosteEcheancier['mode'];
+    const moment = (v.moment ?? 'DEBUT_PERIODE') as PosteEcheancier['moment'];
+    return {
+      periodicite: v.periodiciteMois ?? 0,
+      mode,
+      moment,
+      debut,
+      fin,
+    };
+  });
 
   /** Vrai si l'étape 3 doit afficher le mode simplifié « foyer mono-membre ». */
   estMonoMembre = computed(() => this.membresActifs().length <= 1);
@@ -302,7 +326,7 @@ export class PosteFormDialogComponent {
     this.form.reset({
       mode: 'MENSUALISE', moment: 'DEBUT_PERIODE', nature: 'EFFECTIF',
       periodiciteMois: 0, devise: this.contexte.deviseBase(),
-      typeRepartition: 'AUTO', estimPourcentage: null, importance: 3, potentielOptimisation: 3,
+      typeRepartition: 'AUTO', estimPourcentage: null, importance: 3, potentielOptimisation: 3, deriveExterne: 3,
       inclureProrataTheorique: true,
     });
     this.initialiserRepartitions(undefined);
@@ -326,6 +350,7 @@ export class PosteFormDialogComponent {
       estimPourcentage: p.estimPourcentage ?? null,
       importance: p.importance ?? 3,
       potentielOptimisation: p.potentielOptimisation ?? 3,
+      deriveExterne: p.deriveExterne ?? 3,
       typeRepartition: p.typeRepartition ?? 'AUTO',
       debut: p.debut ? parseIsoDateLocal(p.debut) : null,
       fin: p.fin ? parseIsoDateLocal(p.fin) : null,
@@ -742,6 +767,7 @@ export class PosteFormDialogComponent {
       estimPourcentage: v.nature === 'ESTIMATION' ? v.estimPourcentage ?? undefined : undefined,
       importance:      v.importance ?? 3,
       potentielOptimisation: v.potentielOptimisation ?? 3,
+      deriveExterne: v.deriveExterne ?? 3,
       typeRepartition,
       debut:           v.debut ? toIsoDateLocal(v.debut) : undefined,
       fin:             estOneShot ? undefined : (v.fin ? toIsoDateLocal(v.fin) : undefined),

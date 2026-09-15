@@ -164,6 +164,15 @@
                                     }
 
                             }
+
+                            <!-- Aperçu du rythme — tout en bas de l'étape « Le rythme ». -->
+                            <div class="mt-2 flex flex-col items-center gap-2 border-t border-surface-200 dark:border-surface-700 pt-3">
+                                <span class="text-xs text-surface-500">{{ t.echeancierAnnuel.titreApercu }}</span>
+                                <app-echeancier-multi-annees
+                                    [poste]="apercuPoste()"
+                                    [largeur]="150"
+                                    [hauteur]="40"/>
+                            </div>
                         </div>
                     </ng-template>
                 </p-step-panel>
@@ -228,6 +237,22 @@
                                     <div class="flex justify-between text-[10px] text-surface-400">
                                         <span>{{ t.poste.potentielOptimisationMin }}</span>
                                         <span>{{ t.poste.potentielOptimisationMax }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col gap-2 w-full">
+                                <label class="text-sm font-medium flex items-center justify-between">
+                                    <span [pTooltip]="t.poste.deriveExterneTooltip">{{ t.poste.deriveExterne }}</span>
+                                    <span class="text-xs text-surface-500">
+                                        {{ formValue().deriveExterne ?? 3 }} / 5
+                                    </span>
+                                </label>
+                                <div class="w-[95%] mx-auto flex justify-start flex-col gap-1">
+                                    <p-slider formControlName="deriveExterne" [min]="1" [max]="5" [step]="1"/>
+                                    <div class="flex justify-between text-[10px] text-surface-400">
+                                        <span>{{ t.poste.deriveExterneMin }}</span>
+                                        <span>{{ t.poste.deriveExterneMax }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -506,6 +531,10 @@
                                     <div class="flex justify-between">
                                         <span class="text-surface-500">{{ t.poste.potentielOptimisation }}</span>
                                         <span>{{ formValue().potentielOptimisation }} / 5</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-surface-500">{{ t.poste.deriveExterne }}</span>
+                                        <span>{{ formValue().deriveExterne }} / 5</span>
                                     </div>
                                 </div>
                             </div>

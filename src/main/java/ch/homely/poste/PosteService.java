@@ -176,6 +176,15 @@ public class PosteService {
                     p.setPotentielOptimisation(req.potentielOptimisation());
                 }
             }
+            case DERIVE_EXTERNE -> {
+                if (req.deriveExterne() == null) {
+                    throw new RegleMetierException(CodesErreur.ACTION_GROUPEE_CHAMP_MANQUANT,
+                            "deriveExterne est requis pour une action groupée sur le champ DERIVE_EXTERNE");
+                }
+                for (Poste p : postes) {
+                    p.setDeriveExterne(req.deriveExterne());
+                }
+            }
         }
 
         List<Poste> sauvegardes = posteRepo.saveAll(postes);
@@ -257,6 +266,7 @@ public class PosteService {
         nouveau.setOrdre(actuel.getOrdre());
         nouveau.setImportance(actuel.getImportance());
         nouveau.setPotentielOptimisation(actuel.getPotentielOptimisation());
+        nouveau.setDeriveExterne(actuel.getDeriveExterne());
         nouveau.setPosteOrigineId(actuel.getId());
 
         for (RepartitionPoste rp : actuel.getRepartitions()) {
@@ -447,6 +457,10 @@ public class PosteService {
         if (potentielOptimisation < 1) potentielOptimisation = 1;
         if (potentielOptimisation > 5) potentielOptimisation = 5;
         p.setPotentielOptimisation(potentielOptimisation);
+        int deriveExterne = req.deriveExterne() != null ? req.deriveExterne() : 3;
+        if (deriveExterne < 1) deriveExterne = 1;
+        if (deriveExterne > 5) deriveExterne = 5;
+        p.setDeriveExterne(deriveExterne);
 
         if (req.categorieId() != null) {
             Categorie cat = categorieRepo.findByIdAndFoyerId(req.categorieId(), foyerId)
@@ -552,7 +566,8 @@ public class PosteService {
                 p.getDebut(), p.getFin(), p.getMode(), p.getMoment(), p.getNature(),
                 p.getEstimPourcentage(),
                 p.getTypeRepartition(),
-                p.getOrdre(), p.getImportance(), p.getPotentielOptimisation(), reps, vents,
+                p.getOrdre(), p.getImportance(), p.getPotentielOptimisation(),
+                p.getDeriveExterne(), reps, vents,
                 p.getPosteOrigineId(), successeurParOrigine.get(p.getId()), p.getSourcePosteId(),
                 p.isInclureProrataTheorique());
     }

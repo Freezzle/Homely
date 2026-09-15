@@ -195,6 +195,11 @@
     "potentielOptimisationMin": "Not optimizable",
     "potentielOptimisationMax": "Easily optimizable",
     "potentielOptimisationValeur": "Optimization potential: {{n}}/5",
+    "deriveExterne": "External drift",
+    "deriveExterneTooltip": "On a scale of 1 (sharp expected drop) to 5 (sharp expected rise), what amount drift outside your control do you anticipate on this item (e.g. indexation, imposed price hike, negotiated tariff cut)? 3 = no expected change.",
+    "deriveExterneMin": "Sharp drop",
+    "deriveExterneMax": "Sharp rise",
+    "deriveExterneValeur": "External drift: {{n}}/5",
     "inclureProrataTheorique": "Count in members' theoretical prorata",
     "inclureProrataTheoriqueTooltip": "Check if you want the income to be included in the calculation of the theoretical pro rata of the members.",
     "repartition": "Split",
@@ -353,6 +358,7 @@
       "actionCategorie": "Change category",
       "actionImportance": "Change necessity",
       "actionPotentiel": "Change optimization potential",
+      "actionDerive": "Change external drift",
       "actionSupprimer": "Delete",
       "supprimerDesactiveTooltip": "Bulk deletion unavailable: one or more selected items belong to a revision chain. Deselect them or delete them individually.",
       "nSelectionnes": "{{n}} item(s) selected",
@@ -362,6 +368,7 @@
       "titreCategorie": "Change category for {{n}} item(s)",
       "titreImportance": "Change necessity for {{n}} item(s)",
       "titrePotentiel": "Change optimization potential for {{n}} item(s)",
+      "titreDerive": "Change external drift for {{n}} item(s)",
       "titreSuppression": "Delete {{n}} item(s)?",
       "confirmationSuppression": "This action is irreversible. {{n}} item(s) will be permanently deleted.",
       "appliquer": "Apply",
@@ -796,6 +803,23 @@
       "plafondInferieurSocle": "Cap must be greater than or equal to base.",
       "chevauchement": "This period overlaps an existing policy for this member.",
       "allocationDoublon": "An allowance already exists for this member and month."
+    }
+  },
+  "echeancierAnnuel": {
+    "titreApercu": "Rhythm preview",
+    "boucleLabelSingulier": "1 year",
+    "boucleLabelPluriel": "{{n}} years",
+    "ariaInactif": "Post inactive in {{annee}}.",
+    "ariaAvecEcheances": "{{annee}}: {{n}} due date(s), months {{mois}}.",
+    "ariaSansEcheance": "{{annee}}: recorded across {{actifs}} months, no dated due dates.",
+    "infobulle": {
+      "ponctuel": "Single occurrence — reference date",
+      "horsValidite": "Outside validity window",
+      "echeanceDatee": "Dated occurrence",
+      "imputeSansEcheance": "Recorded to budget, no dated occurrence",
+      "aucuneImputation": "No imputation",
+      "debutValidite": "Start of validity",
+      "finValidite": "End of validity"
     }
   },
   "periodRail": {

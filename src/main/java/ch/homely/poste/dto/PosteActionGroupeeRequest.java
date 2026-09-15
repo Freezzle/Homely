@@ -11,13 +11,15 @@ import java.util.UUID;
 
 /**
  * Requête de mise à jour groupée : applique la même valeur d'un unique champ
- * descriptif (catégorie, importance ou potentiel d'optimisation) à une liste de postes.
- * Seul le champ correspondant à {@code champ} est pris en compte ; les autres sont ignorés.
+ * descriptif (catégorie, importance, potentiel d'optimisation ou dérive externe)
+ * à une liste de postes. Seul le champ correspondant à {@code champ} est pris en
+ * compte ; les autres sont ignorés.
  */
 public record PosteActionGroupeeRequest(
         @NotEmpty List<UUID> ids,
         @NotNull ChampGroupable champ,
         UUID categorieId,                 // requis si champ=CATEGORIE (null = désélection autorisée)
         @Min(1) @Max(5) Integer importance,               // requis si champ=IMPORTANCE
-        @Min(1) @Max(5) Integer potentielOptimisation      // requis si champ=POTENTIEL_OPTIMISATION
+        @Min(1) @Max(5) Integer potentielOptimisation,      // requis si champ=POTENTIEL_OPTIMISATION
+        @Min(1) @Max(5) Integer deriveExterne              // requis si champ=DERIVE_EXTERNE
 ) {}

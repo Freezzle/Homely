@@ -202,6 +202,7 @@ public class ScenarioService {
             pc.setOrdre(sp.getOrdre());
             pc.setImportance(sp.getImportance());
             pc.setPotentielOptimisation(sp.getPotentielOptimisation());
+            pc.setDeriveExterne(sp.getDeriveExterne());
             pc.setInclureProrataTheorique(sp.isInclureProrataTheorique());
             // sourcePosteId = racine de la chaîne de duplication (jamais le poste
             // intermédiaire) : si sp est déjà une copie, on repropage sa racine,

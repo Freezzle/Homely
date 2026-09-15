@@ -108,6 +108,16 @@ public class Poste {
     private int potentielOptimisation = 3;
 
     /**
+     * Dérive externe attendue sur le montant du poste, sur une échelle de
+     * 1 (forte baisse attendue) à 5 (forte hausse attendue), avec 3 comme
+     * valeur neutre (« aucune variation attendue »). Représente la direction
+     * et l'intensité de la dérive de montant hors du contrôle de l'utilisateur.
+     * Champ descriptif : n'a aucun impact sur les calculs du moteur.
+     */
+    @Column(name = "derive_externe", nullable = false)
+    private int deriveExterne = 3;
+
+    /**
      * Poste dont ce poste est issu par une révision de montant planifiée.
      * Null si ce poste n'appartient pas à une chaîne de révisions.
      */

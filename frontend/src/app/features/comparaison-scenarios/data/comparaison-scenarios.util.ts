@@ -1,6 +1,6 @@
 import {
-  AggregatDto, CategorieDto, PosteDto, ProjectionAnnuelleDto, ResolutionArgentPocheDto,
-  ResolutionArgentPocheFoyerMoisDto, VentilationAnnuelleDto, VentilationsDto,
+  AggregatDto, CategorieDto, PosteDto, ProjectionAnnuelleDto,
+  VentilationAnnuelleDto, VentilationsDto,
 } from '../../../core/models/api.models';
 import {
   CascadeEtape, CategorieEcartRow, FiltrePostesDiff, HeatmapLigne, IndicateurEcart,
@@ -9,51 +9,62 @@ import {
 
 const AGREGAT_VIDE: AggregatDto = { revenus: 0, charges: 0, reserves: 0, soldeDisponible: 0 };
 
-function enrichir(base: AggregatDto | undefined, argentPoche: number): MoisAgregatEnrichi {
+/**
+ * Enrichit un agrégat de projection avec les colonnes dérivées de la cascade
+ * budgétaire (docs/features/feature_5_bis §7), en **garantissant les identités
+ * arithmétiques par construction** :
+ *
+ * - `ravBrut       = revenus − charges − reserves` (définition doc 01 §1)
+ * - `argentPoche   = ravBrut − soldeDisponible`    (dérivé du même agrégat)
+ *
+ * ⚠ On ne combine PAS ici l'argent de poche issu de `/argent-poche/resolution-*`
+ * (source différente) avec `soldeDisponible` issu de `/projection/*` : les deux
+ * sources peuvent diverger de quelques francs (arrondi BigDecimal HALF_UP par
+ * mois côté résolution vs. double moteur, clamp `max(0, poche)` côté moteur…)
+ * ce qui casserait les équations affichées de la cascade (Rev−Ch−Res = RàV et
+ * RàV−Poche = Solde). Le moteur (`ProjectionAnnuelleDto`) reste ici la seule
+ * source de vérité pour les six colonnes de la cascade.
+ */
+function enrichir(base: AggregatDto | undefined): MoisAgregatEnrichi {
   const a = base ?? AGREGAT_VIDE;
+  const ravBrut = a.revenus - a.charges - a.reserves;
   return {
     revenus: a.revenus,
     charges: a.charges,
     reserves: a.reserves,
     soldeDisponible: a.soldeDisponible,
-    argentPoche,
-    ravBrut: a.soldeDisponible + argentPoche,
+    argentPoche: ravBrut - a.soldeDisponible,
+    ravBrut,
   };
 }
 
 /**
  * Combine les réponses déjà calculées par le back (projection annuelle + ventilation
- * annuelle + résolution d'argent de poche) en un seul modèle d'affichage pour un
- * scénario — aucune règle moteur réinventée ici, uniquement de l'indexation/agrégation
- * de données déjà agrégées côté serveur (doc 01 §1/§4/§7).
+ * annuelle) en un seul modèle d'affichage pour un scénario — aucune règle moteur
+ * réinventée ici, uniquement de l'indexation/agrégation de données déjà agrégées
+ * côté serveur (doc 01 §1/§4/§7).
+ *
+ * L'argent de poche n'est pas repris depuis `/argent-poche/resolution-*` : il est
+ * dérivé du même agrégat de projection (`ravBrut − soldeDisponible`) pour garantir
+ * que la cascade budgétaire (§7) reste arithmétiquement cohérente
+ * (`Rev − Ch − Res = RàV`, `RàV − Poche = Solde`).
  */
 export function construireDonneesScenario(
   projection: ProjectionAnnuelleDto,
   ventilation: VentilationAnnuelleDto,
   postes: PosteDto[],
-  poche: ResolutionArgentPocheDto[] | ResolutionArgentPocheFoyerMoisDto[],
   perimetre: Perimetre,
 ): ScenarioComparaisonData {
   const estFoyer = perimetre === 'foyer';
-
-  const pocheParMois: number[] = new Array(12).fill(0);
-  if (estFoyer) {
-    for (const p of poche as ResolutionArgentPocheFoyerMoisDto[]) {
-      pocheParMois[p.mois - 1] = p.total;
-    }
-  } else {
-    (poche as ResolutionArgentPocheDto[]).forEach((p, index) => { pocheParMois[index] = p.montant; });
-  }
 
   const aggregatsBase: AggregatDto[] = estFoyer
     ? projection.mois.map(m => m.agregat)
     : (projection.moisParMembre[perimetre] ?? []);
 
-  const moisAgregats = Array.from({ length: 12 }, (_, i) => enrichir(aggregatsBase[i], pocheParMois[i] ?? 0));
+  const moisAgregats = Array.from({ length: 12 }, (_, i) => enrichir(aggregatsBase[i]));
 
   const totalAnnuelBase = estFoyer ? projection.totalAnnuel : (projection.parMembre[perimetre] ?? AGREGAT_VIDE);
-  const pocheAnnuelle = pocheParMois.reduce((somme, v) => somme + v, 0);
-  const totalAnnuel = enrichir(totalAnnuelBase, pocheAnnuelle);
+  const totalAnnuel = enrichir(totalAnnuelBase);
 
   const parCategorie: Record<string, number> = estFoyer
     ? { ...ventilation.parCategorie }

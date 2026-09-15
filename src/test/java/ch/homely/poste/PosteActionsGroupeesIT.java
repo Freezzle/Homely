@@ -102,6 +102,22 @@ class PosteActionsGroupeesIT {
     }
 
     @Test
+    @DisplayName("Action groupée dérive externe : applique la nouvelle valeur à tous les postes")
+    void actionsGroupees_deriveExterne_nominal() throws Exception {
+        String token = creerEtLogin("bulk_der_ok@test.ch");
+        String foyerId = creerFoyer(token, "Foyer Bulk Derive");
+        String scenarioId = creerScenario(token, foyerId);
+        String cat = creerCategorie(token, foyerId, "Cat", "CHARGE");
+        String poste1 = creerPoste(token, foyerId, scenarioId, cat, 100);
+
+        JsonNode resultat = actionsGroupees(token, foyerId, scenarioId,
+                Map.of("ids", List.of(poste1), "champ", "DERIVE_EXTERNE", "deriveExterne", 5));
+
+        assertThat(resultat).hasSize(1);
+        assertThat(resultat.get(0).get("deriveExterne").asInt()).isEqualTo(5);
+    }
+
+    @Test
     @DisplayName("Action groupée importance : valeur hors bornes (>5) rejetée")
     void actionsGroupees_importance_horsBornes_rejetee() throws Exception {
         String token = creerEtLogin("bulk_imp_bad@test.ch");

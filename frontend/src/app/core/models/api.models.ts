@@ -94,6 +94,7 @@ export interface PosteDto {
   ordre: number;
   importance: number;  // 1 (non vital) à 5 (vital)
   potentielOptimisation: number;  // 1 (non optimisable) à 5 (très optimisable)
+  deriveExterne: number;  // 1 (forte baisse) à 5 (forte hausse), 3 = neutre
   repartitions: RepartitionPosteDto[];
   ventilations: VentilationCompteDto[];
   posteOrigineId?: string;   // Poste dont ce poste est issu par révision de montant
@@ -111,6 +112,7 @@ export interface PosteRequest {
   ordre: number;
   importance?: number;  // 1 (non vital) à 5 (vital), défaut 3
   potentielOptimisation?: number;  // 1 (non optimisable) à 5 (très optimisable), défaut 3
+  deriveExterne?: number;  // 1 (forte baisse) à 5 (forte hausse), 3 = neutre, défaut 3
   repartitions?: { membreId: string; quotePart: number; }[];
   ventilations?: { membreId: string; compteId: string; }[];
   inclureProrataTheorique?: boolean;  // null → true ; pertinent si type=REVENU et foyer multi-membres
@@ -161,7 +163,7 @@ export interface BesoinsPlaisirsDto {
 }
 
 // ── Actions groupées sur postes ────────────────────────────────────────────
-export type ChampGroupable = 'CATEGORIE' | 'IMPORTANCE' | 'POTENTIEL_OPTIMISATION';
+export type ChampGroupable = 'CATEGORIE' | 'IMPORTANCE' | 'POTENTIEL_OPTIMISATION' | 'DERIVE_EXTERNE';
 
 export interface PosteActionGroupeeRequest {
   ids: string[];
@@ -169,6 +171,7 @@ export interface PosteActionGroupeeRequest {
   categorieId?: string | null;      // requis si champ=CATEGORIE (null = désélection)
   importance?: number;              // requis si champ=IMPORTANCE
   potentielOptimisation?: number;   // requis si champ=POTENTIEL_OPTIMISATION
+  deriveExterne?: number;           // requis si champ=DERIVE_EXTERNE
 }
 
 export interface PosteSuppressionGroupeeRequest {

@@ -14,3 +14,6 @@ export * from './icon-text/icon-text.component';
 export * from './form-fields';
 export * from './period-rail/period-rail.component';
 export * from './indicateur-ecart/indicateur-ecart.component';
+export * from './echeancier-annuel/echeancier-annuel.component';
+export * from './echeancier-annuel/echeancier-multi-annees.component';
+export * from './echeancier-annuel/echeancier.model';

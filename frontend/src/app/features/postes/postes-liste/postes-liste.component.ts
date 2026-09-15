@@ -651,6 +651,10 @@ export class PostesListeComponent {
     return this.t.poste.potentielOptimisationValeur.replace('{{n}}', String(n));
   }
 
+  deriveExterneTooltip(n: number): string {
+    return this.t.poste.deriveExterneValeur.replace('{{n}}', String(n));
+  }
+
   afficheMontantMensualise(p: PosteDto): boolean {
     return p.periodiciteMois !== 0 && p.periodiciteMois !== 1 && p.mode === 'MENSUALISE';
   }
@@ -689,6 +693,7 @@ export class PostesListeComponent {
           { label: this.t.poste.bulk.actionCategorie, icon: 'pi pi-tag', command: () => this.ouvrirBulkChampPourPoste(p, 'CATEGORIE') },
           { label: this.t.poste.bulk.actionImportance, icon: 'pi pi-heart', command: () => this.ouvrirBulkChampPourPoste(p, 'IMPORTANCE') },
           { label: this.t.poste.bulk.actionPotentiel, icon: 'pi pi-arrows-h', command: () => this.ouvrirBulkChampPourPoste(p, 'POTENTIEL_OPTIMISATION') },
+          { label: this.t.poste.bulk.actionDerive, icon: 'pi pi-chart-line', command: () => this.ouvrirBulkChampPourPoste(p, 'DERIVE_EXTERNE') },
         ],
       });
       items.push({ label: this.t.commun.supprimer, icon: 'pi pi-trash', command: () => this.supprimer(p) });

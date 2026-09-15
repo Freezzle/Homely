@@ -4,17 +4,21 @@ import { CategorieDto, ModeComptabilisation, MomentPeriode, NaturePoste, PosteDt
 export type Perimetre = 'foyer' | string;
 
 /** Agrégat mensuel enrichi du détail brut/poche (doc 01 §1/§7) — reconstitué côté
- *  front à partir de `ProjectionAnnuelleDto` (soldeDisponible déjà net) et de
- *  l'argent de poche résolu séparément (jamais recalculé, juste combiné). */
+ *  front à partir du **seul** `ProjectionAnnuelleDto`. RàV et Poche sont dérivés du
+ *  même agrégat (`ravBrut = revenus − charges − reserves`,
+ *  `argentPoche = ravBrut − soldeDisponible`) pour que la cascade budgétaire (§7)
+ *  reste arithmétiquement cohérente par construction — voir `enrichir()` dans
+ *  `comparaison-scenarios.util.ts`. */
 export interface MoisAgregatEnrichi {
   revenus: number;
   charges: number;
   reserves: number;
   /** Net = déjà retranché de l'argent de poche (valeur du back, non recalculée). */
   soldeDisponible: number;
-  /** Argent de poche du mois (foyer ou membre selon le périmètre). */
+  /** Argent de poche du mois, dérivé du même agrégat (`ravBrut − soldeDisponible`)
+   *  pour préserver l'identité `RàV − Poche = Solde` dans la cascade. */
   argentPoche: number;
-  /** Reste à vivre brut = soldeDisponible + argentPoche (doc 01 §1). */
+  /** Reste à vivre brut = revenus − charges − reserves (doc 01 §1). */
   ravBrut: number;
 }
 

@@ -30,6 +30,7 @@ public record PosteDto(
         int ordre,
         int importance,  // 1 (non vital) à 5 (vital) — descriptif, sans impact sur les calculs
         int potentielOptimisation,  // 1 (non optimisable) à 5 (très optimisable) — descriptif
+        int deriveExterne,  // 1 (forte baisse) à 5 (forte hausse), 3 = neutre — descriptif
         List<RepartitionPosteDto> repartitions,
         List<VentilationCompteDto> ventilations,
         UUID posteOrigineId,  // Poste dont ce poste est issu par révision de montant (null si aucun)

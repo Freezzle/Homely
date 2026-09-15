@@ -14,9 +14,10 @@ import { SelectComponent } from '../../../shared/components/form-fields';
 
 /**
  * Dialog polymorphe de mise à jour groupée sur un unique champ descriptif
- * (catégorie / importance / potentiel d'optimisation). Un seul champ est modifiable
- * par ouverture de dialog — jamais de combinaison de plusieurs champs en un appel
- * (contrainte UX : une seule action à la fois sur une sélection multiple).
+ * (catégorie / importance / potentiel d'optimisation / dérive externe).
+ * Un seul champ est modifiable par ouverture de dialog — jamais de combinaison
+ * de plusieurs champs en un appel (contrainte UX : une seule action à la fois
+ * sur une sélection multiple).
  */
 @Component({
   selector: 'app-poste-bulk-champ-dialog',
@@ -45,6 +46,7 @@ export class PosteBulkChampDialogComponent {
   valeurCategorieId: string | null = null;
   valeurImportance = 3;
   valeurPotentiel = 3;
+  valeurDerive = 3;
 
   /** Réinitialise les valeurs par défaut à chaque ouverture. */
   private readonly _resetSurOuverture = effect(() => {
@@ -52,6 +54,7 @@ export class PosteBulkChampDialogComponent {
       this.valeurCategorieId = null;
       this.valeurImportance = 3;
       this.valeurPotentiel = 3;
+      this.valeurDerive = 3;
     }
   });
 
@@ -61,6 +64,7 @@ export class PosteBulkChampDialogComponent {
       case 'CATEGORIE': return this.i18n.instant('poste.bulk.titreCategorie', { n });
       case 'IMPORTANCE': return this.i18n.instant('poste.bulk.titreImportance', { n });
       case 'POTENTIEL_OPTIMISATION': return this.i18n.instant('poste.bulk.titrePotentiel', { n });
+      case 'DERIVE_EXTERNE': return this.i18n.instant('poste.bulk.titreDerive', { n });
     }
   }
 
@@ -83,6 +87,7 @@ export class PosteBulkChampDialogComponent {
       categorieId: champ === 'CATEGORIE' ? this.valeurCategorieId : undefined,
       importance: champ === 'IMPORTANCE' ? this.valeurImportance : undefined,
       potentielOptimisation: champ === 'POTENTIEL_OPTIMISATION' ? this.valeurPotentiel : undefined,
+      deriveExterne: champ === 'DERIVE_EXTERNE' ? this.valeurDerive : undefined,
     }).subscribe({
       next: () => {
         this.enregistrementEnCours = false;

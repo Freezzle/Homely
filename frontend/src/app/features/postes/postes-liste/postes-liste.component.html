@@ -29,6 +29,9 @@
                 <app-button icon="pi pi-arrows-h" [text]="true" [rounded]="true" severity="secondary"
                           [tooltip]="t.poste.bulk.actionPotentiel" [ariaLabel]="t.poste.bulk.actionPotentiel"
                           (clickEvent)="ouvrirBulkChamp('POTENTIEL_OPTIMISATION')"/>
+                <app-button icon="pi pi-chart-line" [text]="true" [rounded]="true" severity="secondary"
+                          [tooltip]="t.poste.bulk.actionDerive" [ariaLabel]="t.poste.bulk.actionDerive"
+                          (clickEvent)="ouvrirBulkChamp('DERIVE_EXTERNE')"/>
                 <app-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger"
                           [disabled]="selectionContientChaine()"
                           [tooltip]="selectionContientChaine() ? t.poste.bulk.supprimerDesactiveTooltip : t.poste.bulk.actionSupprimer"
@@ -180,7 +183,7 @@
                          reliées par une bordure gauche continue (« spine »). Le maillon actif
                          a une spine pleine opacité, les maillons historiques une spine atténuée. ── -->
                     <div [id]="'poste-' + p.id"
-                         class="grid gap-3 px-4 py-2.5 md:py-2
+                         class="grid gap-3 px-4 py-2.5 md:py-2 {{etat().regrouperPar !== 'AUCUN' ? 'ms-2 md:ms-3' : ''}}
                     grid-cols-[minmax(0,1fr)_auto]
                     border-y border-r border-surface-200 dark:border-surface-700
                     bg-white dark:bg-surface-900
@@ -235,6 +238,19 @@
                                            [class.text-amber-500]="p.potentielOptimisation === 4"
                                            [class.text-red-500]="p.potentielOptimisation === 5"
                                            [pTooltip]="potentielOptimisationTooltip(p.potentielOptimisation)"></i>
+                                    }
+                                    @if (!cacherDetails() && p.deriveExterne && p.deriveExterne !== 3) {
+                                        <i class="text-[11px] shrink-0"
+                                           [class.pi]="true"
+                                           [class.pi-angle-double-down]="p.deriveExterne === 1"
+                                           [class.pi-angle-down]="p.deriveExterne === 2"
+                                           [class.pi-angle-up]="p.deriveExterne === 4"
+                                           [class.pi-angle-double-up]="p.deriveExterne === 5"
+                                           [class.text-blue-500]="p.deriveExterne === 1"
+                                           [class.text-blue-400]="p.deriveExterne === 2"
+                                           [class.text-amber-500]="p.deriveExterne === 4"
+                                           [class.text-red-500]="p.deriveExterne === 5"
+                                           [pTooltip]="deriveExterneTooltip(p.deriveExterne)"></i>
                                     }
                                 </div>
 

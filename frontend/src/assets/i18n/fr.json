@@ -195,6 +195,11 @@
     "potentielOptimisationMin": "Non optimisable",
     "potentielOptimisationMax": "Très optimisable",
     "potentielOptimisationValeur": "Potentiel d'optimisation : {{n}}/5",
+    "deriveExterne": "Dérive externe",
+    "deriveExterneTooltip": "Sur une échelle de 1 (forte baisse attendue) à 5 (forte hausse attendue), quelle dérive de montant hors de votre contrôle anticipez-vous sur ce poste (ex. indexation, hausse de prix imposée, tarifs négociés à la baisse) ? 3 = aucune variation attendue.",
+    "deriveExterneMin": "Forte baisse",
+    "deriveExterneMax": "Forte hausse",
+    "deriveExterneValeur": "Dérive externe : {{n}}/5",
     "inclureProrataTheorique": "Compter dans le prorata théorique des membres",
     "inclureProrataTheoriqueTooltip": "Cochez si vous désirez que le revenu soit compté dans le calcul du prorata théorique des membre.",
     "repartition": "Répartition",
@@ -353,6 +358,7 @@
       "actionCategorie": "Changer la catégorie",
       "actionImportance": "Changer la nécessité",
       "actionPotentiel": "Changer le potentiel d'optimisation",
+      "actionDerive": "Changer la dérive externe",
       "actionSupprimer": "Supprimer",
       "supprimerDesactiveTooltip": "Impossible de supprimer en masse : un ou plusieurs postes sélectionnés appartiennent à une chaîne de révisions. Désélectionnez-les ou supprimez-les individuellement.",
       "nSelectionnes": "{{n}} poste(s) sélectionné(s)",
@@ -362,6 +368,7 @@
       "titreCategorie": "Changer la catégorie de {{n}} poste(s)",
       "titreImportance": "Changer la nécessité de {{n}} poste(s)",
       "titrePotentiel": "Changer le potentiel d'optimisation de {{n}} poste(s)",
+      "titreDerive": "Changer la dérive externe de {{n}} poste(s)",
       "titreSuppression": "Supprimer {{n}} poste(s) ?",
       "confirmationSuppression": "Cette action est irréversible. {{n}} poste(s) seront définitivement supprimés.",
       "appliquer": "Appliquer",
@@ -796,6 +803,23 @@
       "plafondInferieurSocle": "Le plafond doit être supérieur ou égal au socle.",
       "chevauchement": "Cette période chevauche une politique existante pour ce membre.",
       "allocationDoublon": "Une allocation existe déjà pour ce membre et ce mois."
+    }
+  },
+  "echeancierAnnuel": {
+    "titreApercu": "Aperçu du rythme",
+    "boucleLabelSingulier": "1 an",
+    "boucleLabelPluriel": "{{n}} ans",
+    "ariaInactif": "Poste inactif en {{annee}}.",
+    "ariaAvecEcheances": "{{annee}} : {{n}} échéance(s), mois {{mois}}.",
+    "ariaSansEcheance": "{{annee}} : imputé sur {{actifs}} mois, aucune échéance datée.",
+    "infobulle": {
+      "ponctuel": "Échéance unique — date de référence",
+      "horsValidite": "Hors fenêtre de validité",
+      "echeanceDatee": "Échéance datée",
+      "imputeSansEcheance": "Imputé au budget, sans échéance",
+      "aucuneImputation": "Aucune imputation",
+      "debutValidite": "Début de validité",
+      "finValidite": "Fin de validité"
     }
   },
   "periodRail": {
