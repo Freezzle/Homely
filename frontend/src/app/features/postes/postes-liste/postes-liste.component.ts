@@ -54,6 +54,10 @@ interface PosteAffiche extends PosteDto {
   _nbVersions?: number;
   _clefSeparateur?: string;
   _labelSeparateur?: string;
+  /** Nombre de maillons de la chaîne masqués chronologiquement avant celui-ci (toutes causes confondues : option « révision active », filtre État, autres filtres). Non renseigné si 0. */
+  _nbMasquesAvant?: number;
+  /** Nombre de maillons de la chaîne masqués chronologiquement après celui-ci. Non renseigné si 0. */
+  _nbMasquesApres?: number;
 }
 
 /**
@@ -236,6 +240,14 @@ export class PostesListeComponent {
   /** Densité d'affichage (masque les détails secondaires) : réglage d'affichage, pas un filtre — ne fait pas partie de `etat` ni de l'URL. */
   cacherDetails = signal(this._prefsAffichage?.cacherDetails ?? false);
 
+  /**
+   * Réglage d'affichage : si `true`, pour chaque chaîne de révisions on n'affiche
+   * qu'un seul maillon — celui dont la fenêtre [début,fin] contient la date du jour
+   * (fallback : dernier maillon si aucun n'est actif aujourd'hui). Purement visuel,
+   * ne modifie ni `etat()` ni l'URL, mémorisé en localStorage comme `cacherDetails`.
+   */
+  afficherQueRevisionActive = signal(this._prefsAffichage?.afficherQueRevisionActive ?? false);
+
   /** Exposé au template pour l'action « Effacer les filtres et la recherche » de l'état vide filtré (§9). */
   protected readonly etatFiltresParDefaut = ETAT_FILTRES_PAR_DEFAUT;
 
@@ -249,11 +261,13 @@ export class PostesListeComponent {
       tri: this.etat().tri,
       regrouperPar: this.etat().regrouperPar,
       cacherDetails: this.cacherDetails(),
+      afficherQueRevisionActive: this.afficherQueRevisionActive(),
     });
   });
 
   visibiliteMenuItems: VisibiliteMenuItem[] = [
     { label: this.t.poste.cacherDetails, data: 'cacher-details', etat: this.cacherDetails },
+    { label: this.t.poste.afficherQueRevisionActive, data: 'revision-active', etat: this.afficherQueRevisionActive },
   ];
 
   /**
@@ -504,14 +518,25 @@ export class PostesListeComponent {
   postesVisibles = computed<PosteAffiche[]>(() => {
     const filtres = this.postesFiltres();
     const indexComplet = new Map(this.postes().map(p => [p.id, p]));
+    const nQueRevisionActive = this.afficherQueRevisionActive();
 
     // Taille réelle de chaque chaîne de révisions, calculée sur la liste complète
     // (non filtrée) : un maillon isolé après masquage (inactifs/futurs) doit quand même
     // afficher la spine s'il appartient à une chaîne d'au moins 2 maillons au total.
     const tailleChaineComplete = new Map<string, number>();
+    // Chaîne complète triée chronologiquement par racine, utilisée pour calculer les
+    // compteurs `_nbMasquesAvant` / `_nbMasquesApres` (position d'un maillon affiché
+    // vs. maillons masqués de la même chaîne, toutes causes confondues).
+    const chaineCompleteParRacine = new Map<string, PosteDto[]>();
     for (const p of this.postes()) {
       const racine = this.racineChaine(p, indexComplet);
       tailleChaineComplete.set(racine, (tailleChaineComplete.get(racine) ?? 0) + 1);
+      const liste = chaineCompleteParRacine.get(racine) ?? [];
+      liste.push(p);
+      chaineCompleteParRacine.set(racine, liste);
+    }
+    for (const liste of chaineCompleteParRacine.values()) {
+      liste.sort((a, b) => (a.debut ?? '').localeCompare(b.debut ?? ''));
     }
 
     const groupes = new Map<string, PosteDto[]>();
@@ -526,7 +551,15 @@ export class PostesListeComponent {
       const tries = [...membres].sort((a, b) => (a.debut ?? '').localeCompare(b.debut ?? ''));
       const actif = tries.find(p => !p.posteSuivantId) ?? tries[tries.length - 1];
       const tailleComplete = tailleChaineComplete.get(racine) ?? tries.length;
-      return { membres: tries, representant: actif, estChaine: tailleComplete > 1, tailleComplete };
+      // Option « Afficher que la révision active » : ne garder que le maillon dont
+      // [début,fin] contient aujourd'hui (`etatPoste==='ACTIF'`) ; fallback sur le
+      // dernier maillon (`actif` = représentant métier de la chaîne) si aucun ne
+      // l'est. La logique métier « maillon actif = dernier » reste inchangée par
+      // ailleurs (voir `_estActifChaine`).
+      const affiches = nQueRevisionActive && tailleComplete > 1
+        ? [tries.find(p => this.etatPoste(p) === 'ACTIF') ?? actif]
+        : tries;
+      return { racine, membres: affiches, representant: actif, estChaine: tailleComplete > 1, tailleComplete };
     });
 
     blocs.sort((a, b) => this.comparerPostes(a.representant, b.representant));
@@ -534,7 +567,25 @@ export class PostesListeComponent {
     const resultat: PosteAffiche[] = [];
     for (const bloc of blocs) {
       const { clef, label } = this.clefSeparateur(bloc.representant);
+      const chaineComplete = chaineCompleteParRacine.get(bloc.racine) ?? bloc.membres;
+      const idsAffiches = new Set(bloc.membres.map(m => m.id));
       bloc.membres.forEach((p, i) => {
+        // Compteurs de maillons masqués strictement avant/après ce maillon dans la
+        // chaîne complète (toutes causes de masquage confondues : option ci-dessus,
+        // filtre État A_VENIR/TERMINE, ou tout autre filtre). Utilisés par le
+        // template pour afficher les flèches ↑/↓ purement informatives sur la spine.
+        let nAvant = 0, nApres = 0;
+        if (bloc.estChaine) {
+          const debutP = p.debut ?? '';
+          for (const m of chaineComplete) {
+            if (idsAffiches.has(m.id)) continue;
+            const debutM = m.debut ?? '';
+            const cmp = debutM.localeCompare(debutP);
+            if (cmp < 0) nAvant++;
+            else if (cmp > 0) nApres++;
+            // cmp === 0 (dates de début égales, cas de bord) : on ignore.
+          }
+        }
         resultat.push({
           ...p,
           _estChaine: bloc.estChaine,
@@ -543,6 +594,8 @@ export class PostesListeComponent {
           _nbVersions: (!p.posteSuivantId && bloc.estChaine) ? bloc.tailleComplete : undefined,
           _clefSeparateur: clef,
           _labelSeparateur: label,
+          _nbMasquesAvant: nAvant > 0 ? nAvant : undefined,
+          _nbMasquesApres: nApres > 0 ? nApres : undefined,
         });
       });
     }

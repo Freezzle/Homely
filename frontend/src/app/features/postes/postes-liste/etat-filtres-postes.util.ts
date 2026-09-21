@@ -81,6 +81,7 @@ export interface PreferencesAffichagePostes {
   tri: CritereTri;
   regrouperPar: CritereRegroupement;
   cacherDetails: boolean;
+  afficherQueRevisionActive: boolean;
 }
 
 export function lirePreferencesAffichage(): PreferencesAffichagePostes | null {
@@ -90,7 +91,7 @@ export function lirePreferencesAffichage(): PreferencesAffichagePostes | null {
     if (!brut) return null;
     const parse = JSON.parse(brut);
     if (!CRITERES_TRI.includes(parse.tri) || !REGROUPEMENTS.includes(parse.regrouperPar)) return null;
-    return { ...parse, cacherDetails: !!parse.cacherDetails };
+    return { ...parse, cacherDetails: !!parse.cacherDetails, afficherQueRevisionActive: !!parse.afficherQueRevisionActive };
   } catch {
     return null;
   }
