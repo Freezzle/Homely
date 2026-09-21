@@ -1,23 +1,25 @@
 <div class="flex flex-col gap-4">
-  <p-card>
-    <div class="flex flex-col gap-3">
-      <div>
-        <h2 class="m-0 text-sm font-semibold uppercase tracking-[0.08em] text-surface-500">{{ facade.t.dashboard.fluxMensuel }}</h2>
-      </div>
-      <div class="relative flex h-56 w-full overflow-hidden sm:h-64 md:h-[280px]">
-        <p-chart type="bar" [data]="$any(fluxMensuelChartData())" [options]="$any(fluxMensuelChartOptions)" class="block w-full" />
-      </div>
-    </div>
-  </p-card>
-
-  @if (facade.vue() === 'mois') {
+  <div class="grid grid-cols-1 gap-4" [ngClass]="{ 'lg:grid-cols-2': facade.vue() === 'mois' }">
     <p-card>
-      <hly-amount-bar-list
-        [items]="facade.amountBarItems()"
-        [reference]="facade.agregatMoisCourant().revenus"
-        [devise]="facade.deviseBase()" />
+      <div class="flex flex-col gap-3">
+        <div>
+          <h2 class="m-0 text-sm font-semibold uppercase tracking-[0.08em] text-surface-500">{{ facade.t.dashboard.fluxMensuel }}</h2>
+        </div>
+        <div class="relative flex h-56 w-full overflow-hidden sm:h-64 md:h-[280px]">
+          <p-chart type="bar" [data]="$any(fluxMensuelChartData())" [options]="$any(fluxMensuelChartOptions)" class="block w-full" />
+        </div>
+      </div>
     </p-card>
-  }
+
+    @if (facade.vue() === 'mois') {
+      <p-card>
+        <hly-amount-bar-list
+          [items]="facade.amountBarItems()"
+          [reference]="facade.agregatMoisCourant().revenus"
+          [devise]="facade.deviseBase()" />
+      </p-card>
+    }
+  </div>
 
   <app-dashboard-section
     [title]="facade.dashboardViewLabel('apercu')"
