@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import {
   ProjectionAnnuelleDto, VentilationsDto, VentilationAnnuelleDto, EvenementDto, TauxEffortMembreDto,
   CompteRecapMensuelDto, ComptePosteDetailDto, ProrataPartageMembreDto,
-  TresorerieCumuleeDto, VirementCompteDto,
+  TresorerieCumuleeDto, VirementCompteDto, RepartitionCategorieDto, TypeCategorie,
 } from '../models/api.models';
 
 /** T9.3 — Service HTTP projection scopé par foyer/scénario. */
@@ -41,6 +41,17 @@ export class ProjectionService {
   ventilationAnnuelle(foyerId: string, scenarioId: string, annee: number) {
     return this.http.get<VentilationAnnuelleDto>(
       `${this.base(foyerId, scenarioId)}/ventilation-annuelle`, { params: { annee } }
+    );
+  }
+
+  /** Part de chaque catégorie d'un type dans le total du type, pour le foyer (ou le
+   *  membre si `membreId`) sur un mois (si `mois`) ou l'année entière. Triée desc. */
+  repartitionCategories(foyerId: string, scenarioId: string, annee: number, type: TypeCategorie, mois?: number, membreId?: string) {
+    const params: Record<string, string | number> = { annee, type };
+    if (mois !== undefined) { params['mois'] = mois; }
+    if (membreId) { params['membreId'] = membreId; }
+    return this.http.get<RepartitionCategorieDto[]>(
+      `${this.base(foyerId, scenarioId)}/repartition-categories`, { params }
     );
   }
 

@@ -1,0 +1,53 @@
+<div class="donut">
+  <svg
+    class="donut__svg"
+    viewBox="0 0 100 100"
+    role="img"
+    [style.width]="taille()"
+    [style.height]="taille()"
+    [attr.aria-label]="valeurCentrale() + (libelleCentral() ? ' ' + libelleCentral() : '')">
+    <circle class="donut__piste" cx="50" cy="50" r="38" fill="none" stroke-width="14" />
+    @for (arc of arcs(); track arc.index) {
+      <circle
+        class="donut__segment"
+        [class.donut__segment--interactif]="interactif()"
+        cx="50" cy="50" r="38"
+        fill="none"
+        stroke-width="14"
+        pathLength="100"
+        transform="rotate(-90 50 50)"
+        [attr.stroke]="arc.couleur"
+        [attr.stroke-dasharray]="arc.dasharray"
+        [attr.stroke-dashoffset]="arc.dashoffset"
+        [attr.aria-label]="arc.infobulle"
+        [attr.role]="interactif() ? 'button' : 'img'"
+        [attr.tabindex]="interactif() ? 0 : null"
+        [pTooltip]="arc.infobulle"
+        tooltipPosition="top"
+        (click)="cliquer(arc.index)"
+        (keydown.enter)="cliquer(arc.index)" />
+    }
+    <text class="donut__valeur" x="50" [attr.y]="libelleCentral() ? 50 : 54" text-anchor="middle">{{ valeurCentrale() }}</text>
+    @if (libelleCentral()) {
+      <text class="donut__libelle-central" x="50" y="61" text-anchor="middle">{{ libelleCentral() }}</text>
+    }
+  </svg>
+
+  <ul class="donut__legende">
+    @for (arc of arcs(); track arc.index) {
+      <li
+        class="donut__entree"
+        [class.donut__entree--interactive]="interactif()"
+        [attr.role]="interactif() ? 'button' : null"
+        [attr.tabindex]="interactif() ? 0 : null"
+        [pTooltip]="arc.infobulle"
+        tooltipPosition="top"
+        (click)="cliquer(arc.index)"
+        (keydown.enter)="cliquer(arc.index)">
+        <span class="donut__pastille" [style.background]="arc.couleur" aria-hidden="true"></span>
+        <span class="donut__entree-libelle">{{ arc.libelle }}</span>
+        <span class="donut__entree-valeur">{{ arc.valeur / 100 | pct }}</span>
+      </li>
+    }
+  </ul>
+</div>

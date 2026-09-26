@@ -1,0 +1,31 @@
+<div class="heatmap">
+  <div class="heatmap__grille" [attr.role]="interactif() ? null : 'list'" [style.grid-template-columns]="grille()">
+    @for (cellule of cellulesAffichees(); track cellule.index) {
+      <span
+        class="heatmap__cellule"
+        [class.heatmap__cellule--interactive]="interactif()"
+        [style.background]="cellule.fond"
+        [pTooltip]="cellule.infobulle"
+        tooltipPosition="top"
+        [attr.aria-label]="cellule.infobulle"
+        [attr.role]="interactif() ? 'button' : 'listitem'"
+        [attr.tabindex]="interactif() ? 0 : null"
+        (click)="cliquer(cellule.index)"
+        (keydown.enter)="cliquer(cellule.index)"
+        (keydown.space)="cliquer(cellule.index); $event.preventDefault()">
+        <span aria-hidden="true">{{ cellule.libelle }}</span>
+      </span>
+    }
+  </div>
+
+  @if (legendeAffichee().length) {
+    <ul class="heatmap__legende">
+      @for (entree of legendeAffichee(); track entree.libelle) {
+        <li class="heatmap__entree">
+          <span class="heatmap__pastille" [style.background]="entree.couleur" aria-hidden="true"></span>
+          {{ entree.libelle }}
+        </li>
+      }
+    </ul>
+  }
+</div>

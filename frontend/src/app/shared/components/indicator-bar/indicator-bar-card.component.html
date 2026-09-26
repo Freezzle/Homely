@@ -1,0 +1,54 @@
+<article class="indicator-bar-card">
+  <header class="indicator-bar-card__header">
+    @switch (headingLevel()) {
+      @case (2) { <h2 class="indicator-bar-card__title">{{ title() }}</h2> }
+      @case (3) { <h3 class="indicator-bar-card__title">{{ title() }}</h3> }
+      @case (4) { <h4 class="indicator-bar-card__title">{{ title() }}</h4> }
+      @case (5) { <h5 class="indicator-bar-card__title">{{ title() }}</h5> }
+      @case (6) { <h6 class="indicator-bar-card__title">{{ title() }}</h6> }
+    }
+    @if (subtitle()) {
+      <p class="indicator-bar-card__subtitle">{{ subtitle() }}</p>
+    }
+  </header>
+
+  <div class="indicator-bar-card__body">
+    <app-indicator-bar
+      [segments]="segments()"
+      [ticks]="ticks()"
+      [markers]="markers()"
+      [showTicks]="showTicks()"
+      [showTickLabels]="showTickLabels()"
+      [showMarkers]="showMarkers()"
+      [barHeight]="barHeight()"
+      [ariaLabel]="resolvedAriaLabel()"
+    />
+  </div>
+
+  @if (hasFooter()) {
+    <footer class="indicator-bar-card__footer">
+      @if (formula()) {
+        <span class="indicator-bar-card__formula">{{ formula() }}</span>
+      }
+      @if (hasHelp()) {
+        <button
+          type="button"
+          class="indicator-bar-card__help-btn"
+          [attr.aria-label]="helpAriaLabel()"
+          (click)="togglePopover(helpPopover, $event)"
+        >
+          <i class="pi pi-info-circle" aria-hidden="true"></i>
+        </button>
+        <p-popover #helpPopover ariaLabel="Aide">
+          <div class="indicator-bar-card__help-panel" role="note">
+            @if (helpIsTemplate()) {
+              <ng-container *ngTemplateOutlet="helpTemplate()!"></ng-container>
+            } @else {
+              {{ helpString() }}
+            }
+          </div>
+        </p-popover>
+      }
+    </footer>
+  }
+</article>

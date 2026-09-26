@@ -1,6 +1,8 @@
 <div class="flex flex-col gap-4">
   @if (facade.afficherOngletComptes()) {
-    <p-card>
+    <app-carte-info
+      [titre]="facade.t.dashboard.virementsComptesTitre"
+      [sousTitre]="facade.t.dashboard.virementsComptesSousTitre">
       <app-table-virements-comptes
         [virements]="facade.virementsComptesCourant()"
         [comptes]="facade.comptes()"
@@ -10,7 +12,7 @@
         [devise]="facade.deviseBase()"
         [chargement]="facade.virementsComptesCourantChargement()"
         (virementBascule)="onVirementBascule($event)" />
-    </p-card>
+    </app-carte-info>
   }
 
   @if (facade.comptesIndicators().length) {

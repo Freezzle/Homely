@@ -1,0 +1,48 @@
+
+> homely-front@0.0.1 build
+> ng build
+
+> Building...
+√ Building...
+Initial chunk files   | Names                           |  Raw size | Estimated transfer size
+main-JNBLN73D.js      | main                            | 811.92 kB |               172.86 kB
+styles-5AVTLVHZ.css   | styles                          |  46.48 kB |                 8.49 kB
+polyfills-5CFQRCPP.js | polyfills                       |  34.59 kB |                11.33 kB
+
+                      | Initial total                   | 892.99 kB |               192.68 kB
+
+Lazy chunk files      | Names                           |  Raw size | Estimated transfer size
+chunk-BuvfpY8e.js     | -                               | 354.26 kB |                58.75 kB
+chunk-T3d3_ylo.js     | -                               | 212.21 kB |                63.16 kB
+chunk-Ctvpb631.js     | -                               | 204.26 kB |                32.65 kB
+chunk-A-nmZGn1.js     | -                               | 142.09 kB |                27.76 kB
+chunk-CPLmKHdZ.js     | postes-liste-component          | 138.68 kB |                28.15 kB
+chunk-DaYgkHIk.js     | -                               |  89.51 kB |                17.23 kB
+chunk-BDVji9ii.js     | browser                         |  68.44 kB |                17.89 kB
+chunk-DQg4amE2.js     | shell-component                 |  57.77 kB |                 9.56 kB
+chunk-C2FQKMgR.js     | comparaison-scenarios-component |  48.78 kB |                11.92 kB
+chunk-A2BJXlxf.js     | argent-poche-component          |  38.84 kB |                 9.82 kB
+chunk-Bqadgf70.js     | -                               |  28.96 kB |                 7.06 kB
+chunk-BAmdWZlI.js     | prorata-membres-component       |  26.12 kB |                 6.13 kB
+chunk-CqmvKm96.js     | dashboard-shell-component       |  25.90 kB |                 7.34 kB
+chunk-CqDe4CP-.js     | foyer-creation-component        |  20.30 kB |                 4.35 kB
+chunk-BZhbw6br.js     | -                               |  19.20 kB |                 4.54 kB
+...and 36 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [23.169 seconds] - 2026-09-16T15:52:04.485Z
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: KpiChipRowComponent is not used within the template of ApercuViewComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/views/apercu-view.component.ts:19:4:
+[37m      19 │     [32mKpiChipRowComponent[37m,
+         ╵     [32m~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mbundle initial exceeded maximum budget. Budget 500.00 kB was not met by 392.99 kB with a total of 892.99 kB.[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1msrc/app/shared/components/indicator-bar/indicator-bar.component.scss exceeded maximum budget. Budget 4.00 kB was not met by 534 bytes with a total of 4.53 kB.[0m
+
+
+Output location: E:\Applications\Homely\frontend\dist\homely-front
+

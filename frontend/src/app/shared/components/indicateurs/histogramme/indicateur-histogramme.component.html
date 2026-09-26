@@ -1,0 +1,26 @@
+<div class="histogramme" role="list">
+  <div class="histogramme__zone" [style.height]="hauteur()">
+    @for (barre of barres(); track barre.index) {
+      <div class="histogramme__piste" role="listitem">
+        <span
+          class="histogramme__barre"
+          [class.histogramme__barre--interactive]="interactif()"
+          [style.height.%]="barre.hauteurPct"
+          [style.background]="barre.couleur"
+          [pTooltip]="barre.infobulle"
+          tooltipPosition="top"
+          [attr.aria-label]="barre.infobulle"
+          [attr.role]="interactif() ? 'button' : 'img'"
+          [attr.tabindex]="interactif() ? 0 : null"
+          (click)="cliquer(barre.index)"
+          (keydown.enter)="cliquer(barre.index)"
+          (keydown.space)="cliquer(barre.index); $event.preventDefault()"></span>
+      </div>
+    }
+  </div>
+  <div class="histogramme__libelles" aria-hidden="true">
+    @for (barre of barres(); track barre.index) {
+      <span class="histogramme__libelle" [class.histogramme__libelle--surligne]="barre.surlignee">{{ barre.libelle }}</span>
+    }
+  </div>
+</div>

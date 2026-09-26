@@ -363,6 +363,8 @@ export interface VentilationAnnuelleDto {
   parMembreSplit: Record<string, VentilationSplitDto>;
 }
 export interface SerieAnnuelleDto { annee: number; soldeParScenario: Record<string, number>; tresorerieParScenario: Record<string, number>; }
+/** Part d'une catégorie dans le total de son type (`part` ∈ [0,1]) — calculée par le backend. */
+export interface RepartitionCategorieDto { categorieId: string; libelle: string; montant: number; part: number; }
 
 // ── Récapitulatif mensuel par compte (dashboard, vue membre) ──────────────────
 export interface CompteRecapMensuelDto {

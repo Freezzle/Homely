@@ -148,6 +148,12 @@ Toutes en `GET`, scopées scénario, servies via le moteur (doc 01) + cache.
   modeOrigine?, quotePart}`. `montant`/`montantOrigine` **bruts** signés ; champs `…Origine`
   non-null seulement pour `REVISION` ; `quotePart` = 1 en vue foyer, proratisé si
   `membreId` (jamais recalculé côté frontend). Sémantique : doc 01 §9.
+- **`…/projection/repartition-categories?annee=&mois=&type=&membreId=`** →
+  `[{categorieId, libelle, montant, part}]` trié par `montant` ↓ puis `libelle`. `type`
+  (`TypeCategorie`) obligatoire ; `mois` optionnel (absent = année entière, via
+  `ventilation-annuelle`) ; `membreId` optionnel (vue membre via `parCategorieMembre`).
+  `part` = `montant / total` (6 décimales, somme ≈ 1), montants ≤ 0 exclus. **La part est
+  calculée côté backend**, jamais côté frontend.
 
 ## 9. Argent de poche (niveau scénario)
 
@@ -214,6 +220,12 @@ mensuelle si `:annee/:mois`). Bloc résumé : `app-metric-ring`, `app-stat-grid`
 (`app-event-grid`, alimenté par `…/projection/evenements`). Indicateurs
 enrichis (`features/dashboard/indicators/`) dont `taux-effort-membre`
 (`app-taux-effort-card`, jauges « charges + réserves » et « + argent de poche »).
+Les blocs encadrés utilisent la carte standard `app-carte-info` (doc 03 §7.2) : vue
+*Aperçu* « Flux mensuel » et « Répartition du mois », vue *Comptes* « Virements des
+comptes », vue *Postes* trois donuts `app-indicateur-donut` alignés sur une ligne en
+desktop (revenus → charges → réserves, empilés en mobile), alimentés par
+`…/projection/repartition-categories` (top 6 + « Autres », total compact au centre) et
+suivant le sujet (foyer/membre) et la vue (année/mois).
 
 ### 3.2 Revenus / Charges / Réserves (`PostesListeComponent`, paramétré par `type`)
 Liste en cartes (barre accent colorée par type) : description + badge `ESTIMATION ± X.X%`,
@@ -253,6 +265,8 @@ pour `VIEWER`.
 ## 4. Pratiques transverses
 - Composants partagés du dashboard (`shared/components/`) sans logique métier (agrégats
   reçus en `@Input`) : `tab-group`, `page-nav`, `metric-ring`, `stat-grid`,
-  `kpi-chip(-row)`, `event-grid`, `objective-progress`, `taux-effort-card`.
+  `kpi-chip(-row)`, `event-grid`, `objective-progress`, `taux-effort-card`, plus le socle
+  d'affichage standard `carte-info` + `indicateurs/{histogramme,donut,heatmap}`
+  (doc 03 §7.2).
 - **Aucun texte en dur** → clés i18n. Formatage montants/dates via `Intl` + `deviseBase`
   (pipes dédiés). Miroir des règles serveur côté UX (répartition à 100 % avant sauvegarde).

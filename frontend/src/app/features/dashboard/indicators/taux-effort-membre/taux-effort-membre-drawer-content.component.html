@@ -1,3 +1,43 @@
-@if (data(); as d) {
-  <app-taux-effort-card [data]="d" />
+@if (view(); as v) {
+  <div class="drawer-content" [attr.aria-label]="v.ariaLabel">
+    <div class="status-row">
+      <app-tag [couleur]="v.membre.couleur" [texte]="v.membre.nom" />
+      @if (!v.indisponible) {
+        <app-tag [texte]="v.zoneGlobaleLabel" [severity]="v.zoneGlobaleSeverity" />
+      } @else {
+        <app-tag [texte]="t.projection.effortCardZoneNA" severity="secondary" />
+      }
+    </div>
+
+    @if (!v.indisponible) {
+      <div class="jauges">
+        @for (j of v.jauges; track j.key) {
+          <app-indicator-card
+            [title]="j.titre"
+            [subtitle]="j.sousTitre"
+            [segments]="j.segments"
+            [ticks]="j.ticks"
+            [markers]="j.markers"
+            [ariaLabel]="j.ariaLabel"
+          />
+        }
+      </div>
+
+      @if (v.message; as msg) {
+        <p class="zone-message" [class.zone-message-sature]="v.zoneGlobale === 'SATURE'">{{ msg }}</p>
+      }
+    } @else {
+      <div class="na-block">
+        <span class="na-value">{{ t.projection.effortCardNA }}</span>
+        <span class="na-reason">{{ t.projection.effortCardNaRaison }}</span>
+
+        <p-divider class="my-3" />
+
+        <div class="breakdown">
+          <span>{{ t.projection.effortCardCharges }}&nbsp;: <strong>{{ v.chargesTotal | montant }}</strong></span>
+          <span>{{ t.projection.effortCardReserves }}&nbsp;: <strong>{{ v.reservesTotal | montant }}</strong></span>
+        </div>
+      </div>
+    }
+  </div>
 }

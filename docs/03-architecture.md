@@ -129,10 +129,11 @@ fait côté frontend via `Intl.NumberFormat`.
 frontend/src/app
 ├── core/     guards, interceptors (jwt, date), services (ContexteService, I18nService…),
 │             pipes (montant/date/pct/périodicité), constants, models
-├── shared/   composants réutilisables (button, carte-bilan, tag, tab-group, page-nav,
-│             metric-ring, stat-grid, kpi-chip(-row), event-grid, objective-progress,
-│             taux-effort-card) — `button`/`tag` wrappent `p-button`/`p-tag` (API restreinte
-│             au sous-ensemble utilisé, `tag` supporte couleur libre ou `severity`)
+├── shared/   composants réutilisables (button, carte-info, indicateurs/*, carte-bilan,
+│             tag, tab-group, page-nav, metric-ring, stat-grid, kpi-chip(-row), event-grid,
+│             objective-progress, taux-effort-card) — `button`/`tag` wrappent
+│             `p-button`/`p-tag` (API restreinte au sous-ensemble utilisé, `tag` supporte
+│             couleur libre ou `severity`)
 ├── shell/    topbar, sidebar-menu, foyer-scenario-switcher
 └── features/ auth, foyer, referentiels, scenarios, postes, argent-poche, dashboard,
               parametres
@@ -156,6 +157,34 @@ providePrimeNG({ theme: { preset: Aura, options: {
   (surcharge sans le préfixe `!`). Utiliser les tokens partagés (`bg-primary`,
   `text-surface-*`). `darkModeSelector` aligné sur la variante `dark` de Tailwind.
 - Ne pas utiliser PrimeFlex (legacy).
+
+### 7.2 Design system — cartes & indicateurs (standard d'affichage)
+
+**Règle** : tout bloc d'information encadré (dashboard ou autre écran) utilise
+`app-carte-info` ; on n'ajoute plus de `p-card` ni d'encadré ad hoc. Le contenu chiffré
+passe par les indicateurs partagés plutôt que par un graphique maison.
+
+| Composant | Rôle | Entrées principales |
+|---|---|---|
+| `app-carte-info` | Carte standard : titre, sous-titre, icône d'info (tooltip), badge, slot d'actions `[carte-actions]`, corps en `ng-content` | `titre` (requis), `sousTitre`, `ton`, `badgeTexte`, `badgeTon`, `niveauTitre` (2–6) |
+| `app-indicateur-histogramme` | Barres verticales (séries mensuelles) | `valeurs`, `libelles`, `indexSurligne`, `indicesNegatifs`, `ton`, `tonNegatif`, `hauteur`, `formateurInfobulle`, `interactif` → `(barreClick)` |
+| `app-indicateur-donut` | Répartition en % + légende | `segments` (`{libelle, valeur %, ton?, infobulle?}`), `valeurCentrale`, `libelleCentral`, `taille`, `interactif` → `(segmentClick)` |
+| `app-indicateur-heatmap` | Grille de cellules colorées + légende | `cellules`, `legende`, `colonnes`, `interactif` → `(celluleClick)` |
+
+- **Couleurs** : uniquement via les *tons* typés de
+  `shared/components/indicateurs/tons.ts` (`TonSemantique` : neutre, info, succes,
+  attention, alerte, danger, revenu, charge, reserve, argent-poche ; `TonCategorie` :
+  `categorie-1..10`). Ils résolvent des variables `--app-*` (dark mode inclus) : **aucune
+  valeur CSS libre** n'est acceptée en entrée.
+- La palette catégorielle boucle au-delà de 10 : l'appelant décale vers le ton libre
+  suivant pour éviter deux séries visibles de même couleur.
+- La carte n'est **pas** cliquable (actions uniquement dans l'en-tête) ; les indicateurs
+  n'émettent leurs événements que si `interactif` est activé.
+- Accessibilité : tooltips `pTooltip` **doublés d'un `aria-label`**, titre sémantique via
+  `niveauTitre`, éléments interactifs focusables.
+- Responsive : le corps de la carte est un `container` (`container: carte / inline-size`) ;
+  les indicateurs s'adaptent par **container queries**, pas par media queries.
+
 
 ## 8. Configuration & environnements
 

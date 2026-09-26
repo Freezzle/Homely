@@ -1,0 +1,187 @@
+/* Composant `IndicatorBar` — styles internes. Jetons surchargeables via CSS
+ * custom properties sur l'hôte, avec repli sur les jetons PrimeNG du projet. */
+
+:host {
+  display: block;
+  --ind-track: var(--p-surface-200, #e5e7eb);
+  --ind-text: var(--p-text-color, #111827);
+  --ind-text-muted: var(--p-text-muted-color, #6b7280);
+  --ind-bar-height: 12px;
+  --ind-radius: 999px;
+  --ind-marker-size: 22px;
+  --ind-marker-gap: 6px;
+  --ind-tick-label-size: 18px;
+  --ind-good: var(--p-green-500, #22c55e);
+  --ind-warn: var(--p-orange-500, #f97316);
+  --ind-bad: var(--p-red-500, #ef4444);
+  --ind-neutral: var(--p-surface-500, #6b7280);
+  --ind-neutral-soft: var(--p-surface-200, #e5e7eb);
+}
+
+:host-context(.dark) {
+  --ind-track: var(--p-surface-700, #374151);
+  --ind-neutral-soft: var(--p-surface-700, #374151);
+}
+
+.indicator-bar {
+  --_marker-reserve: 0px;
+  --_tick-reserve: 0px;
+  position: relative;
+  width: 100%;
+  min-width: 220px;
+  padding-top: var(--_marker-reserve);
+  padding-bottom: var(--_tick-reserve);
+}
+.indicator-bar.has-markers { --_marker-reserve: calc(var(--ind-marker-size) + var(--ind-marker-gap)); }
+.indicator-bar.has-stacked-markers { --_marker-reserve: calc((var(--ind-marker-size) + var(--ind-marker-gap)) * 2); }
+.indicator-bar.has-tick-labels { --_tick-reserve: calc(var(--ind-tick-label-size) + 4px); }
+
+.indicator-bar__track {
+  position: relative;
+  width: 100%;
+  height: var(--ind-bar-height);
+  background: var(--ind-track);
+  border-radius: var(--ind-radius);
+  overflow: hidden;
+  display: flex;
+}
+.indicator-bar__segment { display: block; height: 100%; min-width: 0; }
+.indicator-bar__segment.variant-good    { background: var(--ind-good); }
+.indicator-bar__segment.variant-warn    { background: var(--ind-warn); }
+.indicator-bar__segment.variant-bad     { background: var(--ind-bad); }
+.indicator-bar__segment.variant-neutral { background: var(--ind-neutral); }
+
+.indicator-bar__tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: color-mix(in srgb, var(--ind-text) 45%, transparent);
+  transform: translateX(-0.5px);
+  pointer-events: none;
+}
+.indicator-bar__tick-labels { position: relative; height: var(--ind-tick-label-size); margin-top: 4px; }
+.indicator-bar__tick-label {
+  position: absolute;
+  top: 0;
+  font-size: 0.72rem;
+  line-height: var(--ind-tick-label-size);
+  color: var(--ind-text-muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.indicator-bar__tick-label.is-center { transform: translateX(-50%); }
+.indicator-bar__tick-label.is-end    { transform: translateX(-100%); }
+
+.indicator-bar__markers {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: var(--_marker-reserve);
+  pointer-events: none;
+  // Peint au-dessus du track (frère suivant) — indispensable pour que la
+  // prolongation de tige (`.indicator-bar__marker-stem::after`) soit visible
+  // par-dessus les segments colorés.
+  z-index: 1;
+}
+.indicator-bar__marker {
+  position: absolute;
+  bottom: var(--ind-marker-gap);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.indicator-bar__marker.is-lane-1 { bottom: calc(var(--ind-marker-size) + var(--ind-marker-gap) * 2); }
+.indicator-bar__marker.is-center { transform: translateX(-50%); }
+.indicator-bar__marker.is-end    { transform: translateX(-100%); }
+
+.indicator-bar__marker-bubble {
+  display: inline-flex;
+  align-items: center;
+  height: var(--ind-marker-size);
+  padding: 0 0.5rem;
+  border-radius: var(--ind-radius);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--ind-text);
+  background: var(--ind-neutral-soft);
+  border: 1px solid transparent;
+  font-variant-numeric: tabular-nums;
+}
+.indicator-bar__marker-stem {
+  display: block;
+  width: 2px;
+  flex: 0 0 auto;
+  height: var(--ind-marker-gap);
+  background: currentColor;
+  color: var(--ind-neutral);
+  position: relative;
+}
+// Prolongation visuelle de la tige à travers l'épaisseur du track (elle
+// paraît « traverser » la barre de haut en bas). Réalisée en pseudo-élément
+// pour ne pas modifier la hauteur de layout du parent flex — la bulle reste
+// à sa place. Le z-index du conteneur `.indicator-bar__markers` (ci-dessus)
+// assure que la prolongation peint au-dessus du track.
+.indicator-bar__marker-stem::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 100%;
+  width: 100%;
+  height: var(--ind-bar-height);
+  background: currentColor;
+}
+.indicator-bar__marker.kind-reference .indicator-bar__marker-stem::after {
+  background: transparent;
+  border-left: 2px dashed currentColor;
+  left: -2px;
+  width: 0;
+}
+
+.indicator-bar__marker.kind-primary .indicator-bar__marker-bubble {
+  color: #fff;
+  background: var(--ind-marker-color, var(--ind-neutral));
+}
+.indicator-bar__marker.kind-primary .indicator-bar__marker-stem {
+  width: 3px;
+  color: var(--ind-marker-color, var(--ind-neutral));
+}
+.indicator-bar__marker.kind-reference .indicator-bar__marker-bubble {
+  background: transparent;
+  color: var(--ind-marker-color, var(--ind-text));
+  border-color: currentColor;
+}
+.indicator-bar__marker.kind-reference .indicator-bar__marker-stem {
+  width: 0;
+  border-left: 2px dashed var(--ind-marker-color, var(--ind-neutral));
+  background: transparent;
+}
+.indicator-bar__marker.kind-plain .indicator-bar__marker-bubble {
+  background: transparent;
+  padding: 0;
+  color: var(--ind-marker-color, var(--ind-text));
+  font-weight: 600;
+}
+
+.indicator-bar__marker.kind-primary.variant-good    { --ind-marker-color: var(--ind-good); }
+.indicator-bar__marker.kind-primary.variant-warn    { --ind-marker-color: var(--ind-warn); }
+.indicator-bar__marker.kind-primary.variant-bad     { --ind-marker-color: var(--ind-bad); }
+.indicator-bar__marker.kind-primary.variant-neutral { --ind-marker-color: var(--ind-neutral); }
+.indicator-bar__marker.kind-reference.variant-good    { --ind-marker-color: var(--ind-good); }
+.indicator-bar__marker.kind-reference.variant-warn    { --ind-marker-color: var(--ind-warn); }
+.indicator-bar__marker.kind-reference.variant-bad     { --ind-marker-color: var(--ind-bad); }
+.indicator-bar__marker.kind-reference.variant-neutral { --ind-marker-color: var(--ind-text-muted); }
+
+/* Mobile ≤ 640px : barre/bulle/polices réduites, ticks intermédiaires masqués. */
+@media (max-width: 640px) {
+  :host {
+    --ind-bar-height: 8px;
+    --ind-marker-size: 18px;
+    --ind-marker-gap: 4px;
+    --ind-tick-label-size: 14px;
+  }
+  .indicator-bar__marker-bubble { font-size: 0.68rem; padding: 0 0.4rem; }
+  .indicator-bar__tick-label { font-size: 0.62rem; }
+  .indicator-bar__tick-label:not(.is-start):not(.is-end) { display: none; }
+}

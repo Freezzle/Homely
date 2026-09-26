@@ -1,4 +1,24 @@
 <div class="flex flex-col gap-4">
+  <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+    @for (repartition of facade.repartitionsParCategorie; track repartition.type) {
+      <app-carte-info
+        [titre]="repartition.titre"
+        [sousTitre]="repartition.sousTitre()"
+        [ton]="repartition.ton">
+        @if (repartition.chargement() && !repartition.segments().length) {
+          <p-skeleton height="120px" borderRadius="12px" />
+        } @else if (repartition.segments().length) {
+          <app-indicateur-donut
+            [segments]="repartition.segments()"
+            [valeurCentrale]="repartition.centre()"
+            [libelleCentral]="facade.deviseBase()" />
+        } @else {
+          <p class="m-0 text-sm text-surface-500">{{ repartition.messageVide }}</p>
+        }
+      </app-carte-info>
+    }
+  </div>
+
   <app-dashboard-section
     [title]="facade.dashboardViewLabel('postes')"
     [count]="facade.postesIndicators().length"

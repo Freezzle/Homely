@@ -1,0 +1,79 @@
+<div
+  class="indicator-bar"
+  [class.has-markers]="hasAnyMarker()"
+  [class.has-stacked-markers]="hasStackedMarkers()"
+  [class.has-tick-labels]="hasTickLabels()"
+  [style.--ind-bar-height]="barHeightVar()"
+>
+  @if (hasAnyMarker()) {
+    <div class="indicator-bar__markers" aria-hidden="true">
+      @for (m of markersLayout(); track $index) {
+        <div
+          class="indicator-bar__marker"
+          [class.is-lane-1]="m.lane === 1"
+          [class.is-start]="m.edgeClass === 'is-start'"
+          [class.is-end]="m.edgeClass === 'is-end'"
+          [class.is-center]="m.edgeClass === 'is-center'"
+          [class.kind-primary]="m.resolvedKind === 'primary'"
+          [class.kind-reference]="m.resolvedKind === 'reference'"
+          [class.kind-plain]="m.resolvedKind === 'plain'"
+          [class.variant-good]="m.resolvedVariant === 'good'"
+          [class.variant-warn]="m.resolvedVariant === 'warn'"
+          [class.variant-bad]="m.resolvedVariant === 'bad'"
+          [class.variant-neutral]="m.resolvedVariant === 'neutral'"
+          [style.left.%]="m.clampedPosition"
+          [style.--ind-marker-color]="m.color || null"
+          [attr.aria-label]="m.a11yLabel || null"
+        >
+          @if (m.label) {
+            <span class="indicator-bar__marker-bubble">{{ m.label }}</span>
+          }
+          @if (m.resolvedKind !== 'plain') {
+            <span class="indicator-bar__marker-stem"></span>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <div class="indicator-bar__track">
+    @for (s of segmentsLayout(); track $index) {
+      <span
+        class="indicator-bar__segment"
+        [class.variant-good]="s.variant === 'good'"
+        [class.variant-warn]="s.variant === 'warn'"
+        [class.variant-bad]="s.variant === 'bad'"
+        [class.variant-neutral]="s.variant === 'neutral'"
+        [style.width.%]="s.widthPercent"
+        [style.background]="s.color || null"
+        [attr.aria-label]="s.a11yLabel || null"
+      ></span>
+    }
+
+    @if (showTicks()) {
+      @for (t of ticksLayout(); track $index) {
+        <span
+          class="indicator-bar__tick"
+          [style.left.%]="t.clampedPosition"
+          aria-hidden="true"
+        ></span>
+      }
+    }
+  </div>
+
+  @if (hasTickLabels()) {
+    <div class="indicator-bar__tick-labels" aria-hidden="true">
+      @for (t of ticksLayout(); track $index) {
+        @if (t.label) {
+          <span
+            class="indicator-bar__tick-label"
+            [class.is-start]="t.edgeClass === 'is-start'"
+            [class.is-end]="t.edgeClass === 'is-end'"
+            [class.is-center]="t.edgeClass === 'is-center'"
+            [style.left.%]="t.clampedPosition"
+          >{{ t.label }}</span>
+        }
+      }
+    </div>
+  }
+</div>

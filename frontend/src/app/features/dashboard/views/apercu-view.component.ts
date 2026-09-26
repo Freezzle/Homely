@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { CardModule } from 'primeng/card';
 import { ChartModule } from 'primeng/chart';
+import { CarteInfoComponent } from '../../../shared/components/carte-info/carte-info.component';
 import { KpiChipRowComponent } from '../../../shared/components/kpi-chip-row/kpi-chip-row.component';
 import { AmountBarListComponent } from '../../../shared/components/amount-bar-list/amount-bar-list.component';
 import { withAlpha } from '../../../shared/utils/css-vars';
@@ -14,7 +14,7 @@ import { DashboardFacadeService } from '../shared/services/dashboard-facade.serv
   standalone: true,
   imports: [
     CommonModule,
-    CardModule,
+    CarteInfoComponent,
     ChartModule,
     KpiChipRowComponent,
     AmountBarListComponent,

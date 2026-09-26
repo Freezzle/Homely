@@ -1,0 +1,39 @@
+<article class="carte-info">
+  <header class="carte-info__entete" [style.background]="fondEntete()">
+    <div class="carte-info__titre-groupe">
+      <ng-template #titreTpl>{{ titre() }}</ng-template>
+      @switch (niveauTitre()) {
+        @case (2) { <h2 class="carte-info__titre"><ng-container [ngTemplateOutlet]="titreTpl" /></h2> }
+        @case (4) { <h4 class="carte-info__titre"><ng-container [ngTemplateOutlet]="titreTpl" /></h4> }
+        @case (5) { <h5 class="carte-info__titre"><ng-container [ngTemplateOutlet]="titreTpl" /></h5> }
+        @case (6) { <h6 class="carte-info__titre"><ng-container [ngTemplateOutlet]="titreTpl" /></h6> }
+        @default { <h3 class="carte-info__titre"><ng-container [ngTemplateOutlet]="titreTpl" /></h3> }
+      }
+      @if (sousTitre()) {
+        <span
+          class="carte-info__info"
+          role="img"
+          tabindex="0"
+          [attr.aria-label]="sousTitre()"
+          [pTooltip]="sousTitre()"
+          tooltipPosition="top">
+          <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.5" />
+            <path d="M8 7v4M8 5.5v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+        </span>
+      }
+    </div>
+
+    <div class="carte-info__droite">
+      <ng-content select="[carte-actions]" />
+      @if (badgeTexte()) {
+        <span class="carte-info__badge" aria-hidden="true" [style.color]="couleurBadge()">{{ badgeTexte() }}</span>
+      }
+    </div>
+  </header>
+
+  <div class="carte-info__corps">
+    <ng-content />
+  </div>
+</article>

@@ -1,0 +1,71 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.heatmap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+
+  &__grille {
+    display: grid;
+    gap: 6px;
+  }
+
+  &__cellule {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    color: #fff;
+    transition: transform 0.15s ease;
+
+    &:hover,
+    &:focus-visible {
+      transform: scale(1.15);
+    }
+
+    &--interactive {
+      cursor: pointer;
+    }
+  }
+
+  &__legende {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem 0.875rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__entree {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 11px;
+    color: var(--app-ink-muted);
+  }
+
+  &__pastille {
+    width: 9px;
+    height: 9px;
+    border-radius: 3px;
+  }
+}
+
+@container (max-width: 320px) {
+  .heatmap__grille {
+    gap: 3px;
+  }
+
+  .heatmap__cellule {
+    font-size: 8px;
+    border-radius: 4px;
+  }
+}

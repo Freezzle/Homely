@@ -1,4 +1,4 @@
-import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
+import { Injectable, Signal, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormBuilder, Validators } from '@angular/forms';
 import { forkJoin } from 'rxjs';
@@ -58,6 +58,8 @@ import { MoisARisqueDrawerData, MoisARisqueItem } from '../../indicators/mois-a-
 import { comparaisonPeriodeIndicator } from '../../indicators/comparaison-periode/comparaison-periode.indicator';
 import { ComparaisonPeriodeDrawerData } from '../../indicators/comparaison-periode/comparaison-periode-drawer-content.component';
 import { resolveAppColor, withAlpha } from '../../../../shared/utils/css-vars';
+import { SegmentDonut } from '../../../../shared/components/indicateurs/donut/indicateur-donut.component';
+import { NB_TONS_CATEGORIE, TonCarte, TonIndicateur, tonCategorie } from '../../../../shared/components/indicateurs/tons';
 
 type DashboardTimelineItem = TimelineItem & { mois: number };
 /** Sujet du tableau de bord affiché : le foyer entier (cumul de tous les membres) ou un
@@ -74,6 +76,26 @@ interface DashboardMonthSummary {
 }
 
 export type DashboardViewKey = 'apercu' | 'comptes' | 'postes' | 'membres';
+
+/** Ton de carte associé à chaque type de poste (charte `--app-*`). */
+const TON_CARTE_PAR_TYPE: Record<TypePoste, TonCarte> = {
+  REVENU: 'revenu',
+  CHARGE: 'charge',
+  RESERVE: 'reserve',
+};
+
+/** Données d'affichage d'une carte donut « <type> par catégorie ». */
+export interface RepartitionParCategorie {
+  type: TypePoste;
+  titre: string;
+  messageVide: string;
+  ton: TonCarte;
+  sousTitre: Signal<string>;
+  chargement: Signal<boolean>;
+  segments: Signal<SegmentDonut[]>;
+  /** Total de la période en notation compacte (affiché au centre du donut). */
+  centre: Signal<string>;
+}
 
 @Injectable()
 export class DashboardFacadeService {
@@ -247,6 +269,104 @@ export class DashboardFacadeService {
   );
 
   readonly evenementsDto = computed<EvenementDto[]>(() => this._evenements.donnees() ?? []);
+
+  /** Clé d'une répartition par catégorie : suit le sujet (foyer/membre) et la vue (année/mois). */
+  private readonly _repartitionCle = computed<{ foyerId: string; scenarioId: string; annee: number; mois?: number; membreId?: string } | null>(() => {
+    const cle = this._evenementsCle();
+    return cle ? { ...cle, mois: this.moisSelectionne() } : null;
+  });
+
+  /** Fabrique la carte donut « <type> par catégorie » : chargement, segments (top 6 +
+   *  « Autres »), total compact au centre et sous-titre selon la vue. Les parts viennent
+   *  du backend (`…/projection/repartition-categories`), jamais recalculées ici. */
+  private creerRepartitionParCategorie(type: TypePoste, cles: {
+    titre: string; sousTitreMois: string; sousTitreAnnee: string; aucune: string;
+  }): RepartitionParCategorie {    const chargement = creerChargementReactif(this._repartitionCle, ({ foyerId, scenarioId, annee, mois, membreId }) =>
+      this.projSvc.repartitionCategories(foyerId, scenarioId, annee, type, mois, membreId),
+    );
+
+    const segments = computed<SegmentDonut[]>(() => {
+      const lignes = chargement.donnees() ?? [];
+      const ordreStable = this.categories()
+        .filter((c) => c.typePoste === type)
+        .map((c) => c.id)
+        .sort();
+      const indexStable = (categorieId: string) => {
+        const index = ordreStable.indexOf(categorieId);
+        return index >= 0 ? index : ordreStable.length;
+      };
+      const infobulle = (libelle: string, montant: number, part: number) =>
+        `${libelle} · ${this.formatMontant(montant)} · ${Intl.NumberFormat(this.localeCourante(), { style: 'percent', maximumFractionDigits: 1 }).format(part)}`;
+
+      const LIMITE = 6;
+      const principales = lignes.length > LIMITE + 1 ? lignes.slice(0, LIMITE) : lignes;
+      const reste = lignes.slice(principales.length);
+      // Au-delà de NB_TONS_CATEGORIE catégories la palette boucle : on décale vers le ton
+      // libre suivant pour éviter deux segments visibles de même couleur (résolution dans
+      // l'ordre stable des catégories, indépendante du classement de la période).
+      const tons = new Map<string, TonIndicateur>();
+      const tonsUtilises = new Set<number>();
+      [...principales]
+        .sort((a, b) => indexStable(a.categorieId) - indexStable(b.categorieId))
+        .forEach((l) => {
+          let index = indexStable(l.categorieId) % NB_TONS_CATEGORIE;
+          while (tonsUtilises.has(index)) index = (index + 1) % NB_TONS_CATEGORIE;
+          tonsUtilises.add(index);
+          tons.set(l.categorieId, tonCategorie(index));
+        });
+      const liste: SegmentDonut[] = principales.map((l) => ({
+        libelle: l.libelle,
+        valeur: l.part * 100,
+        ton: tons.get(l.categorieId),
+        infobulle: infobulle(l.libelle, l.montant, l.part),
+      }));
+      if (reste.length) {
+        const montant = reste.reduce((s, l) => s + l.montant, 0);
+        const part = reste.reduce((s, l) => s + l.part, 0);
+        const libelle = this.t.dashboard.repartitionCategoriesAutres;
+        liste.push({
+          libelle,
+          valeur: part * 100,
+          ton: 'neutre',
+          infobulle: `${infobulle(libelle, montant, part)} (${reste.map((l) => l.libelle).join(', ')})`,
+        });
+      }
+      return liste;
+    });
+
+    return {
+      type,
+      titre: cles.titre,
+      messageVide: cles.aucune,
+      ton: TON_CARTE_PAR_TYPE[type],
+      sousTitre: computed(() => (this.vue() === 'annee' ? cles.sousTitreAnnee : cles.sousTitreMois)),
+      chargement: computed(() => chargement.chargement()),
+      segments,
+      centre: computed(() => this.fmtCompact((chargement.donnees() ?? []).reduce((s, l) => s + l.montant, 0))),
+    };
+  }
+
+  /** Cartes « par catégorie » du dashboard, dans l'ordre d'affichage (revenus → charges → réserves). */
+  readonly repartitionsParCategorie: readonly RepartitionParCategorie[] = [
+    this.creerRepartitionParCategorie('REVENU', {
+      titre: this.t.dashboard.revenusParCategorieTitre,
+      sousTitreMois: this.t.dashboard.revenusParCategorieSousTitreMois,
+      sousTitreAnnee: this.t.dashboard.revenusParCategorieSousTitreAnnee,
+      aucune: this.t.dashboard.revenusParCategorieAucune,
+    }),
+    this.creerRepartitionParCategorie('CHARGE', {
+      titre: this.t.dashboard.chargesParCategorieTitre,
+      sousTitreMois: this.t.dashboard.chargesParCategorieSousTitreMois,
+      sousTitreAnnee: this.t.dashboard.chargesParCategorieSousTitreAnnee,
+      aucune: this.t.dashboard.chargesParCategorieAucune,
+    }),
+    this.creerRepartitionParCategorie('RESERVE', {
+      titre: this.t.dashboard.reservesParCategorieTitre,
+      sousTitreMois: this.t.dashboard.reservesParCategorieSousTitreMois,
+      sousTitreAnnee: this.t.dashboard.reservesParCategorieSousTitreAnnee,
+      aucune: this.t.dashboard.reservesParCategorieAucune,
+    }),
+  ];
 
   /** Matrice budgétaire "Nécessité vs Priorité d'action" (dashboard annuel) : postes déjà
    *  filtrés (non obsolètes, dédupliqués par chaîne de révisions, scopés au membre courant

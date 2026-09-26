@@ -75,6 +75,19 @@
     --app-danger-bg: color-mix(in srgb, var(--p-red-500) 20%, var(--app-card));
     --app-info-bg: color-mix(in srgb, var(--p-primary-color) 20%, var(--app-card));
 
+    /* Palette catégorielle (segments de donut, séries sans sens métier) — attribuée dans
+       l'ordre, voir shared/components/indicateurs/tons.ts */
+    --app-categorie-1: var(--p-indigo-500);
+    --app-categorie-2: var(--p-teal-500);
+    --app-categorie-3: var(--p-amber-500);
+    --app-categorie-4: var(--p-pink-500);
+    --app-categorie-5: var(--p-sky-500);
+    --app-categorie-6: var(--p-lime-600);
+    --app-categorie-7: var(--p-purple-500);
+    --app-categorie-8: var(--p-orange-500);
+    --app-categorie-9: var(--p-emerald-600);
+    --app-categorie-10: var(--p-rose-400);
+
     /* Rayons */
     --app-radius-card: 12px;
     --app-radius-item: 6px;

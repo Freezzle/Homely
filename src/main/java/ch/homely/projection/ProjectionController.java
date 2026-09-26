@@ -1,5 +1,6 @@
 package ch.homely.projection;
 
+import ch.homely.categorie.TypeCategorie;
 import ch.homely.foyer.RoleFoyer;
 import ch.homely.projection.dto.*;
 import ch.homely.securite.MultiTenantService;
@@ -16,11 +17,14 @@ import java.util.UUID;
 public class ProjectionController {
 
     private final ProjectionService projectionService;
+    private final RepartitionCategoriesService repartitionCategoriesService;
     private final MultiTenantService multiTenant;
 
     public ProjectionController(ProjectionService projectionService,
+                                 RepartitionCategoriesService repartitionCategoriesService,
                                  MultiTenantService multiTenant) {
         this.projectionService = projectionService;
+        this.repartitionCategoriesService = repartitionCategoriesService;
         this.multiTenant       = multiTenant;
     }
 
@@ -79,6 +83,20 @@ public class ProjectionController {
                                                         @RequestParam int annee) {
         multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
         return projectionService.ventilationsAnnuelle(foyerId, scenarioId, annee);
+    }
+
+    /** Part de chaque catégorie d'un type dans le total de ce type, pour le sujet (foyer, ou
+     *  membre si {@code membreId} fourni) et la période (mois si {@code mois} fourni, sinon
+     *  année entière). Triée par montant décroissant, montants nuls exclus. */
+    @GetMapping("/repartition-categories")
+    public List<RepartitionCategorieDto> repartitionCategories(@PathVariable UUID foyerId,
+                                                               @PathVariable UUID scenarioId,
+                                                               @RequestParam int annee,
+                                                               @RequestParam(required = false) Integer mois,
+                                                               @RequestParam TypeCategorie type,
+                                                               @RequestParam(required = false) UUID membreId) {
+        multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
+        return repartitionCategoriesService.repartition(foyerId, scenarioId, annee, mois, type, membreId);
     }
 
     /** Indicateur 04 — Taux d'effort par membre pour un mois donné (normal + pire cas). */
