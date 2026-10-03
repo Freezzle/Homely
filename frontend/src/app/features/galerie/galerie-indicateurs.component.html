@@ -1,0 +1,174 @@
+<div class="flex flex-col gap-6 p-6">
+  <header class="flex flex-col gap-1">
+    <h1 class="text-xl font-bold">Galerie des indicateurs</h1>
+    <p class="text-sm text-[var(--app-ink-muted)]">
+      Un exemple de chaque indicateur partagé dans la carte standard <code>app-carte-info</code>.
+      Données factices — page de démonstration du design system.
+    </p>
+  </header>
+
+  <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <app-carte-info titre="Histogramme" sousTitre="Flux mensuels" ton="info">
+      <app-indicateur-histogramme [valeurs]="valeurs" [libelles]="libelles" [indexSurligne]="8" />
+    </app-carte-info>
+
+    <app-carte-info titre="Donut" sousTitre="Répartition par catégorie" ton="charge">
+      <app-indicateur-donut [segments]="segments" valeurCentrale="79k" libelleCentral="CHF" />
+    </app-carte-info>
+
+    <app-carte-info titre="Heatmap" sousTitre="Équilibre mois par mois" ton="succes">
+      <app-indicateur-heatmap [cellules]="cellules" [legende]="legendeHeatmap" />
+    </app-carte-info>
+
+    <app-carte-info titre="Nombre + tendance" sousTitre="Exercice 2026" ton="revenu" badgeTexte="KPI">
+      <app-indicateur-nombre-tendance valeur="14,8" unite="M CHF" [delta]="0.063" libelleComparaison="vs 2025" />
+    </app-carte-info>
+
+    <app-carte-info titre="Progression" sousTitre="Objectif annuel" ton="attention">
+      <app-indicateur-progression
+        [actuel]="680"
+        [cible]="900"
+        unite="k CHF"
+        [seuilAttention]="70"
+        actuelAffiche="680"
+        cibleAffichee="900"
+        resteAffiche="220" />
+    </app-carte-info>
+
+    <app-carte-info titre="Sparkline" sousTitre="Trésorerie cumulée" ton="info">
+      <app-indicateur-sparkline [serie]="serie" valeur="48'920" unite="CHF" [delta]="0.061" />
+    </app-carte-info>
+
+    <app-carte-info titre="Comparaison" sousTitre="Délai moyen de couverture" ton="reserve">
+      <app-indicateur-comparaison
+        libelleActuel="2026"
+        valeurActuelle="4,0 j"
+        libellePrecedent="2025"
+        valeurPrecedente="4,8 j"
+        [delta]="-0.167"
+        [inverserDelta]="true" />
+    </app-carte-info>
+
+    <app-carte-info titre="Comparaison (tableau)" sousTitre="Plusieurs éléments" ton="neutre">
+      <app-indicateur-comparaison
+        libelleColonne="Type de poste"
+        libellePrecedent="Juin 2027"
+        libelleActuel="Juillet 2027"
+        [elements]="elementsComparaison" />
+    </app-carte-info>
+
+    <app-carte-info titre="Barre empilée" sousTitre="Poids des catégories" ton="neutre">
+      <app-indicateur-barre-empilee [segments]="segments" />
+    </app-carte-info>
+
+    <app-carte-info titre="Niveau" sousTitre="Taux d'effort" ton="attention">
+      <app-indicateur-niveau
+        [niveau]="3"
+        libelle="Modéré"
+        ton="attention"
+        libelleDebut="Faible"
+        libelleFin="Critique" />
+    </app-carte-info>
+
+    <app-carte-info titre="Double courbe" sousTitre="Comparaison de périodes" ton="info">
+      <app-indicateur-double-courbe
+        [serieActuelle]="serie"
+        [seriePrecedente]="seriePrecedente"
+        valeur="1,28"
+        unite="M CHF"
+        [delta]="0.082"
+        libelleActuel="2026"
+        libellePrecedent="2025" />
+    </app-carte-info>
+
+    <app-carte-info titre="Entonnoir" sousTitre="Répartition du mois" ton="charge">
+      <app-indicateur-entonnoir [etapes]="etapes" />
+    </app-carte-info>
+
+    <app-carte-info titre="Gaufre" sousTitre="Besoins / plaisirs / épargne" ton="reserve">
+      <app-indicateur-gaufre [segments]="segmentsGaufre" />
+    </app-carte-info>
+
+    <app-carte-info titre="Courbes multiples" sousTitre="Revenus face aux sorties" ton="info">
+      <app-indicateur-courbes-multiples
+        [series]="seriesFlux"
+        [paire]="paireFlux"
+        [libelles]="libelles"
+        [libellesComplets]="moisComplets"
+        [indexSurligne]="9"
+        [indicesSignales]="moisDeficitaires" />
+    </app-carte-info>
+
+    <app-carte-info titre="Barres + ligne" sousTitre="Sorties empilées face aux revenus" ton="charge">
+      <app-indicateur-barres-ligne
+        [segments]="segmentsFlux"
+        [ligne]="ligneFlux"
+        [libelles]="libelles"
+        [libellesComplets]="moisComplets"
+        [indexSurligne]="9"
+        [indicesPrevision]="moisPrevisionnels" />
+    </app-carte-info>
+  </div>
+
+  <h2 class="text-lg font-semibold">Conteneur large (&gt; 560px)</h2>
+  <div class="flex flex-col gap-4">
+    <app-carte-info titre="Donut" sousTitre="Légende sur deux colonnes" ton="charge">
+      <app-indicateur-donut [segments]="segments" valeurCentrale="79k" libelleCentral="CHF" />
+    </app-carte-info>
+    <app-carte-info titre="Gaufre" sousTitre="Grille alignée à droite" ton="reserve">
+      <app-indicateur-gaufre [segments]="segmentsGaufre" />
+    </app-carte-info>
+    <app-carte-info titre="Courbes multiples" sousTitre="Zone d'écart sur toute la largeur" ton="info">
+      <app-indicateur-courbes-multiples
+        [series]="seriesFlux"
+        [paire]="paireFlux"
+        [libelles]="libelles"
+        [libellesComplets]="moisComplets"
+        [indexSurligne]="9"
+        [indicesSignales]="moisDeficitaires"
+        hauteur="180px" />
+    </app-carte-info>
+
+    <app-carte-info titre="Barres + ligne" sousTitre="Ligne en pointillés : budget de référence" ton="charge">
+      <app-indicateur-barres-ligne
+        [segments]="segmentsBudget"
+        [ligne]="ligneBudget"
+        [libelles]="libelles"
+        [libellesComplets]="moisComplets"
+        [indexSurligne]="11"
+        hauteur="180px" />
+    </app-carte-info>
+  </div>
+
+  <h2 class="text-lg font-semibold">Conteneur étroit (200px)</h2>
+  <div class="flex w-[200px] flex-col gap-4">
+    <app-carte-info titre="Progression" ton="info">
+      <app-indicateur-progression [actuel]="950" [cible]="900" unite="CHF" />
+    </app-carte-info>
+    <app-carte-info titre="Nombre + tendance" ton="revenu">
+      <app-indicateur-nombre-tendance valeur="3'450" unite="CHF" [delta]="-0.042" libelleComparaison="vs mois préc." />
+    </app-carte-info>
+    <app-carte-info titre="Entonnoir" ton="charge">
+      <app-indicateur-entonnoir [etapes]="etapes" />
+    </app-carte-info>
+    <app-carte-info titre="Courbes multiples" ton="info">
+      <app-indicateur-courbes-multiples
+        [series]="seriesFlux"
+        [paire]="paireFlux"
+        [libelles]="libelles"
+        [libellesComplets]="moisComplets"
+        [indexSurligne]="9"
+        hauteur="90px" />
+    </app-carte-info>
+
+    <app-carte-info titre="Barres + ligne" ton="charge">
+      <app-indicateur-barres-ligne
+        [segments]="segmentsFlux"
+        [ligne]="ligneFlux"
+        [libelles]="libelles"
+        [libellesComplets]="moisComplets"
+        [indexSurligne]="9"
+        hauteur="90px" />
+    </app-carte-info>
+  </div>
+</div>

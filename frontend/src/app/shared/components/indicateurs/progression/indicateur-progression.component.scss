@@ -1,0 +1,54 @@
+// Tokens --app-* globaux : voir frontend/src/styles/_app-tokens.css.
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.progression {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+
+  &__piste {
+    height: 10px;
+    border-radius: var(--app-radius-pill);
+    overflow: hidden;
+  }
+
+  &__remplissage {
+    display: block;
+    height: 100%;
+    border-radius: var(--app-radius-pill);
+    transition: width 0.25s ease, background 0.25s ease;
+  }
+
+  &__pied {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 12px;
+    color: var(--app-ink-muted);
+  }
+
+  &__mesure {
+    min-width: 0;
+    font-variant-numeric: tabular-nums;
+
+    b {
+      color: var(--app-ink);
+    }
+  }
+
+  &__reste {
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+// Conteneur étroit : le reste passerait à la ligne, on le masque.
+@container (max-width: 220px) {
+  .progression__reste {
+    display: none;
+  }
+}

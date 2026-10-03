@@ -1,4 +1,4 @@
-import { CategorieDto, ModeComptabilisation, MomentPeriode, NaturePoste, PosteDto, TypePoste } from '../../../core/models/api.models';
+import { ModeComptabilisation, MomentPeriode, NaturePoste, PosteDto, TypePoste } from '../../../core/models/api.models';
 
 /** Périmètre de l'écran : le foyer entier, ou l'id d'un membre actif. */
 export type Perimetre = 'foyer' | string;
@@ -30,22 +30,6 @@ export interface ScenarioComparaisonData {
   /** Total annuel par catégorie (déjà scopé au périmètre demandé). */
   parCategorie: Record<string, number>;
   postes: PosteDto[];
-}
-
-/** Sens de l'effet d'un indicateur sur le solde disponible :
- *  `1`  = « plus haut est mieux » (revenus, RàV, solde), sens du prototype.
- *  `-1` = « plus haut est pire »  (charges, réserves, poche).
- *  `0`  = neutre (aucune couleur favorable/défavorable — ex. réserves si l'on
- *         considère qu'un mouvement interne n'a pas de « bon » sens). */
-export type SensFavorable = 1 | -1 | 0;
-
-export interface IndicateurEcart {
-  cle: string;
-  label: string;
-  valeurA: number;
-  valeurB: number;
-  sensFavorable: SensFavorable;
-  note?: string;
 }
 
 export interface CascadeEtape {
@@ -110,9 +94,5 @@ export interface HeatmapLigne {
   libelle: string;
   /** 12 valeurs (janvier → décembre), effet signé de l'écart B-A sur le solde disponible. */
   valeursParMois: number[];
-}
-
-export interface CategorieResolue extends CategorieDto {
-  id: string;
 }
 

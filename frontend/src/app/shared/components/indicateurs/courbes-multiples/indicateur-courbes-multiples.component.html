@@ -1,0 +1,95 @@
+<div class="courbes-multiples">
+  <div class="courbes-multiples__zone" [style.height]="hauteur()">
+    <svg
+      class="courbes-multiples__svg"
+      viewBox="0 0 100 100"
+      preserveAspectRatio="none"
+      role="img"
+      [attr.aria-label]="descriptionAccessible()">
+      <title>{{ descriptionAccessible() }}</title>
+
+      @for (graduation of graduations(); track graduation.cle) {
+        <line
+          class="courbes-multiples__graduation"
+          [class.courbes-multiples__graduation--pointillee]="graduation.pointille"
+          x1="0"
+          x2="100"
+          [attr.y1]="graduation.y"
+          [attr.y2]="graduation.y" />
+      }
+
+      @for (polygone of polygonesZone(); track polygone.cle) {
+        <polygon [attr.points]="polygone.points" [attr.fill]="polygone.couleur" stroke="none" />
+      }
+
+      @for (courbe of courbes(); track courbe.cle) {
+        @if (courbe.chemin) {
+          <path
+            class="courbes-multiples__ligne"
+            fill="none"
+            [attr.d]="courbe.chemin"
+            [attr.stroke]="courbe.couleur"
+            [attr.stroke-width]="courbe.epaisseur"
+            [attr.stroke-dasharray]="courbe.tiret"
+            [attr.opacity]="courbe.opacite" />
+        }
+      }
+    </svg>
+
+    @for (graduation of graduations(); track graduation.cle) {
+      <span class="courbes-multiples__valeur-y" [style.top.%]="graduation.y" aria-hidden="true">{{ graduation.texte }}</span>
+    }
+
+    @for (courbe of courbes(); track courbe.cle) {
+      @if (courbe.point; as point) {
+        <span
+          class="courbes-multiples__point"
+          [style.left.%]="point.x"
+          [style.top.%]="point.y"
+          [style.background]="courbe.couleur"
+          aria-hidden="true"></span>
+      }
+    }
+
+    <div class="courbes-multiples__survols">
+      @for (abscisse of abscisses(); track abscisse.index) {
+        <span
+          class="courbes-multiples__survol"
+          role="img"
+          [pTooltip]="abscisse.infobulle"
+          tooltipPosition="top"
+          [attr.aria-label]="abscisse.infobulle"></span>
+      }
+    </div>
+  </div>
+
+  <div class="courbes-multiples__abscisses" aria-hidden="true">
+    @for (abscisse of abscisses(); track abscisse.index) {
+      <span
+        class="courbes-multiples__abscisse"
+        [class.courbes-multiples__abscisse--surligne]="abscisse.surligne"
+        [class.courbes-multiples__abscisse--signale]="abscisse.signale">{{ abscisse.libelle }}</span>
+    }
+  </div>
+
+  @if (afficherLegende()) {
+    <ul class="courbes-multiples__legende">
+      @for (courbe of courbes(); track courbe.cle) {
+        <li class="courbes-multiples__entree">
+          <span
+            class="courbes-multiples__trait"
+            [style.background]="courbe.fondLegende"
+            [style.opacity]="courbe.opaciteLegende"
+            aria-hidden="true"></span>
+          {{ courbe.libelle }}
+        </li>
+      }
+      @for (entree of legendeZone(); track entree.libelle) {
+        <li class="courbes-multiples__entree">
+          <span class="courbes-multiples__pave" [style.background]="entree.couleur" aria-hidden="true"></span>
+          {{ entree.libelle }}
+        </li>
+      }
+    </ul>
+  }
+</div>

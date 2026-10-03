@@ -32,6 +32,12 @@ export const routes: Routes = [
     path: 'register',
     loadComponent: () => import('./features/auth/register/register.component').then(m => m.RegisterComponent),
   },
+  // Galerie du design system (doc 03 §7.2) : aucune donnée de foyer, donc hors garde.
+  {
+    path: 'galerie',
+    loadComponent: () =>
+      import('./features/galerie/galerie-indicateurs.component').then(m => m.GalerieIndicateursComponent),
+  },
 
   // ── Shell protégé ───────────────────────────────────────────────────────────
   {

@@ -1,0 +1,76 @@
+@let ind = indicator();
+<app-carte-info
+  class="carte-indicateur"
+  [titre]="ind.title"
+  [sousTitre]="ind.subtitle ?? ''"
+  [badgeTexte]="ind.badgeTexte ?? ''"
+  [badgeTon]="ind.badgeTon ?? null">
+  <app-button
+    carte-actions
+    icon="pi pi-arrow-up-right"
+    [text]="true"
+    [rounded]="true"
+    size="small"
+    severity="secondary"
+    [tooltip]="t.dashboard.voirDetail"
+    tooltipPosition="top"
+    [ariaLabel]="t.dashboard.voirDetail + ' : ' + ind.title"
+    (clickEvent)="detailsClick.emit()" />
+
+  @let visuel = ind.visuel;
+  @switch (visuel.type) {
+    @case ('heatmap') {
+      <app-indicateur-heatmap [cellules]="visuel.cellules" [legende]="visuel.legende" />
+    }
+    @case ('barre-empilee') {
+      <app-indicateur-barre-empilee [segments]="visuel.segments" />
+    }
+    @case ('barres-empilees') {
+      <div class="carte-indicateur__barres">
+        @for (barre of visuel.barres; track barre.libelle) {
+          <div>
+            <p class="carte-indicateur__libelle-barre">{{ barre.libelle }}</p>
+            <app-indicateur-barre-empilee [segments]="barre.segments" />
+          </div>
+        }
+      </div>
+    }
+    @case ('gaufre') {
+      <app-indicateur-gaufre [segments]="visuel.segments" [total]="visuel.total" />
+    }
+    @case ('progression') {
+      <app-indicateur-progression
+        [actuel]="visuel.actuel"
+        [cible]="visuel.cible"
+        [ton]="visuel.ton"
+        [tonAtteint]="visuel.tonAtteint ?? 'succes'"
+        [tonPiste]="visuel.tonPiste ?? 'neutre'"
+        [actuelAffiche]="visuel.actuelAffiche"
+        [cibleAffichee]="visuel.cibleAffichee"
+        [resteAffiche]="visuel.resteAffiche"
+        [libelleAtteint]="visuel.libelleAtteint ?? ''" />
+    }
+    @case ('entonnoir') {
+      <app-indicateur-entonnoir [etapes]="visuel.etapes" />
+    }
+    @case ('sparkline') {
+      <app-indicateur-sparkline
+        [serie]="visuel.serie"
+        [valeur]="visuel.valeur"
+        [delta]="visuel.delta"
+        [ton]="visuel.ton ?? null" />
+    }
+    @case ('nombre-tendance') {
+      <app-indicateur-nombre-tendance
+        [valeur]="visuel.valeur"
+        [unite]="visuel.unite ?? ''"
+        [delta]="visuel.delta"
+        [deltaNeutre]="visuel.deltaNeutre ?? false"
+        [libelleComparaison]="visuel.libelleComparaison ?? ''"
+        [formateurDelta]="visuel.formateurDelta ?? null" />
+    }
+    @case ('vide') {
+      <p class="carte-indicateur__vide">{{ visuel.message }}</p>
+    }
+  }
+</app-carte-info>

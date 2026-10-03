@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, input, output } from '@angular/core';
-import { TimelineItem } from '../timeline/timeline.component';
+import { TimelineItem } from './timeline-item.model';
 
 interface EventGridGroup {
   when: string;

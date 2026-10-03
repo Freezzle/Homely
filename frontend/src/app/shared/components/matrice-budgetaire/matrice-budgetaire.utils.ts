@@ -9,9 +9,6 @@
  * dégradé de couleur des barres selon le score.
  */
 
-/** Nombre maximal de postes affichés (miroir de `MatriceBudgetaireService.TOP_N`). */
-export const TOP_N = 30;
-
 /** Paliers de score (0-100) utilisés pour le dégradé de couleur des barres — du plus
  *  neutre (score faible, poste à garder tel quel) au plus marqué (score élevé, poste
  *  prioritaire à réviser/couper). Triés par seuil croissant, le dernier est le palier

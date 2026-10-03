@@ -1,0 +1,14 @@
+<div class="nombre-tendance">
+  <p class="nombre-tendance__valeur">
+    {{ valeur() }}@if (unite()) {<span class="nombre-tendance__unite">{{ unite() }}</span>}
+  </p>
+  <div class="nombre-tendance__pied">
+    @let d = delta();
+    @if (d !== null) {
+      <app-badge-delta [delta]="d" [inverserDelta]="inverserDelta()" [neutre]="deltaNeutre()" [formateur]="formateurDelta()" />
+    }
+    @if (libelleComparaison()) {
+      <span class="nombre-tendance__comparaison">{{ libelleComparaison() }}</span>
+    }
+  </div>
+</div>

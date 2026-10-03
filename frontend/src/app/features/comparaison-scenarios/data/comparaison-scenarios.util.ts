@@ -3,7 +3,7 @@ import {
   VentilationAnnuelleDto, VentilationsDto,
 } from '../../../core/models/api.models';
 import {
-  CascadeEtape, CategorieEcartRow, FiltrePostesDiff, HeatmapLigne, IndicateurEcart,
+  CascadeEtape, CategorieEcartRow, FiltrePostesDiff, HeatmapLigne,
   MoisAgregatEnrichi, Perimetre, PosteDiffRow, ScenarioComparaisonData, StatutDiffPoste,
 } from './comparaison-scenarios.models';
 
@@ -73,24 +73,6 @@ export function construireDonneesScenario(
       );
 
   return { moisAgregats, totalAnnuel, parCategorie, postes };
-}
-
-/** Les 5 indicateurs budgétaires transverses (doc feature_5_bis §4), à partir des
- *  totaux annuels déjà combinés de chaque scénario. Non affichés sur cet écran
- *  mais le contrat doit exister pour un futur réemploi. */
-export function construireIndicateurs(
-  a: MoisAgregatEnrichi,
-  b: MoisAgregatEnrichi,
-  labels: { revenus: string; charges: string; reserves: string; argentPoche: string; soldeDisponible: string },
-  notes: { reserves: string; argentPoche: string; soldeDisponible: string },
-): IndicateurEcart[] {
-  return [
-    { cle: 'revenus', label: labels.revenus, valeurA: a.revenus, valeurB: b.revenus, sensFavorable: 1 },
-    { cle: 'charges', label: labels.charges, valeurA: a.charges, valeurB: b.charges, sensFavorable: -1 },
-    { cle: 'reserves', label: labels.reserves, valeurA: a.reserves, valeurB: b.reserves, sensFavorable: -1, note: notes.reserves },
-    { cle: 'argentPoche', label: labels.argentPoche, valeurA: a.argentPoche, valeurB: b.argentPoche, sensFavorable: -1, note: notes.argentPoche },
-    { cle: 'soldeDisponible', label: labels.soldeDisponible, valeurA: a.soldeDisponible, valeurB: b.soldeDisponible, sensFavorable: 1, note: notes.soldeDisponible },
-  ];
 }
 
 /** Cascade budgétaire (doc feature_5_bis §7) — un agrégat (mois précis ou total

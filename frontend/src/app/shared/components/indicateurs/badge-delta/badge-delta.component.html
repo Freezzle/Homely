@@ -1,0 +1,6 @@
+<span class="badge-delta" [style.color]="couleur()" [style.background]="fond()">
+  @if (symbole()) {
+    <span class="badge-delta__symbole" aria-hidden="true">{{ symbole() }}</span>
+  }
+  <span>{{ texte() }}</span>
+</span>

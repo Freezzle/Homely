@@ -214,18 +214,59 @@ constantes auparavant codées en dur côté frontend.
 ### 3.1 Tableau de bord (écran unifié `DashboardComponent`)
 Deux axes pilotés par l'URL : **sujet** (`foyer` = cumul, ou un membre = données propres,
 scoping backend via `parMembre`/`moisParMembre*`) et **vue** (annuelle si `:annee` seul,
-mensuelle si `:annee/:mois`). Bloc résumé : `app-metric-ring`, `app-stat-grid`,
-`app-kpi-chip-row`. Onglets (`app-tab-group`) : `recap` (bascule catégorie/type/compte),
-`graphiques` (flux mensuel / trésorerie / prévu vs réel en `p-chart`), `events`
-(`app-event-grid`, alimenté par `…/projection/evenements`). Indicateurs
+mensuelle si `:annee/:mois`). Vues (`hly-view-switcher`) : aperçu, comptes, postes,
+membres, chacune composée de cartes d'indicateurs (`app-carte-indicateur`) ; les
+événements proviennent de `…/projection/evenements`. Indicateurs
 enrichis (`features/dashboard/indicators/`) dont `taux-effort-membre`
-(`app-taux-effort-card`, jauges « charges + réserves » et « + argent de poche »).
+(cartes d'indicateurs détaillées ci-dessous).
 Les blocs encadrés utilisent la carte standard `app-carte-info` (doc 03 §7.2) : vue
-*Aperçu* « Flux mensuel » et « Répartition du mois », vue *Comptes* « Virements des
+*Aperçu* « Flux mensuel » (`app-indicateur-courbes-multiples`, **vue annuelle uniquement** :
+une courbe **cumulée** par type de sortie — charges, puis + réserves, puis + argent de poche
+s'il y en a — toutes en traits tirés, seuls les revenus étant en trait plein ; la dernière
+courbe porte donc le total des sorties et la zone d'écart avec les revenus matérialise le
+solde restant, verte tant qu'il est positif, rouge sinon, avec bascule exactement au
+croisement ; mois déficitaires signalés en rouge sous l'axe ; infobulle détaillant les
+montants **par type** — pas les cumuls tracés — et le solde restant)
+et « Répartition du mois / de l'année » (`app-indicateur-entonnoir`,
+une ligne par revenus / charges sûres / réserves / argent de poche si configuré / reste à
+vivre, chacune avec son montant et sa **part des revenus** de la période — sans soustraction
+en cascade, et colorée par le ton du type), puis une carte **« Comparaison de période »** :
+un `app-indicateur-comparaison` en mode tableau
+(« Type de poste | période précédente | période courante », une ligne par revenus, charges,
+réserves, argent de poche, solde restant)
+confrontant la période courante à la précédente — mois précédent en vue mois (décembre de
+l'an passé si janvier), année précédente en vue année ; `inverserDelta` sur les seules
+charges, montants arrondis à l'unité, tiret et badge masqué quand la référence n'existe pas.
+**Disposition** : en vue année, « Flux mensuel » occupe seul toute la première ligne, puis
+« Répartition de l'année » et « Comparaison de période » se partagent la suivante (2
+colonnes) ; en vue mois, le flux disparaît et « Répartition du mois » + « Comparaison de
+période » se partagent la première ligne.
+Vue *Comptes* « Virements des
 comptes », vue *Postes* trois donuts `app-indicateur-donut` alignés sur une ligne en
 desktop (revenus → charges → réserves, empilés en mobile), alimentés par
 `…/projection/repartition-categories` (top 6 + « Autres », total compact au centre) et
 suivant le sujet (foyer/membre) et la vue (année/mois).
+
+**Cartes d'indicateurs** (`features/dashboard/indicators/`, grille de
+`app-carte-indicateur` en bas de chaque vue) : chaque fonction `xxxIndicator(...)` renvoie
+un `Indicator` (titre, aide, badge de valeur clé `badgeTexte`/`badgeTon`, `visuel` = union
+discriminée vers un `app-indicateur-*`, composant de drawer). Le détail s'ouvre via le bouton
+« Voir le détail » du slot `[carte-actions]` (la carte elle-même n'est pas cliquable).
+
+| Vue | Indicateur | Visuel | Badge |
+|---|---|---|---|
+| Aperçu (année) | Mois à risque | heatmap 12 mois (sous le seuil / < 2× seuil / confortable) | nb de mois à risque |
+| Aperçu | Événements | nombre + tendance : nb d'événements, écart en nombre vs période précédente (ton neutre ; masqué si N-1 hors scénario) | favorables · défavorables |
+| Aperçu | Plaisirs vs Besoins | barre empilée du revenu : besoins / plaisirs / reste | % besoins / revenus (`danger` > seuil) |
+| Comptes (membre) | Virements des comptes | entonnoir « source → destination » (top 5 + Autres), avatar des titulaires devant les comptes d'un autre membre | total à virer |
+| Comptes (année) | Évolution graphique | sparkline trésorerie cumulée, variation vs fin N-1 | — |
+| Postes | Ventilation des postes | barre empilée du revenu : charges / réserves / argent de poche / solde | solde restant |
+| Postes | Postes à optimiser | gaufre, un point par poste (à optimiser / à surveiller / à garder) | nb à optimiser |
+| Membres | Taux d'effort (par membre) | barre empilée du revenu : charges / réserves / argent de poche / reste | taux, ton de zone |
+| Membres | Prorata partagé | 2 barres empilées : appliqué vs théorique (revenus) | — |
+
+Le drawer « Taux d'effort » affiche 3 `app-carte-info` + `app-indicateur-niveau`
+(charges seules, + réserves, + argent de poche ; tranches de 20 %, ton de zone).
 
 ### 3.2 Revenus / Charges / Réserves (`PostesListeComponent`, paramétré par `type`)
 Liste en cartes (barre accent colorée par type) : description + badge `ESTIMATION ± X.X%`,
@@ -264,9 +305,11 @@ pour `VIEWER`.
 
 ## 4. Pratiques transverses
 - Composants partagés du dashboard (`shared/components/`) sans logique métier (agrégats
-  reçus en `@Input`) : `tab-group`, `page-nav`, `metric-ring`, `stat-grid`,
-  `kpi-chip(-row)`, `event-grid`, `objective-progress`, `taux-effort-card`, plus le socle
-  d'affichage standard `carte-info` + `indicateurs/{histogramme,donut,heatmap}`
-  (doc 03 §7.2).
-- **Aucun texte en dur** → clés i18n. Formatage montants/dates via `Intl` + `deviseBase`
+  reçus en `@Input`) : `metric-ring`, `event-grid`, `taux-effort-card`, plus le socle
+  d'affichage standard `carte-info` + `indicateurs/{histogramme, donut, heatmap,
+  nombre-tendance, progression, sparkline, comparaison, barre-empilee, niveau,
+  double-courbe, entonnoir, gaufre}` et le badge partagé `badge-delta` (doc 03 §7.2).
+- **Aucun texte en dur** → clés i18n (seule exception : la galerie du design system,
+  route publique `/galerie`, qui n'affiche que des données factices — doc 03 §7.2).
+  Formatage montants/dates via `Intl` + `deviseBase`
   (pipes dédiés). Miroir des règles serveur côté UX (répartition à 100 % avant sauvegarde).

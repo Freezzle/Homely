@@ -19,7 +19,7 @@ import { creerDevisesDisponibles } from '../../../core/utils/devise-options.util
 import { toIsoDateLocal, parseIsoDateLocal } from '../../../core/utils/date.util';
 import { arrondirSommeRepartition, sommeRepartitionValide as estSommeRepartitionValide } from '../../../core/utils/repartition.util';
 import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
-import { normaliserCouleur, couleurTexteContraste } from '../../../shared/utils/couleur.util';
+import { normaliserCouleur } from '../../../shared/utils/couleur.util';
 import { MembresTagsComponent } from '../../../shared/components/membres-tags/membres-tags.component';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
 import {
@@ -130,10 +130,6 @@ export class PosteFormDialogComponent {
   private readonly momentValue = toSignal(
     this.form.get('moment')!.valueChanges.pipe(startWith(this.form.get('moment')!.value)),
     { initialValue: 'DEBUT_PERIODE' },
-  );
-  private readonly finValue = toSignal(
-    this.form.get('fin')!.valueChanges.pipe(startWith(this.form.get('fin')!.value)),
-    { initialValue: null as Date | null },
   );
   /** Valeur courante du formulaire, réactive — utilisée par le récapitulatif (étape 4). */
   readonly formValue = toSignal(
@@ -263,7 +259,7 @@ export class PosteFormDialogComponent {
    * peut afficher (ex. sur mobile), pour que l'utilisateur suive sa progression.
    */
   private readonly _centrerEtapeActive = effect(() => {
-    const etape = this.etapeActive();
+    this.etapeActive();
     if (!this.visible()) return;
     untracked(() => {
       queueMicrotask(() => {
@@ -562,10 +558,6 @@ export class PosteFormDialogComponent {
 
   normaliserCouleur(couleur?: string): string {
     return normaliserCouleur(couleur);
-  }
-
-  couleurTexteContraste(hexColor: string): string {
-    return couleurTexteContraste(hexColor);
   }
 
   initiales(nom: string): string {

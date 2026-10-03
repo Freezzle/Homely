@@ -41,10 +41,6 @@ export class AuthService {
     return this.http.post<MoiResponse>('/api/auth/register', req);
   }
 
-  moi() {
-    return this.http.get<MoiResponse>('/api/auth/moi');
-  }
-
   /**
    * Rafraîchit le token d'accès à partir du refresh token porté par le cookie
    * httpOnly (envoyé automatiquement par le navigateur, jamais lu en JS).

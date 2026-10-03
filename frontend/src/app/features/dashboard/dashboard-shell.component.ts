@@ -1,15 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, effect, inject, input, numberAttribute } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
-import { DialogModule } from 'primeng/dialog';
 import { SkeletonModule } from 'primeng/skeleton';
 import { PeriodRailComponent } from '../../shared/components/period-rail/period-rail.component';
 import { DashboardView, ViewSwitcherComponent } from '../../shared/components/view-switcher/view-switcher.component';
-import { SelectComponent, InputNumberComponent, InputTextComponent } from '../../shared/components/form-fields';
-import { ButtonComponent } from '../../shared/components/button/button.component';
 import { IndicatorDrawerComponent } from './shared/components/indicator-drawer/indicator-drawer.component';
 import { DashboardFacadeService, DashboardViewKey } from './shared/services/dashboard-facade.service';
 
@@ -19,15 +15,9 @@ import { DashboardFacadeService, DashboardViewKey } from './shared/services/dash
   imports: [
     CommonModule,
     RouterOutlet,
-    ReactiveFormsModule,
-    DialogModule,
     SkeletonModule,
     PeriodRailComponent,
     ViewSwitcherComponent,
-    SelectComponent,
-    InputNumberComponent,
-    InputTextComponent,
-    ButtonComponent,
     IndicatorDrawerComponent,
   ],
   providers: [DashboardFacadeService],

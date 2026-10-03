@@ -1,0 +1,101 @@
+// Tokens --app-* globaux : voir frontend/src/styles/_app-tokens.css.
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.entonnoir {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+
+  &__ligne {
+    position: relative;
+    border-radius: 5px;
+    background: var(--app-line-2);
+    overflow: hidden;
+    font-size: 12px;
+
+    &--interactive {
+      cursor: pointer;
+    }
+  }
+
+  &__barre {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    border-radius: 5px;
+  }
+
+  &__contenu {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 32px;
+    padding: 0 10px;
+  }
+
+  &__libelle {
+    flex: 1 1 auto;
+    min-width: 0;
+    color: var(--app-ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &--segments {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+  }
+
+  &__segment {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__avatars {
+    flex-shrink: 0;
+  }
+
+  &__avatars &__avatar {
+    width: 18px;
+    height: 18px;
+    font-size: 8px;
+    font-weight: 700;
+    border-width: 1px;
+  }
+
+  &__avatars &__avatar + &__avatar {
+    margin-inline-start: -5px;
+  }
+
+  &__secondaire {
+    flex-shrink: 0;
+    color: var(--app-ink-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__valeur {
+    flex-shrink: 0;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--app-ink);
+  }
+}
+
+// Conteneur étroit : la part en pourcentage cède la place au montant.
+@container (max-width: 240px) {
+  .entonnoir__secondaire {
+    display: none;
+  }
+}

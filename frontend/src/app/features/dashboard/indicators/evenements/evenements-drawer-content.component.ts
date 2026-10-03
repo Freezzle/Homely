@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, Signal, inject, input } from '@angular/core';
 import { EventGridComponent } from '../../../../shared/components/event-grid/event-grid.component';
-import { TimelineItem } from '../../../../shared/components/timeline/timeline.component';
+import { TimelineItem } from '../../../../shared/components/event-grid/timeline-item.model';
 import { I18nService } from '../../../../core/i18n/i18n.service';
 
 /**

@@ -1,0 +1,46 @@
+// Tokens --app-* globaux : voir frontend/src/styles/_app-tokens.css.
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.nombre-tendance {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  min-width: 0;
+
+  &__valeur {
+    margin: 0;
+    font-size: clamp(24px, 13cqi, 38px);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    color: var(--app-ink);
+    overflow-wrap: anywhere;
+  }
+
+  &__unite {
+    margin-left: 4px;
+    font-size: 0.45em;
+    font-weight: 600;
+    color: var(--app-ink-muted);
+  }
+
+  &__pied {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 12px;
+  }
+
+  &__comparaison {
+    min-width: 0;
+    color: var(--app-ink-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

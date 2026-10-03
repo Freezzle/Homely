@@ -48,11 +48,6 @@ export class ContexteService {
    */
   readonly sidebarOuverte = signal<boolean>(true);
 
-  /** Bascule l'ouverture de la sidebar (utilisé par la topbar en mobile). */
-  toggleSidebar(): void {
-    this.sidebarOuverte.update(v => !v);
-  }
-
   setFoyer(foyer: FoyerDto | null): void {
     const foyerAvant = this._foyer();
     this._foyer.set(foyer);
@@ -90,12 +85,4 @@ export class ContexteService {
     document.documentElement.classList.toggle('dark', dark);
   }
 
-  /** Rétrocompatibilité — préférer estEditor()/estOwner() dans les templates */
-  aLeRole(roleMinimum: 'OWNER' | 'EDITOR' | 'VIEWER'): boolean {
-    const role = this.monRole();
-    if (!role) return false;
-    if (roleMinimum === 'VIEWER') return true;
-    if (roleMinimum === 'EDITOR') return role === 'EDITOR' || role === 'OWNER';
-    return role === 'OWNER';
-  }
 }

@@ -56,15 +56,3 @@ export function formatMontantSigne(valeur: number, langue: string | null | undef
   return valeur > 0 ? `+${abs}` : `${MOINS_TYPO}${abs}`;
 }
 
-/**
- * Formate un pourcentage d'évolution signé avec une décimale (utilisé par
- * `IndicateurEcartComponent`, §4). Retourne `—` si nul.
- */
-export function formatPourcentageSigne(valeur: number, langue: string | null | undefined): string {
-  if (estNul(valeur)) return TIRET_NUL;
-  const abs = new Intl.NumberFormat(localeDeLangue(langue), {
-    maximumFractionDigits: 1,
-    minimumFractionDigits: 1,
-  }).format(Math.abs(valeur));
-  return valeur > 0 ? `+${abs}\u00A0%` : `${MOINS_TYPO}${abs}\u00A0%`;
-}

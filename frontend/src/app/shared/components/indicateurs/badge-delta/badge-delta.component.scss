@@ -1,0 +1,22 @@
+// Tokens --app-* globaux : voir frontend/src/styles/_app-tokens.css.
+:host {
+  display: inline-flex;
+  min-width: 0;
+}
+
+.badge-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 3px 7px;
+  border-radius: var(--app-radius-pill);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+
+  &__symbole {
+    font-size: 9px;
+    line-height: 1;
+  }
+}

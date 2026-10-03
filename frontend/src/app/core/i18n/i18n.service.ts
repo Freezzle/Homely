@@ -37,16 +37,8 @@ export function langueInitiale(): Langue {
 export class I18nService {
   private readonly translate = inject(TranslateService);
 
-  /** Langues proposées dans le sélecteur de langue. */
-  readonly availableLangs = LANGUES_DISPONIBLES;
-
   /** Langue courante (signal), ex. 'fr'. */
   readonly currentLang = this.translate.currentLang;
-
-  /** Change la langue active de l'application (chargement immédiat du JSON). */
-  use(lang: string) {
-    return this.translate.use(lang);
-  }
 
   /**
    * Change durablement la langue de l'utilisateur : persiste son choix puis

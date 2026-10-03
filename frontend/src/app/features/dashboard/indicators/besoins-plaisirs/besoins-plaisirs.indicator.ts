@@ -1,46 +1,47 @@
 import { Indicator } from '../../shared/models/indicator.model';
-import { IconColor } from '../../shared/models/icon-color.type';
 import { BesoinsPlaisirsCardData } from '../../../../shared/components/besoins-plaisirs-card/besoins-plaisirs-card.component';
 import { formatTaux } from '../../../../shared/utils/format-taux.util';
 import { BesoinsPlaisirsDrawerContentComponent } from './besoins-plaisirs-drawer-content.component';
 import { AppTranslations } from '../../../../core/i18n/i18n.types';
 import { SeuilsDashboardDto } from '../../../../core/models/api.models';
+import { FormateurMontant, segmentsProportionnels } from '../visuel-indicateur.util';
 
-/**
- * Construit la déclaration de carte + drawer pour l'indicateur "Plaisirs vs Besoins", à
- * partir des données déjà résolues (`BesoinsPlaisirsCardData`) — mêmes données que
- * celles utilisées par `BesoinsPlaisirsCardComponent`, pas de nouvel appel. Réutilisée
- * telle quelle pour le mensuel et l'annuel : la donnée d'entrée est déjà auto-scopée
- * foyer/membre par le composant appelant (voir `agregatMoisCourant`/`agregatAnneeCourant`).
- *
- * L'info affichée est le **taux budget** (Besoins / revenus totaux, seuil 50 %) — pas
- * le taux charges-vs-charges (besoins vs plaisirs, seuil 28 %, réservé au donut du
- * drawer) : c'est la lecture la plus parlante pour l'utilisateur ("quelle part de mon
- * revenu part dans mes charges de nécessité ?").
- */
 type BesoinsPlaisirsIndicatorSeuils = Pick<SeuilsDashboardDto, 'besoinsPlaisirsBudget'>;
 
+/**
+ * Construit la carte + drawer de l'indicateur "Plaisirs vs Besoins", à partir des données
+ * déjà résolues (`BesoinsPlaisirsCardData`, auto-scopées foyer/membre). Visuel : barre
+ * empilée du revenu (Besoins / Plaisirs / Reste du budget). Badge = **taux budget**
+ * (Besoins / revenus totaux), en `danger` au-delà du seuil `besoinsPlaisirsBudget`.
+ */
 export function besoinsPlaisirsIndicator(
   cle: string,
   data: BesoinsPlaisirsCardData,
   t: AppTranslations,
   seuils: BesoinsPlaisirsIndicatorSeuils,
+  formatMontant: FormateurMontant,
 ): Indicator {
   const total = data.montantBesoins + data.montantPlaisirs;
   const tauxBesoinsBudget = data.revenusTotal > 0 ? (data.montantBesoins / data.revenusTotal) * 100 : 0;
-  const infoColor: IconColor = tauxBesoinsBudget > seuils.besoinsPlaisirsBudget ? 'red' : 'pos';
+  const segments = segmentsProportionnels(
+    [
+      { libelle: t.dashboard.besoinsPlaisirsBesoins, montant: data.montantBesoins, ton: 'charge' },
+      { libelle: t.dashboard.besoinsPlaisirsPlaisirs, montant: data.montantPlaisirs, ton: 'argent-poche' },
+      { libelle: t.dashboard.besoinsPlaisirsResteBudget, montant: data.revenusTotal - total, ton: 'neutre' },
+    ],
+    data.revenusTotal,
+    formatMontant,
+  );
 
   return {
     key: cle,
-    icon: 'pi pi-heart',
-    // Icône fixe : représente le symbole de l'indicateur, indépendante du taux courant.
-    // La couleur de zone est portée par `infoColor` (le %).
-    iconColor: 'gray',
     title: t.dashboard.indicateurBesoinsPlaisirsTitre,
     subtitle: t.dashboard.indicateurBesoinsPlaisirsSousTitre,
-    info: total > 0 ? `${formatTaux(tauxBesoinsBudget)}%` : t.dashboard.besoinsPlaisirsNA,
-    infoColor: total > 0 ? infoColor : 'gray',
-    infoSubtitle: t.dashboard.indicateurBesoinsPlaisirsInfoSousTitre,
+    badgeTexte: total > 0 ? `${formatTaux(tauxBesoinsBudget)}% ${t.dashboard.indicateurBesoinsPlaisirsInfoSousTitre}` : t.dashboard.besoinsPlaisirsNA,
+    badgeTon: total > 0 ? (tauxBesoinsBudget > seuils.besoinsPlaisirsBudget ? 'danger' : 'succes') : undefined,
+    visuel: total > 0 && segments.length
+      ? { type: 'barre-empilee', segments }
+      : { type: 'vide', message: t.dashboard.besoinsPlaisirsNaRaison },
     drawerContent: BesoinsPlaisirsDrawerContentComponent,
   };
 }

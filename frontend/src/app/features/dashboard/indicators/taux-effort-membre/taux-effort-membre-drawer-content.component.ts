@@ -2,7 +2,8 @@ import { Component, ChangeDetectionStrategy, computed, inject, input } from '@an
 import { CommonModule } from '@angular/common';
 import { DividerModule } from 'primeng/divider';
 import { TauxEffortCardData } from '../../../../shared/components/taux-effort-card/taux-effort-card.component';
-import { IndicatorCardComponent } from '../../../../shared/components/indicator-bar/indicator-bar-card.component';
+import { CarteInfoComponent } from '../../../../shared/components/carte-info/carte-info.component';
+import { IndicateurProgressionComponent } from '../../../../shared/components/indicateurs/progression/indicateur-progression.component';
 import { TagComponent } from '../../../../shared/components/tag/tag.component';
 import { MontantPipe } from '../../../../core/pipes/format.pipes';
 import { I18nService } from '../../../../core/i18n/i18n.service';
@@ -11,9 +12,10 @@ import { buildTauxEffortDrawerView } from './taux-effort-membre-drawer-content.h
 /**
  * Contenu du drawer pour l'indicateur "Taux d'effort par membre".
  *
- * Rendu à base de 3 `<app-indicator-card>` empilées (une par jauge : charges,
- * charges + réserves, charges + réserves + argent de poche) alimentées par
- * `buildTauxEffortDrawerView()` — plus de dépendance à `TauxEffortCardComponent`.
+ * Rendu à base de 3 `<app-carte-info>` empilées (une par jauge : charges,
+ * charges + réserves, charges + réserves + argent de poche), chacune portant un
+ * `<app-indicateur-progression>` alimenté par `buildTauxEffortDrawerView()` : part
+ * consommée en rouge « charges », part restante dans le gris « restant ».
  * Conserve autour :
  *  - un en-tête avec le tag membre + un badge de zone (Confortable/Correct/Tendu/Saturé) ;
  *  - un message de conseil sous les cartes (Tendu/Saturé) ;
@@ -22,7 +24,7 @@ import { buildTauxEffortDrawerView } from './taux-effort-membre-drawer-content.h
 @Component({
   selector: 'app-taux-effort-membre-drawer-content',
   standalone: true,
-  imports: [CommonModule, DividerModule, IndicatorCardComponent, TagComponent, MontantPipe],
+  imports: [CommonModule, DividerModule, CarteInfoComponent, IndicateurProgressionComponent, TagComponent, MontantPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './taux-effort-membre-drawer-content.component.html',
   styleUrl: './taux-effort-membre-drawer-content.component.scss',

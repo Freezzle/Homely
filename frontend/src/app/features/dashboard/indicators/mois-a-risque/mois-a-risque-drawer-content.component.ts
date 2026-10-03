@@ -4,7 +4,7 @@ import { MetricRingComponent, MetricRingSegment } from '../../../../shared/compo
 import { MontantPipe } from '../../../../core/pipes/format.pipes';
 import { I18nService } from '../../../../core/i18n/i18n.service';
 
-/** Un mois dont le solde disponible est passé sous le seuil de risque. */
+/** Un mois dont le solde disponible est négatif. */
 export interface MoisARisqueItem {
   label: string;
   soldeDisponible: number;
@@ -25,7 +25,7 @@ export interface MoisARisqueDrawerData {
 
 /**
  * Contenu du drawer pour l'indicateur "Mois à risque" : anneau plein format (mois positifs
- * vs négatifs) + liste détaillée des mois dont le solde disponible est sous le seuil.
+ * vs négatifs) + liste détaillée des mois dont le solde disponible est négatif.
  */
 @Component({
   selector: 'app-mois-a-risque-drawer-content',

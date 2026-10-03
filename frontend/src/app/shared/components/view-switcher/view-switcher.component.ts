@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { TooltipModule } from 'primeng/tooltip';
 import { I18nService } from '../../../core/i18n/i18n.service';
+import { ViewportService } from '../../../core/services/viewport.service';
 
 export interface DashboardView {
   key: 'apercu' | 'comptes' | 'postes' | 'membres';
@@ -19,8 +20,8 @@ interface DashboardIconPaths {
 // Inline bichrome SVGs keep the "icon sprite name" contract from the spec without adding a global icon registry.
 const VIEW_SWITCHER_ICONS: Record<DashboardViewKey, DashboardIconPaths> = {
   apercu: {
-    secondary: 'M12 4.25C6.76 4.25 2.33 7.53 1 12c1.33 4.47 5.76 7.75 11 7.75S21.67 16.47 23 12C21.67 7.53 17.24 4.25 12 4.25Zm0 11.5A3.75 3.75 0 1 1 12 8.25a3.75 3.75 0 0 1 0 7.5Z',
-    primary: 'M11 2a1 1 0 0 1 2 0v1.2a8.96 8.96 0 0 1 4.62 1.91l.85-.85a1 1 0 1 1 1.41 1.41l-.84.85A8.95 8.95 0 0 1 20.95 11H22a1 1 0 1 1 0 2h-1.05a8.95 8.95 0 0 1-1.91 4.48l.84.85a1 1 0 0 1-1.41 1.41l-.85-.84A8.95 8.95 0 0 1 13 20.8V22a1 1 0 1 1-2 0v-1.2a8.95 8.95 0 0 1-4.62-1.9l-.85.84a1 1 0 1 1-1.41-1.41l.84-.85A8.95 8.95 0 0 1 3.05 13H2a1 1 0 1 1 0-2h1.05a8.95 8.95 0 0 1 1.91-4.48l-.84-.85a1 1 0 0 1 1.41-1.41l.85.85A8.96 8.96 0 0 1 11 3.2V2Zm1 5.5a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9Z',
+    secondary: 'M6 17.5a6 6 0 0 1 12 0Z',
+    primary: 'M12 5.5A11.5 11.5 0 0 0 .5 17a1 1 0 0 0 1 1h3.2a1 1 0 0 0 0-2H2.55a9.5 9.5 0 0 1 18.9 0h-2.15a1 1 0 1 0 0 2h3.2a1 1 0 0 0 1-1A11.5 11.5 0 0 0 12 5.5Zm4.9 4.9-4.3 4.1a2.1 2.1 0 1 0 1.6 1.6l4.1-4.3a1 1 0 0 0-1.4-1.4Z',
   },
   comptes: {
     secondary: 'M3 7.5A2.5 2.5 0 0 1 5.5 5H18a3 3 0 0 1 3 3v2.25h-3a2.75 2.75 0 0 0 0 5.5h3V17a3 3 0 0 1-3 3H5.5A2.5 2.5 0 0 1 3 17.5v-10Z',
@@ -46,10 +47,13 @@ const VIEW_SWITCHER_ICONS: Record<DashboardViewKey, DashboardIconPaths> = {
 })
 export class ViewSwitcherComponent {
   protected readonly i18n = inject(I18nService);
+  private readonly viewport = inject(ViewportService);
 
   readonly views = input.required<DashboardView[]>();
   readonly active = input.required<DashboardViewKey>();
   readonly activeChange = output<DashboardViewKey>();
+
+  protected readonly afficheLibelle = computed(() => !this.viewport.estMobile());
 
   protected readonly toolbarLabel = computed(() => this.views().map((view) => view.label).join(' • '));
 

@@ -1,4 +1,6 @@
 import { Indicator } from '../../shared/models/indicator.model';
+import { SegmentBarreEmpilee } from '../../../../shared/components/indicateurs/barre-empilee/indicateur-barre-empilee.component';
+import { tonCategorie } from '../../../../shared/components/indicateurs/tons';
 import { ProrataPartageMembreDto } from '../../../../core/models/api.models';
 import { ProrataPartageDrawerContentComponent } from './prorata-partage-drawer-content.component';
 import { AppTranslations } from '../../../../core/i18n/i18n.types';
@@ -12,29 +14,38 @@ export function aDesDonneesProrataPartage(dtos: ProrataPartageMembreDto[] | null
 }
 
 /**
- * Construit la déclaration de carte + drawer pour l'indicateur "Prorata des postes
- * partagés", à partir des données déjà résolues (`ProrataPartageMembreDto[]`). Carte :
- * un tag coloré par membre (couleur du membre) affichant son % de prorata moyen
- * appliqué. Drawer : tableau détaillé prorata appliqué / prorata théorique-revenu /
- * écart par membre.
+ * Construit la carte + drawer de l'indicateur "Prorata des postes partagés", à partir des
+ * données déjà résolues (`ProrataPartageMembreDto[]`). Visuel : deux barres empilées
+ * comparables — prorata moyen appliqué vs prorata théorique selon les revenus — avec un
+ * ton catégoriel stable par membre (même rang dans les deux barres). Drawer : tableau
+ * détaillé par membre.
  */
 export function prorataPartageIndicator(cle: string, dtos: ProrataPartageMembreDto[], t: AppTranslations): Indicator {
-  const tags = dtos
-    .filter((d) => d.aDesPostesPartages && d.prorataMoyenApplique != null)
-    .map((d) => ({
-      label: `${d.nomMembre ?? ''} · ${formatTaux(d.prorataMoyenApplique! * 100)}%`,
-      couleur: d.couleurMembre ?? '#9CA3AF',
-    }));
+  const segments = (part: (d: ProrataPartageMembreDto) => number | null): SegmentBarreEmpilee[] =>
+    dtos
+      .map((d, index) => ({ d, index, valeur: part(d) }))
+      .filter((x): x is { d: ProrataPartageMembreDto; index: number; valeur: number } => x.valeur != null)
+      .map(({ d, index, valeur }) => ({
+        libelle: d.nomMembre ?? '',
+        valeur: valeur * 100,
+        ton: tonCategorie(index),
+        infobulle: `${d.nomMembre ?? ''} · ${formatTaux(valeur * 100)}%`,
+      }));
+
+  const appliques = segments((d) => (d.aDesPostesPartages ? d.prorataMoyenApplique : null));
+  const theoriques = segments((d) => d.prorataTheoriqueRevenu);
 
   return {
     key: cle,
-    icon: 'pi pi-percentage',
-    // Icône fixe : représente le symbole de l'indicateur, indépendante des valeurs
-    // courantes (chaque membre a déjà sa propre couleur dans les tags).
-    iconColor: 'gray',
     title: t.dashboard.indicateurProrataPartageTitre,
     subtitle: t.dashboard.indicateurProrataPartageSousTitre,
-    tags,
+    visuel: {
+      type: 'barres-empilees',
+      barres: [
+        { libelle: t.dashboard.prorataPartageColonneApplique, segments: appliques },
+        ...(theoriques.length ? [{ libelle: t.dashboard.prorataPartageColonneTheorique, segments: theoriques }] : []),
+      ],
+    },
     drawerContent: ProrataPartageDrawerContentComponent,
   };
 }

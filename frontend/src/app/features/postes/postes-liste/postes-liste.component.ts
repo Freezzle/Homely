@@ -14,7 +14,7 @@ import { ContexteService } from '../../../core/services/contexte.service';
 import { ViewportService } from '../../../core/services/viewport.service';
 import { PosteService } from '../../../core/services/scenario-poste.service';
 import { CategorieService, CompteService } from '../../../core/services/referentiel.service';
-import { PosteDto, CategorieDto, CompteDto, MembreDto, VentilationCompteDto, TypePoste, ChampGroupable } from '../../../core/models/api.models';
+import { PosteDto, CategorieDto, CompteDto, VentilationCompteDto, TypePoste, ChampGroupable } from '../../../core/models/api.models';
 import { MontantPipe, PeriodicitePipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { localeDeLangue } from '../../../core/i18n/locale.util';
@@ -35,7 +35,7 @@ import { PosteBulkChampDialogComponent } from '../poste-bulk-champ-dialog/poste-
 import { PosteBulkSuppressionDialogComponent } from '../poste-bulk-suppression-dialog/poste-bulk-suppression-dialog.component';
 import { PostesBarreFiltresComponent } from './postes-barre-filtres/postes-barre-filtres.component';
 import {
-  EtatFiltresPostes, FiltreEtatPoste, OptionFacette, ETAT_FILTRES_PAR_DEFAUT, compterFiltresActifs, CritereTri,
+  EtatFiltresPostes, FiltreEtatPoste, OptionFacette, ETAT_FILTRES_PAR_DEFAUT, CritereTri,
 } from './etat-filtres-postes.model';
 import {
   etatFiltresDepuisQueryParams, etatFiltresVersQueryParams,
@@ -85,7 +85,6 @@ export class PostesListeComponent {
   readonly i18n = inject(I18nService);
   readonly t = this.i18n.translations();
   readonly type = input<TypePoste>('REVENU');
-  readonly Math = Math; // Exposition pour le template
   contexte = inject(ContexteService);
   readonly viewport = inject(ViewportService);
   private posteSvc = inject(PosteService);
@@ -501,15 +500,6 @@ export class PostesListeComponent {
     }
   });
 
-  /** 1-2 lettres du libellé de groupe pour le monogramme du bandeau, accents retirés. */
-  libelleMonogramme(label: string): string {
-    return label
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      .trim()
-      .slice(0, 2)
-      .toUpperCase();
-  }
-
   /**
    * Liste finale affichée : filtrée, regroupée par chaîne de révisions (bloc contigu
    * trié chronologiquement en interne, positionné selon le tri actuel appliqué au
@@ -706,10 +696,6 @@ export class PostesListeComponent {
 
   deriveExterneTooltip(n: number): string {
     return this.t.poste.deriveExterneValeur.replace('{{n}}', String(n));
-  }
-
-  afficheMontantMensualise(p: PosteDto): boolean {
-    return p.periodiciteMois !== 0 && p.periodiciteMois !== 1 && p.mode === 'MENSUALISE';
   }
 
   actionItemsFor(p: PosteDto): MenuItem[] {
@@ -936,14 +922,6 @@ export class PostesListeComponent {
     return new Intl.NumberFormat(this.localeCourante(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(pct);
   }
 
-  typeAccentClass = computed(() => {
-    switch (this.type()) {
-      case 'REVENU':  return 'bg-green-500';
-      case 'CHARGE':  return 'bg-red-400';
-      default:        return 'bg-indigo-400';
-    }
-  });
-
   formatPeriode(v?: string | null): string {
     return formatPeriodeMois(v, this.localeCourante());
   }
@@ -988,11 +966,6 @@ export class PostesListeComponent {
   ouvrirRevision(p: PosteDto): void {
     this.posteEnRevision = p;
     this.revisionDialogVisible = true;
-  }
-
-  fermerDialogRevision(): void {
-    this.revisionDialogVisible = false;
-    this.posteEnRevision = null;
   }
 
   /** Suit la fermeture (par la croix ou l'overlay) du dialog révision, en plus du bouton Annuler. */

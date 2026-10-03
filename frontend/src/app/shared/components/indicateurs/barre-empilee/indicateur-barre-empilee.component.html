@@ -1,0 +1,38 @@
+<div class="barre-empilee">
+  <div class="barre-empilee__barre" [style.height]="hauteurBarre()">
+    @for (part of parts(); track part.index) {
+      <span
+        class="barre-empilee__segment"
+        [class.barre-empilee__segment--interactif]="interactif()"
+        [style.width]="part.largeur"
+        [style.background]="part.couleur"
+        [attr.role]="interactif() ? 'button' : 'img'"
+        [attr.tabindex]="interactif() ? 0 : null"
+        [attr.aria-label]="part.infobulle"
+        [pTooltip]="part.infobulle"
+        tooltipPosition="top"
+        (click)="cliquer(part.index)"
+        (keydown.enter)="cliquer(part.index)"></span>
+    }
+  </div>
+
+  @if (afficherLegende()) {
+    <ul class="barre-empilee__legende">
+      @for (part of parts(); track part.index) {
+        <li
+          class="barre-empilee__entree"
+          [class.barre-empilee__entree--interactive]="interactif()"
+          [attr.role]="interactif() ? 'button' : null"
+          [attr.tabindex]="interactif() ? 0 : null"
+          [pTooltip]="part.infobulle"
+          tooltipPosition="top"
+          (click)="cliquer(part.index)"
+          (keydown.enter)="cliquer(part.index)">
+          <span class="barre-empilee__pastille" [style.background]="part.couleur" aria-hidden="true"></span>
+          <span class="barre-empilee__entree-libelle">{{ part.libelle }}</span>
+          <span class="barre-empilee__entree-valeur">{{ part.valeur / 100 | pct }}</span>
+        </li>
+      }
+    </ul>
+  }
+</div>

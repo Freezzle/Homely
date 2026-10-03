@@ -25,10 +25,13 @@ export interface PeriodValue {
   year: number;
 }
 
-export interface MonthHealth {
-  monthIndex: number;
+export interface PeriodHealth {
   amount: number;
   level: 'low' | 'mid' | 'high';
+}
+
+export interface MonthHealth extends PeriodHealth {
+  monthIndex: number;
 }
 
 interface PeriodRailMonth extends MonthHealth {
@@ -60,6 +63,9 @@ export class PeriodRailComponent {
 
   readonly value = input.required<PeriodValue>();
   readonly monthsHealth = input.required<MonthHealth[]>();
+  /** Santé de l'année entière (solde annuel vs revenus annuels). Si absente, on retombe
+   *  sur la santé du mois de décembre. */
+  readonly yearHealth = input<PeriodHealth | null>(null);
   readonly minYear = input(2024);
   readonly maxYear = input(2028);
 
@@ -68,12 +74,6 @@ export class PeriodRailComponent {
   protected readonly isYearMode = computed(() => this.value().mode === 'annee');
   protected readonly canGoPrevYear = computed(() => this.value().year > this.minYear());
   protected readonly canGoNextYear = computed(() => this.value().year < this.maxYear());
-  protected readonly titleLine = computed(() => {
-    const value = this.value();
-    return value.mode === 'mois'
-      ? `${this.monthLabel(value.monthIndex)} ${value.year} · ${this.t.periodRail.vueMensuelle}`
-      : `${this.i18n.instant('dashboard.vueAnnuelle', { annee: value.year })} · ${this.t.periodRail.vueAnnuelleResume}`;
-  });
   protected readonly months = computed<PeriodRailMonth[]>(() => {
     const value = this.value();
     const healthByMonth = new Map<number, MonthHealth>();
@@ -108,22 +108,15 @@ export class PeriodRailComponent {
 
   protected readonly yearSummary = computed(() => {
     const value = this.value();
-    const healthByMonth = new Map<number, MonthHealth>();
-
-    for (const entry of this.monthsHealth()) {
-      if (entry.monthIndex >= 0 && entry.monthIndex <= 11) {
-        healthByMonth.set(entry.monthIndex, entry);
-      }
-    }
-
-    const yearEndHealth = healthByMonth.get(11) ?? { monthIndex: 11, amount: 0, level: 'mid' as const };
+    const yearHealth = this.yearHealth() ?? this.monthsHealth().find((entry) => entry.monthIndex === 11)
+      ?? { amount: 0, level: 'mid' as const };
     const label = this.i18n.instant('dashboard.vueAnnuelle', { annee: value.year });
-    const levelLabel = this.levelLabel(yearEndHealth.level);
-    const amount = this.formatAmount(yearEndHealth.amount);
+    const levelLabel = this.levelLabel(yearHealth.level);
+    const amount = this.formatAmount(yearHealth.amount);
 
     return {
       label,
-      level: yearEndHealth.level,
+      level: yearHealth.level,
       tooltip: this.i18n.instant('periodRail.monthTooltip', { amount, level: levelLabel }),
       ariaLabel: this.i18n.instant('periodRail.yearAriaLabel', {
         year: value.year,
@@ -216,10 +209,6 @@ export class PeriodRailComponent {
       ...current,
       mode: checked ? 'annee' : 'mois',
     });
-  }
-
-  protected monthTrackBy(index: number, month: PeriodRailMonth): number {
-    return month.monthIndex;
   }
 
   private selectRelativeMonth(delta: number): void {

@@ -332,9 +332,6 @@ export interface TresorerieCumuleeDto {
   mensualise: Array<number | string>;
   reel: Array<number | string>;
 }
-export interface EntreeTresorerieDto { annee: number; soldeAnnuel: number; tresorerieDebutAnnee: number; tresorerieFinAnnee: number; }
-export interface MoisCourbeDto { annee: number; mois: number; tresorerie: number; }
-export interface TresorerieDto { annees: EntreeTresorerieDto[]; courbe: MoisCourbeDto[]; }
 export interface VentilationAggregatDto { revenus: number; charges: number; reserves: number; soldeDisponible: number; }
 /** Décomposition perso/partagé d'un membre pour un mois donné, par type de poste (calculée par le moteur backend). */
 export interface VentilationSplitDto {
@@ -362,7 +359,6 @@ export interface VentilationAnnuelleDto {
   parCompteMembre: Record<string, Record<string, number>>;
   parMembreSplit: Record<string, VentilationSplitDto>;
 }
-export interface SerieAnnuelleDto { annee: number; soldeParScenario: Record<string, number>; tresorerieParScenario: Record<string, number>; }
 /** Part d'une catégorie dans le total de son type (`part` ∈ [0,1]) — calculée par le backend. */
 export interface RepartitionCategorieDto { categorieId: string; libelle: string; montant: number; part: number; }
 
@@ -393,15 +389,6 @@ export interface VirementCompteDto {
   compteDestinationId: string;
   libelleCompteDestination: string;
   montant: number;
-}
-
-export interface ComptePosteDetailDto {
-  posteId: string | null;
-  libelle: string | null;
-  type: TypePoste;
-  argentPoche: boolean;
-  montant: number;
-  quotePart: number | null;
 }
 
 export interface SeuilsDashboardDto {

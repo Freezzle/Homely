@@ -1,0 +1,84 @@
+// Tokens --app-* globaux : voir frontend/src/styles/_app-tokens.css.
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.double-courbe {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+
+  &__entete {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.625rem;
+    min-width: 0;
+  }
+
+  &__valeur {
+    margin: 0;
+    font-size: clamp(20px, 11cqi, 30px);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    color: var(--app-ink);
+    overflow-wrap: anywhere;
+  }
+
+  &__unite {
+    margin-left: 4px;
+    font-size: 0.45em;
+    font-weight: 600;
+    color: var(--app-ink-muted);
+  }
+
+  &__svg {
+    display: block;
+    width: 100%;
+  }
+
+  &__ligne {
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+
+    &--precedente {
+      stroke-width: 1.5;
+      stroke-dasharray: 4 3;
+      opacity: 0.7;
+    }
+  }
+
+  &__legende {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.875rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 11px;
+    color: var(--app-ink-muted);
+  }
+
+  &__entree {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+  }
+
+  &__trait {
+    width: 14px;
+    height: 0;
+    border-top: 2px solid currentColor;
+
+    &--pointille {
+      border-top-style: dashed;
+    }
+  }
+}

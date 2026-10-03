@@ -69,6 +69,25 @@ export function couleurForte(ton: TonIndicateur): string {
   return `color-mix(in srgb, ${couleursTon(ton).plein} 70%, #000)`;
 }
 
+/**
+ * Surface translucide dérivée d'un ton (barres d'entonnoir, zones d'écart, segments
+ * empilés). Le mélange se fait avec `transparent` : la surface se pose sur le fond de la
+ * carte, en thème clair comme en thème sombre.
+ */
+export function couleurSurface(ton: TonIndicateur, pourcent: number): string {
+  const part = Math.min(Math.max(pourcent, 0), 100);
+  return `color-mix(in srgb, ${couleursTon(ton).plein} ${part}%, transparent)`;
+}
+
+/** Intensité de surface d'un élément portant son propre ton (entonnoir). */
+export const OPACITE_SURFACE_TON_PROPRE = 28;
+
+/**
+ * Intensité de surface des segments empilés : plus soutenue que celle de l'entonnoir, car
+ * les tranches d'une barre sont fines et doivent rester distinctes les unes des autres.
+ */
+export const OPACITE_SURFACE_SEGMENT = 65;
+
 /** Ton de la palette catégorielle pour un index (bouclage au-delà de 10). */
 export function tonCategorie(index: number): TonCategorie {
   const n = ((Math.trunc(index) % NB_TONS_CATEGORIE) + NB_TONS_CATEGORIE) % NB_TONS_CATEGORIE;

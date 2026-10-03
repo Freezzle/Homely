@@ -89,7 +89,6 @@ export class ArgentPocheBarreFiltresComponent {
   }
 
   asRegroupement(value: string): RegroupementArgentPoche { return value as RegroupementArgentPoche; }
-  asTypeArgentPoche(value: string): TypeArgentPoche { return value as TypeArgentPoche; }
 
   changerRegroupement(regrouperPar: RegroupementArgentPoche): void {
     this.regroupementChange.emit(regrouperPar);

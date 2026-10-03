@@ -1,0 +1,51 @@
+@if (modeTableau()) {
+  <table class="comparaison-tableau">
+    <thead>
+      <tr>
+        <th scope="col" class="comparaison-tableau__entete">{{ enteteLibelle() }}</th>
+        <th scope="col" class="comparaison-tableau__entete comparaison-tableau__entete--nombre">{{ entetePrecedent() }}</th>
+        <th scope="col" class="comparaison-tableau__entete comparaison-tableau__entete--nombre">{{ enteteActuel() }}</th>
+        <th scope="col" class="comparaison-tableau__entete comparaison-tableau__entete--delta"><span class="sr-only">%</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (ligne of lignes(); track ligne.cle) {
+        <tr class="comparaison-tableau__ligne">
+          <th scope="row" class="comparaison-tableau__libelle">
+            @if (ligne.ton) {
+              <span class="comparaison-tableau__pastille" [style.background]="couleurPastille(ligne.ton)" aria-hidden="true"></span>
+            }
+            <span class="comparaison-tableau__texte">{{ ligne.libelle }}</span>
+          </th>
+          <td class="comparaison-tableau__valeur comparaison-tableau__valeur--attenuee">{{ ligne.valeurPrecedente }}</td>
+          <td class="comparaison-tableau__valeur">{{ ligne.valeurActuelle }}</td>
+          <td class="comparaison-tableau__delta">
+            @if (ligne.delta !== null) {
+              <app-badge-delta [delta]="ligne.delta" [inverserDelta]="ligne.inverserDelta ?? false" [formateur]="formateurDelta()" />
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+} @else {
+  @let ligne = lignes()[0];
+  <div class="comparaison">
+    <dl class="comparaison__grille">
+      <div class="comparaison__colonne">
+        <dt class="comparaison__libelle">{{ entetePrecedent() }}</dt>
+        <dd class="comparaison__valeur comparaison__valeur--attenuee">{{ ligne.valeurPrecedente }}</dd>
+      </div>
+      <div class="comparaison__colonne comparaison__colonne--separee">
+        <dt class="comparaison__libelle">{{ enteteActuel() }}</dt>
+        <dd class="comparaison__valeur">{{ ligne.valeurActuelle }}</dd>
+      </div>
+    </dl>
+    @if (ligne.delta !== null) {
+      <div class="comparaison__pied">
+        <app-badge-delta [delta]="ligne.delta" [inverserDelta]="ligne.inverserDelta ?? false" [formateur]="formateurDelta()" />
+        <span class="comparaison__comparaison">{{ texteComparaison() }}</span>
+      </div>
+    }
+  </div>
+}

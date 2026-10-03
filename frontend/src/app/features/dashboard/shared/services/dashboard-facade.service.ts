@@ -1,14 +1,12 @@
 import { Injectable, Signal, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Router } from '@angular/router';
-import { FormBuilder, Validators } from '@angular/forms';
 import { forkJoin } from 'rxjs';
-import { MessageService } from 'primeng/api';
 import { ContexteService } from '../../../../core/services/contexte.service';
 import { DashboardConfigService } from '../../../../core/services/dashboard-config.service';
 import { ProjectionService } from '../../../../core/services/projection.service';
 import { CategorieService, CompteService } from '../../../../core/services/referentiel.service';
 import { PosteService } from '../../../../core/services/scenario-poste.service';
-import { AllocationArgentPocheService, ResolutionArgentPocheService } from '../../../../core/services/argent-poche.service';
+import { ResolutionArgentPocheService } from '../../../../core/services/argent-poche.service';
 import { DecompositionService, VentilationLike } from '../../../../core/services/decomposition.service';
 import {
   AggregatDto,
@@ -30,15 +28,12 @@ import { localeDeLangue } from '../../../../core/i18n/locale.util';
 import { creerChargementReactif } from '../../../../core/utils/reference-data.util';
 import { LigneDecomposition, MembreTagInfo } from '../../../../shared/components/carte-bilan/carte-bilan.component';
 import { TauxEffortCardData } from '../../../../shared/components/taux-effort-card/taux-effort-card.component';
-import { KpiChip } from '../../../../shared/components/kpi-chip/kpi-chip.component';
 import { MetricRingSegment } from '../../../../shared/components/metric-ring/metric-ring.component';
-import { MetricBarSegment } from '../../../../shared/components/metric-bar/metric-bar.component';
-import { AmountBarItem } from '../../../../shared/components/amount-bar-list/amount-bar-list.component';
-import { MonthHealth, PeriodValue } from '../../../../shared/components/period-rail/period-rail.component';
-import { TimelineItem } from '../../../../shared/components/timeline/timeline.component';
+import { MonthHealth, PeriodHealth, PeriodValue } from '../../../../shared/components/period-rail/period-rail.component';
+import { TimelineItem } from '../../../../shared/components/event-grid/timeline-item.model';
 import { MatriceBudgetaireLabels } from '../../../../shared/components/matrice-budgetaire/matrice-budgetaire.component';
 import { IndicatorDrawerService } from './indicator-drawer.service';
-import { Indicator } from '../models/indicator.model';
+import { Indicator, IndicatorItem } from '../models/indicator.model';
 import { tauxEffortMembreIndicator } from '../../indicators/taux-effort-membre/taux-effort-membre.indicator';
 import { ventilationPostesIndicator } from '../../indicators/ventilation-postes/ventilation-postes.indicator';
 import { VentilationPostesDrawerData } from '../../indicators/ventilation-postes/ventilation-postes-drawer-content.component';
@@ -48,18 +43,20 @@ import { postesAOptimiserIndicator } from '../../indicators/postes-a-optimiser/p
 import { PostesAOptimiserDrawerData } from '../../indicators/postes-a-optimiser/postes-a-optimiser-drawer-content.component';
 import { evenementsIndicator } from '../../indicators/evenements/evenements.indicator';
 import { EvenementsDrawerData } from '../../indicators/evenements/evenements-drawer-content.component';
-import { virementsComptesIndicator } from '../../indicators/virements-comptes/virements-comptes.indicator';
+import { ContexteMembresVirements, virementsComptesIndicator } from '../../indicators/virements-comptes/virements-comptes.indicator';
 import { VirementsComptesDrawerData } from '../../indicators/virements-comptes/virements-comptes-drawer-content.component';
 import { besoinsPlaisirsIndicator } from '../../indicators/besoins-plaisirs/besoins-plaisirs.indicator';
 import { BesoinsPlaisirsCardData } from '../../../../shared/components/besoins-plaisirs-card/besoins-plaisirs-card.component';
 import { prorataPartageIndicator, aDesDonneesProrataPartage } from '../../indicators/prorata-partage/prorata-partage.indicator';
-import { moisARisqueIndicator } from '../../indicators/mois-a-risque/mois-a-risque.indicator';
+import { moisARisqueIndicator, SoldeMois } from '../../indicators/mois-a-risque/mois-a-risque.indicator';
 import { MoisARisqueDrawerData, MoisARisqueItem } from '../../indicators/mois-a-risque/mois-a-risque-drawer-content.component';
-import { comparaisonPeriodeIndicator } from '../../indicators/comparaison-periode/comparaison-periode.indicator';
-import { ComparaisonPeriodeDrawerData } from '../../indicators/comparaison-periode/comparaison-periode-drawer-content.component';
-import { resolveAppColor, withAlpha } from '../../../../shared/utils/css-vars';
+import { niveauSanteMois } from '../utils/sante-mois.util';
+import { resolveAppColor } from '../../../../shared/utils/css-vars';
 import { SegmentDonut } from '../../../../shared/components/indicateurs/donut/indicateur-donut.component';
-import { NB_TONS_CATEGORIE, TonCarte, TonIndicateur, tonCategorie } from '../../../../shared/components/indicateurs/tons';
+import { TonCarte, TonIndicateur } from '../../../../shared/components/indicateurs/tons';
+import { EtapeEntonnoir } from '../../../../shared/components/indicateurs/entonnoir/indicateur-entonnoir.component';
+import { ElementComparaison } from '../../../../shared/components/indicateurs/comparaison/indicateur-comparaison.component';
+import { LigneBarresLigne, SegmentBarresLigne } from '../../../../shared/components/indicateurs/barres-ligne/indicateur-barres-ligne.component';
 
 type DashboardTimelineItem = TimelineItem & { mois: number };
 /** Sujet du tableau de bord affiché : le foyer entier (cumul de tous les membres) ou un
@@ -68,12 +65,6 @@ type DashboardTimelineItem = TimelineItem & { mois: number };
 type SujetDashboard = { mode: 'foyer' } | { mode: 'membre'; membreId: string; membre: MembreDto };
 const ZERO_AGREGAT: { revenus: number; charges: number; reserves: number; soldeDisponible: number } =
   { revenus: 0, charges: 0, reserves: 0, soldeDisponible: 0 };
-
-interface DashboardMonthSummary {
-  mois: number;
-  label: string;
-  solde: number;
-}
 
 export type DashboardViewKey = 'apercu' | 'comptes' | 'postes' | 'membres';
 
@@ -97,6 +88,25 @@ export interface RepartitionParCategorie {
   centre: Signal<string>;
 }
 
+/** Données d'affichage de la carte `app-indicateur-comparaison` (mode tableau) de la vue Aperçu. */
+export interface ComparaisonPeriode {
+  libellePrecedent: string;
+  libelleActuel: string;
+  elements: ElementComparaison[];
+}
+
+/** Données d'affichage de la carte « Flux mensuel » (`app-indicateur-barres-ligne`). */
+export interface FluxBarresLigne {
+  /** Sorties du mois, empilées du bas vers le haut. */
+  segments: SegmentBarresLigne[];
+  /** Ligne de référence : les revenus du mois. */
+  ligne: LigneBarresLigne;
+  libelles: string[];
+  libellesComplets: string[];
+  formateurValeur: (valeur: number) => string;
+  formateurInfobulle: (index: number) => string;
+}
+
 @Injectable()
 export class DashboardFacadeService {
   private readonly i18n = inject(I18nService);
@@ -107,12 +117,9 @@ export class DashboardFacadeService {
   private readonly compteSvc = inject(CompteService);
   private readonly posteSvc = inject(PosteService);
   private readonly argentPocheSvc = inject(ResolutionArgentPocheService);
-  private readonly allocationArgentPocheSvc = inject(AllocationArgentPocheService);
   private readonly decomp = inject(DecompositionService);
   private readonly router = inject(Router);
   private readonly indicatorDrawer = inject(IndicatorDrawerService);
-  private readonly fb = inject(FormBuilder);
-  private readonly toast = inject(MessageService);
 
   readonly t = this.i18n.translations();
   readonly deviseBase = this.contexte.deviseBase;
@@ -184,8 +191,6 @@ export class DashboardFacadeService {
   });
 
   readonly vue = computed<'annee' | 'mois'>(() => this.moisSelectionne() !== undefined ? 'mois' : 'annee');
-  readonly ongletAnnee = signal('recapitulatifs');
-  readonly ongletMois = signal('echeances');
   readonly vueDecomposition = signal<'CATEGORIE' | 'TYPE_POSTE' | 'COMPTE'>('TYPE_POSTE');
   readonly minYear = computed(() => this.annees()[0] ?? this.annee());
   readonly maxYear = computed(() => this.annees()[this.annees().length - 1] ?? this.annee());
@@ -213,12 +218,6 @@ export class DashboardFacadeService {
       ? Array.from({ length: scenario.horizonAnnees }, (_, i) => scenario.anneeDepart + i)
       : [this.annee()];
   });
-
-  readonly periodeLabel = computed(() =>
-    this.vue() === 'mois'
-      ? `${this.t.mois[(this.moisSelectionne() ?? 1) - 1]} ${this.annee()}`
-      : String(this.annee())
-  );
 
   private readonly _refCle = computed<{ foyerId: string; scenarioId: string } | null>(() => {
     const foyerId = this.contexte.foyerId();
@@ -270,6 +269,36 @@ export class DashboardFacadeService {
 
   readonly evenementsDto = computed<EvenementDto[]>(() => this._evenements.donnees() ?? []);
 
+  /** Événements de l'année N-1 — nécessaires à la tendance de l'indicateur « événements »
+   *  en vue année et en janvier (vue mois). Pas d'année antérieure au début du scénario. */
+  private readonly _evenementsAnneePrecedenteCle = computed<{ foyerId: string; scenarioId: string; annee: number; membreId?: string } | null>(() => {
+    const enJanvier = this.vue() === 'mois' && this.moisSelectionne() === 1;
+    if (this.vue() !== 'annee' && !enJanvier) return null;
+    const cle = this._evenementsCle();
+    const scenario = this.contexte.scenarioCourant();
+    const anneePrecedente = this.annee() - 1;
+    if (!cle || !scenario || anneePrecedente < scenario.anneeDepart) return null;
+    return { ...cle, annee: anneePrecedente };
+  });
+
+  private readonly _evenementsAnneePrecedente = creerChargementReactif(this._evenementsAnneePrecedenteCle, ({ foyerId, scenarioId, annee, membreId }) =>
+    this.projSvc.evenements(foyerId, scenarioId, annee, membreId),
+  );
+
+  /** Nombre d'événements du mois précédant le mois sélectionné (`null` si inconnu). */
+  private readonly nbEvenementsMoisPrecedent = computed<number | null>(() => {
+    const mois = this.moisSelectionne();
+    if (mois === undefined) return null;
+    if (mois > 1) return this.evenementsDto().filter((e) => e.mois === mois - 1).length;
+    const precedents = this._evenementsAnneePrecedente.donnees();
+    return precedents ? precedents.filter((e) => e.mois === 12).length : null;
+  });
+
+  /** Nombre d'événements de l'année précédente (`null` si inconnu). */
+  private readonly nbEvenementsAnneePrecedente = computed<number | null>(() =>
+    this._evenementsAnneePrecedente.donnees()?.length ?? null,
+  );
+
   /** Clé d'une répartition par catégorie : suit le sujet (foyer/membre) et la vue (année/mois). */
   private readonly _repartitionCle = computed<{ foyerId: string; scenarioId: string; annee: number; mois?: number; membreId?: string } | null>(() => {
     const cle = this._evenementsCle();
@@ -287,37 +316,19 @@ export class DashboardFacadeService {
 
     const segments = computed<SegmentDonut[]>(() => {
       const lignes = chargement.donnees() ?? [];
-      const ordreStable = this.categories()
-        .filter((c) => c.typePoste === type)
-        .map((c) => c.id)
-        .sort();
-      const indexStable = (categorieId: string) => {
-        const index = ordreStable.indexOf(categorieId);
-        return index >= 0 ? index : ordreStable.length;
-      };
       const infobulle = (libelle: string, montant: number, part: number) =>
         `${libelle} · ${this.formatMontant(montant)} · ${Intl.NumberFormat(this.localeCourante(), { style: 'percent', maximumFractionDigits: 1 }).format(part)}`;
 
       const LIMITE = 6;
       const principales = lignes.length > LIMITE + 1 ? lignes.slice(0, LIMITE) : lignes;
       const reste = lignes.slice(principales.length);
-      // Au-delà de NB_TONS_CATEGORIE catégories la palette boucle : on décale vers le ton
-      // libre suivant pour éviter deux segments visibles de même couleur (résolution dans
-      // l'ordre stable des catégories, indépendante du classement de la période).
-      const tons = new Map<string, TonIndicateur>();
-      const tonsUtilises = new Set<number>();
-      [...principales]
-        .sort((a, b) => indexStable(a.categorieId) - indexStable(b.categorieId))
-        .forEach((l) => {
-          let index = indexStable(l.categorieId) % NB_TONS_CATEGORIE;
-          while (tonsUtilises.has(index)) index = (index + 1) % NB_TONS_CATEGORIE;
-          tonsUtilises.add(index);
-          tons.set(l.categorieId, tonCategorie(index));
-        });
+      // Aucun `ton` explicite : le donut applique la palette catégorielle dans l'ordre
+      // d'affichage. Les donuts d'une même page partagent donc la même séquence de
+      // couleurs (1er segment = 1re couleur, etc.), les parts étant déjà triées par
+      // ordre décroissant côté backend.
       const liste: SegmentDonut[] = principales.map((l) => ({
         libelle: l.libelle,
         valeur: l.part * 100,
-        ton: tons.get(l.categorieId),
         infobulle: infobulle(l.libelle, l.montant, l.part),
       }));
       if (reste.length) {
@@ -414,11 +425,6 @@ export class DashboardFacadeService {
     this.argentPocheMois().reduce((sum, r) => sum + (r.montant ?? 0), 0),
   );
 
-  /** Nombre de mois avec au moins une politique/allocation configurée. */
-  readonly argentPocheMoisConfigures = computed(() =>
-    this.argentPocheMois().filter((r) => r.source !== 'AUCUNE').length,
-  );
-
   /** Clé de chargement de l'argent de poche de l'année N-1 (mode membre uniquement) —
    *  nécessaire pour l'indicateur "Comparaison" (diff annuelle) et le cas janvier de la
    *  diff mensuelle. Même garde-fou que `_projectionAnneePrecedenteCle` (pas d'année
@@ -476,9 +482,28 @@ export class DashboardFacadeService {
     this.argentPocheFoyerMois().reduce((sum, r) => sum + (r.total ?? 0), 0),
   );
 
-  /** Nombre de mois avec au moins une configuration (un membre) sur le foyer. */
-  readonly argentPocheFoyerMoisConfigures = computed(() =>
-    this.argentPocheFoyerMois().filter((r) => r.total > 0).length,
+  /** Pendant foyer de `_argentPocheAnneePrecedenteCle` : l'historique N-1 est nécessaire
+   *  aux cartes de comparaison, qui s'affichent aussi en mode foyer. Même garde-fou
+   *  d'année que `_projectionAnneePrecedenteCle`. */
+  private readonly _argentPocheFoyerAnneePrecedenteCle = computed<{ foyerId: string; scenarioId: string; annee: number } | null>(() => {
+    const ref = this._refCle();
+    const cle = this._projectionAnneePrecedenteCle();
+    return ref && cle && this.sujet().mode === 'foyer' ? { ...ref, annee: cle.annee } : null;
+  });
+
+  private readonly _argentPocheFoyerAnneePrecedente = creerChargementReactif(
+    this._argentPocheFoyerAnneePrecedenteCle,
+    ({ foyerId, scenarioId, annee }) => this.argentPocheSvc.resoudreFoyerAnnee(foyerId, scenarioId, annee),
+  );
+
+  /** Totaux mensuels foyer de l'année précédente (janvier = index 0). Vide en mode membre. */
+  readonly argentPocheFoyerMoisAnneePrecedente = computed(() =>
+    this._argentPocheFoyerAnneePrecedente.donnees() ?? [],
+  );
+
+  /** Total annuel foyer d'argent de poche de l'année précédente. */
+  readonly argentPocheFoyerTotalAnneePrecedente = computed(() =>
+    this.argentPocheFoyerMoisAnneePrecedente().reduce((sum, r) => sum + (r.total ?? 0), 0),
   );
 
   private readonly _ventilationsMoisCle = computed<{ foyerId: string; scenarioId: string; annee: number; mois: number } | null>(() => {
@@ -524,14 +549,14 @@ export class DashboardFacadeService {
    *  membre, réutilisant les mêmes données que `<app-taux-effort-card>` déjà affichées
    *  plus haut. Le clic ouvre le drawer partagé avec la carte détaillée en contenu. */
   readonly tauxEffortIndicateursMois = computed(() =>
-    this.tauxEffortCards().map((data) => ({ indicator: tauxEffortMembreIndicator(data, this.t, this.seuils()), data })),
+    this.tauxEffortCards().map((data) => ({ indicator: tauxEffortMembreIndicator(data, this.t, this.seuils(), this.formateurMontant), data })),
   );
 
   /** Variante annuelle de la section "Taux d'effort" (vue année). Masquée en vue foyer
    *  agrégée (`sujet().mode === 'foyer'`) : sur l'année, l'indicateur par membre n'a de
    *  sens que consulté depuis le dashboard d'un membre précis. */
   readonly tauxEffortIndicateursAnnee = computed(() =>
-    this.estModeMembre() ? this.tauxEffortCardsAnnee().map((data) => ({ indicator: tauxEffortMembreIndicator(data, this.t, this.seuils()), data })) : [],
+    this.estModeMembre() ? this.tauxEffortCardsAnnee().map((data) => ({ indicator: tauxEffortMembreIndicator(data, this.t, this.seuils(), this.formateurMontant), data })) : [],
   );
 
   // ── Indicateur "Prorata des postes partagés" ────────────────────────────
@@ -582,16 +607,22 @@ export class DashboardFacadeService {
   /** Indicateur "Les événements du mois" — reprend le contenu de l'onglet "Événement" dans
    *  le drawer (liste plate, sans le retirer de l'onglet d'origine). */
   readonly evenementsIndicateurMois = computed(() => ({
-    indicator: evenementsIndicator('evenements-mois', this.t.dashboard.indicateurEvenementsMoisTitre, this.evenementsMois().length, this.t),
+    indicator: evenementsIndicator('evenements-mois', this.t.dashboard.indicateurEvenementsMoisTitre, this.evenementsMois(),
+      this.nbEvenementsMoisPrecedent(), this.libelleComparaisonEvenements(), this.localeCourante(), this.t),
     data: this.evenementsDataMois(),
   }));
 
   /** Variante annuelle — reprend le contenu de l'onglet "Ce qui change" (rendu groupé
    *  inchangé) dans le drawer. */
   readonly evenementsIndicateurAnnee = computed(() => ({
-    indicator: evenementsIndicator('evenements-annee', this.t.dashboard.indicateurEvenementsAnneeTitre, this.evenementsAnnee().length, this.t),
+    indicator: evenementsIndicator('evenements-annee', this.t.dashboard.indicateurEvenementsAnneeTitre, this.evenementsAnnee(),
+      this.nbEvenementsAnneePrecedente(), this.libelleComparaisonEvenements(), this.localeCourante(), this.t),
     data: this.evenementsDataAnnee(),
   }));
+
+  private libelleComparaisonEvenements(): string {
+    return this.i18n.instant('dashboard.indicateurEvenementsComparaison', { periode: this.libellesComparaison().precedent });
+  }
 
   /** Payload signaux transmis au drawer "Virements des comptes" (vue mois). */
   private readonly virementsComptesData = computed<VirementsComptesDrawerData>(() => ({
@@ -605,14 +636,20 @@ export class DashboardFacadeService {
     onBascule: (cle) => this.basculerVirementCompteFait(cle),
   }));
 
+  /** Référentiels permettant à l'indicateur de signaler (avatar) les comptes d'un autre membre. */
+  private readonly contexteMembresVirements = computed<ContexteMembresVirements>(() => ({
+    comptes: this.comptes(),
+    membres: this.membres(),
+    membreActuelId: this.membreActuelId(),
+    initiales: (nom) => this.decomp.initiales(nom),
+  }));
+
   /** Indicateur "Virements des comptes" (mois + vue membre uniquement, mêmes données que
    *  l'onglet "Comptes") — `null` si non applicable (vue foyer ou vue année). */
   readonly virementsComptesIndicateur = computed(() => {
     if (!this.afficherOngletComptes()) return null;
-    const virements = this.virementsComptesDto();
-    const totalSortants = virements.reduce((somme, v) => somme + v.montant, 0);
     return {
-      indicator: virementsComptesIndicator('virements-comptes-mois', virements, this.formatMontant(totalSortants), this.t),
+      indicator: virementsComptesIndicator('virements-comptes-mois', this.virementsComptesDto(), this.formateurMontant, this.t, this.contexteMembresVirements()),
       data: this.virementsComptesData(),
     };
   });
@@ -634,37 +671,10 @@ export class DashboardFacadeService {
    *  sur les 12 mois. `null` si non applicable (vue foyer). */
   readonly virementsComptesIndicateurAnnee = computed(() => {
     if (!this.afficherOngletComptes()) return null;
-    const virements = this.virementsComptesAnnuelDto();
-    const totalSortants = virements.reduce((somme, v) => somme + v.montant, 0);
     return {
-      indicator: virementsComptesIndicator('virements-comptes-annee', virements, this.formatMontant(totalSortants), this.t),
+      indicator: virementsComptesIndicator('virements-comptes-annee', this.virementsComptesAnnuelDto(), this.formateurMontant, this.t, this.contexteMembresVirements()),
       data: this.virementsComptesDataAnnee(),
     };
-  });
-
-  /** Section "Comment se passe ce mois" : Comparaison du mois passé + Taux d'effort par
-   *  membre + Événements du mois + Virements des comptes (si applicable — vue membre
-   *  uniquement). */
-  readonly commentSePasseIndicateursMois = computed(() => {
-    const virements = this.virementsComptesIndicateur();
-    return [
-      ...this.tauxEffortIndicateursMois(),
-      this.evenementsIndicateurMois(),
-      ...(virements ? [virements] : []),
-    ];
-  });
-
-  /** Section "Comment se passe cette année" : Comparaison de l'année passée + Mois à
-   *  risque (anneau + compteur) + Taux d'effort par membre + Événements de l'année +
-   *  Virements des comptes (si applicable — vue membre uniquement). */
-  readonly commentSePasseIndicateursAnnee = computed(() => {
-    const virements = this.virementsComptesIndicateurAnnee();
-    return [
-      this.moisARisqueIndicateurAnnee(),
-      ...this.tauxEffortIndicateursAnnee(),
-      this.evenementsIndicateurAnnee(),
-      ...(virements ? [virements] : []),
-    ];
   });
 
 
@@ -702,8 +712,9 @@ export class DashboardFacadeService {
   readonly ventilationPostesIndicateurMois = computed(() => ({
     indicator: ventilationPostesIndicator(
       'ventilation-postes-mois',
-      this.agregatMoisCourant().soldeDisponible,
-      this.formatMontant(this.agregatMoisCourant().soldeDisponible),
+      this.agregatMoisCourant(),
+      this.argentPocheMontantMoisSujet(),
+      this.formateurMontant,
       this.t,
     ),
     data: this.ventilationPostesDataMois(),
@@ -713,8 +724,9 @@ export class DashboardFacadeService {
   readonly ventilationPostesIndicateurAnnee = computed(() => ({
     indicator: ventilationPostesIndicator(
       'ventilation-postes-annee',
-      this.agregatAnneeCourant().soldeDisponible,
-      this.formatMontant(this.agregatAnneeCourant().soldeDisponible),
+      this.agregatAnneeCourant(),
+      this.argentPocheMontantAnneeSujet(),
+      this.formateurMontant,
       this.t,
     ),
     data: this.ventilationPostesDataAnnee(),
@@ -786,13 +798,13 @@ export class DashboardFacadeService {
   /** Indicateur "Plaisirs vs Besoins" (vue mois) — auto-scopé foyer/membre comme
    *  "Ventilations des postes", pas de duplication de carte par membre. */
   readonly besoinsPlaisirsIndicateurMois = computed(() => ({
-    indicator: besoinsPlaisirsIndicator('besoins-plaisirs-mois', this.besoinsPlaisirsDataMois(), this.t, this.seuils()),
+    indicator: besoinsPlaisirsIndicator('besoins-plaisirs-mois', this.besoinsPlaisirsDataMois(), this.t, this.seuils(), this.formateurMontant),
     data: this.besoinsPlaisirsDataMois(),
   }));
 
   /** Variante annuelle de l'indicateur "Plaisirs vs Besoins" (vue année). */
   readonly besoinsPlaisirsIndicateurAnnee = computed(() => ({
-    indicator: besoinsPlaisirsIndicator('besoins-plaisirs-annee', this.besoinsPlaisirsDataAnnee(), this.t, this.seuils()),
+    indicator: besoinsPlaisirsIndicator('besoins-plaisirs-annee', this.besoinsPlaisirsDataAnnee(), this.t, this.seuils(), this.formateurMontant),
     data: this.besoinsPlaisirsDataAnnee(),
   }));
 
@@ -818,7 +830,7 @@ export class DashboardFacadeService {
    *  dans le drawer au lieu du switch. La matrice budgétaire n'y figure pas (indicateur
    *  séparé "Postes à optimiser"). */
   readonly evolutionGraphiqueIndicateur = computed(() => ({
-    indicator: evolutionGraphiqueIndicator(this.t),
+    indicator: evolutionGraphiqueIndicator(this.tresorerieCumuleeValeurs(), this.tresorerieFinAnneePrecedente(), this.formateurMontant, this.t),
     data: this.evolutionGraphiqueData(),
   }));
 
@@ -853,34 +865,6 @@ export class DashboardFacadeService {
     indicator: postesAOptimiserIndicator('postes-a-optimiser-mois', this.postesMatriceMois(), this.t, this.seuils()),
     data: this.postesAOptimiserDataMois(),
   }));
-
-  /** Section "Pour aller plus loin" (vue mois) : "Ventilations des postes", "Postes à
-   *  optimiser", "Plaisirs vs Besoins" et "Prorata des postes partagés" (les graphiques
-   *  n'existent qu'en vue annuelle ; le prorata partagé est masqué si non applicable). */
-  readonly pourAllerPlusLoinIndicateursMois = computed(() => {
-    const prorata = this.prorataPartageIndicateurMois();
-    return [
-      this.comparaisonPeriodeIndicateurMois(),
-      this.ventilationPostesIndicateurMois(),
-      this.postesAOptimiserIndicateurMois(),
-      this.besoinsPlaisirsIndicateurMois(),
-      ...(prorata ? [prorata] : []),
-    ];
-  });
-
-  /** Section "Pour aller plus loin" (vue année) : les 4 indicateurs + "Prorata des
-   *  postes partagés" (masqué si non applicable). */
-  readonly pourAllerPlusLoinIndicateursAnnee = computed(() => {
-    const prorata = this.prorataPartageIndicateurAnnee();
-    return [
-      this.comparaisonPeriodeIndicateurAnnee(),
-      this.ventilationPostesIndicateurAnnee(),
-      this.evolutionGraphiqueIndicateur(),
-      this.postesAOptimiserIndicateur(),
-      this.besoinsPlaisirsIndicateurAnnee(),
-      ...(prorata ? [prorata] : []),
-    ];
-  });
 
   /** Onglet "Comptes" (récap de trésorerie par compte, mois ou année) : uniquement en vue
    *  membre, scopé au membre courant côté serveur (accès + agrégation). Le fetch n'est plus
@@ -924,7 +908,6 @@ export class DashboardFacadeService {
   readonly virementsComptesAnnuelChargement = computed(() => this._virementsComptesAnnuel.chargement());
 
   readonly virementsComptesCourant = computed(() => this.vue() === 'annee' ? this.virementsComptesAnnuelDto() : this.virementsComptesDto());
-  readonly virementsComptesCourantChargement = computed(() => this.vue() === 'annee' ? this.virementsComptesAnnuelChargement() : this.virementsComptesChargement());
 
   /** Statut "fait/pas fait" des virements — état purement local (non persisté), remis à zéro
    *  à chaque changement de contexte (mois/année/membre) puisque la clé n'a alors plus de
@@ -1082,9 +1065,6 @@ export class DashboardFacadeService {
   private readonly fmtCompact = (v: number) =>
     Intl.NumberFormat(this.localeCourante(), { notation: 'compact', maximumFractionDigits: 1 }).format(v);
 
-  private readonly fmtMensuel = (v: number) =>
-    Intl.NumberFormat(this.localeCourante(), { notation: 'compact', maximumFractionDigits: 0 }).format(v / 12);
-
   private formatMontant(v: number): string {
     return new Intl.NumberFormat(this.localeCourante(), {
       style: 'currency',
@@ -1094,19 +1074,11 @@ export class DashboardFacadeService {
     }).format(v);
   }
 
-  private formatMontantSansDevise(v: number): string {
-    return Intl.NumberFormat(this.localeCourante(), {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(Math.abs(v));
-  }
+  /** `formatMontant` lié à l'instance, transmis aux fonctions `xxxIndicator(...)`. */
+  private readonly formateurMontant = (v: number): string => this.formatMontant(v);
 
   formatPct(v: number): string {
     return this.decomp.formatPct(v);
-  }
-
-  private formatMois(mois: number): string {
-    return this.t.mois[mois - 1];
   }
 
   private initiales(nom: string): string {
@@ -1188,7 +1160,7 @@ export class DashboardFacadeService {
   /** Montant d'argent de poche déjà déduit du RàV pour le sujet courant (membre ou
    *  foyer agrégé), pour le mois sélectionné — voir `MoteurCalcul.aggregatMembreMoisInterne`.
    *  Réutilisé par les décompositions "Résumé"/"Catégorie" (ligne dédiée, couleur or) et
-   *  par `barSegmentsMois`, pour ne pas dupliquer la logique de résolution de source. */
+   *  par `entonnoirRepartitionMois`, pour ne pas dupliquer la logique de résolution de source. */
   readonly argentPocheMontantMoisSujet = computed(() => {
     if (this.estModeMembre()) {
       const poche = this.argentPocheMoisCourant();
@@ -1412,7 +1384,7 @@ export class DashboardFacadeService {
   /** Graphique de flux mensuel (revenus/charges/réserves), scopé au sujet courant. En
    *  mode membre, l'argent de poche est ajouté comme une charge supplémentaire (3e barre
    *  empilée) — elle n'est pas comptée dans les réserves côté moteur, mais réduit bien
-   *  le reste à vivre (voir `barSegmentsMois` / `MoteurCalcul.aggregatMembreMoisInterne`).
+   *  le reste à vivre (voir `entonnoirRepartitionMois` / `MoteurCalcul.aggregatMembreMoisInterne`).
    *  En mode foyer (PR6.d), même traitement avec le total agrégé de tous les membres. */
   mixedChartData = computed(() => this.buildChartData(
     this.moisAgregatsCourant(),
@@ -1463,133 +1435,60 @@ export class DashboardFacadeService {
     return { labels: this.t.moisLettre, datasets };
   }
 
-  /** KPI chips affichés sous le graphique "revenus vs charges+réserves" en haut de la vue
-   *  annuelle : totaux annuels. La différence de trésorerie vs l'an passé est désormais
-   *  portée par l'indicateur "Comparaison de l'année passée" (carte + drawer, voir
-   *  `comparaisonPeriodeIndicateurAnnee`) et non plus par un chip ici. */
-  readonly kpisAnneeTop = computed<KpiChip[]>(() => {
-    const total = this.agregatAnneeCourant();
-    const colors = this.chartColors();
-    const chips: KpiChip[] = [
-      {
-        label: this.t.dashboard.revenuTotalAnnuel,
-        value: this.formatMontant(total.revenus),
-        color: colors.revenu,
-        icon: 'pi pi-arrow-up-right',
-      },
-      {
-        label: this.t.dashboard.chargesTotalesAnnuelles,
-        value: this.formatMontant(total.charges),
-        color: colors.charge,
-        icon: 'pi pi-arrow-down-right',
-      },
-      {
-        label: this.t.dashboard.reservesTotalesAnnuelles,
-        value: this.formatMontant(total.reserves),
-        color: colors.reserve,
-        icon: 'pi pi-money-bill',
-      },
+  /**
+   * Carte « Flux mensuel » de l'Aperçu (vue annuelle uniquement) : les sorties du mois
+   * sont **empilées** (charges, réserves, puis argent de poche), les revenus tracés en
+   * ligne pleine par-dessus, sur la même échelle partant de 0. La barre dépasse la ligne
+   * exactement quand le mois est déficitaire — aucun marquage n'est ajouté, la comparaison
+   * reste visuelle (voir docs/features/feature_4.md §7). Même source de données que
+   * `buildChartData` (graphique du drawer « Évolution graphique »).
+   */
+  readonly fluxBarresLigne = computed<FluxBarresLigne>(() => {
+    const mois = this.moisAgregatsCourant();
+    const poche = this.estModeMembre()
+      ? this.argentPocheMois().map((r) => r.montant ?? 0)
+      : this.argentPocheFoyerMois().map((r) => r.total ?? 0);
+    const avecPoche = poche.some((montant) => montant !== 0);
+
+    const revenus = mois.map((m) => m.revenus);
+    const charges = mois.map((m) => m.charges);
+    const reserves = mois.map((m) => m.reserves);
+    const argentPoche = mois.map((_, i) => poche[i] ?? 0);
+    const sorties = mois.map((_, i) => charges[i] + reserves[i] + (avecPoche ? argentPoche[i] : 0));
+
+    const segments: SegmentBarresLigne[] = [
+      { cle: 'charges', libelle: this.t.projection.charges, valeurs: charges, ton: 'charge' },
+      { cle: 'reserves', libelle: this.t.projection.reserves, valeurs: reserves, ton: 'reserve' },
     ];
-    // PR6.d — Argent de poche agrégée : en mode foyer, total de tous les
-    // membres (bouton "Gérer" navigue vers l'écran dédié — pas d'édition
-    // unitaire possible sur un agrégat). En mode membre : total du membre.
-    if (this.estModeMembre() && this.argentPocheMoisConfigures() > 0) {
-      chips.push({
-        label: this.t.dashboard.argentPocheAnnee,
-        value: this.formatMontant(this.argentPocheTotalAnnuel()),
-        color: colors.argentPoche,
-        icon: 'pi pi-wallet',
-        hint: this.i18n.instant('dashboard.argentPocheAnneeHint', { mois: this.argentPocheMoisConfigures() }),
-      });
-    } else if (!this.estModeMembre() && this.argentPocheFoyerMoisConfigures() > 0) {
-      chips.push({
-        label: this.t.dashboard.argentPocheAnnee,
-        value: this.formatMontant(this.argentPocheFoyerTotalAnnuel()),
-        color: colors.argentPoche,
-        icon: 'pi pi-money-bill',
-        hint: this.i18n.instant('dashboard.argentPocheAnneeHint', { mois: this.argentPocheFoyerMoisConfigures() }),
-        action: this.contexte.estEditor()
-          ? { icon: 'pi pi-cog', ariaLabel: this.t.dashboard.gererArgentPoche, onClick: () => this.naviguerVersArgentPoche() }
-          : undefined,
+    if (avecPoche) {
+      segments.push({
+        cle: 'argent-poche',
+        libelle: this.t.dashboard.argentPocheMois,
+        valeurs: argentPoche,
+        ton: 'argent-poche',
       });
     }
-    return chips;
-  });
 
-  /** KPI chips affichés sous la barre de statut mensuelle : revenus/charges/réserves du
-   *  mois sélectionné. La différence de trésorerie vs le mois passé est désormais portée
-   *  par l'indicateur "Comparaison du mois passé" (carte + drawer, voir
-   *  `comparaisonPeriodeIndicateurMois`) et non plus par un chip ici. */
-  readonly kpisMoisTop = computed<KpiChip[]>(() => {
-    const agregat = this.agregatMoisCourant();
-    const colors = this.chartColors();
-    const chips: KpiChip[] = [
-      {
-        label: this.t.projection.revenus,
-        value: this.formatMontant(agregat.revenus),
-        color: colors.revenu,
-        icon: 'pi pi-arrow-up-right',
+    return {
+      segments,
+      ligne: { libelle: this.t.projection.revenus, valeurs: revenus, ton: 'revenu' },
+      libelles: this.t.moisLettre,
+      libellesComplets: this.t.mois,
+      formateurValeur: this.fmtCompact,
+      formateurInfobulle: (index: number) => {
+        const lignes = [
+          this.t.mois[index] ?? String(index + 1),
+          `${this.t.projection.revenus}: ${this.formatMontant(revenus[index] ?? 0)}`,
+          `${this.t.projection.charges}: ${this.formatMontant(charges[index] ?? 0)}`,
+          `${this.t.projection.reserves}: ${this.formatMontant(reserves[index] ?? 0)}`,
+        ];
+        if (avecPoche) {
+          lignes.push(`${this.t.dashboard.argentPocheMois}: ${this.formatMontant(argentPoche[index] ?? 0)}`);
+        }
+        lignes.push(`${this.t.dashboard.soldeRestant}: ${this.formatMontant((revenus[index] ?? 0) - (sorties[index] ?? 0))}`);
+        return lignes.join(' · ');
       },
-      {
-        label: this.t.projection.charges,
-        value: this.formatMontant(agregat.charges),
-        color: colors.charge,
-        icon: 'pi pi-arrow-down-right',
-      },
-      {
-        label: this.t.projection.reserves,
-        value: this.formatMontant(agregat.reserves),
-        color: colors.reserve,
-        icon: 'pi pi-money-bill',
-      },
-    ];
-    // PR6.b — Argent de poche du mois : toujours affiché en mode membre
-    // (même sans configuration, montant 0) pour exposer la fonctionnalité,
-    // avec une action rapide contextuelle (créer/modifier l'allocation du
-    // mois affiché, membre + mois verrouillés). En mode foyer : total agrégé
-    // avec bouton "Gérer" (pas d'édition unitaire sur un agrégat).
-    const poche = this.argentPocheMoisCourant();
-    if (this.estModeMembre()) {
-      const source = poche?.source ?? 'AUCUNE';
-      const action = this.contexte.estEditor() ? {
-        icon: source === 'ALLOCATION' ? 'pi pi-pencil' : 'pi pi-plus',
-        ariaLabel: source === 'ALLOCATION' ? this.t.dashboard.modifierArgentPoche : this.t.dashboard.creerArgentPoche,
-        onClick: () => this.ouvrirActionArgentPoche(),
-      } : undefined;
-      chips.push({
-        label: this.t.dashboard.argentPocheMois,
-        value: this.formatMontant(poche?.montant ?? 0),
-        color: colors.argentPoche,
-        icon: 'pi pi-wallet',
-        hint: this.t.argentPoche.source[source],
-        action,
-      });
-    } else {
-      const pocheFoyer = this.argentPocheFoyerMoisCourant();
-      if (pocheFoyer && pocheFoyer.total > 0) {
-        chips.push({
-          label: this.t.dashboard.argentPocheMois,
-          value: this.formatMontant(pocheFoyer.total),
-          color: colors.argentPoche,
-          icon: 'pi pi-money-bill',
-          action: this.contexte.estEditor()
-            ? { icon: 'pi pi-cog', ariaLabel: this.t.dashboard.gererArgentPoche, onClick: () => this.naviguerVersArgentPoche() }
-            : undefined,
-        });
-      }
-    }
-    return chips;
-  });
-
-  readonly kpiMois = computed<KpiChip[]>(() => {
-    const evenements = this.evenementsMois();
-    return [
-      {
-        label: this.t.dashboard.evenementsCeMois,
-        value: evenements.length,
-        hint: evenements.length ? evenements.map((evenement) => evenement.title).slice(0, 2).join(' · ') : this.t.dashboard.aucunEvenement,
-      },
-    ];
+    };
   });
 
   readonly ringSegmentsAnnee = computed<MetricRingSegment[]>(() => {
@@ -1610,11 +1509,21 @@ export class DashboardFacadeService {
     return `${positifs}-${negatifs}`;
   });
 
-  /** Liste des mois de l'année dont le solde disponible est sous le seuil de risque backend. */
+  /** Liste des mois de l'année dont le solde disponible est négatif. */
   readonly moisARisqueListe = computed<MoisARisqueItem[]>(() =>
     this.moisAgregatsCourant()
       .map((item, index) => ({ label: this.t.mois[index] ?? String(index + 1), soldeDisponible: item.soldeDisponible }))
-      .filter((item) => item.soldeDisponible < this.seuils().moisARisqueSoldeMin),
+      .filter((item) => item.soldeDisponible < 0),
+  );
+
+  /** Solde disponible et revenus de chaque mois de l'année (sujet courant) — heatmap
+   *  "Mois à risque". */
+  private readonly soldesMoisCourant = computed<SoldeMois[]>(() =>
+    this.moisAgregatsCourant().map((item, index) => ({
+      label: this.t.mois[index] ?? String(index + 1),
+      soldeDisponible: item.soldeDisponible,
+      revenus: item.revenus,
+    })),
   );
 
   /** Payload signaux transmis au drawer "Mois à risque". */
@@ -1628,88 +1537,13 @@ export class DashboardFacadeService {
 
   /** Indicateur "Mois à risque" (vue année uniquement) — reprend l'anneau "mois positifs
    *  vs négatifs" (compact, projeté en `[card-info]` par le template) et le compteur de
-   *  mois sous le seuil de risque, auparavant portés par le `app-metric-ring`/`app-stat-grid`
+   *  mois à solde négatif, auparavant portés par le `app-metric-ring`/`app-stat-grid`
    *  du haut de la vue annuelle. */
   readonly moisARisqueIndicateurAnnee = computed(() => ({
-    indicator: moisARisqueIndicator(this.moisARisqueListe().length, this.t),
+    indicator: moisARisqueIndicator(this.soldesMoisCourant(), this.formateurMontant, this.t),
     data: this.moisARisqueData(),
   }));
 
-  /** Graphique annuel "revenus vs charges+réserves" — 2 lignes mensuelles, remplace
-   *  l'anneau + stat-grid en haut de la vue annuelle (voir `kpisAnneeTop` pour les totaux
-   *  annuels affichés en dessous). En mode membre, l'argent de poche mensuel est ajouté
-   *  à la série "Charges + réserves" (elle n'est pas comptée comme une réserve côté
-   *  moteur, mais réduit le reste à vivre — cf. `barSegmentsMois`). En mode foyer
-   *  (PR6.d), même traitement avec le total agrégé de tous les membres. */
-  readonly revenusChargesReservesChartData = computed(() => {
-    const mois = this.moisAgregatsCourant();
-    if (!mois.length) return {};
-    const colors = this.chartColors();
-    const argentPoche: number[] = this.estModeMembre()
-      ? this.argentPocheMois().map((r) => r.montant ?? 0)
-      : this.argentPocheFoyerMois().map((r) => r.total ?? 0);
-    return {
-      labels: this.t.moisLettre,
-      datasets: [
-        {
-          type: 'line',
-          label: this.t.projection.revenus,
-          // Chart.js dessine sur un <canvas> qui ne résout pas les CSS
-          // custom properties : on résout les tokens --app-* à l'exécution
-          // via `chartColors()` (voir shared/utils/css-vars.ts).
-          borderColor: colors.revenu,
-          backgroundColor: colors.revenu,
-          data: mois.map((m) => m.revenus),
-          tension: 0.3,
-          fill: false,
-          pointRadius: 2,
-          borderWidth: 1,
-        },
-        {
-          type: 'line',
-          label: this.t.dashboard.chargesEtReservesEtArgentdePoche,
-          borderColor: colors.charge,
-          backgroundColor: withAlpha(colors.charge, 0.59, 'rgba(239, 83, 80, 0.59)'),
-          data: mois.map((m, i) => m.charges + m.reserves + (argentPoche[i] ?? 0)),
-          tension: 0.3,
-          fill: true,
-          pointRadius: 2,
-          borderWidth: 1,
-        },
-      ],
-    };
-  });
-
-
-  readonly revenusChargesReservesChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: { mode: 'index', intersect: false },
-    plugins: {
-      legend: { display: true, position: 'bottom' as const },
-      tooltip: {
-        mode: 'index',
-        intersect: false,
-        callbacks: {
-          label: (ctx: { dataset: { label?: string }; parsed: { y: number } }) =>
-            `${ctx.dataset.label}: ${this.formatMontant(ctx.parsed.y)}`,
-        },
-      },
-    },
-    scales: {
-      x: { grid: { display: false } },
-      y: {
-        ticks: { callback: (v: unknown) => this.fmtCompact(Number(v)) },
-        grid: { color: 'rgba(128,128,128,0.08)' },
-      },
-    },
-    onClick: (_event: unknown, elements: { index: number }[]) => {
-      const index = elements?.[0]?.index;
-      if (index !== undefined) {
-        this.ouvrirMoisNumero(index + 1);
-      }
-    },
-  };
 
   /** Textes traduits transmis au composant partagé `app-matrice-budgetaire` (voir
    *  `MatriceBudgetaireLabels`) — le composant partagé ne connaît aucune clé i18n. */
@@ -1724,57 +1558,51 @@ export class DashboardFacadeService {
     scoreTooltip: this.t.dashboard.matriceScoreTooltip
   }));
 
-  readonly chargesSuresMois = computed(() => this.agregatMoisCourant().charges);
+  /** Étapes de la carte « Répartition » (vue Aperçu) : chaque ligne affiche son propre
+   *  montant et sa part des revenus de la période — **aucune soustraction en cascade**.
+   *  L'argent de poche est déjà déduit du reste à vivre côté moteur (`soldeDisponible`),
+   *  sans être compté dans les réserves — voir `MoteurCalcul.aggregatMembreMoisInterne` :
+   *  il n'apparaît donc ici qu'à titre informatif. */
+  private etapesRepartition(
+    agregat: { revenus: number; charges: number; reserves: number; soldeDisponible: number },
+    argentDePoche: number,
+  ): EtapeEntonnoir[] {
+    const revenus = agregat.revenus;
+    const etape = (libelle: string, montant: number, ton: TonIndicateur): EtapeEntonnoir => {
+      const part = revenus > 0 ? montant / revenus : 0;
+      return {
+        libelle,
+        valeurAffichee: this.formatMontant(montant),
+        valeurSecondaire: revenus > 0 ? this.formatPart(part) : '',
+        largeurPourcent: part * 100,
+        ton,
+      };
+    };
 
-  /** Segments labellisés de la barre mensuelle : chaque libellé est affiché avec son
-   *  montant (voir `displayMode="montant"` sur `app-metric-bar`, section vue "mois").
-   *  L'argent de poche (mode membre + configuré, ou total foyer agrégé en mode foyer)
-   *  est déjà déduite du reste à vivre côté moteur (`soldeDisponible`), sans être
-   *  comptée dans les réserves — voir `MoteurCalcul.aggregatMembreMoisInterne`. Elle
-   *  est donc simplement affichée ici comme un segment à part, à titre informatif,
-   *  sans nouvelle soustraction. */
-  readonly barSegmentsMois = computed<MetricBarSegment[]>(() => {
-    const rav = this.agregatMoisCourant().soldeDisponible;
-    const reserves = this.agregatMoisCourant().reserves;
-    const revenus = this.agregatMoisCourant().revenus;
-    const argentDePoche = this.argentPocheMontantMoisSujet();
     return [
-      {
-        label: this.t.projection.revenus,
-        value: revenus,
-        color: 'var(--app-revenu)',
-      },
-      {
-        label: this.t.dashboard.chargesSures,
-        value: this.chargesSuresMois(),
-        color: 'var(--app-charge)',
-      },
-      {
-        label: this.t.dashboard.reserves,
-        value: reserves,
-        color: 'var(--app-reserve)',
-      },
-      ...(argentDePoche > 0 ? [{
-        label: this.t.dashboard.argentPocheMois,
-        value: argentDePoche,
-        color: 'var(--app-argent-poche)',
-      }] : []),
-      {
-        label: this.t.dashboard.resteAVivre,
-        value: Math.max(rav, 0),
-        color: 'var(--app-neutre)',
-      },
+      etape(this.t.projection.revenus, revenus, 'revenu'),
+      etape(this.t.dashboard.chargesSures, agregat.charges, 'charge'),
+      etape(this.t.dashboard.reserves, agregat.reserves, 'reserve'),
+      ...(argentDePoche > 0
+        ? [etape(this.t.dashboard.argentPocheMois, argentDePoche, 'argent-poche')]
+        : []),
+      etape(this.t.dashboard.resteAVivre, Math.max(agregat.soldeDisponible, 0), 'neutre'),
     ];
-  });
+  }
 
-  readonly amountBarItems = computed<AmountBarItem[]>(() =>
-    this.barSegmentsMois().map((segment, index) => ({
-      key: `${index}-${segment.label.toLowerCase().replace(/\s+/g, '-')}`,
-      label: segment.label,
-      amount: segment.value,
-      color: segment.color,
-      emphasis: segment.label === this.t.dashboard.resteAVivre,
-    }))
+  private formatPart(part: number): string {
+    return Intl.NumberFormat(this.localeCourante(), {
+      style: 'percent',
+      maximumFractionDigits: 0,
+    }).format(part);
+  }
+
+  readonly entonnoirRepartitionMois = computed<EtapeEntonnoir[]>(() =>
+    this.etapesRepartition(this.agregatMoisCourant(), this.argentPocheMontantMoisSujet()),
+  );
+
+  readonly entonnoirRepartitionAnnee = computed<EtapeEntonnoir[]>(() =>
+    this.etapesRepartition(this.agregatAnneeCourant(), this.argentPocheMontantAnneeSujet()),
   );
 
 
@@ -1889,11 +1717,6 @@ export class DashboardFacadeService {
     },
   };
 
-  private tresorerieCumuleeFin(): number {
-    const valeurs = this.tresorerieCumuleeValeurs();
-    return valeurs.length ? valeurs[valeurs.length - 1] : 0;
-  }
-
   /** Trésorerie cumulée en fin d'année précédente (N-1), ou `null` si non disponible
    *  (première année du scénario, ou données pas encore chargées). */
   readonly tresorerieFinAnneePrecedente = computed<number | null>(() => {
@@ -1901,126 +1724,109 @@ export class DashboardFacadeService {
     return valeurs.length ? valeurs[valeurs.length - 1] : null;
   });
 
-  /** Différence entre la trésorerie cumulée en fin d'année courante et celle de l'an
-   *  passé — `null` si l'année précédente n'est pas disponible (première année du
-   *  scénario, ou en cours de chargement). */
-  readonly differenceTresorerieAnnuelle = computed<number | null>(() => {
-    const finPrecedente = this.tresorerieFinAnneePrecedente();
-    if (finPrecedente === null) return null;
-    return this.tresorerieCumuleeFin() - finPrecedente;
-  });
-
-  /** Différence entre le solde disponible ("reste à vivre") du mois sélectionné et
-   *  celui du mois précédent (décembre de l'an passé si le mois sélectionné est
-   *  janvier) — se base sur le solde disponible mensuel, pas sur la trésorerie
-   *  cumulée (contrairement à `differenceTresorerieAnnuelle`). `null` si le mois
-   *  précédent n'est pas disponible (janvier de la première année du scénario, ou en
-   *  cours de chargement). */
-  readonly differenceTresorerieMois = computed<number | null>(() => {
+  /** Valeurs des 5 grandeurs comparées entre la période courante et la période de
+   *  référence (mois précédent en vue mois — décembre de l'an passé si janvier ; année
+   *  précédente en vue année). `precedent` vaut `null` quand la référence n'existe pas
+   *  (première année du scénario, ou données pas encore chargées). */
+  private grandeursComparees(): { cle: string; titre: string; ton: TonCarte; courant: number; precedent: number | null; inverserDelta: boolean }[] {
+    const parMois = this.vue() === 'mois';
     const mois = this.moisSelectionne();
-    if (mois === undefined) return null;
-    const soldeCourant = this.agregatMoisCourant().soldeDisponible;
-    if (mois === 1) {
-      const precedente = this.moisAgregatsAnneePrecedente();
-      if (!precedente.length) return null;
-      return soldeCourant - precedente[precedente.length - 1].soldeDisponible;
-    }
-    const moisPrecedent = this.moisAgregatsCourant()[mois - 2];
-    return moisPrecedent ? soldeCourant - moisPrecedent.soldeDisponible : null;
-  });
+    const enJanvier = parMois && mois === 1;
+    const agregatsPrecedents = this.moisAgregatsAnneePrecedente();
 
-  /** Diff d'un champ d'agrégat (revenus/charges/reserves) entre le mois sélectionné et le
-   *  mois précédent (décembre de l'an passé si janvier) — même logique que
-   *  `differenceTresorerieMois` mais généralisée à n'importe quel champ. Utilisé par
-   *  l'indicateur "Comparaison du mois passé". */
-  private diffChampMois(champ: 'revenus' | 'charges' | 'reserves'): number | null {
-    const mois = this.moisSelectionne();
-    if (mois === undefined) return null;
-    const valeurCourante = this.agregatMoisCourant()[champ];
-    if (mois === 1) {
-      const precedente = this.moisAgregatsAnneePrecedente();
-      if (!precedente.length) return null;
-      return valeurCourante - precedente[precedente.length - 1][champ];
-    }
-    const moisPrecedent = this.moisAgregatsCourant()[mois - 2];
-    return moisPrecedent ? valeurCourante - moisPrecedent[champ] : null;
+    const agregatCourant = parMois ? this.agregatMoisCourant() : this.agregatAnneeCourant();
+    const agregatPrecedent = parMois
+      ? (enJanvier ? agregatsPrecedents[agregatsPrecedents.length - 1] : this.moisAgregatsCourant()[(mois ?? 1) - 2])
+      : undefined;
+    const sommePrecedente = (champ: 'revenus' | 'charges' | 'reserves' | 'soldeDisponible') =>
+      agregatsPrecedents.reduce((somme, m) => somme + m[champ], 0);
+
+    const champ = (nom: 'revenus' | 'charges' | 'reserves' | 'soldeDisponible'): number | null => {
+      if (parMois) return agregatPrecedent ? agregatPrecedent[nom] : null;
+      return agregatsPrecedents.length ? sommePrecedente(nom) : null;
+    };
+
+    return [
+      { cle: 'revenus', titre: this.t.projection.revenus, ton: 'revenu', courant: agregatCourant.revenus, precedent: champ('revenus'), inverserDelta: false },
+      { cle: 'charges', titre: this.t.dashboard.chargesSures, ton: 'charge', courant: agregatCourant.charges, precedent: champ('charges'), inverserDelta: true },
+      { cle: 'reserves', titre: this.t.dashboard.reserves, ton: 'reserve', courant: agregatCourant.reserves, precedent: champ('reserves'), inverserDelta: false },
+      {
+        cle: 'argent-poche',
+        titre: this.t.dashboard.argentPocheMois,
+        ton: 'argent-poche',
+        courant: parMois ? this.argentPocheMontantMoisSujet() : this.argentPocheMontantAnneeSujet(),
+        precedent: this.argentPochePrecedentSujet(),
+        inverserDelta: false,
+      },
+      { cle: 'solde', titre: this.t.dashboard.resteAVivre, ton: 'neutre', courant: agregatCourant.soldeDisponible, precedent: champ('soldeDisponible'), inverserDelta: false },
+    ];
   }
 
-  /** Diff d'un champ d'agrégat (revenus/charges/reserves) entre le total de l'année
-   *  courante et le total de l'année précédente — même logique que
-   *  `differenceTresorerieAnnuelle` mais généralisée à n'importe quel champ. Utilisé par
-   *  l'indicateur "Comparaison de l'année passée". */
-  private diffChampAnnuel(champ: 'revenus' | 'charges' | 'reserves'): number | null {
-    const precedente = this.moisAgregatsAnneePrecedente();
-    if (!precedente.length) return null;
-    const totalPrecedent = precedente.reduce((sum, m) => sum + m[champ], 0);
-    return this.agregatAnneeCourant()[champ] - totalPrecedent;
-  }
+  /** Argent de poche de la période de référence, selon le sujet (membre ou foyer agrégé).
+   *  `null` quand l'historique n'est pas disponible. */
+  private argentPochePrecedentSujet(): number | null {
+    const membre = this.estModeMembre();
+    const moisPrecedents = membre ? this.argentPocheMoisAnneePrecedente() : this.argentPocheFoyerMoisAnneePrecedente();
+    const montant = (r: { montant?: number; total?: number } | undefined): number | null =>
+      r ? (membre ? (r.montant ?? 0) : (r.total ?? 0)) : null;
 
-  readonly diffRevenusMois = computed<number | null>(() => this.diffChampMois('revenus'));
-  readonly diffChargesMois = computed<number | null>(() => this.diffChampMois('charges'));
-  readonly diffReservesMois = computed<number | null>(() => this.diffChampMois('reserves'));
-  readonly diffRevenusAnnee = computed<number | null>(() => this.diffChampAnnuel('revenus'));
-  readonly diffChargesAnnee = computed<number | null>(() => this.diffChampAnnuel('charges'));
-  readonly diffReservesAnnee = computed<number | null>(() => this.diffChampAnnuel('reserves'));
+    if (this.vue() !== 'mois') {
+      if (!moisPrecedents.length) return null;
+      return membre ? this.argentPocheTotalAnneePrecedente() : this.argentPocheFoyerTotalAnneePrecedente();
+    }
 
-  /** Diff de l'argent de poche du mois sélectionné vs le mois précédent (mode membre
-   *  uniquement) — `null` en mode foyer ou si le mois précédent n'est pas disponible. */
-  readonly diffArgentPocheMois = computed<number | null>(() => {
-    if (!this.estModeMembre()) return null;
     const mois = this.moisSelectionne();
     if (mois === undefined) return null;
-    const montantCourant = this.argentPocheMoisCourant()?.montant ?? 0;
-    if (mois === 1) {
-      const precedente = this.argentPocheMoisAnneePrecedente();
-      if (!precedente.length) return null;
-      return montantCourant - (precedente[precedente.length - 1]?.montant ?? 0);
+    if (mois === 1) return moisPrecedents.length ? montant(moisPrecedents[moisPrecedents.length - 1]) : null;
+    return montant((membre ? this.argentPocheMois() : this.argentPocheFoyerMois())[mois - 2]);
+  }
+
+  /** Libellés des deux colonnes de la carte de comparaison (période courante / référence). */
+  private libellesComparaison(): { actuel: string; precedent: string } {
+    const annee = this.annee();
+    const mois = this.moisSelectionne();
+    if (this.vue() !== 'mois' || mois === undefined) {
+      return { actuel: `${annee}`, precedent: `${annee - 1}` };
     }
-    const moisPrecedent = this.argentPocheMois()[mois - 2];
-    return moisPrecedent ? montantCourant - (moisPrecedent.montant ?? 0) : null;
+    const nomMois = (index: number) =>
+      new Intl.DateTimeFormat(this.localeCourante(), { month: 'long' }).format(new Date(2000, index, 1));
+    return {
+      actuel: `${nomMois(mois - 1)} ${annee}`,
+      precedent: mois === 1 ? `${nomMois(11)} ${annee - 1}` : `${nomMois(mois - 2)} ${annee}`,
+    };
+  }
+
+  /** Montant en devise du foyer, arrondi à l'unité : la carte de comparaison aligne cinq
+   *  montants et les centimes y nuiraient à la lisibilité. L'espace insécable qui précède
+   *  la devise est normalisé en espace simple. */
+  private formatMontantArrondi(valeur: number): string {
+    return new Intl.NumberFormat(this.localeCourante(), {
+      style: 'currency',
+      currency: this.deviseBase(),
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(valeur).replace(/\u00A0/g, ' ');
+  }
+
+  /** Carte « comparaison de période » de la vue Aperçu : une ligne par grandeur (revenus,
+   *  charges, réserves, argent de poche, solde restant) confrontée à la période précédente. */
+  readonly comparaisonPeriode = computed<ComparaisonPeriode>(() => {
+    const libelles = this.libellesComparaison();
+    return {
+      libellePrecedent: libelles.precedent,
+      libelleActuel: libelles.actuel,
+      elements: this.grandeursComparees().map((g) => ({
+        cle: g.cle,
+        libelle: g.titre,
+        ton: g.ton,
+        valeurActuelle: this.formatMontantArrondi(g.courant),
+        valeurPrecedente: g.precedent === null ? '—' : this.formatMontantArrondi(g.precedent),
+        // Une référence nulle rendrait la variation infinie : on masque le badge.
+        delta: g.precedent === null || g.precedent === 0 ? null : (g.courant - g.precedent) / Math.abs(g.precedent),
+        inverserDelta: g.inverserDelta,
+      })),
+    };
   });
-
-  /** Diff de l'argent de poche total de l'année courante vs l'année précédente (mode
-   *  membre uniquement) — `null` en mode foyer ou si l'année précédente n'est pas
-   *  disponible (première année du scénario). */
-  readonly diffArgentPocheAnnee = computed<number | null>(() => {
-    if (!this.estModeMembre() || this._argentPocheAnneePrecedenteCle() === null) return null;
-    return this.argentPocheTotalAnnuel() - this.argentPocheTotalAnneePrecedente();
-  });
-
-  /** Payload signaux transmis au drawer "Comparaison" (mois). */
-  private readonly comparaisonPeriodeDataMois = computed<ComparaisonPeriodeDrawerData>(() => ({
-    diffPrincipal: this.differenceTresorerieMois,
-    diffRevenus: this.diffRevenusMois,
-    diffCharges: this.diffChargesMois,
-    diffReserves: this.diffReservesMois,
-    diffArgentPoche: this.estModeMembre() ? this.diffArgentPocheMois : null,
-    devise: this.deviseBase,
-  }));
-
-  /** Payload signaux transmis au drawer "Comparaison" (année). */
-  private readonly comparaisonPeriodeDataAnnee = computed<ComparaisonPeriodeDrawerData>(() => ({
-    diffPrincipal: this.differenceTresorerieAnnuelle,
-    diffRevenus: this.diffRevenusAnnee,
-    diffCharges: this.diffChargesAnnee,
-    diffReserves: this.diffReservesAnnee,
-    diffArgentPoche: this.estModeMembre() ? this.diffArgentPocheAnnee : null,
-    devise: this.deviseBase,
-  }));
-
-  /** Indicateur "Comparaison du mois passé" (vue mois) — remplace l'ancien chip "Diff. du
-   *  mois passé" auparavant porté par `kpisMoisTop`. */
-  readonly comparaisonPeriodeIndicateurMois = computed(() => ({
-    indicator: comparaisonPeriodeIndicator('comparaison-mois', 'mois', this.differenceTresorerieMois(), (v) => this.formatMontant(v), this.t),
-    data: this.comparaisonPeriodeDataMois(),
-  }));
-
-  /** Indicateur "Comparaison de l'année passée" (vue année) — remplace l'ancien chip
-   *  "Diff. année passée" auparavant porté par `kpisAnneeTop`. */
-  readonly comparaisonPeriodeIndicateurAnnee = computed(() => ({
-    indicator: comparaisonPeriodeIndicator('comparaison-annee', 'annee', this.differenceTresorerieAnnuelle(), (v) => this.formatMontant(v), this.t),
-    data: this.comparaisonPeriodeDataAnnee(),
-  }));
 
   /** Icône + variante de couleur PrimeNG représentative d'un type d'événement. */
   private iconEvenement(evt: EvenementDto): { icon: string; variant: 'success' | 'danger' | 'secondary' } {
@@ -2151,68 +1957,6 @@ export class DashboardFacadeService {
   });
 
 
-  peutReculer(): boolean {
-    const annees = this.annees();
-    const premiereAnnee = annees[0] ?? this.annee();
-    if (this.vue() === 'mois') {
-      return this.annee() > premiereAnnee || (this.moisSelectionne() ?? 1) > 1;
-    }
-    return this.annee() > premiereAnnee;
-  }
-
-  peutAvancer(): boolean {
-    const annees = this.annees();
-    const derniereAnnee = annees[annees.length - 1] ?? this.annee();
-    if (this.vue() === 'mois') {
-      return this.annee() < derniereAnnee || (this.moisSelectionne() ?? 12) < 12;
-    }
-    return this.annee() < derniereAnnee;
-  }
-
-  reculer(): void {
-    if (!this.peutReculer()) return;
-    if (this.vue() === 'mois') {
-      let annee = this.annee();
-      let mois = this.moisSelectionne() ?? 1;
-      if (mois === 1) {
-        mois = 12;
-        annee -= 1;
-      } else {
-        mois -= 1;
-      }
-      this.naviguerVersMois(annee, mois);
-      return;
-    }
-    this.naviguerVersAnnee(this.annee() - 1);
-  }
-
-  avancer(): void {
-    if (!this.peutAvancer()) return;
-    if (this.vue() === 'mois') {
-      let annee = this.annee();
-      let mois = this.moisSelectionne() ?? 1;
-      if (mois === 12) {
-        mois = 1;
-        annee += 1;
-      } else {
-        mois += 1;
-      }
-      this.naviguerVersMois(annee, mois);
-      return;
-    }
-    this.naviguerVersAnnee(this.annee() + 1);
-  }
-
-  onAnneeTabChange(value: string): void {
-    this.ongletAnnee.set(value);
-    this.recalculerChartsMasques();
-  }
-
-  onMoisTabChange(value: string): void {
-    this.ongletMois.set(value);
-    this.recalculerChartsMasques();
-  }
-
   ouvrirMoisNumero(mois: number): void {
     this.naviguerVersMois(this.annee(), mois);
   }
@@ -2222,11 +1966,6 @@ export class DashboardFacadeService {
     if (mois) {
       this.ouvrirMoisNumero(mois);
     }
-  }
-
-  private recalculerChartsMasques(): void {
-    if (typeof window === 'undefined') return;
-    setTimeout(() => window.dispatchEvent(new Event('resize')), 0);
   }
 
   private buildDashboardSegments(sujetId: string, annee: number, mois?: number): string[] {
@@ -2279,18 +2018,32 @@ export class DashboardFacadeService {
     this.naviguerVersMois(value.year, value.monthIndex + 1);
   }
 
+  /** Pastilles de santé du sélecteur de période : verte quand le solde restant atteint au
+   *  moins 5 % du revenu du mois, jaune entre 0 % et 5 %, rouge quand il est négatif. */
   readonly monthsHealth = computed<MonthHealth[]>(() => {
-    const seuil = this.seuils().moisARisqueSoldeMin;
-    return this.moisSummary().map((mois) => ({
-      monthIndex: mois.mois - 1,
-      amount: mois.solde,
-      level: mois.solde < seuil ? 'low' : mois.solde < seuil * 2 ? 'mid' : 'high',
-    }));
+    const agregats = this.moisAgregatsCourant();
+    return Array.from({ length: 12 }, (_, monthIndex) => {
+      const agregat = agregats[monthIndex] ?? ZERO_AGREGAT;
+      return {
+        monthIndex,
+        amount: agregat.soldeDisponible,
+        level: niveauSanteMois(agregat.soldeDisponible, agregat.revenus),
+      };
+    });
   });
 
-  readonly apercuIndicators = computed(() => {
-    const items = [
-      this.comparaisonPeriodeIndicateur(),
+  /** Pastille de santé de la vignette « Année » : même règle que les mois, appliquée au
+   *  solde et aux revenus cumulés de l'année. */
+  readonly yearHealth = computed<PeriodHealth>(() => {
+    const agregat = this.agregatAnneeCourant();
+    return {
+      amount: agregat.soldeDisponible,
+      level: niveauSanteMois(agregat.soldeDisponible, agregat.revenus),
+    };
+  });
+
+  readonly apercuIndicators = computed<IndicatorItem[]>(() => {
+    const items: IndicatorItem[] = [
       this.evenementsIndicateur(),
       this.besoinsPlaisirsIndicateur(),
     ];
@@ -2302,9 +2055,9 @@ export class DashboardFacadeService {
     return items;
   });
 
-  readonly comptesIndicators = computed(() => {
+  readonly comptesIndicators = computed<IndicatorItem[]>(() => {
     const virements = this.virementsComptesIndicateurCourant();
-    const items: Array<{ indicator: Indicator; data: unknown }> = [];
+    const items: IndicatorItem[] = [];
     if (virements) {
       items.push(virements);
     }
@@ -2314,12 +2067,12 @@ export class DashboardFacadeService {
     return items;
   });
 
-  readonly postesIndicators = computed(() => [
+  readonly postesIndicators = computed<IndicatorItem[]>(() => [
     this.ventilationPostesIndicateur(),
     this.postesAOptimiserIndicateurCourant(),
   ]);
 
-  readonly membresIndicators = computed(() => {
+  readonly membresIndicators = computed<IndicatorItem[]>(() => {
     const prorata = this.prorataPartageIndicateur();
     return [
       ...this.tauxEffortIndicateursCourant(),
@@ -2328,16 +2081,9 @@ export class DashboardFacadeService {
   });
 
 
-  readonly carteVentilationCourante = computed(() => this.vue() === 'annee' ? this.carteAnneeConfig() : this.carteMoisConfig());
-  readonly postesOptimisationCourants = computed(() => this.vue() === 'annee' ? this.postesMatriceAnnee() : this.postesMatriceMois());
-  readonly postesOptimisationChargementCourant = computed(() => this.vue() === 'annee' ? this.matriceChargement() : this.matriceMoisChargement());
 
-  readonly besoinsPlaisirsDataCourant = computed(() => this.vue() === 'annee' ? this.besoinsPlaisirsDataAnnee() : this.besoinsPlaisirsDataMois());
-  readonly tauxEffortCardsCourant = computed(() => this.vue() === 'annee' ? this.tauxEffortCardsAnnee() : this.tauxEffortCards());
-  readonly evolutionGraphiqueDrawerData = this.evolutionGraphiqueData;
 
   readonly evenementsIndicateur = computed(() => this.vue() === 'annee' ? this.evenementsIndicateurAnnee() : this.evenementsIndicateurMois());
-  readonly comparaisonPeriodeIndicateur = computed(() => this.vue() === 'annee' ? this.comparaisonPeriodeIndicateurAnnee() : this.comparaisonPeriodeIndicateurMois());
   readonly besoinsPlaisirsIndicateur = computed(() => this.vue() === 'annee' ? this.besoinsPlaisirsIndicateurAnnee() : this.besoinsPlaisirsIndicateurMois());
   readonly virementsComptesIndicateurCourant = computed(() => this.vue() === 'annee' ? this.virementsComptesIndicateurAnnee() : this.virementsComptesIndicateur());
   readonly ventilationPostesIndicateur = computed(() => this.vue() === 'annee' ? this.ventilationPostesIndicateurAnnee() : this.ventilationPostesIndicateurMois());
@@ -2347,103 +2093,6 @@ export class DashboardFacadeService {
 
   dashboardViewLabel(viewKey: DashboardViewKey): string {
     return this.t.dashboard.views[viewKey];
-  }
-
-  readonly moisSummary = computed<DashboardMonthSummary[]>(() => {
-    const mois = this.moisAgregatsCourant();
-    if (!mois.length) {
-      return this.t.mois.map((label, index) => ({ mois: index + 1, label: label.slice(0, 3), solde: 0 }));
-    }
-    return mois.map((agregat, index) => ({
-      mois: index + 1,
-      label: this.formatMois(index + 1),
-      solde: agregat.soldeDisponible,
-    }));
-  });
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // PR6.b/6.d — Action rapide "Argent de poche" depuis le KPI du dashboard mensuel
-  // ─────────────────────────────────────────────────────────────────────────────
-
-  /** Navigue vers l'écran de gestion dédié — utilisé par le bouton "Gérer
-   *  l'argent de poche" du KPI en mode foyer (pas d'édition unitaire possible
-   *  sur un agrégat de tous les membres). */
-  private naviguerVersArgentPoche(): void {
-    if (!this.contexte.estEditor()) return;
-    const foyerId = this.contexte.foyerId();
-    if (!foyerId) return;
-    void this.router.navigate(['/f', foyerId, 'argent-poche']);
-  }
-
-  dialogArgentPocheVisible = false;
-  private _allocationArgentPocheEnEditionId: string | null = null;
-
-  formAllocationArgentPoche = this.fb.group({
-    compteId: [null as string | null, Validators.required],
-    montant: [0, [Validators.required, Validators.min(0.01)]],
-    raison: [''],
-  });
-
-  /**
-   * Ouvre la popin d'allocation ponctuelle pour le membre + mois actuellement
-   * affichés (verrouillés — non éditables ici, contrairement à l'écran de
-   * gestion dédié) : édition si une allocation existe déjà ce mois-là,
-   * création sinon (montant pré-rempli avec la valeur actuellement affichée,
-   * qu'elle vienne d'une politique en vigueur ou de zéro).
-   */
-  ouvrirActionArgentPoche(): void {
-    if (!this.contexte.estEditor()) return;
-    const foyerId = this.contexte.foyerId();
-    const scenarioId = this.contexte.scenarioId();
-    const poche = this.argentPocheMoisCourant();
-    if (!foyerId || !scenarioId || !poche) return;
-
-    if (poche.source === 'ALLOCATION' && poche.allocationId) {
-      this._allocationArgentPocheEnEditionId = poche.allocationId;
-      this.formAllocationArgentPoche.reset({ compteId: null, montant: poche.montant, raison: '' });
-      this.dialogArgentPocheVisible = true;
-      this.allocationArgentPocheSvc.obtenir(foyerId, scenarioId, poche.allocationId).subscribe({
-        next: a => this.formAllocationArgentPoche.setValue({
-          compteId: a.compteId, montant: a.montant, raison: a.raison ?? '',
-        }),
-        error: () => { this.dialogArgentPocheVisible = false; },
-      });
-    } else {
-      this._allocationArgentPocheEnEditionId = null;
-      this.formAllocationArgentPoche.reset({ compteId: null, montant: poche.montant, raison: '' });
-      this.dialogArgentPocheVisible = true;
-    }
-  }
-
-  enregistrerAllocationArgentPoche(): void {
-    if (!this.contexte.estEditor()) return;
-    const foyerId = this.contexte.foyerId();
-    const scenarioId = this.contexte.scenarioId();
-    const membre = this.membreCourant();
-    const mois = this.moisSelectionne();
-    const v = this.formAllocationArgentPoche.getRawValue();
-    if (!foyerId || !scenarioId || !membre || mois === undefined || !v.compteId) return;
-
-    const req = {
-      membreId: membre.id,
-      compteId: v.compteId,
-      mois: `${this.annee()}-${String(mois).padStart(2, '0')}`,
-      montant: v.montant!,
-      raison: v.raison || undefined,
-    };
-    const enregistrement$ = this._allocationArgentPocheEnEditionId
-      ? this.allocationArgentPocheSvc.modifier(foyerId, scenarioId, this._allocationArgentPocheEnEditionId, req)
-      : this.allocationArgentPocheSvc.creer(foyerId, scenarioId, req);
-    enregistrement$.subscribe({
-      next: () => {
-        this.dialogArgentPocheVisible = false;
-        this.toast.add({ severity: 'success', summary: this.t.commun.succes });
-        this._argentPoche.recharger();
-      },
-      error: (err) => {
-        this.toast.add({ severity: 'error', summary: this.t.commun.erreur, detail: err?.error?.message });
-      },
-    });
   }
 
   private serieTresorerie(valeurs?: TresorerieCumuleeDto['mensualise']): number[] {

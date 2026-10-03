@@ -1,0 +1,32 @@
+<div class="gaufre">
+  <div class="gaufre__grille" [style.grid-template-columns]="grille()" role="img" [attr.aria-label]="ariaGrille()">
+    @for (point of points(); track point.index) {
+      <i
+        class="gaufre__point"
+        [class.gaufre__point--actif]="point.couleur"
+        [style.background]="point.couleur"
+        [pTooltip]="point.infobulle"
+        tooltipPosition="top"></i>
+    }
+  </div>
+
+  @if (afficherLegende()) {
+    <ul class="gaufre__legende">
+      @for (entree of entrees(); track entree.index) {
+        <li
+          class="gaufre__entree"
+          [class.gaufre__entree--interactive]="interactif()"
+          [attr.role]="interactif() ? 'button' : null"
+          [attr.tabindex]="interactif() ? 0 : null"
+          [pTooltip]="entree.infobulle"
+          tooltipPosition="top"
+          (click)="cliquer(entree.index)"
+          (keydown.enter)="cliquer(entree.index)">
+          <span class="gaufre__pastille" [style.background]="entree.couleur" aria-hidden="true"></span>
+          <span class="gaufre__entree-libelle">{{ entree.libelle }}</span>
+          <span class="gaufre__entree-valeur">{{ entree.pourcentage }}</span>
+        </li>
+      }
+    </ul>
+  }
+</div>

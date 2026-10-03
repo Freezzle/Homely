@@ -12,5 +12,3 @@ import type frTranslations from '../../../assets/i18n/fr.json';
  */
 export type AppTranslations = typeof frTranslations;
 
-export type PeriodRailTranslations = AppTranslations['periodRail'];
-export type DashboardViewTranslations = AppTranslations['dashboard']['views'];

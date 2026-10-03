@@ -12,14 +12,18 @@
     @if (!v.indisponible) {
       <div class="jauges">
         @for (j of v.jauges; track j.key) {
-          <app-indicator-card
-            [title]="j.titre"
-            [subtitle]="j.sousTitre"
-            [segments]="j.segments"
-            [ticks]="j.ticks"
-            [markers]="j.markers"
-            [ariaLabel]="j.ariaLabel"
-          />
+          <app-carte-info [titre]="j.titre" [badgeTexte]="j.tauxLabel" [niveauTitre]="4">
+            <app-indicateur-progression
+              [actuel]="j.actuel"
+              [cible]="j.cible"
+              ton="charge"
+              tonAtteint="charge"
+              tonPiste="neutre"
+              [actuelAffiche]="j.actuel | montant"
+              [cibleAffichee]="j.cible | montant"
+              [resteAffiche]="j.reste | montant"
+              [libelleAtteint]="j.libelleAtteint" />
+          </app-carte-info>
         }
       </div>
 

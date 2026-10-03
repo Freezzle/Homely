@@ -39,12 +39,6 @@ export class AllocationArgentPocheService {
   lister(foyerId: string, scenarioId: string) {
     return this.http.get<AllocationArgentPocheDto[]>(this.base(foyerId, scenarioId));
   }
-  /** Utilisé par l'action rapide du dashboard (PR6) pour précharger l'allocation
-   *  existante (compte, raison) avant édition, l'id seul (fourni par la
-   *  résolution) ne portant pas ces champs. */
-  obtenir(foyerId: string, scenarioId: string, id: string) {
-    return this.http.get<AllocationArgentPocheDto>(`${this.base(foyerId, scenarioId)}/${id}`);
-  }
   creer(foyerId: string, scenarioId: string, req: AllocationArgentPocheRequest) {
     return this.http.post<AllocationArgentPocheDto>(this.base(foyerId, scenarioId), req);
   }

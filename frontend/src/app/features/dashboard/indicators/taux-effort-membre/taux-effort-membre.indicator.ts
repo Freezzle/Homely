@@ -1,17 +1,18 @@
 import { Indicator } from '../../shared/models/indicator.model';
-import { IconColor } from '../../shared/models/icon-color.type';
+import { TonCarte } from '../../../../shared/components/indicateurs/tons';
 import { TauxEffortCardData, TauxEffortZone } from '../../../../shared/components/taux-effort-card/taux-effort-card.component';
 import { TauxEffortMembreDrawerContentComponent } from './taux-effort-membre-drawer-content.component';
 import { AppTranslations } from '../../../../core/i18n/i18n.types';
 import { SeuilsDashboardDto } from '../../../../core/models/api.models';
 import { formatTaux } from '../../../../shared/utils/format-taux.util';
+import { FormateurMontant } from '../visuel-indicateur.util';
 
-/** Zone → couleur du texte de l'info (le taux %) — mêmes zones que `TauxEffortCardComponent`. */
-const INFO_COLOR_PAR_ZONE: Record<TauxEffortZone, IconColor> = {
-  CONFORTABLE: 'pos',
-  CORRECT: 'blue',
-  TENDU: 'yellow',
-  SATURE: 'red',
+/** Zone → ton du badge (le taux %) — mêmes zones que `TauxEffortCardComponent`. */
+const TON_PAR_ZONE: Record<TauxEffortZone, TonCarte> = {
+  CONFORTABLE: 'succes',
+  CORRECT: 'info',
+  TENDU: 'attention',
+  SATURE: 'danger',
 };
 
 type TauxEffortIndicatorSeuils = Pick<SeuilsDashboardDto, 'tauxEffortCorrect' | 'tauxEffortTendu' | 'tauxEffortSature'>;
@@ -24,30 +25,43 @@ function zoneDe(tauxEffort: number, seuils: TauxEffortIndicatorSeuils): TauxEffo
 }
 
 /**
- * Construit la déclaration de carte + drawer pour l'indicateur "Taux d'effort", à
- * partir des données déjà résolues (`TauxEffortCardData`) — mêmes données que celles
- * utilisées par `TauxEffortCardComponent` ailleurs dans le dashboard, pas de nouvel
- * appel service. Réutilisée telle quelle pour le mensuel et l'annuel. Le titre de la
- * carte est générique ("Taux d'effort" — toutes les cartes de la section partagent le
- * même libellé) ; le nom du membre distingue les cartes entre elles en sous-titre.
+ * Construit la carte + drawer de l'indicateur "Taux d'effort" d'un membre, à partir des
+ * données déjà résolues (`TauxEffortCardData`, mensuel ou annuel). Visuel : barre de
+ * progression `charges + réserves` / `revenus` — part consommée en rouge « charges »,
+ * part restante dans le gris « restant » (deux couleurs, jamais de ton de zone). Le badge
+ * porte le taux d'effort (charges + réserves) / revenus, teinté selon la zone.
  */
-export function tauxEffortMembreIndicator(data: TauxEffortCardData, t: AppTranslations, seuils: TauxEffortIndicatorSeuils): Indicator {
-  const tauxEffort = data.revenusTotal > 0
-    ? ((data.chargesTotal + data.reservesTotal) / data.revenusTotal) * 100
-    : 0;
-  const zone = zoneDe(tauxEffort, seuils);
+export function tauxEffortMembreIndicator(
+  data: TauxEffortCardData,
+  t: AppTranslations,
+  seuils: TauxEffortIndicatorSeuils,
+  formatMontant: FormateurMontant,
+): Indicator {
+  const disponible = data.revenusTotal > 0;
+  const effort = data.chargesTotal + data.reservesTotal;
+  const tauxEffort = disponible ? (effort / data.revenusTotal) * 100 : 0;
+  const reste = Math.max(0, data.revenusTotal - effort);
 
   return {
     key: `taux-effort-${data.membre.id}`,
-    icon: 'pi pi-gauge',
-    // Icône fixe : représente le symbole de l'indicateur "Taux d'effort", indépendante
-    // de la zone courante. La couleur de zone est portée par `infoColor` (le %).
-    iconColor: 'gray',
-    title: t.projection.effortCardTitreSansNom,
-    subtitle: data.membre.nom,
-    info: data.revenusTotal > 0 ? `${formatTaux(tauxEffort)}%` : t.projection.effortCardNA,
-    infoColor: data.revenusTotal > 0 ? INFO_COLOR_PAR_ZONE[zone] : 'gray',
-    infoSubtitle: t.dashboard.sectionTauxEffortInfoSousTitre,
+    title: `${t.projection.effortCardTitreSansNom} · ${data.membre.nom}`,
+    subtitle: t.projection.effortCardSousTitre,
+    badgeTexte: disponible ? `${formatTaux(tauxEffort)}% ${t.dashboard.sectionTauxEffortInfoSousTitre}` : t.projection.effortCardNA,
+    badgeTon: disponible ? TON_PAR_ZONE[zoneDe(tauxEffort, seuils)] : undefined,
+    visuel: disponible
+      ? {
+          type: 'progression',
+          actuel: effort,
+          cible: data.revenusTotal,
+          ton: 'charge',
+          tonAtteint: 'charge',
+          tonPiste: 'neutre',
+          actuelAffiche: formatMontant(effort),
+          cibleAffichee: formatMontant(data.revenusTotal),
+          resteAffiche: formatMontant(reste),
+          libelleAtteint: t.projection.effortCardRevenusDepasses,
+        }
+      : { type: 'vide', message: t.projection.effortCardNaRaison },
     drawerContent: TauxEffortMembreDrawerContentComponent,
   };
 }

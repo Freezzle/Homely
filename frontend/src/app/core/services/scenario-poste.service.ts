@@ -11,7 +11,6 @@ export class ScenarioService {
   constructor(private http: HttpClient) {}
   private base(foyerId: string) { return `/api/foyers/${foyerId}/scenarios`; }
   lister(foyerId: string) { return this.http.get<ScenarioDto[]>(this.base(foyerId)); }
-  obtenir(foyerId: string, id: string) { return this.http.get<ScenarioDto>(`${this.base(foyerId)}/${id}`); }
   creer(foyerId: string, req: ScenarioRequest) { return this.http.post<ScenarioDto>(this.base(foyerId), req); }
   modifier(foyerId: string, id: string, req: ScenarioRequest) { return this.http.put<ScenarioDto>(`${this.base(foyerId)}/${id}`, req); }
   supprimer(foyerId: string, id: string) { return this.http.delete<void>(`${this.base(foyerId)}/${id}`); }

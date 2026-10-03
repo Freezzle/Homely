@@ -1,0 +1,84 @@
+﻿<div class="barres-ligne">
+  <div class="barres-ligne__graphique">
+    <div class="barres-ligne__zone" [style.height]="hauteur()">
+      <svg
+        class="barres-ligne__svg"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        role="img"
+        [attr.aria-label]="descriptionAccessible()">
+        <title>{{ descriptionAccessible() }}</title>
+
+        @for (graduation of graduations(); track graduation.cle) {
+          <line
+            class="barres-ligne__graduation"
+            [class.barres-ligne__graduation--pointillee]="graduation.pointillee"
+            x1="0"
+            x2="100"
+            [attr.y1]="graduation.y"
+            [attr.y2]="graduation.y" />
+        }
+
+        @for (rectangle of rectangles(); track rectangle.cle) {
+          <rect
+            class="barres-ligne__segment"
+            [attr.x]="rectangle.x"
+            [attr.y]="rectangle.y"
+            [attr.width]="rectangle.largeur"
+            [attr.height]="rectangle.hauteur"
+            [attr.fill]="rectangle.couleur"
+            [attr.opacity]="rectangle.opacite" />
+        }
+
+        @if (cheminLigne()) {
+          <path
+            class="barres-ligne__ligne"
+            fill="none"
+            [attr.d]="cheminLigne()"
+            [attr.stroke]="couleurLigne()"
+            [attr.stroke-width]="epaisseurLigne()"
+            [attr.stroke-dasharray]="ligne().tiret ?? null" />
+        }
+      </svg>
+
+      @for (graduation of graduations(); track graduation.cle) {
+        <span class="barres-ligne__valeur-y" [style.top.%]="graduation.y" aria-hidden="true">{{ graduation.texte }}</span>
+      }
+
+      <div class="barres-ligne__survols">
+        @for (abscisse of abscisses(); track abscisse.index) {
+          <span
+            class="barres-ligne__survol"
+            role="img"
+            [pTooltip]="abscisse.infobulle"
+            tooltipPosition="top"
+            [attr.aria-label]="abscisse.infobulle"></span>
+        }
+      </div>
+    </div>
+
+    <div class="barres-ligne__abscisses" aria-hidden="true">
+      @for (abscisse of abscisses(); track abscisse.index) {
+        <span
+          class="barres-ligne__abscisse"
+          [class.barres-ligne__abscisse--surligne]="abscisse.surligne"
+          [class.barres-ligne__abscisse--prevision]="abscisse.prevision">{{ abscisse.libelle }}</span>
+      }
+    </div>
+  </div>
+
+  @if (afficherLegende()) {
+    <ul class="barres-ligne__legende">
+      @for (entree of entreesSegments(); track entree.cle) {
+        <li class="barres-ligne__entree">
+          <span class="barres-ligne__pave" [style.background]="entree.couleur" aria-hidden="true"></span>
+          {{ entree.libelle }}
+        </li>
+      }
+      <li class="barres-ligne__entree">
+        <span class="barres-ligne__trait" [style.background]="fondLegendeLigne()" aria-hidden="true"></span>
+        {{ ligne().libelle }}
+      </li>
+    </ul>
+  }
+</div>

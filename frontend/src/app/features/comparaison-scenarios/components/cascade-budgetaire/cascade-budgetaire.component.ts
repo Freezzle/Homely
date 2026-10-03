@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
 import { CascadeEtape } from '../../data/comparaison-scenarios.models';
 import { I18nService } from '../../../../core/i18n/i18n.service';
-import { formatMontant, formatMontantSigne, signeEcart, TIRET_NUL } from '../../data/format-montant.util';
+import { formatMontant, formatMontantSigne, signeEcart } from '../../data/format-montant.util';
 
 /**
  * Cascade budgétaire (docs/features/feature_5_bis §7) — **table transposée** :
@@ -38,8 +38,6 @@ export class CascadeBudgetaireComponent {
   readonly labelB = input.required<string>();
   readonly labelEcart = input.required<string>();
   readonly enTetePeriode = input.required<string>();
-
-  protected readonly TIRET_NUL = TIRET_NUL;
 
   protected ecart(etape: CascadeEtape): number {
     return etape.valeurB - etape.valeurA;

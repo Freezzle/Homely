@@ -26,25 +26,6 @@ export class MontantPipe implements PipeTransform {
 }
 
 /**
- * Pipe formatage date selon la langue active.
- * Usage : {{ dateIso | dateFr }} ou {{ dateIso | dateFr:'month' }}
- */
-@Pipe({ name: 'dateFr', standalone: true })
-export class DateFrPipe implements PipeTransform {
-  private translate = inject(TranslateService);
-
-  transform(value: string | null | undefined, format: 'date' | 'month' | 'year' = 'date'): string {
-    if (!value) return '–';
-    const d = new Date(value);
-    if (isNaN(d.getTime())) return '–';
-    const locale = localeDeLangue(this.translate.currentLang());
-    if (format === 'month') return new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(d);
-    if (format === 'year') return String(d.getFullYear());
-    return new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d);
-  }
-}
-
-/**
  * Pipe formatage pourcentage.
  * Usage : {{ 0.58 | pct }} → 58 %
  */
@@ -80,15 +61,3 @@ export class PeriodicitePipe implements PipeTransform {
   }
 }
 
-/**
- * Pipe valeur absolue — utile pour afficher un montant signé (ex. virementsNet) avec
- * un signe +/− géré séparément dans le template plutôt que par {@link Math#abs}.
- * Usage : {{ -150 | abs }} → 150
- */
-@Pipe({ name: 'abs', standalone: true, pure: true })
-export class AbsPipe implements PipeTransform {
-  transform(value: number | null | undefined): number | null {
-    if (value == null) return null;
-    return Math.abs(value);
-  }
-}

@@ -1,0 +1,46 @@
+<div class="double-courbe">
+  <div class="double-courbe__entete">
+    <p class="double-courbe__valeur">
+      {{ valeur() }}@if (unite()) {<span class="double-courbe__unite">{{ unite() }}</span>}
+    </p>
+    <app-badge-delta [delta]="delta()" [inverserDelta]="inverserDelta()" [formateur]="formateurDelta()" />
+  </div>
+
+  <svg
+    class="double-courbe__svg"
+    viewBox="0 0 100 40"
+    preserveAspectRatio="none"
+    role="img"
+    [style.height]="hauteur()"
+    [attr.aria-label]="descriptionTendance()">
+    <title>{{ descriptionTendance() }}</title>
+    @if (cheminPrecedent()) {
+      <path
+        class="double-courbe__ligne double-courbe__ligne--precedente"
+        [attr.d]="cheminPrecedent()"
+        [attr.stroke]="couleurPrecedente()"
+        fill="none" />
+    }
+    @if (cheminActuel()) {
+      <path
+        class="double-courbe__ligne"
+        [attr.d]="cheminActuel()"
+        [attr.stroke]="couleurActuelle()"
+        fill="none" />
+    }
+  </svg>
+
+  <ul class="double-courbe__legende">
+    <li class="double-courbe__entree">
+      <span class="double-courbe__trait" [style.border-top-color]="couleurActuelle()" aria-hidden="true"></span>
+      {{ libelleActuel() }}
+    </li>
+    <li class="double-courbe__entree">
+      <span
+        class="double-courbe__trait double-courbe__trait--pointille"
+        [style.border-top-color]="couleurPrecedente()"
+        aria-hidden="true"></span>
+      {{ libellePrecedent() }}
+    </li>
+  </ul>
+</div>

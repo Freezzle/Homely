@@ -1,0 +1,64 @@
+// Tokens --app-* globaux : voir frontend/src/styles/_app-tokens.css.
+@use '../legende' as legende;
+
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.gaufre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+
+  &__grille {
+    flex-shrink: 0;
+    display: grid;
+    gap: 3px;
+    width: 100%;
+    max-width: 200px;
+  }
+
+  &__point {
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: var(--app-line-2);
+
+    &--actif {
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--app-ink) 12%, transparent);
+    }
+  }
+
+  &__legende {
+    @include legende.legende-liste;
+  }
+
+  &__entree {
+    @include legende.legende-entree;
+
+    &--interactive {
+      @include legende.legende-entree-interactive;
+    }
+  }
+
+  &__pastille {
+    @include legende.legende-pastille;
+  }
+
+  &__entree-libelle {
+    @include legende.legende-libelle;
+  }
+
+  &__entree-valeur {
+    @include legende.legende-valeur;
+  }
+}
+
+@container (min-width: 560px) {
+  .gaufre__grille {
+    max-width: 180px;
+    margin-left: auto;
+  }
+}

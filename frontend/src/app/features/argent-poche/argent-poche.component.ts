@@ -404,10 +404,6 @@ export class ArgentPocheComponent {
     }
   }
 
-    typeSeverity(item: ArgentPocheAffiche): 'info' | 'warn' {
-        return item._type === 'ALLOCATION' ? 'warn' : 'info';
-    }
-
   /** Tag combiné "Membre · Compte" (sur le modèle de {@code membresAffichesPoste}
    *  dans {@code PostesListeComponent}), coloré avec la couleur du membre. */
   membreCompteLabel(item: ArgentPocheAffiche): { label: string; couleur: string; couleurTexte: string } | null {

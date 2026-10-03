@@ -157,8 +157,6 @@ export class TableVirementsComptesComponent {
     return resultat;
   });
 
-  protected readonly aucunVirement = computed(() => !this.chargement() && this.virements().length === 0);
-
   /** Vrai si la source et la destination n'ont aucun propriétaire commun (remboursement
    *  inter-membres) — intersection des propriétaires des deux comptes. */
   private estInterMembres(source: CompteAvecProprietaires, destination: CompteAvecProprietaires): boolean {

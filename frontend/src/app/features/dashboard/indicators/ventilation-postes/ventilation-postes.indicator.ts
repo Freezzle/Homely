@@ -1,31 +1,49 @@
 import { Indicator } from '../../shared/models/indicator.model';
-import { IconColor } from '../../shared/models/icon-color.type';
 import { VentilationPostesDrawerContentComponent } from './ventilation-postes-drawer-content.component';
 import { AppTranslations } from '../../../../core/i18n/i18n.types';
+import { FormateurMontant, segmentsProportionnels } from '../visuel-indicateur.util';
+
+export interface AgregatVentilation {
+  revenus: number;
+  charges: number;
+  reserves: number;
+  soldeDisponible: number;
+}
 
 /**
- * Construit la déclaration de carte + drawer pour l'indicateur "Ventilations des postes",
- * à partir du solde restant déjà calculé (`agregatMoisCourant()/agregatAnneeCourant()`).
- * `soldeRestantFormate` doit déjà être formaté avec la devise (réutilise `formatMontant` du
- * dashboard) pour éviter de dupliquer la logique de formatage ici.
+ * Construit la carte + drawer de l'indicateur "Ventilations des postes", à partir de
+ * l'agrégat déjà calculé (`agregatMoisCourant()/agregatAnneeCourant()`) et de l'argent de
+ * poche du sujet. Visuel : barre empilée du revenu (Charges / Réserves / Argent de poche /
+ * Solde restant) ; badge = solde restant (`danger` si négatif). L'argent de poche est déjà
+ * déduit de `soldeDisponible` côté moteur, les segments ne se recouvrent donc pas.
  */
 export function ventilationPostesIndicator(
   cle: string,
-  soldeRestant: number,
-  soldeRestantFormate: string,
+  agregat: AgregatVentilation,
+  argentPoche: number,
+  formatMontant: FormateurMontant,
   t: AppTranslations,
 ): Indicator {
-  const infoColor: IconColor = soldeRestant >= 0 ? 'pos' : 'red';
+  const segments = segmentsProportionnels(
+    [
+      { libelle: t.dashboard.chargesSures, montant: agregat.charges, ton: 'charge' },
+      { libelle: t.dashboard.reserves, montant: agregat.reserves, ton: 'reserve' },
+      { libelle: t.dashboard.argentPocheMois, montant: argentPoche, ton: 'argent-poche' },
+      { libelle: t.dashboard.soldeRestant, montant: agregat.soldeDisponible, ton: 'succes' },
+    ],
+    agregat.revenus,
+    formatMontant,
+  );
 
   return {
     key: cle,
-    icon: 'pi pi-chart-pie',
-    iconColor: 'gray',
     title: t.dashboard.indicateurVentilationPostesTitre,
     subtitle: t.dashboard.indicateurVentilationPostesSousTitre,
-    info: soldeRestantFormate,
-    infoColor,
-    infoSubtitle: t.dashboard.soldeRestant,
+    badgeTexte: formatMontant(agregat.soldeDisponible),
+    badgeTon: agregat.soldeDisponible >= 0 ? 'succes' : 'danger',
+    visuel: segments.length
+      ? { type: 'barre-empilee', segments }
+      : { type: 'vide', message: t.dashboard.indicateurAucuneDonnee },
     drawerContent: VentilationPostesDrawerContentComponent,
   };
 }

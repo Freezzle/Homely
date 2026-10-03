@@ -35,7 +35,7 @@
 
     <div class="pr-rail-wrap">
       <div class="pr-rail" [attr.aria-label]="t.periodRail.railLabel">
-        @for (month of months(); track monthTrackBy($index, month)) {
+        @for (month of months(); track month.monthIndex) {
           <button
             type="button"
             class="pr-month-btn"

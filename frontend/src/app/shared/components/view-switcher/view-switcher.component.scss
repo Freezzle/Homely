@@ -71,6 +71,15 @@
   width: 1.2rem;
   height: 1.2rem;
   display: block;
+  flex: none;
+}
+
+.vs-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
 }
 
 .vs-icon .s {
@@ -100,6 +109,27 @@
   font-weight: 700;
   line-height: 1;
   transform: translate(22%, -20%);
+}
+
+@media (min-width: 768px) {
+  .vs-bar {
+    min-height: 3.05rem;
+  }
+
+  .vs-button {
+    flex-direction: column;
+    gap: 0.2rem;
+    width: auto;
+    min-width: 3.9rem;
+    height: auto;
+    padding: 0.35rem 0.6rem;
+    border-radius: var(--app-radius-card);
+  }
+
+  .vs-badge {
+    top: 0.2rem;
+    right: 0.3rem;
+  }
 }
 
 @media (max-width: 767.98px) {

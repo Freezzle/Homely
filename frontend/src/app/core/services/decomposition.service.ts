@@ -7,7 +7,6 @@ import {
 } from '../models/api.models';
 import { LigneDecomposition, MembreTagInfo } from '../../shared/components/carte-bilan/carte-bilan.component';
 import { normaliserCouleur, couleurTexteContraste } from '../../shared/utils/couleur.util';
-import { DashboardConfigService } from './dashboard-config.service';
 
 /** Forme minimale commune à une ventilation mensuelle ou à un agrégat annuel sommé. */
 export interface VentilationLike {
@@ -27,7 +26,6 @@ export interface VentilationLike {
 @Injectable({ providedIn: 'root' })
 export class DecompositionService {
   private readonly i18n = inject(I18nService);
-  private readonly dashboardConfig = inject(DashboardConfigService);
 
   /** Traductions courantes (recalculées à chaque accès, cohérent si la langue change). */
   private get t() {
@@ -37,14 +35,6 @@ export class DecompositionService {
   /** Initiales (1 à 2 lettres) à partir d'un nom/prénom — utilisées dans les avatars. */
   initiales(nom: string): string {
     return nom.trim().split(/\s+/).map(mot => mot[0]).slice(0, 2).join('').toUpperCase();
-  }
-
-  /** Qualifie un taux d'effort selon les seuils fournis par le backend. */
-  niveauEffort(taux: number): string {
-    const seuils = this.dashboardConfig.seuils();
-    if (taux >= seuils.tauxEffortCritique) return this.t.projection.tauxEffortCritique;
-    if (taux >= seuils.tauxEffortSoutenu) return this.t.projection.tauxEffortSoutenu;
-    return this.t.projection.tauxEffortConfortable;
   }
 
   tauxEffort(agregat: VentilationAggregatDto): number {

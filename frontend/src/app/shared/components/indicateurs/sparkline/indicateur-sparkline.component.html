@@ -1,0 +1,30 @@
+<div class="sparkline">
+  <div class="sparkline__entete">
+    <p class="sparkline__valeur">
+      {{ valeur() }}@if (unite()) {<span class="sparkline__unite">{{ unite() }}</span>}
+    </p>
+    <app-badge-delta [delta]="delta()" [inverserDelta]="inverserDelta()" [formateur]="formateurDelta()" />
+  </div>
+
+  <svg
+    class="sparkline__svg"
+    viewBox="0 0 100 40"
+    preserveAspectRatio="none"
+    role="img"
+    [style.height]="hauteur()"
+    [attr.aria-label]="descriptionTendance()">
+    <title>{{ descriptionTendance() }}</title>
+    <defs>
+      <linearGradient [attr.id]="gradientId" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" [attr.stop-color]="couleur()" stop-opacity="0.25" />
+        <stop offset="100%" [attr.stop-color]="couleur()" stop-opacity="0" />
+      </linearGradient>
+    </defs>
+    @if (cheminFond()) {
+      <path [attr.d]="cheminFond()" [attr.fill]="'url(#' + gradientId + ')'" stroke="none" />
+    }
+    @if (chemin()) {
+      <path class="sparkline__ligne" [attr.d]="chemin()" [attr.stroke]="couleur()" fill="none" />
+    }
+  </svg>
+</div>

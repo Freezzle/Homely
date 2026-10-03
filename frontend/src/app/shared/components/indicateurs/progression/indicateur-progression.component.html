@@ -1,0 +1,20 @@
+<div class="progression">
+  <div
+    class="progression__piste"
+    [style.background]="couleurPiste()"
+    role="progressbar"
+    aria-valuemin="0"
+    aria-valuemax="100"
+    [attr.aria-valuenow]="pourcentageArrondi()"
+    [attr.aria-label]="libelleAccessible()">
+    <span class="progression__remplissage" [style.width]="largeur()" [style.background]="couleur()"></span>
+  </div>
+  <div class="progression__pied">
+    <span class="progression__mesure">
+      <b>{{ texteActuel() }}</b> / {{ texteCible() }}@if (unite()) { {{ unite() }}}
+    </span>
+    @if (afficherReste()) {
+      <span class="progression__reste">{{ texteDroite() }}</span>
+    }
+  </div>
+</div>

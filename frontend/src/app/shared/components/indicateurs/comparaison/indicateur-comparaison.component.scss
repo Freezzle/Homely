@@ -1,0 +1,167 @@
+// Tokens --app-* globaux : voir frontend/src/styles/_app-tokens.css.
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.comparaison {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+
+  &__grille {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    margin: 0;
+  }
+
+  &__colonne {
+    min-width: 0;
+
+    // Séparateur entre les deux périodes (porté par la seconde colonne).
+    &--separee {
+      padding-left: 0.625rem;
+      border-left: 1px solid var(--app-line);
+    }
+  }
+
+  &__libelle {
+    margin-bottom: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--app-ink-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__valeur {
+    margin: 0;
+    font-size: clamp(14px, 7cqi, 18px);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    color: var(--app-ink);
+    // `break-word` (et non `anywhere`) : le montant ne doit se couper qu'entre le nombre
+    // et la devise, jamais au milieu des chiffres.
+    overflow-wrap: break-word;
+
+    &--attenuee {
+      color: var(--app-ink-muted);
+    }
+  }
+
+  &__pied {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 12px;
+  }
+
+  &__comparaison {
+    min-width: 0;
+    color: var(--app-ink-muted);
+  }
+}
+
+.comparaison-tableau {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+
+  &__entete {
+    padding: 0 0 0.5rem;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--app-ink-muted);
+    white-space: nowrap;
+    border-bottom: 1px solid var(--app-line);
+
+    &--nombre {
+      padding-left: 0.75rem;
+      text-align: right;
+    }
+  }
+
+  &__ligne + &__ligne > * {
+    border-top: 1px solid var(--app-line);
+  }
+
+  &__libelle,
+  &__valeur {
+    padding: 0.5rem 0;
+    vertical-align: middle;
+  }
+
+  &__libelle {
+    font-size: 13px;
+    font-weight: 600;
+    text-align: left;
+    color: var(--app-ink);
+  }
+
+  &__pastille {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 0.5rem;
+    border-radius: 50%;
+    vertical-align: middle;
+  }
+
+  &__texte {
+    vertical-align: middle;
+  }
+
+  &__valeur {
+    padding-left: 0.75rem;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: right;
+    white-space: nowrap;
+    color: var(--app-ink);
+
+    &--attenuee {
+      color: var(--app-ink-muted);
+    }
+  }
+
+  &__delta {
+    width: 1%;
+    padding: 0.5rem 0 0.5rem 0.5rem;
+    text-align: left;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+}
+
+@container (max-width: 220px) {
+  // Conteneur très étroit (ex. 5 cartes sur une ligne) : les deux périodes s'empilent
+  // plutôt que de se partager une largeur où rien ne tient.
+  .comparaison__grille {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+
+  .comparaison__colonne--separee {
+    padding-left: 0;
+    padding-top: 0.5rem;
+    border-left: none;
+    border-top: 1px solid var(--app-line);
+  }
+}
+
+@container (min-width: 560px) {
+  .comparaison__valeur {
+    font-size: 18px;
+  }
+}

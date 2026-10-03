@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import {
   ProjectionAnnuelleDto, VentilationsDto, VentilationAnnuelleDto, EvenementDto, TauxEffortMembreDto,
-  CompteRecapMensuelDto, ComptePosteDetailDto, ProrataPartageMembreDto,
+  ProrataPartageMembreDto,
   TresorerieCumuleeDto, VirementCompteDto, RepartitionCategorieDto, TypeCategorie,
 } from '../models/api.models';
 
@@ -77,30 +77,6 @@ export class ProjectionService {
   tauxEffortAnnuel(foyerId: string, scenarioId: string, annee: number) {
     return this.http.get<TauxEffortMembreDto[]>(
       `${this.base(foyerId, scenarioId)}/taux-effort-annuel`, { params: { annee } }
-    );
-  }
-
-  /** Récapitulatif mensuel de trésorerie par compte (dashboard, vue membre) : virements
-   *  entrants simulés, entrées/sorties échues, solde restant. */
-  comptesRecap(foyerId: string, scenarioId: string, annee: number, mois: number, membreId: string) {
-    return this.http.get<CompteRecapMensuelDto[]>(
-      `${this.base(foyerId, scenarioId)}/comptes-recap`, { params: { annee, mois, membreId } }
-    );
-  }
-
-  /** Variante annuelle de {@link comptesRecap} (dashboard, vue membre annuelle) : flux
-   *  sommés sur les 12 mois de l'année, solde restant = instantané fin décembre. */
-  comptesRecapAnnuel(foyerId: string, scenarioId: string, annee: number, membreId: string) {
-    return this.http.get<CompteRecapMensuelDto[]>(
-      `${this.base(foyerId, scenarioId)}/comptes-recap-annuel`, { params: { annee, membreId } }
-    );
-  }
-
-  /** Détail poste par poste (+ argent de poche éventuel) alimentant un compte donné —
-   *  utilisé quand une carte de compte est sélectionnée dans la vue "Hub & Rayons". */
-  comptePostes(foyerId: string, scenarioId: string, annee: number, mois: number, membreId: string, compteId: string) {
-    return this.http.get<ComptePosteDetailDto[]>(
-      `${this.base(foyerId, scenarioId)}/comptes-recap/postes`, { params: { annee, mois, membreId, compteId } }
     );
   }
 

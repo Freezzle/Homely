@@ -1,0 +1,43 @@
+<ul class="entonnoir">
+  @for (ligne of lignes(); track ligne.index) {
+    <li
+      class="entonnoir__ligne"
+      [class.entonnoir__ligne--interactive]="interactif()"
+      [attr.role]="interactif() ? 'button' : null"
+      [attr.tabindex]="interactif() ? 0 : null"
+      [attr.aria-label]="ligne.infobulle"
+      [pTooltip]="ligne.infobulle"
+      tooltipPosition="top"
+      (click)="cliquer(ligne.index)"
+      (keydown.enter)="cliquer(ligne.index)">
+      <span class="entonnoir__barre" [style.width]="ligne.largeur" [style.background]="ligne.fond" aria-hidden="true"></span>
+      <span class="entonnoir__contenu">
+        @if (ligne.segments; as segments) {
+          <span class="entonnoir__libelle entonnoir__libelle--segments">
+            @for (segment of segments; track $index) {
+              @if (segment.membres?.length) {
+                <p-avatar-group class="entonnoir__avatars">
+                  @for (m of segment.membres; track m.nom) {
+                    <p-avatar
+                      [label]="m.initiales"
+                      shape="circle"
+                      class="entonnoir__avatar"
+                      [ariaLabel]="m.nom"
+                      [style]="{ 'background-color': m.couleur, 'color': '#fff' }" />
+                  }
+                </p-avatar-group>
+              }
+              <span class="entonnoir__segment">{{ segment.texte }}</span>
+            }
+          </span>
+        } @else {
+          <span class="entonnoir__libelle">{{ ligne.libelle }}</span>
+        }
+        @if (ligne.valeurSecondaire) {
+          <span class="entonnoir__secondaire">{{ ligne.valeurSecondaire }}</span>
+        }
+        <span class="entonnoir__valeur">{{ ligne.valeurAffichee }}</span>
+      </span>
+    </li>
+  }
+</ul>
