@@ -80,8 +80,8 @@
                   <div class="min-w-0 flex items-center gap-2 flex-wrap">
                     <span class="font-medium leading-snug wrap-break-word">{{ i.libellePrincipal }}</span>
                   </div>
-                  <div class="min-w-0 flex items-center flex-wrap gap-x-2 gap-y-1 text-sm md:justify-end">
-                    <span class="font-semibold whitespace-nowrap">{{ i.montantLibelle }}</span>
+                  <div class="min-w-0 flex items-center flex-wrap gap-x-2 gap-y-1 md:justify-end">
+                    <span class="montant-ligne whitespace-nowrap">{{ i.montantLibelle }}</span>
                   </div>
                 </div>
 
@@ -122,141 +122,19 @@
   }
 </div>
 
-<!-- ── Dialog : politique ──────────────────────────────────────────────────── -->
-<p-dialog [(visible)]="dialogPolitiqueVisible"
-          [header]="politiqueEnEdition ? t.commun.modifier : t.argentPoche.creerPolitique"
-          [modal]="true" class="w-full max-w-lg">
-  <form [formGroup]="formPolitique" class="flex flex-col gap-4 pt-2">
+<!-- ── Popins (parcours guidé) ─────────────────────────────────────────────── -->
+<app-politique-form-dialog
+  [visible]="dialogPolitiqueVisible"
+  [politique]="politiqueEnEdition"
+  [membres]="membres()"
+  [comptes]="comptes()"
+  (visibleChange)="dialogPolitiqueVisible = $event"
+  (enregistrer)="enregistrerPolitique($event)" />
 
-    <!-- Section 1 : qui / combien -->
-    <div class="flex flex-col gap-3">
-      <h3 class="text-sm font-semibold text-surface-500 uppercase tracking-wide">
-        {{ t.argentPoche.sections.quiCombien }}
-      </h3>
-      <app-input-text [label]="t.argentPoche.champs.nom" [required]="true" formControlName="nom" />
-      <div class="grid grid-cols-2 gap-3">
-        <app-select [label]="t.argentPoche.champs.membre" [required]="true"
-                    formControlName="membreId" [options]="membres()"
-                    optionLabel="nom" optionValue="id" />
-        <app-select [label]="t.argentPoche.champs.compte" [required]="true"
-                    formControlName="compteId" [options]="comptes()"
-                    optionLabel="libelle" optionValue="id" />
-      </div>
-    </div>
-
-    <!-- Section 2 : quand -->
-    <div class="flex flex-col gap-3">
-      <h3 class="text-sm font-semibold text-surface-500 uppercase tracking-wide">
-        {{ t.argentPoche.sections.quand }}
-      </h3>
-      <div class="grid grid-cols-2 gap-3">
-        <app-date-picker [label]="t.argentPoche.champs.dateDebut" [required]="true"
-                         formControlName="dateDebut" view="month" dateFormat="mm/yy" />
-        <app-date-picker [label]="t.argentPoche.champs.dateFin"
-                         formControlName="dateFin" view="month" dateFormat="mm/yy"
-                         [showButtonBar]="true" [hint]="t.argentPoche.champs.dateFinAide" />
-      </div>
-    </div>
-
-    <!-- Section 3 : formule -->
-    <div class="flex flex-col gap-3">
-      <h3 class="text-sm font-semibold text-surface-500 uppercase tracking-wide">
-        {{ t.argentPoche.sections.formule }}
-      </h3>
-      <app-select-button formControlName="mode" [options]="modeOptions"
-                         optionLabel="label" optionValue="value" />
-
-      @if (formPolitique.get('mode')?.value === 'VARIABLE') {
-        <div class="grid grid-cols-3 gap-3">
-          <app-input-number [label]="t.argentPoche.champs.socle" formControlName="socle"
-                            mode="decimal" [minFractionDigits]="0" />
-          <div class="flex flex-col gap-2">
-            <label class="text-sm font-medium text-surface-600 dark:text-surface-300">
-              {{ t.argentPoche.champs.pourcentage }} ({{ formPolitique.get('pourcentage')?.value ?? 0 }} %)
-            </label>
-            <p-slider formControlName="pourcentage" [min]="0" [max]="100" [step]="1" />
-          </div>
-          <app-input-number [label]="t.argentPoche.champs.plafond" formControlName="plafond"
-                            mode="decimal" [minFractionDigits]="0" />
-        </div>
-      } @else {
-        <app-input-number [label]="t.argentPoche.champs.montantFixe" [required]="true"
-                          formControlName="montantFixe" mode="decimal" [minFractionDigits]="2" />
-      }
-    </div>
-
-    <!-- Section 4 : aperçu 6 prochains mois -->
-    <div class="flex flex-col gap-3">
-      <h3 class="text-sm font-semibold text-surface-500 uppercase tracking-wide">
-        {{ t.argentPoche.sections.apercu }}
-      </h3>
-      @if (!formPolitique.get('membreId')?.value) {
-        <p class="text-sm text-surface-400">{{ t.argentPoche.apercu.selectionnerMembre }}</p>
-      } @else if (chargementApercuPolitique()) {
-        <p-skeleton height="140px" />
-      } @else {
-        <div class="flex flex-col gap-3">
-          @for (ligne of apercuPolitique(); track ligne.moisLibelle) {
-            <div class="flex items-center gap-3">
-              <div class="flex flex-col w-24 shrink-0">
-                <span class="text-sm font-medium">{{ ligne.moisLibelle }}</span>
-                <span class="text-xs text-surface-400 tabular-nums">{{ ligne.rav | montant }}</span>
-              </div>
-              <p-metergroup class="flex-1" [value]="ligne.meterItems" [max]="ligne.meterMax">
-                <ng-template #label></ng-template>
-              </p-metergroup>
-              <span class="text-sm font-semibold tabular-nums w-24 text-right shrink-0"
-                    [style.color]="ligne.couleurCss">
-                {{ ligne.montant | montant }}
-              </span>
-            </div>
-          }
-        </div>
-      }
-    </div>
-  </form>
-
-  <ng-template #footer>
-    <app-button [label]="t.commun.annuler" severity="secondary"
-                (clickEvent)="dialogPolitiqueVisible = false" />
-    <app-button [label]="t.commun.enregistrer" (clickEvent)="enregistrerPolitique()"
-                [disabled]="formPolitique.invalid" />
-  </ng-template>
-</p-dialog>
-
-<!-- ── Dialog : allocation ─────────────────────────────────────────────────── -->
-<p-dialog [(visible)]="dialogAllocationVisible"
-          [header]="allocationEnEdition ? t.commun.modifier : t.argentPoche.creerAllocation"
-          [modal]="true" class="w-full max-w-md">
-  <form [formGroup]="formAllocation" class="flex flex-col gap-4 pt-2">
-    <div class="grid grid-cols-2 gap-3">
-      <app-select [label]="t.argentPoche.champs.membre" [required]="true"
-                  formControlName="membreId" [options]="membres()"
-                  optionLabel="nom" optionValue="id" />
-      <app-date-picker [label]="t.argentPoche.champs.mois" [required]="true"
-                       formControlName="mois" view="month" dateFormat="mm/yy" />
-    </div>
-    <app-select [label]="t.argentPoche.champs.compte" [required]="true"
-                formControlName="compteId" [options]="comptes()"
-                optionLabel="libelle" optionValue="id" />
-
-    @if (resolution(); as r) {
-      <p-message severity="info" [closable]="false">
-        {{ t.argentPoche.source[r.source] }} · <b>{{ r.montant | montant }}</b>
-      </p-message>
-    }
-
-    <div class="grid grid-cols-2 gap-3">
-      <app-input-number [label]="t.argentPoche.champs.montant" [required]="true"
-                        formControlName="montant" mode="decimal" [minFractionDigits]="2" />
-      <app-input-text [label]="t.argentPoche.champs.raison" formControlName="raison" />
-    </div>
-  </form>
-
-  <ng-template #footer>
-    <app-button [label]="t.commun.annuler" severity="secondary"
-                (clickEvent)="dialogAllocationVisible = false" />
-    <app-button [label]="t.commun.enregistrer" (clickEvent)="enregistrerAllocation()"
-                [disabled]="formAllocation.invalid" />
-  </ng-template>
-</p-dialog>
+<app-allocation-form-dialog
+  [visible]="dialogAllocationVisible"
+  [allocation]="allocationEnEdition"
+  [membres]="membres()"
+  [comptes]="comptes()"
+  (visibleChange)="dialogAllocationVisible = $event"
+  (enregistrer)="enregistrerAllocation($event)" />

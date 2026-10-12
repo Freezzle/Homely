@@ -7,7 +7,10 @@
     }
   </div>
 
-  <p-table [value]="membres()" class="p-datatable-sm p-datatable-striped" [loading]="chargement()">
+  <!-- Tableau dense : le scroll horizontal est confiné au conteneur (jamais la page) et
+       la colonne de libellé reste visible. Voir styles/_tableaux.css. -->
+  <div class="table-scroll">
+  <p-table [value]="membres()" class="p-datatable-sm p-datatable-striped table-sticky-1" [loading]="chargement()">
     <ng-template #header>
       <tr>
         <th>{{ t.referentiels.membre.couleur }}</th>
@@ -24,7 +27,7 @@
         </td>
         <td class="font-medium">{{ m.nom }}</td>
         <td class="text-center">
-          <i [class]="m.actif ? 'pi pi-check text-green-500' : 'pi pi-times text-surface-300'"></i>
+          <i [class]="m.actif ? 'pi pi-check texte-succes' : 'pi pi-times text-surface-300'"></i>
         </td>
         <td>
           <div class="flex gap-1">
@@ -40,6 +43,7 @@
       <tr><td colspan="4" class="text-center py-8 text-surface-400">{{ t.commun.aucunResultat }}</td></tr>
     </ng-template>
   </p-table>
+  </div>
 </div>
 
 <p-dialog [(visible)]="dialogVisible" [header]="membreEnEdition ? t.commun.modifier : t.commun.creer"

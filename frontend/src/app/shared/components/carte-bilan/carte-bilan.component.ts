@@ -30,6 +30,7 @@ export interface LigneDecomposition {
   standalone: true,
   imports: [CommonModule, CardModule, AvatarModule, DividerModule, MeterGroupModule, TagComponent],
   templateUrl: './carte-bilan.component.html',
+  styleUrl: './carte-bilan.component.scss',
 })
 export class CarteBilanComponent {
   private readonly i18n = inject(I18nService);
@@ -53,5 +54,17 @@ export class CarteBilanComponent {
   /** Montant sans le symbole de devise — utilisé pour le chiffre principal des cartes. */
   formatMontantSansDevise(v: number): string {
     return Intl.NumberFormat(localeDeLangue(this.i18n.currentLang()), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
+  }
+
+  /** Classe de couleur d'une ligne de décomposition : le type de poste prime, sinon on
+   *  retombe sur le signe (une entrée est un revenu, une sortie une charge). */
+  classeMontant(ligne: LigneDecomposition): string {
+    switch (ligne.type) {
+      case 'REVENU': return 'montant-revenu';
+      case 'CHARGE': return 'montant-charge';
+      case 'RESERVE': return 'montant-reserve';
+      case 'ARGENT_POCHE': return 'montant-argent-poche';
+      default: return ligne.signe > 0 ? 'montant-revenu' : 'montant-charge';
+    }
   }
 }

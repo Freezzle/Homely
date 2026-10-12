@@ -1,4 +1,5 @@
-<div class="h-[300px]">
-  <p-chart type="bar" [data]="$any(data())" [options]="$any(options())" height="300px" />
+﻿<!-- Hauteur fluide : le graphique se tasse à 435px et retrouve sa hauteur d'origine
+     (18.75rem = 300px) à partir de la largeur de contenu maximale. -->
+<div class="graphique-solde">
+  <p-chart type="bar" [data]="$any(data())" [options]="$any(options())" height="100%" />
 </div>
-

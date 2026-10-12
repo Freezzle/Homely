@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { I18nService } from '../../../../core/i18n/i18n.service';
 import { localeDeLangue } from '../../../../core/i18n/locale.util';
-import { couleurDouce, couleurPleine } from '../tons';
+import { couleurDouce, couleurTexte } from '../tons';
 
 /**
  * Badge de variation (▲/▼ + pourcentage) partagé par les indicateurs de tendance.
@@ -33,7 +33,9 @@ export class BadgeDeltaComponent {
     return favorable ? 'succes' : 'danger';
   });
 
-  protected readonly couleur = computed(() => couleurPleine(this.ton()));
+  // Texte posé sur le fond doux du même ton : `couleurTexte` (assombrie) et non
+  // `couleurPleine`, qui n'aurait pas un contraste suffisant.
+  protected readonly couleur = computed(() => couleurTexte(this.ton()));
   protected readonly fond = computed(() => couleurDouce(this.ton()));
   /** Vide à variation nulle : une flèche suggérerait à tort un sens d'évolution. */
   protected readonly symbole = computed(() => (this.delta() === 0 ? '' : this.delta() > 0 ? '▲' : '▼'));

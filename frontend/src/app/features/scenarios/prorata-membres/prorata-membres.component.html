@@ -85,64 +85,14 @@
   }
 </div>
 
-<!-- Dialog formulaire période -->
-<p-dialog [(visible)]="formVisible"
-          [header]="periodeEnEdition ? t.commun.modifier : t.commun.creer"
-          [modal]="true" class="w-full max-w-lg">
-  <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
-    <div class="grid grid-cols-2 gap-4">
-      <app-date-picker
-        [label]="t.scenario.debutPeriode"
-        [required]="true"
-        formControlName="debut"
-        dateFormat="dd.mm.yy"
-        [showButtonBar]="true" />
-      <app-date-picker
-        [label]="t.scenario.finPeriode"
-        formControlName="fin"
-        dateFormat="dd.mm.yy"
-        [showButtonBar]="true"
-        [showClear]="true" />
-    </div>
-    @if (periodeErreur) {
-      <p-message severity="warn">{{ periodeErreur }}</p-message>
-    }
-
-    <div class="flex flex-col gap-2">
-      <div class="flex items-center justify-between">
-        <label class="text-sm font-medium">{{ t.poste.repartition }} *
-          <span class="ml-2 font-normal text-xs"
-                [class.text-green-600]="sommePartsValide"
-                [class.text-red-500]="!sommePartsValide">
-            {{ sommeParts }}%
-          </span>
-        </label>
-      </div>
-      @if (!sommePartsValide) {
-        <p-message severity="warn">{{ t.commun.repartitionInvalide }}</p-message>
-      }
-      <div formArrayName="parts" class="flex flex-col gap-2">
-        @for (ctrl of partsArray.controls; track ctrl; let i = $index) {
-          <div [formGroupName]="i" class="grid grid-cols-2 items-center gap-3">
-            <span class="text-sm">{{ membres()[i]?.nom }}</span>
-            <app-input-number
-              formControlName="quotePart"
-              [min]="0"
-              [max]="100"
-              suffix="%"
-              [minFractionDigits]="0"
-              [maxFractionDigits]="2" />
-          </div>
-        }
-      </div>
-    </div>
-  </form>
-  <ng-template #footer>
-    <app-button [label]="t.commun.annuler" severity="secondary" (clickEvent)="formVisible = false"/>
-    <app-button [label]="t.commun.enregistrer" (clickEvent)="enregistrer()"
-                [disabled]="form.invalid || !sommePartsValide || !periodeValide"/>
-  </ng-template>
-</p-dialog>
+<!-- Dialog formulaire période (parcours guidé) -->
+<app-periode-form-dialog
+  [visible]="formVisible"
+  [periode]="periodeEnEdition"
+  [membres]="membres()"
+  [periodes]="periodes()"
+  (visibleChange)="formVisible = $event"
+  (enregistrer)="enregistrer($event)" />
 
 <!-- Dialog révision des taux -->
 <app-periode-revision-dialog

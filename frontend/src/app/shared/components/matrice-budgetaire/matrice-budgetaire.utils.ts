@@ -19,9 +19,9 @@ export interface PalierScore {
 }
 
 export const PALIERS_SCORE: PalierScore[] = [
-  { seuil: 33, couleur: '#94A3B8' }, // faible priorité
-  { seuil: 66, couleur: '#F59E0B' }, // priorité moyenne
-  { seuil: 101, couleur: '#EF4444' }, // priorité haute
+  { seuil: 33, couleur: 'var(--app-neutre)' }, // faible priorité
+  { seuil: 66, couleur: 'var(--app-alert)' }, // priorité moyenne
+  { seuil: 101, couleur: 'var(--app-danger)' }, // priorité haute
 ];
 
 /** Couleur associée à un score (0-100) selon les paliers ci-dessus. */

@@ -1,5 +1,5 @@
-<div class="cb-scroll">
-  <table class="cb-table">
+<div class="table-scroll cb-scroll">
+  <table class="table-sticky-1 cb-table">
     <thead>
       <tr>
         <th class="cb-corner">{{ enTetePeriode() }}</th>
@@ -11,7 +11,7 @@
             @if (etape.operateur) {
               <span class="cb-op" aria-hidden="true">{{ etape.operateur }}</span>
             }
-            <span>{{ etape.label }}</span>
+            <span class="tronque">{{ etape.label }}</span>
           </th>
         }
       </tr>
@@ -20,7 +20,7 @@
       <tr class="cb-row-scenario">
         <th scope="row" class="cb-row-head">
           <span class="cb-puce cb-puce-a" aria-hidden="true"></span>
-          <span>{{ labelA() }}</span>
+          <span class="tronque">{{ labelA() }}</span>
         </th>
         @for (etape of etapes(); track etape.cle) {
           <td class="cb-cell" [class.cb-col-resultat]="etape.estResultat">
@@ -38,7 +38,7 @@
       <tr class="cb-row-scenario">
         <th scope="row" class="cb-row-head">
           <span class="cb-puce cb-puce-b" aria-hidden="true"></span>
-          <span>{{ labelB() }}</span>
+          <span class="tronque">{{ labelB() }}</span>
         </th>
         @for (etape of etapes(); track etape.cle) {
           <td class="cb-cell" [class.cb-col-resultat]="etape.estResultat">
@@ -68,4 +68,3 @@
     </tbody>
   </table>
 </div>
-

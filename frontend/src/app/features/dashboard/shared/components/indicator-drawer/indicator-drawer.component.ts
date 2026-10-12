@@ -3,6 +3,7 @@ import { NgComponentOutlet } from '@angular/common';
 import { DrawerModule } from 'primeng/drawer';
 import { ButtonModule } from 'primeng/button';
 import { IndicatorDrawerService } from '../../services/indicator-drawer.service';
+import { I18nService } from '../../../../../core/i18n/i18n.service';
 
 /**
  * Drawer latéral partagé, monté une seule fois par dashboard. Réutilise `p-drawer` pour
@@ -20,6 +21,7 @@ import { IndicatorDrawerService } from '../../services/indicator-drawer.service'
 })
 export class IndicatorDrawerComponent {
   protected readonly drawer = inject(IndicatorDrawerService);
+  protected readonly t = inject(I18nService).translations();
 
   /** Inputs transmis au composant de contenu dynamique (convention : input `data`). */
   protected readonly contentInputs = computed(() => ({ data: this.drawer.data() }));

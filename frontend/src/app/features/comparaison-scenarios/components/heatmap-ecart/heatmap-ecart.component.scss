@@ -1,24 +1,23 @@
 .he-scroll {
-  overflow-x: auto;
   width: 100%;
 }
 
 .he-grid {
   display: grid;
-  grid-template-columns: minmax(150px, auto) repeat(12, minmax(48px, 1fr));
-  gap: 2px;
-  min-width: 760px;
+  grid-template-columns: minmax(9.375rem, auto) repeat(12, minmax(3rem, 1fr));
+  gap: var(--app-space-0-5);
+  min-width: 47.5rem;
 }
 
 .he-cell {
-  height: 2rem;
+  height: var(--app-space-8);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.6875rem;
+  font-size: var(--app-text-xs);
   font-variant-numeric: tabular-nums;
-  border-radius: 4px;
-  padding: 0 0.35rem;
+  border-radius: var(--app-radius-sm);
+  padding: var(--app-space-0) var(--app-space-1-5);
 }
 
 .he-corner {
@@ -34,12 +33,12 @@
   justify-content: flex-start;
   font-weight: 500;
   color: var(--app-ink);
-  padding-left: 0.5rem;
-  padding-right: 0.5rem;
+  padding-left: var(--app-space-2);
+  padding-right: var(--app-space-2);
   position: sticky;
-  left: 0;
+  left: var(--app-space-0);
   background: var(--app-card);
-  z-index: 1;
+  z-index: var(--app-z-base);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

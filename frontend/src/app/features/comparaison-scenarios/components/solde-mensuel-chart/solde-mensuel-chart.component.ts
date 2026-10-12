@@ -17,7 +17,7 @@ export interface SoldeMensuelChartLabels {
  *
  * - Série 1 (barres, `--app-success`, opacité .85) : solde disponible mensuel de A.
  * - Série 2 (barres, `--app-info`, opacité .85) : solde disponible mensuel de B.
- * - Série 3 (ligne, axe Y secondaire, `--p-amber-500`) : écart mensuel B − A.
+ * - Série 3 (ligne, axe Y secondaire, `--app-alert`) : écart mensuel B − A.
  *
  * Barres arrondies 4px, épaisseur max 22px. Légende en bas. Aucune couleur codée
  * en dur : uniquement des tokens `--app-*` / `--p-*` du thème PrimeNG, résolus en
@@ -29,6 +29,7 @@ export interface SoldeMensuelChartLabels {
   standalone: true,
   imports: [CommonModule, ChartModule],
   templateUrl: './solde-mensuel-chart.component.html',
+  styleUrl: './solde-mensuel-chart.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SoldeMensuelChartComponent {
@@ -52,13 +53,13 @@ export class SoldeMensuelChartComponent {
     void this.contexte.isDark();
     const success = resolveAppColor('--app-success', '#22C55E');
     const info = resolveAppColor('--app-info', '#3B82F6');
-    const amber = resolveAppColor('--p-amber-500', '#F59E0B');
+    const ecart = resolveAppColor('--app-alert', '#F97316');
     return {
       success,
       successBg: withAlpha(success, 0.85, success),
       info,
       infoBg: withAlpha(info, 0.85, info),
-      amber,
+      ecart,
     };
   });
 
@@ -93,12 +94,12 @@ export class SoldeMensuelChartComponent {
           type: 'line',
           label: this.labels().ecart,
           data: this.ecarts(),
-          borderColor: colors.amber,
-          backgroundColor: colors.amber,
+          borderColor: colors.ecart,
+          backgroundColor: colors.ecart,
           tension: 0.3,
           borderWidth: 2,
           pointRadius: 3,
-          pointBackgroundColor: colors.amber,
+          pointBackgroundColor: colors.ecart,
           yAxisID: 'yEcart',
           order: 1,
         },

@@ -2,11 +2,12 @@
 :host {
   display: block;
   min-width: 0;
+  container-type: inline-size;
 }
 
 .entonnoir {
   display: grid;
-  gap: 6px;
+  gap: var(--app-space-1-5);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -14,10 +15,10 @@
 
   &__ligne {
     position: relative;
-    border-radius: 5px;
+    border-radius: var(--app-radius-md);
     background: var(--app-line-2);
     overflow: hidden;
-    font-size: 12px;
+    font-size: var(--app-text-sm);
 
     &--interactive {
       cursor: pointer;
@@ -27,18 +28,18 @@
   &__barre {
     position: absolute;
     left: 0;
-    top: 0;
-    bottom: 0;
-    border-radius: 5px;
+    top: var(--app-space-0);
+    bottom: var(--app-space-0);
+    border-radius: var(--app-radius-md);
   }
 
   &__contenu {
     position: relative;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    min-height: 32px;
-    padding: 0 10px;
+    gap: var(--app-space-2);
+    min-height: var(--app-space-8);
+    padding: var(--app-space-0) var(--app-space-2-5);
   }
 
   &__libelle {
@@ -52,7 +53,7 @@
     &--segments {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: var(--app-space-1);
     }
   }
 
@@ -68,15 +69,16 @@
   }
 
   &__avatars &__avatar {
-    width: 18px;
-    height: 18px;
-    font-size: 8px;
-    font-weight: 700;
-    border-width: 1px;
+    width: var(--app-space-4);
+    height: var(--app-space-4);
+    font-size: var(--app-text-3xs);
+    font-weight: var(--app-weight-bold);
+    border-width: var(--app-space-px);
+    color: var(--p-surface-0);
   }
 
   &__avatars &__avatar + &__avatar {
-    margin-inline-start: -5px;
+    margin-inline-start: calc(-1 * var(--app-space-1));
   }
 
   &__secondaire {
@@ -87,15 +89,21 @@
 
   &__valeur {
     flex-shrink: 0;
-    font-weight: 600;
+    font-size: var(--app-donnee-md);
+    font-weight: var(--app-weight-semibold);
     font-variant-numeric: tabular-nums;
     color: var(--app-ink);
   }
 }
 
-// Conteneur étroit : la part en pourcentage cède la place au montant.
+// Conteneur étroit : la part en pourcentage cède la place au montant, qui descend
+// lui-même d'un cran — sinon le libellé de l'étape est tronqué à deux caractères.
 @container (max-width: 240px) {
   .entonnoir__secondaire {
     display: none;
+  }
+
+  .entonnoir__valeur {
+    font-size: var(--app-donnee-sm);
   }
 }

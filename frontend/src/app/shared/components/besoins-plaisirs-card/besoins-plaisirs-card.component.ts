@@ -8,17 +8,27 @@ import { MetricRingSegment } from '../metric-ring/metric-ring.component';
 import { MetricBarComponent, MetricBarSegment } from '../metric-bar/metric-bar.component';
 import { formatTaux } from '../../utils/format-taux.util';
 import { TagComponent } from '../tag/tag.component';
+import { couleurPleine, TonCarte } from '../indicateurs/tons';
 
-/** Zone du taux de plaisirs — deux échelles distinctes selon le point de vue :
- *  - "charges" : part des plaisirs parmi l'ensemble des charges nécessité connue
- *    (besoins + plaisirs) — seuil {@link BesoinsPlaisirsCardComponent.SEUIL_ZONE_ELEVEE_CHARGES}
- *    (28 %), utilisé pour la couleur du donut.
- *  - "budget" : part des charges **Besoins** dans le budget global (revenus totaux) —
- *    seuil {@link BesoinsPlaisirsCardComponent.SEUIL_ZONE_ELEVEE_BUDGET} (50 %, repère
- *    classique "besoins ≤ 50 % du budget"), utilisé pour le badge d'en-tête, le message,
- *    l'espace budget et l'indicateur-card du dashboard (voir `besoinsPlaisirsIndicator`).
- *    C'est la lecture qui intéresse l'utilisateur : combien de place les charges de
- *    nécessité prennent-elles dans son budget, avant plaisirs et épargne ? */
+/**
+ * Tons des 3 montants de l'indicateur « Plaisirs vs Besoins ». **Identiques à ceux de la
+ * carte** (`besoinsPlaisirsIndicator`) : une grandeur garde le même ton entre la carte et
+ * son drawer. La zone (maîtrisée / élevée) n'est donc pas portée par les couleurs des
+ * segments, mais par le tag d'en-tête et le message de conseil.
+ */
+const TON_BESOINS = couleurPleine('charge');
+const TON_PLAISIRS = couleurPleine('argent-poche');
+const TON_RESTE = couleurPleine('neutre');
+
+/** Zone du taux, sur la part des charges **Besoins** dans le budget global (revenus
+ *  totaux) — seuil {@link BesoinsPlaisirsCardComponent.SEUIL_ZONE_ELEVEE_BUDGET} (50 %,
+ *  repère classique "besoins ≤ 50 % du budget"). Pilote le tag d'en-tête, le message et
+ *  l'indicateur-card du dashboard (voir `besoinsPlaisirsIndicator`). C'est la lecture qui
+ *  intéresse l'utilisateur : combien de place les charges de nécessité prennent-elles dans
+ *  son budget, avant plaisirs et épargne ?
+ *
+ *  La zone ne teinte **aucun** segment : les couleurs des montants restent celles de la
+ *  charte (voir `TON_BESOINS`/`TON_PLAISIRS`/`TON_RESTE`). */
 export type BesoinsPlaisirsZone = 'ELEVE' | 'MAITRISE';
 
 /** Un poste classé "Besoin" affiché dans le détail sous les stats de la carte — reprend
@@ -71,10 +81,6 @@ export class BesoinsPlaisirsCardComponent {
 
   readonly data = input.required<BesoinsPlaisirsCardData>();
 
-  /** Seuil (%) du taux "charges" (plaisirs parmi besoins+plaisirs) au-delà duquel le
-   *  donut est teinté en alerte. */
-  static readonly SEUIL_ZONE_ELEVEE_CHARGES = 28;
-
   /** Seuil (%) du taux "budget" (Besoins parmi les revenus totaux) au-delà duquel
    *  l'indicateur est jugé élevé — pilote le badge d'en-tête, le message et l'info de
    *  l'indicateur-card (voir `besoinsPlaisirsIndicator`). 50 % = repère classique
@@ -97,19 +103,16 @@ export class BesoinsPlaisirsCardComponent {
     return revenus > 0 ? (this.data().montantBesoins / revenus) * 100 : 0;
   });
 
-  readonly zoneCharges = computed<BesoinsPlaisirsZone>(() =>
-    this.tauxPlaisirsCharges() > BesoinsPlaisirsCardComponent.SEUIL_ZONE_ELEVEE_CHARGES ? 'ELEVE' : 'MAITRISE'
-  );
-
   /** Zone "budget" (Besoins vs revenus totaux) — pilote le badge d'en-tête et le
    *  message, cohérente avec l'indicateur-card affiché sur le dashboard. */
   readonly zoneBudget = computed<BesoinsPlaisirsZone>(() =>
     this.tauxBesoinsBudget() > BesoinsPlaisirsCardComponent.SEUIL_ZONE_ELEVEE_BUDGET ? 'ELEVE' : 'MAITRISE'
   );
 
-  readonly severityMap: Record<BesoinsPlaisirsZone, 'danger' | 'success'> = {
+  /** Ton du tag de zone — même échelle que `badgeTon` de l'indicateur-card. */
+  readonly tonMap: Record<BesoinsPlaisirsZone, TonCarte> = {
     ELEVE: 'danger',
-    MAITRISE: 'success',
+    MAITRISE: 'succes',
   };
 
   readonly labelMap = computed<Record<BesoinsPlaisirsZone, string>>(() => ({
@@ -129,15 +132,11 @@ export class BesoinsPlaisirsCardComponent {
     Math.max(this.data().montantBesoins - this.data().revenusTotal * 0.5, 0)
   );
 
-  /** Donut Besoins/Plaisirs — vert pour les besoins, rouge/vert pour les plaisirs selon
-   *  la zone "charges" (28 %), qui compare les deux charges entre elles. */
+  /** Donut Besoins/Plaisirs — mêmes tons que la barre empilée de la carte (`charge` /
+   *  `argent-poche`). La zone est portée par le tag d'en-tête, pas par ces couleurs. */
   readonly ringSegments = computed<MetricRingSegment[]>(() => [
-    { value: this.data().montantBesoins, color: 'var(--p-blue-400)', label: this.t.dashboard.besoinsPlaisirsBesoins },
-    {
-      value: this.data().montantPlaisirs,
-      color: this.zoneCharges() === 'ELEVE' ? 'var(--app-danger)' : 'var(--app-success)',
-      label: this.t.dashboard.besoinsPlaisirsPlaisirs,
-    },
+    { value: this.data().montantBesoins, color: TON_BESOINS, label: this.t.dashboard.besoinsPlaisirsBesoins },
+    { value: this.data().montantPlaisirs, color: TON_PLAISIRS, label: this.t.dashboard.besoinsPlaisirsPlaisirs },
   ]);
 
   readonly ringCenterValue = computed(() => `${formatTaux(this.tauxPlaisirsCharges())}%`);
@@ -145,9 +144,7 @@ export class BesoinsPlaisirsCardComponent {
   /** Espace pris par les charges (besoins ET plaisirs) dans le budget global (revenus
    *  totaux) — pas seulement le ratio entre charges, mais bien face à l'ensemble du
    *  revenu disponible, pour faire comprendre le poids réel de chaque catégorie dans le
-   *  budget. Couleur du segment **Besoins** pilotée par la zone "budget" (50 %),
-   *  cohérente avec le taux affiché sur l'indicateur-card : c'est l'espace pris par les
-   *  charges Besoins qui intéresse l'utilisateur, pas celui des Plaisirs. */
+   *  budget. Tons strictement alignés sur la barre empilée de l'indicateur-card. */
   readonly barSegments = computed<MetricBarSegment[]>(() => {
     const revenus = Math.max(this.data().revenusTotal, this.montantTotal());
     const besoins = this.data().montantBesoins;
@@ -156,17 +153,17 @@ export class BesoinsPlaisirsCardComponent {
       {
         label: this.t.dashboard.besoinsPlaisirsBesoins,
         value: besoins,
-        color: this.zoneBudget() === 'ELEVE' ? 'var(--app-danger)' : 'var(--app-success)',
+        color: TON_BESOINS,
       },
       {
         label: this.t.dashboard.besoinsPlaisirsMontantPlaisirs,
         value: plaisirs,
-        color: 'var(--p-blue-400)',
+        color: TON_PLAISIRS,
       },
       {
         label: this.t.dashboard.besoinsPlaisirsResteBudget,
         value: Math.max(revenus - besoins - plaisirs, 0),
-        color: 'var(--p-surface-300)',
+        color: TON_RESTE,
       },
     ];
   });

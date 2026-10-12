@@ -3,7 +3,7 @@
     <div class="status-row">
       <app-tag [couleur]="v.membre.couleur" [texte]="v.membre.nom" />
       @if (!v.indisponible) {
-        <app-tag [texte]="v.zoneGlobaleLabel" [severity]="v.zoneGlobaleSeverity" />
+        <app-tag [texte]="v.zoneGlobaleLabel" [ton]="v.zoneGlobaleTon" />
       } @else {
         <app-tag [texte]="t.projection.effortCardZoneNA" severity="secondary" />
       }
@@ -12,12 +12,12 @@
     @if (!v.indisponible) {
       <div class="jauges">
         @for (j of v.jauges; track j.key) {
-          <app-carte-info [titre]="j.titre" [badgeTexte]="j.tauxLabel" [niveauTitre]="4">
+          <app-carte-info [titre]="j.titre" [badgeTexte]="j.tauxLabel" [badgeTon]="j.ton" [niveauTitre]="4">
             <app-indicateur-progression
               [actuel]="j.actuel"
               [cible]="j.cible"
-              ton="charge"
-              tonAtteint="charge"
+              [ton]="j.ton"
+              tonAtteint="danger"
               tonPiste="neutre"
               [actuelAffiche]="j.actuel | montant"
               [cibleAffichee]="j.cible | montant"

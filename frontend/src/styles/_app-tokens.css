@@ -19,7 +19,18 @@
  *   - Montant neutre (solde, reste) ... var(--app-neutre)
  *   - Positif / négatif (générique) ... var(--app-positif) / var(--app-negatif)
  *   - Feedback UI ..................... var(--app-success|warning|alert|danger|info)
+ *   - Échelle ordinale 1→5 ............ var(--app-echelle-1) … var(--app-echelle-5)
  *     + variantes -bg (color-mix ~15 % avec --app-card, opaque) pour les fonds doux.
+ *
+ * **Aucune couleur en dur dans l'application** : ni classe Tailwind de palette
+ * (`text-red-500`, `bg-amber-200`…), ni variable PrimeNG brute (`var(--p-blue-400)`),
+ * ni hex littéral. Tout passe par un token `--app-*` ou par une classe utilitaire
+ * de `_base.css` (`.montant-revenu`, `.montant-charge`, …). Pour le JS/Chart.js,
+ * résoudre le token via `resolveAppColor()` (`shared/utils/css-vars.ts`).
+ *
+ * Le **solde / reste à vivre** s'affiche toujours en `var(--app-neutre)`, quel que
+ * soit son signe : c'est un résultat, pas un jugement. Les montants signés d'une
+ * décomposition portent en revanche le token de leur type (revenu, charge, …).
  *
  * Un composant peut légitimement surcharger ces tokens quand le contexte
  * l'exige (ex. montant négatif sur une ligne "charge" qui représente une
@@ -33,6 +44,14 @@
     /* Encre (texte) */
     --app-ink: var(--p-text-color);
     --app-ink-muted: var(--p-text-muted-color);
+
+    /*
+     * Couleur vers laquelle `couleurTexte()` (tons.ts) mélange la couleur pleine d'un ton
+     * pour en faire un **texte lisible** sur le fond doux du même ton : on assombrit en
+     * thème clair, on éclaircit en thème sombre. Sans cette bascule, un badge jaune passe
+     * de 1,17:1 (illisible) à 1,02:1 en sombre ; avec elle, le pire ton tient ≥ 5,2:1.
+     */
+    --app-contraste-texte: #000;
 
     /* Surfaces / lignes */
     --app-bg: var(--p-surface-50);
@@ -52,11 +71,6 @@
     --app-positif: var(--p-green-500);
     --app-negatif: var(--p-red-500);
 
-    /* Sémantique — virement de compte à compte sans propriétaire commun (remboursement
-       inter-membres, badge de la table "Virements des comptes") */
-    --app-remboursement: var(--p-purple-500);
-    --app-remboursement-bg: color-mix(in srgb, var(--p-purple-500) 30%, var(--app-card));
-
     /* Sémantique — feedback UI (zones jauges, badges d'état, alertes) */
     --app-success: var(--p-green-500);
     --app-warning: var(--p-yellow-500);
@@ -75,6 +89,22 @@
     --app-danger-bg: color-mix(in srgb, var(--p-red-500) 20%, var(--app-card));
     --app-info-bg: color-mix(in srgb, var(--p-primary-color) 20%, var(--app-card));
 
+    /* Échelle ordinale 1→5 (importance, potentiel d'optimisation, dérive externe,
+       nécessité…) : échelle divergente centrée sur 3. Les paliers bas sont froids (peu
+       d'attention requise), le palier 3 est la valeur par défaut (encre normale), les
+       paliers hauts sont chauds (à surveiller / critique). */
+    --app-echelle-1: var(--p-blue-500);
+    --app-echelle-2: var(--p-blue-400);
+    --app-echelle-3: var(--app-ink);
+    --app-echelle-4: var(--app-alert);
+    --app-echelle-5: var(--app-danger);
+
+    --app-echelle-1-bg: color-mix(in srgb, var(--app-echelle-1) 20%, var(--app-card));
+    --app-echelle-2-bg: color-mix(in srgb, var(--app-echelle-2) 20%, var(--app-card));
+    --app-echelle-3-bg: var(--app-line-2);
+    --app-echelle-4-bg: color-mix(in srgb, var(--app-echelle-4) 20%, var(--app-card));
+    --app-echelle-5-bg: color-mix(in srgb, var(--app-echelle-5) 20%, var(--app-card));
+
     /* Palette catégorielle (segments de donut, séries sans sens métier) — attribuée dans
        l'ordre, voir shared/components/indicateurs/tons.ts */
     --app-categorie-1: var(--p-indigo-500);
@@ -88,8 +118,36 @@
     --app-categorie-9: var(--p-emerald-600);
     --app-categorie-10: var(--p-rose-400);
 
+    /* Sélection (cartes de choix, puces, échelles) — fond doux d'un contrôle choisi.
+       `-fort` sert aux surfaces qui portent déjà du texte en couleur primaire. */
+    --app-selection-bg: color-mix(in srgb, var(--p-primary-color) 12%, var(--app-card));
+    --app-selection-bg-fort: color-mix(in srgb, var(--p-primary-color) 22%, var(--app-card));
+    /* Variante douce de la primaire pour les barres d'aperçu (mois lissés). */
+    --app-primary-doux: color-mix(in srgb, var(--p-primary-color) 38%, var(--app-card));
+
     /* Rayons */
     --app-radius-card: 12px;
     --app-radius-item: 6px;
     --app-radius-pill: 999px;
+}
+
+/* Surcharges de thème sombre.
+   `:root.dark` et non `:where(.dark)` : la classe est posée sur <html>, donc sur le même
+   élément que le `:root` ci-dessus — il faut une spécificité strictement supérieure, et
+   `:where()` (spécificité 0) serait ignoré. */
+:root.dark {
+    /* Un texte coloré doit être **éclairci** (et non assombri) pour rester lisible sur le
+       fond doux de son ton. */
+    --app-contraste-texte: #fff;
+
+    /*
+     * La rampe « surface » du preset n'est pas inversée en sombre (surface.100 reste
+     * #e6e6e6). Sans cette surcharge, `--app-line-2`/`-3` restent clairs sur un fond de
+     * carte sombre : la piste de l'entonnoir devenait gris clair sous du texte blanc
+     * (~1,1:1, illisible). On reprend des paliers plus clairs que `--app-card`
+     * (surface.800), pour garder la même intention qu'en clair — une surface qui se
+     * détache légèrement de la carte.
+     */
+    --app-line-2: var(--p-surface-700);
+    --app-line-3: var(--p-surface-600);
 }

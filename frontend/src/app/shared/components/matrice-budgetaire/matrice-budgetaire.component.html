@@ -6,46 +6,59 @@
     <p>{{ labels().aucunPoste }}</p>
   </div>
 } @else {
-  <ol class="mb-ranking" role="list">
-    @for (ligne of lignes(); track ligne.poste.id) {
-      <li class="mb-row">
-        <span class="mb-rang">#{{ ligne.poste.rang }}</span>
-
-        <div class="mb-row-main">
-          <div class="mb-row-top">
-            <span class="mb-nom" [class.charge]="ligne.poste.type === 'CHARGE'" [class.reserve]="ligne.poste.type === 'RESERVE'">
-              {{ ligne.poste.nom }}
-            </span>
-            <span class="mb-montant">{{ ligne.montantAnnuelLabel }}</span>
-          </div>
-
-          <div class="mb-bar-track" role="img" [attr.aria-label]="scoreTooltip(ligne.poste)">
-            <div class="mb-bar-fill" [style.width.%]="ligne.largeurBarre" [style.background]="ligne.couleur"></div>
-          </div>
-
-          <div class="mb-row-badges">
-            <span class="mb-icon-badge" [attr.title]="necessiteTooltip(ligne.poste)">
-              <i class="pi pi-heart-fill"
-                 [class.text-surface-400]="ligne.poste.necessite === 1"
-                 [class.text-blue-400]="ligne.poste.necessite === 2"
-                 [class.text-amber-500]="ligne.poste.necessite === 4"
-                 [class.text-red-500]="ligne.poste.necessite === 5"
-                 aria-hidden="true"></i>
-            </span>
-            <span class="mb-icon-badge" [attr.title]="optimisableTooltip(ligne.poste)">
-              <i class="pi pi-arrows-h"
-                 [class.text-surface-400]="ligne.poste.optimisable === 1"
-                 [class.text-blue-400]="ligne.poste.optimisable === 2"
-                 [class.text-amber-500]="ligne.poste.optimisable === 4"
-                 [class.text-red-500]="ligne.poste.optimisable === 5"
-                 aria-hidden="true"></i>
-            </span>
-            <span class="mb-score-badge" [style.color]="ligne.couleur" [attr.title]="scoreTooltip(ligne.poste)">
-              {{ labels().colonneScore }} {{ ligne.poste.score | number: '1.0-0' }}
-            </span>
-          </div>
-        </div>
-      </li>
-    }
-  </ol>
+  <div class="table-scroll">
+    <table class="mb-table table-sticky-1">
+      <thead>
+        <tr>
+          <th scope="col">{{ labels().colonneNom }}</th>
+          <th scope="col">{{ labels().colonneRang }}</th>
+          <th scope="col">{{ labels().colonneMontant }}</th>
+          <th scope="col">{{ labels().colonneScore }}</th>
+          <th scope="col">{{ labels().badgeNecessite }}</th>
+          <th scope="col">{{ labels().badgeOptimisable }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (ligne of lignes(); track ligne.poste.id) {
+          <tr>
+            <td>
+              <span class="mb-nom tronque" [class.charge]="ligne.poste.type === 'CHARGE'" [class.reserve]="ligne.poste.type === 'RESERVE'">
+                {{ ligne.poste.nom }}
+              </span>
+            </td>
+            <td class="mb-rang">#{{ ligne.poste.rang }}</td>
+            <td class="mb-montant">{{ ligne.montantAnnuelLabel }}</td>
+            <td class="mb-score-cell">
+              <div class="mb-bar-track" role="img" [attr.aria-label]="scoreTooltip(ligne.poste)">
+                <div class="mb-bar-fill" [style.width.%]="ligne.largeurBarre" [style.background]="ligne.couleur"></div>
+              </div>
+              <span class="mb-score-badge" [style.color]="ligne.couleur" [attr.title]="scoreTooltip(ligne.poste)">
+                {{ labels().colonneScore }} {{ ligne.poste.score | number: '1.0-0' }}
+              </span>
+            </td>
+            <td>
+              <span class="mb-icon-badge" [attr.title]="necessiteTooltip(ligne.poste)">
+                <i class="pi pi-heart-fill"
+                   [class.texte-echelle-1]="ligne.poste.necessite === 1"
+                   [class.texte-echelle-2]="ligne.poste.necessite === 2"
+                   [class.texte-echelle-4]="ligne.poste.necessite === 4"
+                   [class.texte-echelle-5]="ligne.poste.necessite === 5"
+                   aria-hidden="true"></i>
+              </span>
+            </td>
+            <td>
+              <span class="mb-icon-badge" [attr.title]="optimisableTooltip(ligne.poste)">
+                <i class="pi pi-arrows-h"
+                   [class.texte-echelle-1]="ligne.poste.optimisable === 1"
+                   [class.texte-echelle-2]="ligne.poste.optimisable === 2"
+                   [class.texte-echelle-4]="ligne.poste.optimisable === 4"
+                   [class.texte-echelle-5]="ligne.poste.optimisable === 5"
+                   aria-hidden="true"></i>
+              </span>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
 }

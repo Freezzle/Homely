@@ -1,9 +1,9 @@
-// Largeur responsive du drawer, alignée sur les breakpoints Tailwind déjà
-// utilisés dans l'app (md = 768px, lg = 1024px — cf. ViewportService
-// estMobile/estCompact) : mobile inchangé (quasi plein écran), tablette
-// 40 % de la largeur, desktop 30 %.
+// Largeur responsive du drawer. En mobile il occupe quasiment tout l'écran, puis se
+// contraint progressivement : 40 % de la largeur en tablette, 30 % en desktop.
+// Breakpoints alignés sur ceux du design system (voir styles/_breakpoints.css).
 :host ::ng-deep .indicator-drawer {
-  width: min(420px, 100vw);
+  // `min()` : jamais plus large que l'écran, y compris à 435px.
+  width: min(26rem, 100vw);
 
   @media (min-width: 768px) {
     width: 40vw;
@@ -18,24 +18,28 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--app-line);
+  gap: var(--app-space-3);
+  padding-bottom: var(--app-space-3);
+  border-bottom: var(--app-space-px) solid var(--app-line);
 }
 
 .indicator-drawer__label {
-  font-size: 10px;
+  font-size: var(--app-text-2xs);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--app-tracking-wide);
   color: var(--app-ink-muted);
-  font-weight: 700;
+  font-weight: var(--app-weight-bold);
 }
 
 .indicator-drawer__title {
-  margin: 2px 0 0;
-  font-size: 18px;
-  font-weight: 700;
+  margin: var(--app-space-0-5) 0 0;
+  font-size: var(--app-text-xl);
+  font-weight: var(--app-weight-bold);
+  line-height: var(--app-leading-tight);
   color: var(--app-ink);
+  // Un titre long ne doit pas pousser le bouton de fermeture hors du drawer.
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .indicator-drawer__close {
@@ -43,19 +47,27 @@
   border: none;
   cursor: pointer;
   color: var(--app-ink-muted);
-  font-size: 16px;
-  padding: 4px;
-  line-height: 1;
+  font-size: var(--app-text-lg);
+  padding: var(--app-space-1);
+  line-height: var(--app-leading-none);
+  // Zone tactile confortable en mobile sans agrandir l'icône.
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--app-cible-tactile);
+  min-height: var(--app-cible-tactile);
 }
 
 .indicator-drawer__body {
-  padding: 16px 0;
+  padding: var(--app-space-4) 0;
 }
 
 .indicator-drawer__foot {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 8px;
-  padding-top: 12px;
-  border-top: 1px solid var(--app-line);
+  gap: var(--app-space-2);
+  padding-top: var(--app-space-3);
+  border-top: var(--app-space-px) solid var(--app-line);
 }

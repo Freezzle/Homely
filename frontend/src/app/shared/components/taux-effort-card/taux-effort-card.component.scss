@@ -1,5 +1,6 @@
 :host {
   display: block;
+  container-type: inline-size;
 }
 
 // Ligne de statut en tête de corps de carte (tag membre + badge de zone) —
@@ -9,36 +10,36 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 0.75rem;
+  gap: var(--app-space-3);
+  margin-bottom: var(--app-space-3);
 }
 
 .gauge-section {
   &:not(:first-child) {
-    margin-top: 4px;
+    margin-top: var(--app-space-1);
   }
 }
 
 .gauge-label {
-  font-size: 0.75rem;
+  font-size: var(--app-text-sm);
   color: var(--app-ink-muted);
-  padding-left: 0.25rem;
+  padding-left: var(--app-space-1);
 }
 
 .gauge-value {
-  font-size: 1rem;
-  letter-spacing: -0.01em;
+  font-size: var(--app-donnee-lg);
+  letter-spacing: var(--app-tracking-tight);
   font-variant-numeric: tabular-nums;
 }
 
 .gauge {
-  margin-top: 0.25rem;
+  margin-top: var(--app-space-1);
 }
 
 .gauge-track {
   position: relative;
-  height: 10px;
-  border-radius: 5px;
+  height: var(--app-space-2-5);
+  border-radius: var(--app-radius-md);
   overflow: hidden;
   // Couleurs de fond "fade" (mélangées avec transparent) pour rester nettement
   // en retrait par rapport à la barre de remplissage active (.gauge-fill), qui
@@ -46,7 +47,7 @@
   // et valeur réelle.
   background: linear-gradient(
     to right,
-    color-mix(in srgb, var(--p-green-400) 25%, transparent) 0% 75%,
+    color-mix(in srgb, var(--app-success) 25%, transparent) 0% 75%,
     color-mix(in srgb, var(--app-warning) 25%, transparent) 75% 90%,
     color-mix(in srgb, var(--app-alert)   25%, transparent) 90% 95%,
     color-mix(in srgb, var(--app-danger)  25%, transparent) 95% 100%
@@ -56,17 +57,16 @@
 .gauge-fill {
   position: absolute;
   inset: 0 auto 0 0;
-  border-radius: 5px 0 0 5px;
+  border-radius: var(--app-radius-md) var(--app-space-0) var(--app-space-0) var(--app-radius-md);
   opacity: 0.9;
-  transition: width 0.4s ease;
+  transition: width var(--app-duree-lente) var(--app-easing);
 
-  // Zones alignées sur la charte : vert clair pour "confortable" (green-400
-  // reste plus doux que le --app-success principal), jaune = warning, orange
-  // = alert, rouge = danger.
-  &.zone-vert   { background: var(--p-green-400); }
-  &.zone-jaune  { background: var(--app-warning); }
-  &.zone-orange { background: var(--app-alert); }
-  &.zone-rouge  { background: var(--app-danger); }
+  // Zones alignées sur l'échelle unique de l'indicateur (voir `tonMap` du composant) :
+  // vert = confortable, jaune = correct, orange = tendu, rouge = saturé.
+  &.zone-confortable { background: var(--app-success); }
+  &.zone-correct     { background: var(--app-warning); }
+  &.zone-tendu       { background: var(--app-alert); }
+  &.zone-sature      { background: var(--app-danger); }
 }
 
 // Jauge "argent de poche" — couleur or de la charte (cohérent avec les
@@ -77,33 +77,33 @@
 
 .gauge-worst {
   position: absolute;
-  top: -3px;
-  height: 16px;
-  width: 2px;
+  top: calc(-1 * var(--app-space-0-75));
+  height: var(--app-space-4);
+  width: var(--app-space-0-5);
   background: var(--app-ink);
-  transform: translateX(-1px);
+  transform: translateX(calc(-1 * var(--app-space-px)));
 
   &::after {
     content: attr(data-label);
     position: absolute;
     left: 50%;
-    top: -18px;
+    top: calc(-1 * (var(--app-space-4) + var(--app-space-0-5)));
     transform: translateX(-50%);
-    font-size: 10px;
-    font-weight: 600;
+    font-size: var(--app-text-2xs);
+    font-weight: var(--app-weight-semibold);
     font-variant-numeric: tabular-nums;
     background: var(--app-card);
-    padding: 0 4px;
+    padding: var(--app-space-0) var(--app-space-1);
     white-space: nowrap;
   }
 }
 
 .gauge-scale {
   position: relative;
-  height: 12px;
-  font-size: 10px;
+  height: var(--app-space-3);
+  font-size: var(--app-text-2xs);
   color: var(--app-ink-muted);
-  margin-top: 6px;
+  margin-top: var(--app-space-1-5);
   font-variant-numeric: tabular-nums;
 
   span {
@@ -116,15 +116,21 @@
   }
 }
 
+.gauge-tick-0 { left: 0%; }
+.gauge-tick-75 { left: 75%; }
+.gauge-tick-90 { left: 90%; }
+.gauge-tick-95 { left: 95%; }
+.gauge-tick-100 { left: 100%; }
+
 .breakdown {
   display: flex;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 0.5em;
-  font-size: 0.75rem;
+  gap: var(--app-space-2);
+  font-size: var(--app-text-sm);
   font-variant-numeric: tabular-nums;
 
-  strong { font-weight: 600; }
+  strong { font-weight: var(--app-weight-semibold); }
 }
 
 // Conseil chaleureux affiché sous la ventilation pour les zones Correct/Tendu/
@@ -132,11 +138,11 @@
 // argent de poche), plus appuyé (rouge léger) pour Saturé afin de refléter
 // l'urgence sans être alarmiste.
 .zone-message {
-  margin: 0.75rem 0 0 0;
-  padding: 0.5rem 0.625rem;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  line-height: 1.4;
+  margin: var(--app-space-3) var(--app-space-0) var(--app-space-0) var(--app-space-0);
+  padding: var(--app-space-2) var(--app-space-2-5);
+  border-radius: var(--app-radius-md);
+  font-size: var(--app-text-sm);
+  line-height: var(--app-leading-snug);
   background: var(--app-argent-poche-bg);
   color: var(--app-ink);
 
@@ -150,21 +156,29 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 8px 0;
+  padding: var(--app-space-2) var(--app-space-0);
 
   .na-value {
-    font-size: 28px;
-    font-weight: 700;
+    font-size: var(--app-text-3xl);
+    font-weight: var(--app-weight-bold);
     color: var(--app-ink-muted);
   }
 
   .na-reason {
-    font-size: 12px;
+    font-size: var(--app-text-sm);
     color: var(--app-ink-muted);
-    margin-top: 4px;
+    margin-top: var(--app-space-1);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .gauge-fill { transition: none; }
+}
+
+// Conteneur étroit : la valeur mise en avant descend d'un cran
+// (voir la règle de la couche `--app-donnee-*`, _typographie.css).
+@container (max-width: 240px) {
+  .gauge-value {
+    font-size: var(--app-donnee-md);
+  }
 }

@@ -1,8 +1,8 @@
 <!-- ── Barre unique : recherche + Trier + Filtres, hauteur fixe ─────────────
-     Ne grandit jamais : ce qui ne tient pas dans la ligne va dans un popover
-     (desktop) ou une feuille du bas (mobile), jamais sur une 2e ligne. ── -->
-<div class="flex items-center gap-2 h-11">
-    <p-iconfield class="flex-1 min-w-0">
+     Se replie si n?cessaire : ce qui ne tient pas dans la ligne reste accessible
+     via un popover (desktop) ou une feuille du bas (mobile). ── -->
+<div class="rangee min-h-11">
+    <p-iconfield class="flex-1 min-w-0 basis-56">
         <p-inputicon><i class="pi pi-search"></i></p-inputicon>
         <input type="text" pInputText
                [ngModel]="rechercheLocale()"
@@ -20,11 +20,11 @@
 
     @if (!viewport.estMobile()) {
         <app-button [label]="t().poste.barreFiltres.trier" icon="pi pi-sort-alt"
-                  severity="secondary" [outlined]="true" class="shrink-0"
+                  severity="secondary" [outlined]="true" class="shrink-0 cible-tactile"
                   [attr.aria-expanded]="menuActif() === 'TRIER'" aria-haspopup="true"
                   (clickEvent)="ouvrirMenu('TRIER', $event, triPopover, filtresPopover)"/>
 
-        <p-overlay-badge severity="danger" badgeSize="small" [value]="nbFiltresActifs()" [badgeDisabled]="nbFiltresActifs() === 0" class="shrink-0">
+        <p-overlay-badge severity="danger" badgeSize="small" [value]="nbFiltresActifs()" [badgeDisabled]="nbFiltresActifs() === 0" class="shrink-0 cible-tactile">
             <app-button [label]="t().poste.barreFiltres.filtres" icon="pi pi-filter"
                       severity="secondary" [outlined]="true"
                       [attr.aria-expanded]="menuActif() === 'FILTRES'" aria-haspopup="true"
@@ -36,7 +36,7 @@
                   [attr.aria-expanded]="menuActif() === 'TRIER'" aria-haspopup="true"
                   (clickEvent)="ouvrirMenu('TRIER', $event, triPopover, filtresPopover)"/>
 
-        <p-overlay-badge severity="danger" badgeSize="small" [value]="nbFiltresActifs()"  [badgeDisabled]="nbFiltresActifs() === 0" class="shrink-0">
+        <p-overlay-badge severity="danger" badgeSize="small" [value]="nbFiltresActifs()"  [badgeDisabled]="nbFiltresActifs() === 0" class="shrink-0 cible-tactile">
             <app-button icon="pi pi-filter" severity="secondary" [outlined]="true"
                       [ariaLabel]="t().poste.barreFiltres.filtres"
                       [attr.aria-expanded]="menuActif() === 'FILTRES'" aria-haspopup="true"
@@ -45,13 +45,13 @@
     }
 
     <p-popover #triPopover [ariaLabel]="t().poste.barreFiltres.trier" (onHide)="onPopoverHide()">
-        <div class="w-72 flex flex-col gap-4 p-2">
+        <div class="w-full max-w-72 flex flex-col gap-4 p-2">
             <ng-container *ngTemplateOutlet="menuTrierContenu"/>
         </div>
     </p-popover>
 
     <p-popover #filtresPopover [ariaLabel]="t().poste.barreFiltres.filtres" (onHide)="onPopoverHide()">
-        <div class="w-80 max-h-[70vh] overflow-y-auto flex flex-col gap-4 p-2">
+        <div class="w-full max-w-80 max-h-[70vh] overflow-y-auto flex flex-col gap-4 p-2">
             <ng-container *ngTemplateOutlet="menuFiltresContenu"/>
         </div>
     </p-popover>

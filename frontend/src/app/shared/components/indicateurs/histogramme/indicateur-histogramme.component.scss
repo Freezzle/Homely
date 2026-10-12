@@ -1,17 +1,18 @@
 :host {
   display: block;
   min-width: 0;
+  container-type: inline-size;
 }
 
 .histogramme {
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
+  gap: var(--app-space-1-5);
 
   &__zone,
   &__libelles {
     display: flex;
-    gap: 4px;
+    gap: var(--app-space-1);
   }
 
   &__zone {
@@ -29,8 +30,8 @@
   &__barre {
     display: block;
     width: 100%;
-    border-radius: 3px 3px 0 0;
-    transition: filter 0.15s;
+    border-radius: var(--app-radius-md) var(--app-radius-md) var(--app-space-0) var(--app-space-0);
+    transition: filter var(--app-duree-rapide) var(--app-easing);
 
     &:hover {
       filter: brightness(0.92);
@@ -45,14 +46,14 @@
     flex: 1;
     min-width: 0;
     text-align: center;
-    font-size: 10px;
+    font-size: var(--app-text-2xs);
     color: var(--app-ink-muted);
     overflow: hidden;
     text-overflow: clip;
     white-space: nowrap;
 
     &--surligne {
-      font-weight: 700;
+      font-weight: var(--app-weight-bold);
       color: var(--app-ink);
     }
   }

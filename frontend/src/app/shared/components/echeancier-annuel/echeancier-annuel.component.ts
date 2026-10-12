@@ -55,35 +55,35 @@ const REMPLISSAGE: Record<IntensiteBulle, number> = {
     :host {
       display: inline-block;
       line-height: 0;
-      --app-echeance: var(--p-amber-500, #f59e0b);
-      --app-inactif: var(--p-surface-300, #cbd5e1);
-      --app-debut: var(--p-green-500, #22c55e);
-      --app-fin: var(--p-red-500, #ef4444);
-      --app-ponctuel: var(--p-surface-700, #3f3f46);
+      --ech-echeance: var(--app-warning);
+      --ech-inactif: var(--app-line-3);
+      --ech-debut: var(--app-success);
+      --ech-fin: var(--app-danger);
+      --ech-ponctuel: var(--app-ink);
     }
     svg { display: block; overflow: visible; }
 
-    .capsule { fill: var(--app-echeance); stroke: var(--app-echeance); stroke-width: .9; stroke-opacity: .5; }
+    .capsule { fill: var(--ech-echeance); stroke: var(--ech-echeance); stroke-width: .9; stroke-opacity: .5; }
     .capsule.pointillee { stroke-dasharray: 2.5 2; stroke-opacity: .6; }
 
-    .perle { fill: var(--app-echeance); }
-    .losange { fill: var(--app-echeance); }
-    .losange.cerclee { stroke: var(--app-ponctuel); stroke-width: 1.4; }
+    .perle { fill: var(--ech-echeance); }
+    .losange { fill: var(--ech-echeance); }
+    .losange.cerclee { stroke: var(--ech-ponctuel); stroke-width: 1.4; }
 
     .mois {
       font-family: inherit;
       font-variant-numeric: tabular-nums;
-      font-weight: 500;
-      fill: var(--p-text-muted-color, #64748b);
+      font-weight: var(--app-weight-medium);
+      fill: var(--app-ink-muted);
     }
-    .mois.gras { font-weight: 700; }
-    .etat-impute { fill: var(--app-echeance); font-weight: 600; }
-    .etat-impute.gras { font-weight: 700; }
-    .etat-hors-validite { fill: var(--app-inactif); opacity: .6; }
+    .mois.gras { font-weight: var(--app-weight-bold); }
+    .etat-impute { fill: var(--ech-echeance); font-weight: var(--app-weight-semibold); }
+    .etat-impute.gras { font-weight: var(--app-weight-bold); }
+    .etat-hors-validite { fill: var(--ech-inactif); opacity: .6; }
 
     .embout { stroke-width: 2.2; stroke-linecap: round; }
-    .embout.debut { stroke: var(--app-debut); }
-    .embout.fin { stroke: var(--app-fin); }
+    .embout.debut { stroke: var(--ech-debut); }
+    .embout.fin { stroke: var(--ech-fin); }
   `,
 })
 export class EcheancierAnnuelComponent {

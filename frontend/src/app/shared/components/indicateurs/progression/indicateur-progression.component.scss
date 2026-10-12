@@ -2,16 +2,17 @@
 :host {
   display: block;
   min-width: 0;
+  container-type: inline-size;
 }
 
 .progression {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--app-space-2);
   min-width: 0;
 
   &__piste {
-    height: 10px;
+    height: var(--app-space-2-5);
     border-radius: var(--app-radius-pill);
     overflow: hidden;
   }
@@ -20,14 +21,14 @@
     display: block;
     height: 100%;
     border-radius: var(--app-radius-pill);
-    transition: width 0.25s ease, background 0.25s ease;
+    transition: width var(--app-duree-normale) var(--app-easing), background var(--app-duree-normale) var(--app-easing);
   }
 
   &__pied {
     display: flex;
     justify-content: space-between;
-    gap: 0.5rem;
-    font-size: 12px;
+    gap: var(--app-space-2);
+    font-size: var(--app-donnee-md);
     color: var(--app-ink-muted);
   }
 
@@ -46,7 +47,14 @@
   }
 }
 
-// Conteneur étroit : le reste passerait à la ligne, on le masque.
+// Conteneur étroit : le reste passerait à la ligne, on le masque, et la mesure descend
+// d'un cran (couche `--app-donnee-*`).
+@container (max-width: 240px) {
+  .progression__pied {
+    font-size: var(--app-donnee-sm);
+  }
+}
+
 @container (max-width: 220px) {
   .progression__reste {
     display: none;

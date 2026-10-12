@@ -30,7 +30,7 @@ import { TooltipModule } from 'primeng/tooltip';
       }
     </div>
   `,
-  styles: [':host { display: block; margin-bottom: 0.75rem; }'],
+  styles: [':host { display: block; margin-bottom: var(--app-space-3); }'],
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,

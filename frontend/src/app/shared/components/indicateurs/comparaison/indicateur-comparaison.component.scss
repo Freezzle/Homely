@@ -2,12 +2,13 @@
 :host {
   display: block;
   min-width: 0;
+  container-type: inline-size;
 }
 
 .comparaison {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--app-space-3);
   min-width: 0;
 
   &__grille {
@@ -22,17 +23,17 @@
 
     // Séparateur entre les deux périodes (porté par la seconde colonne).
     &--separee {
-      padding-left: 0.625rem;
-      border-left: 1px solid var(--app-line);
+      padding-left: var(--app-space-2-5);
+      border-left: var(--app-space-px) solid var(--app-line);
     }
   }
 
   &__libelle {
-    margin-bottom: 4px;
-    font-size: 11px;
-    font-weight: 600;
+    margin-bottom: var(--app-space-1);
+    font-size: var(--app-text-xs);
+    font-weight: var(--app-weight-semibold);
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: var(--app-tracking-wide);
     color: var(--app-ink-muted);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -41,10 +42,10 @@
 
   &__valeur {
     margin: 0;
-    font-size: clamp(14px, 7cqi, 18px);
-    font-weight: 700;
-    line-height: 1.15;
-    letter-spacing: -0.02em;
+    font-size: var(--app-donnee-xl);
+    font-weight: var(--app-weight-bold);
+    line-height: var(--app-leading-tight);
+    letter-spacing: var(--app-tracking-tight);
     font-variant-numeric: tabular-nums;
     color: var(--app-ink);
     // `break-word` (et non `anywhere`) : le montant ne doit se couper qu'entre le nombre
@@ -60,8 +61,8 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 12px;
+    gap: var(--app-space-2);
+    font-size: var(--app-text-sm);
   }
 
   &__comparaison {
@@ -70,50 +71,64 @@
   }
 }
 
+// Filet de sécurité : `.table-scroll` confine le débordement au tableau (ombres
+// d'indication comprises) plutôt que de laisser les badges déborder de la carte.
+// On neutralise son `min-width: max-content` : ici, le tableau doit d'abord se
+// compacter (voir la container query plus bas) et ne scroller qu'en dernier recours.
+.comparaison-tableau-conteneur > .comparaison-tableau {
+  min-width: 0;
+}
+
 .comparaison-tableau {
   width: 100%;
   border-collapse: collapse;
   font-variant-numeric: tabular-nums;
 
   &__entete {
-    padding: 0 0 0.5rem;
-    font-size: 11px;
-    font-weight: 600;
+    padding: var(--app-space-0) var(--app-space-0) var(--app-space-2);
+    font-size: var(--app-text-xs);
+    font-weight: var(--app-weight-semibold);
     text-align: left;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: var(--app-tracking-wide);
     color: var(--app-ink-muted);
     white-space: nowrap;
-    border-bottom: 1px solid var(--app-line);
+    border-bottom: var(--app-space-px) solid var(--app-line);
 
     &--nombre {
-      padding-left: 0.75rem;
+      padding-left: var(--app-space-3);
       text-align: right;
+    }
+
+    // En-tête de la colonne de variation : même gouttière que les cellules, pour que le
+    // filet sous l'en-tête et les badges partagent exactement le même alignement.
+    &--delta {
+      padding-left: var(--app-space-2);
     }
   }
 
   &__ligne + &__ligne > * {
-    border-top: 1px solid var(--app-line);
+    border-top: var(--app-space-px) solid var(--app-line);
   }
 
   &__libelle,
   &__valeur {
-    padding: 0.5rem 0;
+    padding: var(--app-space-2) var(--app-space-0);
     vertical-align: middle;
   }
 
   &__libelle {
-    font-size: 13px;
-    font-weight: 600;
+    font-size: var(--app-text-md);
+    font-weight: var(--app-weight-semibold);
     text-align: left;
     color: var(--app-ink);
   }
 
   &__pastille {
     display: inline-block;
-    width: 8px;
-    height: 8px;
-    margin-right: 0.5rem;
+    width: var(--app-space-2);
+    height: var(--app-space-2);
+    margin-right: var(--app-space-2);
     border-radius: 50%;
     vertical-align: middle;
   }
@@ -123,9 +138,9 @@
   }
 
   &__valeur {
-    padding-left: 0.75rem;
-    font-size: 14px;
-    font-weight: 700;
+    padding-left: var(--app-space-3);
+    font-size: var(--app-donnee-md);
+    font-weight: var(--app-weight-bold);
     text-align: right;
     white-space: nowrap;
     color: var(--app-ink);
@@ -135,10 +150,13 @@
     }
   }
 
+  // Colonne de variation, la plus à droite : largeur réduite au contenu (`width: 1%`) et
+  // badges alignés à droite, pour que tous finissent au bord du tableau quelle que soit
+  // la longueur du pourcentage. Une ligne sans delta laisse simplement la cellule vide.
   &__delta {
     width: 1%;
-    padding: 0.5rem 0 0.5rem 0.5rem;
-    text-align: left;
+    padding: var(--app-space-2) var(--app-space-0) var(--app-space-2) var(--app-space-2);
+    text-align: right;
     vertical-align: middle;
     white-space: nowrap;
   }
@@ -149,19 +167,45 @@
   // plutôt que de se partager une largeur où rien ne tient.
   .comparaison__grille {
     grid-template-columns: minmax(0, 1fr);
-    gap: 0.5rem;
+    gap: var(--app-space-2);
+  }
+
+  // Le chiffre héros descend d'un cran (couche `--app-donnee-*`).
+  .comparaison__valeur {
+    font-size: var(--app-donnee-lg);
   }
 
   .comparaison__colonne--separee {
-    padding-left: 0;
-    padding-top: 0.5rem;
+    padding-left: var(--app-space-0);
+    padding-top: var(--app-space-2);
     border-left: none;
-    border-top: 1px solid var(--app-line);
+    border-top: var(--app-space-px) solid var(--app-line);
   }
 }
 
-@container (min-width: 560px) {
-  .comparaison__valeur {
-    font-size: 18px;
+// Conteneur étroit (carte mobile, demi-colonne serrée) : le tableau se compacte —
+// en-têtes autorisés à passer à la ligne, gouttières et chiffres réduits — pour garder
+// les 4 colonnes lisibles sans scroll horizontal.
+@container (max-width: 440px) {
+  .comparaison-tableau__entete {
+    white-space: normal;
+  }
+
+  .comparaison-tableau__entete--nombre,
+  .comparaison-tableau__valeur {
+    padding-left: var(--app-space-2);
+  }
+
+  // Le montant descend d'un cran (couche `--app-donnee-*`), le libellé suit le chrome.
+  .comparaison-tableau__valeur {
+    font-size: var(--app-donnee-sm);
+  }
+
+  .comparaison-tableau__libelle {
+    font-size: var(--app-text-sm);
+  }
+
+  .comparaison-tableau__pastille {
+    margin-right: var(--app-space-1-5);
   }
 }

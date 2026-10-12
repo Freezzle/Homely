@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { I18nService } from '../../../../core/i18n/i18n.service';
-import { TonIndicateur, couleurForte, couleurPleine } from '../tons';
+import { TonIndicateur, couleurPleine, couleurTexte } from '../tons';
 
 /** Nombre de segments de l'échelle. */
 const NB_SEGMENTS = 5;
@@ -37,8 +37,9 @@ export class IndicateurNiveauComponent {
     }));
   });
 
-  /** Variante foncée : le libellé est du texte, il doit rester lisible sur fond clair. */
-  protected readonly couleur = computed(() => couleurForte(this.ton()));
+  /** Le libellé est du **texte** sur le fond de la carte : `couleurTexte` (contraste AA),
+   *  et non `couleurForte`, qui est calibrée pour un fond portant du texte blanc. */
+  protected readonly couleur = computed(() => couleurTexte(this.ton()));
 
   protected readonly ratio = computed(() =>
     this.i18n.instant('indicateurs.ratioNiveau', {

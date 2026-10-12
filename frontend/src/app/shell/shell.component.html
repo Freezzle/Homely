@@ -1,13 +1,19 @@
-<p-sidebar-layout class="flex h-screen mx-auto w-full min-w-[425] max-w-[1280px]">
+<!--
+  Shell applicatif : le conteneur entier (sidebar + contenu) est centré et plafonné à
+  `--app-largeur-max` (1360px), et ne descend jamais sous `--app-largeur-min` (435px).
+  NB : l'ancienne classe `min-w-[425]` était invalide (unité manquante) et donc ignorée —
+  la contrainte passe désormais par les tokens, via `.shell-cadre`.
+-->
+<p-sidebar-layout class="shell-cadre flex h-screen mx-auto w-full">
     @if (contexte.foyerId()) {
         @if (viewport.estCompact() && contexte.sidebarOuverte()) {
             <p-sidebar-backdrop />
         }
         <app-sidebar-menu />
     }
-    <p-sidebar-main class="flex flex-col flex-1 overflow-hidden">
-        <app-topbar class="sticky top-0 z-10" />
-        <main class="flex-1 overflow-y-auto p-4 md:p-6">
+    <p-sidebar-main class="flex flex-col flex-1 min-w-0 overflow-hidden">
+        <app-topbar class="topbar-collante" />
+        <main class="shell-contenu flex-1 min-w-0 overflow-y-auto">
             <router-outlet />
         </main>
     </p-sidebar-main>

@@ -4,17 +4,24 @@
 :host {
   display: block;
   min-width: 0;
+  container-type: inline-size;
 }
 
 .donut {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 1rem;
+  gap: var(--app-space-4);
+
+  &__cercle {
+    position: relative;
+    flex-shrink: 0;
+  }
 
   &__svg {
-    flex-shrink: 0;
     display: block;
+    width: 100%;
+    height: 100%;
   }
 
   &__piste {
@@ -22,7 +29,7 @@
   }
 
   &__segment {
-    transition: opacity 0.15s;
+    transition: opacity var(--app-duree-rapide) var(--app-easing);
 
     &:hover {
       opacity: 0.85;
@@ -33,16 +40,37 @@
     }
   }
 
+  // Bloc centré par-dessus le cercle : `inset: 0` + flex, donc toujours au centre
+  // géométrique quelle que soit la taille rendue du donut.
+  &__centre {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--app-space-0-5);
+    pointer-events: none;
+    text-align: center;
+    // Le trou du donut fait 2 × (38 − 7) = 62 unités sur 100 : on borne le texte à cette
+    // largeur pour qu'il ne chevauche jamais l'anneau.
+    padding-inline: 19%;
+  }
+
   &__valeur {
-    font-size: 14px;
-    font-weight: 700;
-    fill: var(--app-ink);
+    font-size: var(--app-donnee-md);
+    font-weight: var(--app-weight-bold);
+    line-height: var(--app-leading-none);
+    letter-spacing: var(--app-tracking-tight);
     font-variant-numeric: tabular-nums;
+    color: var(--app-ink);
   }
 
   &__libelle-central {
-    font-size: 8px;
-    fill: var(--app-ink-muted);
+    font-size: var(--app-text-3xs);
+    font-weight: var(--app-weight-semibold);
+    line-height: var(--app-leading-none);
+    color: var(--app-ink-muted);
   }
 
   &__legende {
@@ -73,5 +101,13 @@
 @container (min-width: 560px) {
   .donut__legende {
     @include legende.legende-liste-large;
+  }
+}
+
+// Conteneur étroit : la valeur mise en avant descend d'un cran
+// (voir la règle de la couche `--app-donnee-*`, _typographie.css).
+@container (max-width: 240px) {
+  .donut__valeur {
+    font-size: var(--app-donnee-md);
   }
 }

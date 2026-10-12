@@ -39,7 +39,7 @@ const HORS_ANNEE_COURANTE = '0001-01-01';
     <div class="flex flex-row items-end gap-3 flex-wrap">
       @for (s of segments(); track s.annee + '|' + s.label) {
         <div class="flex flex-col items-center gap-1">
-          <span class="text-[11px] font-medium text-surface-500 tabular-nums">{{ s.label }}</span>
+          <span class="text-xs font-medium text-surface-500 tabular-nums">{{ s.label }}</span>
           <app-echeancier-annuel
             [poste]="s.poste"
             [annee]="s.annee"

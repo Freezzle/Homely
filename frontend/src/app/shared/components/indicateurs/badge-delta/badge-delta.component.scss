@@ -1,22 +1,24 @@
 // Tokens --app-* globaux : voir frontend/src/styles/_app-tokens.css.
+// ⚠️ Pas de `container-type: inline-size` ici : l'hôte est `inline-flex`, et la
+// containment de taille empêche son contenu de contribuer à sa largeur — le badge
+// se réduirait à 0 et chevaucherait le texte qui le suit.
 :host {
   display: inline-flex;
-  min-width: 0;
 }
 
 .badge-delta {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 3px 7px;
+  gap: var(--app-space-1);
+  padding: var(--app-space-0-75) var(--app-space-2);
   border-radius: var(--app-radius-pill);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--app-donnee-sm);
+  font-weight: var(--app-weight-bold);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 
   &__symbole {
-    font-size: 9px;
-    line-height: 1;
+    font-size: var(--app-text-3xs);
+    line-height: var(--app-leading-none);
   }
 }

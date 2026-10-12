@@ -30,32 +30,54 @@
 /* PrimeIcons */
 @import "primeicons/primeicons.css";
 
-/* Charte graphique globale (couleurs de texte, fonds, tokens sémantiques). */
+/*
+ * ---------------------------------------------------------------------------
+ * Design system — source unique de vérité des styles de l'application.
+ * ---------------------------------------------------------------------------
+ * Ordre volontaire : les *tokens* d'abord (ils ne produisent aucune règle), puis les
+ * couches qui les consomment. Aucun composant ne doit écrire de couleur, de taille de
+ * police, d'espacement, de rayon, d'ombre, de z-index ou de breakpoint en dur : tout
+ * passe par les variables définies ci-dessous.
+ *
+ *   _breakpoints.css  → breakpoints (Tailwind @theme + miroirs --app-bp-*)
+ *   _app-tokens.css   → charte couleur (encre, surfaces, sémantique métier, feedback)
+ *   _typographie.css  → familles, échelle fluide clamp(), graisses, interlignes
+ *   _espacements.css  → échelle 4px, rayons, ombres, profondeurs, durées
+ *   _base.css         → reset moderne + accessibilité (layer base)
+ *   _layout.css       → conteneur 1360px, grilles fluides (layer components)
+ *   _tableaux.css     → scroll horizontal maîtrisé + colonne figée (layer components)
+ */
+@import "./styles/_breakpoints.css";
 @import "./styles/_app-tokens.css";
+@import "./styles/_typographie.css";
+@import "./styles/_espacements.css";
+@import "./styles/_base.css";
+@import "./styles/_layout.css";
+@import "./styles/_tableaux.css";
 
 html, body {
   height: 100%;
   margin: 0;
   padding: 0;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: var(--app-font-sans);
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--p-surface-300) transparent;
+  scrollbar-color: var(--app-line-3) transparent;
 }
 
 /* Indicateur focus clavier visible pour améliorer l'accessibilité. */
 :focus-visible {
-  outline: 2px solid var(--p-primary-color);
-  outline-offset: 2px;
+  outline: var(--app-space-0-5) solid var(--p-primary-color);
+  outline-offset: var(--app-space-0-5);
 }
 
 /* p-card : pas d'ombre, bordure fine sur toute l'app (voir couche `components` > `primeng`). */
 @layer components {
   .p-card {
     box-shadow: none;
-    border: 1px solid var(--app-line);
+    border: var(--app-space-px) solid var(--app-line);
   }
 }
 

@@ -1,0 +1,38 @@
+:host {
+    display: block;
+}
+
+/*
+ * Cadre global : le shell entier (sidebar + contenu) est centré et plafonné à 1360px,
+ * et ne descend jamais sous la largeur minimale supportée.
+ */
+.shell-cadre {
+    min-width: var(--app-largeur-min);
+    max-width: var(--app-largeur-max);
+}
+
+/*
+ * Topbar collante : reste visible au défilement, au-dessus du contenu mais sous les
+ * overlays PrimeNG (voir l'échelle --app-z-* dans styles/_espacements.css).
+ */
+.topbar-collante {
+    position: sticky;
+    top: 0;
+    z-index: var(--app-z-sticky);
+}
+
+/*
+ * Zone de contenu : gouttières fluides entre 435px et 1360px (pas de palier figé), et
+ * `min-width: 0` pour qu'un tableau large déclenche le scroll de `.table-scroll` au lieu
+ * de pousser la page.
+ */
+.shell-contenu {
+    padding-block: var(--app-space-4);
+    padding-inline: var(--app-gouttiere);
+}
+
+@media (min-width: 768px) {
+    .shell-contenu {
+        padding-block: var(--app-space-6);
+    }
+}

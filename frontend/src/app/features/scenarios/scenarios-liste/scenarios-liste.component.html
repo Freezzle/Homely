@@ -7,7 +7,10 @@
     }
   </div>
 
-  <p-table [value]="scenarios()" class="p-datatable-sm p-datatable-striped" [loading]="chargement()">
+  <!-- Tableau dense : le scroll horizontal est confiné au conteneur (jamais la page) et
+       la colonne de libellé reste visible. Voir styles/_tableaux.css. -->
+  <div class="table-scroll">
+  <p-table [value]="scenarios()" class="p-datatable-sm p-datatable-striped table-sticky-1" [loading]="chargement()">
      <ng-template #header>
        <tr>
          <th>{{ t.commun.nom }}</th>
@@ -44,6 +47,7 @@
        </tr>
      </ng-template>
    </p-table>
+   </div>
 </div>
 
 <!-- Dialog formulaire -->
@@ -77,7 +81,7 @@
       <div class="flex flex-col gap-2">
         <div class="flex items-center justify-between">
           <label class="text-sm font-medium">{{ t.scenario.repartition }}</label>
-          <span class="text-sm" [class.text-green-600]="sommeRepValide" [class.text-red-500]="!sommeRepValide">
+          <span class="text-sm" [class.texte-succes]="sommeRepValide" [class.texte-danger]="!sommeRepValide">
             {{ sommeRep }}%
           </span>
         </div>

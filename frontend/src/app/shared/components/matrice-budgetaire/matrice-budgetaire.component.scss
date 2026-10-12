@@ -3,11 +3,11 @@
 }
 
 .mb-skeleton {
-  height: 420px;
-  border-radius: var(--p-content-border-radius);
+  height: 26.25rem;
+  border-radius: var(--app-radius-card);
   background: linear-gradient(90deg, var(--app-card) 25%, var(--app-line-2) 37%, var(--app-card) 63%);
   background-size: 400% 100%;
-  animation: mb-skeleton-shimmer 1.4s ease infinite;
+  animation: mb-skeleton-shimmer var(--app-duree-lente) var(--app-easing) infinite;
 }
 
 @keyframes mb-skeleton-shimmer {
@@ -20,91 +20,91 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.6rem;
-  padding: 2.5rem 1rem;
+  gap: var(--app-space-2-5);
+  padding: var(--app-space-10) var(--app-space-4);
   color: var(--app-ink-muted);
   text-align: center;
 
   i {
-    font-size: 1.5rem;
+    font-size: var(--app-text-2xl);
   }
 
   p {
     margin: 0;
-    font-size: 0.85rem;
+    font-size: var(--app-text-md);
     max-width: 22rem;
   }
 }
 
 .mb-formule {
-  margin: 0 0 0.75rem;
-  font-size: 0.72rem;
+  margin: var(--app-space-0) var(--app-space-0) var(--app-space-3);
+  font-size: var(--app-text-xs);
   color: var(--app-ink-muted);
   opacity: 0.85;
 }
 
-.mb-ranking {
-  list-style: none;
+.mb-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: var(--app-space-0) var(--app-space-1);
   margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  overflow-y: auto;
+  font-size: var(--app-text-md);
 }
 
-.mb-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.6rem;
-  padding: 0.4rem 0.5rem;
-  border-radius: 8px;
-  border: 1px solid var(--app-line);
+.mb-table th,
+.mb-table td {
+  padding: var(--app-space-1-5) var(--app-space-2);
+  vertical-align: middle;
+}
+
+.mb-table th {
+  color: var(--app-ink-muted);
+  font-size: var(--app-text-sm);
+  font-weight: var(--app-weight-semibold);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.mb-table td {
   background: var(--app-card);
+  border-block: var(--app-space-px) solid var(--app-line);
+}
+
+.mb-table td:first-child {
+  border-inline-start: var(--app-space-px) solid var(--app-line);
+  border-radius: var(--app-radius-lg) var(--app-space-0) var(--app-space-0) var(--app-radius-lg);
+}
+
+.mb-table td:last-child {
+  border-inline-end: var(--app-space-px) solid var(--app-line);
+  border-radius: var(--app-space-0) var(--app-radius-lg) var(--app-radius-lg) var(--app-space-0);
 }
 
 .mb-rang {
-  flex-shrink: 0;
-  width: 2.1rem;
-  font-size: 0.72rem;
-  font-weight: 700;
+  width: var(--app-space-8);
+  font-size: var(--app-text-xs);
+  font-weight: var(--app-weight-bold);
   color: var(--app-ink-muted);
-  padding-top: 0.15rem;
-}
-
-.mb-row-main {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.mb-row-top {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.5rem;
+  white-space: nowrap;
 }
 
 .mb-nom {
+  display: block;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 0.82rem;
-  font-weight: 600;
+  max-width: 18rem;
+  font-size: var(--app-text-md);
+  font-weight: var(--app-weight-semibold);
   color: var(--app-ink);
   position: relative;
-  padding-left: 0.7rem;
+  padding-left: var(--app-space-3);
 
   &::before {
     content: '';
     position: absolute;
     left: 0;
-    top: 0.35rem;
-    width: 0.5rem;
-    height: 0.5rem;
+    top: var(--app-space-1-5);
+    width: var(--app-space-2);
+    height: var(--app-space-2);
     border-radius: var(--app-radius-pill);
   }
 
@@ -113,14 +113,18 @@
 }
 
 .mb-montant {
-  flex-shrink: 0;
-  font-size: 0.78rem;
+  font-size: var(--app-donnee-md);
   font-variant-numeric: tabular-nums;
   color: var(--app-ink);
+  white-space: nowrap;
+}
+
+.mb-score-cell {
+  min-width: 10rem;
 }
 
 .mb-bar-track {
-  height: 8px;
+  height: var(--app-space-2);
   border-radius: var(--app-radius-pill);
   background: var(--app-line-2);
   overflow: hidden;
@@ -129,28 +133,29 @@
 .mb-bar-fill {
   height: 100%;
   border-radius: var(--app-radius-pill);
-  transition: width 200ms ease;
+  transition: width var(--app-duree-normale) var(--app-easing);
 }
 
 .mb-row-badges {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--app-space-2);
 }
 
 .mb-icon-badge {
   display: inline-flex;
   align-items: center;
-  font-size: 0.68rem;
+  font-size: var(--app-text-xs);
 
   i {
-    font-size: 0.72rem;
+    font-size: var(--app-text-xs);
   }
 }
 
 .mb-score-badge {
-  margin-left: auto;
-  font-size: 0.68rem;
-  font-weight: 700;
+  display: inline-block;
+  margin-top: var(--app-space-1);
+  font-size: var(--app-text-xs);
+  font-weight: var(--app-weight-bold);
   white-space: nowrap;
 }

@@ -5,8 +5,8 @@
 .eg-section {
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
-  margin-bottom: 1.25rem;
+  gap: var(--app-space-2-5);
+  margin-bottom: var(--app-space-5);
 }
 
 .eg-section:last-child {
@@ -16,21 +16,21 @@
 .eg-header {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--app-space-3);
 }
 
 .eg-when {
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: var(--app-text-sm);
+  font-weight: var(--app-weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--app-tracking-wide);
   color: var(--app-ink-muted);
   white-space: nowrap;
 }
 
 .eg-header-rule {
   flex: 1 1 auto;
-  height: 1px;
+  height: var(--app-space-px);
   background: var(--app-line);
 }
 
@@ -38,78 +38,66 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 1.4rem;
-  height: 1.4rem;
-  padding: 0 0.4rem;
+  min-width: var(--app-space-6);
+  height: var(--app-space-6);
+  padding: var(--app-space-0) var(--app-space-1-5);
   border-radius: var(--app-radius-pill);
   background: var(--app-card);
-  border: 1px solid var(--app-line);
-  font-size: 0.7rem;
+  border: var(--app-space-px) solid var(--app-line);
+  font-size: var(--app-text-xs);
   color: var(--app-ink-muted);
 }
 
 .eg-flat-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--app-space-3);
 }
 
 .eg-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.75rem;
-}
-
-@media (min-width: 768px) {
-  .eg-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1280px) {
-  .eg-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: var(--app-space-3);
 }
 
 .eg-card {
   width: 100%;
   text-align: left;
-  border: 1px solid var(--app-line);
+  border: var(--app-space-px) solid var(--app-line);
   background: var(--app-card);
   border-radius: var(--p-content-border-radius);
-  padding: 0.85rem 1rem;
+  padding: var(--app-space-3) var(--app-space-4);
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: var(--app-space-1-5);
   cursor: pointer;
-  transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+  transition: border-color var(--app-duree-instant) var(--app-easing), box-shadow var(--app-duree-instant) var(--app-easing), transform var(--app-duree-instant) var(--app-easing);
 }
 
 .eg-card:hover {
   border-color: var(--p-primary-300);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--app-shadow-sm);
 }
 
 .eg-card:focus-visible {
-  outline: 2px solid var(--p-primary-color);
-  outline-offset: 2px;
+  outline: var(--app-space-0-5) solid var(--p-primary-color);
+  outline-offset: var(--app-space-0-5);
 }
 
 .eg-card-head {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--app-space-2);
   min-width: 0;
 }
 
 .eg-card-icon {
-  font-size: 0.9rem;
+  font-size: var(--app-text-base);
   flex: 0 0 auto;
 }
 
 .eg-card-title {
-  font-size: 0.85rem;
+  font-size: var(--app-text-md);
   color: var(--app-ink);
   min-width: 0;
   overflow: hidden;
@@ -124,8 +112,9 @@
 .eg-icon-secondary { color: var(--app-ink-muted); }
 
 .eg-card-amount {
-  font-size: 0.85rem;
-  line-height: 1.2;
+  font-size: var(--app-donnee-md);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--app-leading-tight);
 }
 
 .eg-impact.pos { color: var(--app-positif); }
@@ -134,11 +123,11 @@
 .eg-revision {
   display: inline-flex;
   align-items: baseline;
-  gap: 0.35rem;
+  gap: var(--app-space-1-5);
   white-space: nowrap;
 
   .pi-arrow-right {
-    font-size: 0.7rem;
+    font-size: var(--app-text-xs);
     color: var(--app-ink-muted);
   }
 }
@@ -148,6 +137,6 @@
 }
 
 .eg-secondaire {
-  font-size: 0.72rem;
+  font-size: var(--app-text-xs);
   color: var(--app-ink-muted);
 }

@@ -1,7 +1,7 @@
 <p-card>
   <div class="status-row status-row-end">
     @if (montantTotal() > 0) {
-      <app-tag [texte]="labelMap()[zoneBudget()]" [severity]="severityMap[zoneBudget()]"></app-tag>
+      <app-tag [texte]="labelMap()[zoneBudget()]" [ton]="tonMap[zoneBudget()]"></app-tag>
     } @else {
       <app-tag [texte]="t.dashboard.besoinsPlaisirsNA" severity="secondary"></app-tag>
     }
@@ -35,10 +35,11 @@
               <li class="poste-besoin-row">
                 <span class="poste-besoin-necessite">
                   <i class="pi pi-heart-fill"
-                     [class.text-surface-400]="poste.necessite === 1"
-                     [class.text-blue-400]="poste.necessite === 2"
-                     [class.text-amber-500]="poste.necessite === 4"
-                     [class.text-red-500]="poste.necessite === 5"
+                     [class.texte-echelle-1]="poste.necessite === 1"
+                     [class.texte-echelle-2]="poste.necessite === 2"
+                     [class.texte-echelle-3]="poste.necessite === 3"
+                     [class.texte-echelle-4]="poste.necessite === 4"
+                     [class.texte-echelle-5]="poste.necessite === 5"
                      [attr.title]="poste.necessite"
                      aria-hidden="true"></i>
                 </span>

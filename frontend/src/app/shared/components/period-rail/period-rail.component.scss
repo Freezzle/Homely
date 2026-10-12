@@ -8,17 +8,17 @@
 }
 
 :host:focus-visible .pr-shell {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--p-primary-color) 24%, transparent);
+  box-shadow: var(--app-shadow-focus);
 }
 
 .pr-shell {
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
-  padding: 0.25rem;
+  gap: var(--app-space-2);
+  padding: var(--app-space-1);
   background: var(--app-card);
-  transition: box-shadow 140ms ease;
-  border: 1px solid var(--app-line);
+  transition: box-shadow var(--app-duree-rapide) var(--app-easing);
+  border: var(--app-space-px) solid var(--app-line);
 }
 
 .pr-bar {
@@ -36,7 +36,7 @@
 
 .pr-year-block {
   grid-area: year;
-  gap: 0.2rem;
+  gap: var(--app-space-0-75);
   background: color-mix(in srgb, var(--app-card) 88%, var(--app-line-2));
 }
 
@@ -45,18 +45,18 @@
 }
 
 .pr-year-label {
-  min-width: 3.8rem;
+  min-width: 3.8125rem;
   text-align: center;
   color: var(--app-ink);
-  font-size: 1rem;
-  font-weight: 800;
+  font-size: var(--app-text-lg);
+  font-weight: var(--app-weight-extrabold);
   font-variant-numeric: tabular-nums;
 }
 
 .pr-rail-wrap {
   grid-area: rail;
   min-width: 0;
-  transition: opacity 160ms ease;
+  transition: opacity var(--app-duree-normale) var(--app-easing);
 }
 
 .pr-rail-wrap--faded {
@@ -67,9 +67,9 @@
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: max-content;
-  gap: 0.35rem;
+  gap: var(--app-space-1-5);
   overflow-x: auto;
-  padding: 0.1rem;
+  padding: var(--app-space-0-5);
   scrollbar-width: none;
   scroll-snap-type: x proximity;
 }
@@ -79,10 +79,10 @@
 }
 
 .pr-month-btn {
-  min-width: 4.3rem;
-  min-height: 3.1rem;
-  padding: 0.55rem 0.7rem 0.45rem;
-  border: 1px solid var(--app-line);
+  min-width: 4.25rem;
+  min-height: var(--app-cible-tactile);
+  padding: var(--app-space-2) var(--app-space-3);
+  border: var(--app-space-px) solid var(--app-line);
   border-radius: var(--app-radius-item);
   background: var(--app-card);
   color: var(--app-ink-muted);
@@ -90,18 +90,18 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.35rem;
+  gap: var(--app-space-1-5);
   cursor: pointer;
   font: inherit;
-  line-height: 1.1;
+  line-height: var(--app-leading-tight);
   white-space: nowrap;
   scroll-snap-align: center;
   transition:
-    border-color 140ms ease,
-    background-color 140ms ease,
-    color 140ms ease,
-    box-shadow 140ms ease,
-    transform 140ms ease;
+    border-color var(--app-duree-rapide) var(--app-easing),
+    background-color var(--app-duree-rapide) var(--app-easing),
+    color var(--app-duree-rapide) var(--app-easing),
+    box-shadow var(--app-duree-rapide) var(--app-easing),
+    transform var(--app-duree-rapide) var(--app-easing);
 }
 
 .pr-month-btn:hover {
@@ -111,18 +111,18 @@
 
 .pr-month-btn:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--p-primary-color) 22%, transparent);
+  box-shadow: var(--app-shadow-focus);
 }
 
 .pr-month-btn:active {
-  transform: translateY(1px);
+  transform: translateY(var(--app-space-px));
 }
 
 .pr-month-btn.is-active {
   border-color: var(--p-primary-color);
   background: color-mix(in srgb, var(--p-primary-color) 12%, transparent);
   color: var(--app-ink);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--p-primary-color) 16%, transparent);
+  box-shadow: var(--app-shadow-interne);
 }
 
 .pr-month-btn.is-remembered:not(.is-active) {
@@ -133,19 +133,19 @@
 .pr-year-toggle-btn {
   position: sticky;
   left: 0;
-  z-index: 1;
-  min-width: 5.6rem;
+  z-index: var(--app-z-base);
+  min-width: 5.5rem;
 }
 
 .pr-month-label {
-  font-size: 0.79rem;
-  font-weight: 700;
+  font-size: var(--app-text-md);
+  font-weight: var(--app-weight-bold);
 }
 
 .pr-month-health {
-  width: 1.9rem;
-  height: 3px;
-  border-radius: 999px;
+  width: var(--app-space-8);
+  height: var(--app-space-0-75);
+  border-radius: var(--app-radius-pill);
   background: var(--pr-health-mid);
 }
 
@@ -163,8 +163,8 @@
 
 .pr-title {
   color: var(--app-ink);
-  font-size: 0.92rem;
-  font-weight: 700;
+  font-size: var(--app-text-base);
+  font-weight: var(--app-weight-bold);
 }
 
 @media (max-width: 767.98px) {
@@ -181,7 +181,7 @@
   }
 
   .pr-month-btn {
-    min-width: max(44px, 4rem);
-    min-height: 44px;
+    min-width: max(var(--app-cible-tactile), var(--app-space-16));
+    min-height: var(--app-cible-tactile);
   }
 }

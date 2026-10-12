@@ -4,7 +4,7 @@
 
     @switch (champ()) {
         @case ('CATEGORIE') {
-            <div class="flex flex-col gap-2 pt-2">
+            <div class="champs-pleine-largeur-mobile flex flex-col gap-2 pt-2">
                 <app-select
                     [label]="t.poste.categorie"
                     [(ngModel)]="valeurCategorieId"
@@ -16,14 +16,14 @@
             </div>
         }
         @case ('IMPORTANCE') {
-            <div class="flex flex-col gap-2 pt-2">
+            <div class="champs-pleine-largeur-mobile flex flex-col gap-2 pt-2">
                 <label class="text-sm font-medium flex items-center justify-between">
                     <span>{{ t.poste.importance }}</span>
                     <span class="text-xs text-surface-500">{{ valeurImportance }} / 5</span>
                 </label>
                 <div class="w-[95%] mx-auto flex flex-col gap-1">
                     <p-slider [(ngModel)]="valeurImportance" [min]="1" [max]="5" [step]="1"/>
-                    <div class="flex justify-between text-[10px] text-surface-400">
+                    <div class="flex justify-between text-[length:var(--app-text-2xs)] text-surface-400">
                         <span>{{ t.poste.importanceMin }}</span>
                         <span>{{ t.poste.importanceMax }}</span>
                     </div>
@@ -31,14 +31,14 @@
             </div>
         }
         @case ('POTENTIEL_OPTIMISATION') {
-            <div class="flex flex-col gap-2 pt-2">
+            <div class="champs-pleine-largeur-mobile flex flex-col gap-2 pt-2">
                 <label class="text-sm font-medium flex items-center justify-between">
                     <span>{{ t.poste.potentielOptimisation }}</span>
                     <span class="text-xs text-surface-500">{{ valeurPotentiel }} / 5</span>
                 </label>
                 <div class="w-[95%] mx-auto flex flex-col gap-1">
                     <p-slider [(ngModel)]="valeurPotentiel" [min]="1" [max]="5" [step]="1"/>
-                    <div class="flex justify-between text-[10px] text-surface-400">
+                    <div class="flex justify-between text-[length:var(--app-text-2xs)] text-surface-400">
                         <span>{{ t.poste.potentielOptimisationMin }}</span>
                         <span>{{ t.poste.potentielOptimisationMax }}</span>
                     </div>
@@ -46,14 +46,14 @@
             </div>
         }
         @case ('DERIVE_EXTERNE') {
-            <div class="flex flex-col gap-2 pt-2">
+            <div class="champs-pleine-largeur-mobile flex flex-col gap-2 pt-2">
                 <label class="text-sm font-medium flex items-center justify-between">
                     <span>{{ t.poste.deriveExterne }}</span>
                     <span class="text-xs text-surface-500">{{ valeurDerive }} / 5</span>
                 </label>
                 <div class="w-[95%] mx-auto flex flex-col gap-1">
                     <p-slider [(ngModel)]="valeurDerive" [min]="1" [max]="5" [step]="1"/>
-                    <div class="flex justify-between text-[10px] text-surface-400">
+                    <div class="flex justify-between text-[length:var(--app-text-2xs)] text-surface-400">
                         <span>{{ t.poste.deriveExterneMin }}</span>
                         <span>{{ t.poste.deriveExterneMax }}</span>
                     </div>

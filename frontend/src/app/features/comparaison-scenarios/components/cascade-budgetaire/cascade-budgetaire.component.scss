@@ -1,88 +1,90 @@
 .cb-scroll {
-  overflow-x: auto;
   width: 100%;
 }
 
 .cb-table {
-  min-width: 760px;
+  min-width: 47.5rem;
   width: 100%;
   border-collapse: separate;
-  border-spacing: 0;
-  font-size: 0.875rem;
+  border-spacing: var(--app-space-0);
+  font-size: var(--app-text-base);
 }
 
 .cb-corner {
   text-align: left;
-  font-weight: 600;
-  padding: 0.5rem 0.75rem 0.5rem 0;
+  font-weight: var(--app-weight-semibold);
+  padding: var(--app-space-2) var(--app-space-3) var(--app-space-2) var(--app-space-0);
   white-space: nowrap;
   color: var(--app-ink-muted);
   background: var(--app-card);
   position: sticky;
-  left: 0;
-  z-index: 1;
+  left: var(--app-space-0);
+  z-index: var(--app-z-base);
 }
 
 .cb-col-head {
   text-align: left;
-  font-weight: 500;
-  padding: 0.5rem 0.75rem;
+  font-weight: var(--app-weight-medium);
+  padding: var(--app-space-2) var(--app-space-3);
   white-space: nowrap;
   color: var(--app-ink-muted);
   min-width: 8.5rem;
+  max-width: 12rem;
 }
 
 .cb-op {
   display: inline-block;
   color: var(--app-ink-muted);
-  margin-right: 0.35rem;
-  font-weight: 600;
+  margin-right: var(--app-space-1-5);
+  font-weight: var(--app-weight-semibold);
 }
 
 .cb-col-resultat {
-  border-left: 1px dashed var(--app-line);
-  padding-left: 1rem;
+  border-left: var(--app-space-px) dashed var(--app-line);
+  padding-left: var(--app-space-4);
 }
 
 .cb-row-head {
   text-align: left;
-  font-weight: 600;
-  padding: 0.6rem 0.75rem 0.6rem 0;
+  font-weight: var(--app-weight-semibold);
+  padding: var(--app-space-2-5) var(--app-space-3) var(--app-space-2-5) var(--app-space-0);
   white-space: nowrap;
   background: var(--app-card);
   position: sticky;
-  left: 0;
-  z-index: 1;
+  left: var(--app-space-0);
+  z-index: var(--app-z-base);
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: var(--app-space-1-5);
+  max-width: 12rem;
 }
 
 .cb-row-head-ecart {
   color: var(--app-ink-muted);
-  font-weight: 500;
+  font-weight: var(--app-weight-medium);
 }
 
 .cb-puce {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 999px;
+  width: var(--app-space-2);
+  height: var(--app-space-2);
+  border-radius: var(--app-radius-pill);
   display: inline-block;
+  flex: 0 0 auto;
 }
 
 .cb-puce-a { background: var(--app-success); }
 .cb-puce-b { background: var(--app-info); }
 
 .cb-cell {
-  padding: 0.35rem 0.75rem;
+  padding: var(--app-space-1-5) var(--app-space-3);
   vertical-align: middle;
   min-width: 8.5rem;
 }
 
 .cb-bar-track {
   position: relative;
-  height: 1.6rem;
-  border-radius: 4px;
+  height: var(--app-space-6);
+  border-radius: var(--app-radius-sm);
   background: var(--p-surface-100);
   overflow: hidden;
   display: flex;
@@ -98,27 +100,27 @@
   left: 0;
   top: 0;
   bottom: 0;
-  border-radius: 4px;
-  transition: width 0.25s ease;
+  border-radius: var(--app-radius-sm);
+  transition: width var(--app-duree-normale) var(--app-easing);
 }
 
 .cb-bar-label {
   position: relative;
-  z-index: 1;
+  z-index: var(--app-z-base);
   margin-left: auto;
-  padding: 0 0.5rem;
+  padding: var(--app-space-0) var(--app-space-2);
   font-variant-numeric: tabular-nums;
-  font-weight: 500;
+  font-weight: var(--app-weight-medium);
   color: var(--app-ink);
 }
 
 .cb-cell-ecart {
   text-align: right;
-  font-weight: 700;
+  font-weight: var(--app-weight-bold);
   font-variant-numeric: tabular-nums;
-  padding: 0.5rem 0.75rem;
+  padding: var(--app-space-2) var(--app-space-3);
 }
 
 .cb-row-ecart {
-  border-top: 1px solid var(--app-line);
+  border-top: var(--app-space-px) solid var(--app-line);
 }

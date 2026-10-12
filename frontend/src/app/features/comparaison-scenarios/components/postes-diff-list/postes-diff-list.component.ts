@@ -27,9 +27,9 @@ const ICONE_PAR_STATUT: Record<StatutDiffPoste, string> = {
 };
 
 const COULEUR_BORDURE_STATUT: Record<StatutDiffPoste, string> = {
-  AJOUTE: 'var(--p-primary-500)',
-  SUPPRIME: 'var(--p-red-500)',
-  MODIFIE: 'var(--p-amber-500)',
+  AJOUTE: 'var(--app-success)',
+  SUPPRIME: 'var(--app-danger)',
+  MODIFIE: 'var(--app-alert)',
   INCHANGE: 'var(--app-line)',
 };
 

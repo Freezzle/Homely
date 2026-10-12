@@ -12,14 +12,14 @@
          accessible au pouce sans devoir remonter dans la liste. -->
     @if (contexte.estEditor() && selection().size > 0) {
         <div class="z-20 fixed bottom-0 inset-x-0 md:sticky md:top-0 md:bottom-auto
-                flex items-center gap-2 px-4 py-3 flex-wrap
+                rangee px-4 py-3
                 bg-surface-0 dark:bg-surface-900 border-1
                 border-surface-200 dark:border-surface-700">
             <span class="text-sm font-medium shrink-0">
                 {{ i18n.instant('poste.bulk.nSelectionnes', { n: selection().size }) }}
             </span>
 
-            <div class="flex items-center gap-1 flex-wrap ml-auto">
+            <div class="rangee ml-auto">
                 <app-button icon="pi pi-tag" [text]="true" [rounded]="true" severity="secondary"
                           [tooltip]="t.poste.bulk.actionCategorie" [ariaLabel]="t.poste.bulk.actionCategorie"
                           (clickEvent)="ouvrirBulkChamp('CATEGORIE')"/>
@@ -53,7 +53,7 @@
         <!-- Ligne 1 : titre à gauche, créer à droite -->
         <div class="grid gap-3 grid-cols-[minmax(0,1fr)_auto] md:items-center">
             <div class="flex items-baseline gap-2 min-w-0">
-                <h1 class="text-2xl font-bold leading-tight truncate">
+                <h1 class="text-2xl font-bold leading-tight tronque">
                     {{ type() === 'REVENU' ? t.nav.revenus : type() === 'CHARGE' ? t.nav.charges : t.nav.reserves }}
                 </h1>
             </div>
@@ -61,7 +61,7 @@
             <div class="flex justify-end">
                 @if (contexte.estEditor()) {
                     <app-button icon="pi pi-plus" [label]="t.commun.creer" (clickEvent)="ouvrirCreation()"
-                              class="shrink-0"/>
+                              class="shrink-0 cible-tactile"/>
                 }
             </div>
         </div>
@@ -78,7 +78,7 @@
             [optionsCategorie]="optionsCategorieFacette()"
             [optionsCompte]="optionsCompteFacette()"
             [optionsMembre]="optionsMembreFacette()">
-            <div class="shrink-0">
+            <div class="shrink-0 cible-tactile">
                 <app-button icon="pi pi-sliders-h"
                           [ariaLabel]="t.commun.options"
                           [tooltip]="t.commun.options"
@@ -88,7 +88,7 @@
                           (clickEvent)="ouvrirMenuOptions($event, popoverOptions)"/>
 
                 <ng-template #menuOptionsContenu>
-                    <div class="text-xs font-semibold uppercase text-surface-500 mb-1">{{ t.commun.options }}</div>
+                    <div class="text-xs font-semibold uppercase text-surface-500 mb-1 tronque">{{ t.commun.options }}</div>
                     @for (item of visibiliteMenuItems; track item['data']) {
                         <app-checkbox
                             [inputId]="item['data']"
@@ -99,7 +99,7 @@
                 </ng-template>
 
                 <p-popover #popoverOptions [ariaLabel]="t.commun.options" (onHide)="fermerMenuOptions()">
-                    <div class="w-72 flex flex-col p-2">
+                    <div class="w-full max-w-72 flex flex-col p-2">
                         <ng-container *ngTemplateOutlet="menuOptionsContenu"/>
                     </div>
                 </p-popover>
@@ -118,7 +118,7 @@
                             [tooltip]="modeSelection() ? t.poste.bulk.quitterSelection : t.poste.bulk.activerSelection"
                             [severity]="modeSelection() ? 'primary' : 'secondary'"
                             [outlined]="true"
-                            class="shrink-0"
+                            class="shrink-0 cible-tactile"
                             (clickEvent)="toggleModeSelection()"/>
             }
         </app-postes-barre-filtres>
@@ -132,13 +132,13 @@
             @for (_ of [1, 2, 3]; track $index) {
                 <div class="flex items-center gap-3 px-4 py-3 rounded-xl border border-surface-200
                   dark:border-surface-700 bg-white dark:bg-surface-900">
-                    <p-skeleton width="3px" height="48px" class="rounded-full shrink-0"/>
+                    <p-skeleton width="var(--app-space-0-75)" height="var(--app-space-12)" class="rounded-full shrink-0"/>
                     <div class="flex-1 flex flex-col gap-2">
                         <p-skeleton width="35%" height="1rem"/>
                         <p-skeleton width="55%" height="0.75rem"/>
                     </div>
-                    <p-skeleton width="90px" height="1.25rem" class="shrink-0"/>
-                    <p-skeleton width="72px" height="2rem" class="shrink-0 rounded-lg"/>
+                    <p-skeleton width="calc(var(--app-space-16) + var(--app-space-6) + var(--app-space-0-5))" height="var(--app-space-5)" class="shrink-0 cible-tactile"/>
+                    <p-skeleton width="calc(var(--app-space-16) + var(--app-space-2))" height="var(--app-space-8)" class="shrink-0 rounded-lg"/>
                 </div>
             }
         </div>
@@ -150,13 +150,13 @@
               bg-surface-50 dark:bg-surface-900 text-surface-400">
             <i class="pi pi-inbox text-5xl opacity-30"></i>
             @if (postes().length === 0) {
-                <span class="text-sm">{{ t.commun.aucunResultat }}</span>
+                <span class="text-sm tronque">{{ t.commun.aucunResultat }}</span>
                 @if (contexte.estEditor()) {
                     <app-button icon="pi pi-plus" [label]="t.commun.creer" severity="secondary"
                               size="small" (clickEvent)="ouvrirCreation()"/>
                 }
             } @else {
-                <span class="text-sm">{{ t.poste.barreFiltres.aucunResultatFiltre }}</span>
+                <span class="text-sm tronque">{{ t.poste.barreFiltres.aucunResultatFiltre }}</span>
                 <app-button icon="pi pi-filter-slash" [label]="t.poste.barreFiltres.effacerFiltresEtRecherche"
                           severity="secondary" [text]="true" size="small"
                           (clickEvent)="etat.set({ ...etatFiltresParDefaut, tri: etat().tri, regrouperPar: etat().regrouperPar })"/>
@@ -203,13 +203,13 @@
                              filtre État, ou autre), ↓ en tout bas idem pour les
                              postérieurs. Purement informatifs (tooltip pluralisé). -->
                         @if (p._estChaine && p._nbMasquesAvant) {
-                            <i class="pi pi-angle-up absolute margin-left-[6px] top-0.5 text-[10px] leading-none
+                            <i class="pi pi-angle-up absolute left-1.5 top-0.5 text-[length:var(--app-text-2xs)] leading-none
                                       text-primary dark:text-primary-80 pointer-events-auto"
                                [pTooltip]="i18n.instant('poste.revisionsMasqueesAvant', { n: p._nbMasquesAvant })"
                                [attr.aria-label]="i18n.instant('poste.revisionsMasqueesAvant', { n: p._nbMasquesAvant })"></i>
                         }
                         @if (p._estChaine && p._nbMasquesApres) {
-                            <i class="pi pi-angle-down absolute margin-left-[6px] bottom-0.5 text-[10px] leading-none
+                            <i class="pi pi-angle-down absolute left-1.5 bottom-0.5 text-[length:var(--app-text-2xs)] leading-none
                                       text-primary dark:text-primary-80 pointer-events-auto"
                                [pTooltip]="i18n.instant('poste.revisionsMasqueesApres', { n: p._nbMasquesApres })"
                                [attr.aria-label]="i18n.instant('poste.revisionsMasqueesApres', { n: p._nbMasquesApres })"></i>
@@ -220,53 +220,52 @@
                             <!-- Ligne 1 : identité (gauche) · montant (droite sur desktop) -->
                             <div class="grid gap-1 md:gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
                                 <div class="min-w-0 flex items-center gap-2 flex-wrap">
-                <span class="font-medium leading-snug wrap-break-word
-                  [&_mark]:bg-amber-200 [&_mark]:dark:bg-amber-900/50 [&_mark]:rounded-sm [&_mark]:px-0.5"
+                <span class="font-medium leading-snug tronque-lignes surlignage-recherche"
                       [innerHTML]="descriptionSurlignee(p)">
                 </span>
                                     @if (!cacherDetails() && categorieLabel(p.categorieId) !== '–' && etat().regrouperPar !== 'CATEGORIE') {
                                         <app-tag [texte]="categorieLabel(p.categorieId)"
                                                severity="secondary"
-                                               class="text-[10px] py-0.5 shrink-0"/>
+                                               class="text-[length:var(--app-text-2xs)] py-0.5 shrink-0"/>
                                     }
                                     @if (!cacherDetails() && p.nature === 'ESTIMATION') {
                                         <app-tag [texte]="natureAffichee(p)"
                                                [severity]="'warn'"
-                                               class="text-[10px] py-0.5 shrink-0"/>
+                                               class="text-[length:var(--app-text-2xs)] py-0.5 shrink-0"/>
                                     }
                                     @if (p.posteOrigineId) {
                                         <app-tag [texte]="t.poste.revisionTag"
                                                [severity]="'info'"
                                                [pTooltip]="t.poste.revisionTagTooltip"
-                                               class="text-[10px] py-0.5 shrink-0"/>
+                                               class="text-[length:var(--app-text-2xs)] py-0.5 shrink-0"/>
                                     }
                                     @if (!cacherDetails() && p.importance && p.importance !== 3) {
-                                        <i class="pi pi-heart-fill text-[11px] shrink-0"
-                                           [class.text-surface-400]="p.importance === 1"
-                                           [class.text-blue-400]="p.importance === 2"
-                                           [class.text-amber-500]="p.importance === 4"
-                                           [class.text-red-500]="p.importance === 5"
+                                        <i class="pi pi-heart-fill text-[length:var(--app-text-xs)] shrink-0"
+                                           [class.texte-echelle-1]="p.importance === 1"
+                                           [class.texte-echelle-2]="p.importance === 2"
+                                           [class.texte-echelle-4]="p.importance === 4"
+                                           [class.texte-echelle-5]="p.importance === 5"
                                            [pTooltip]="importanceTooltip(p.importance)"></i>
                                     }
                                     @if (!cacherDetails() && p.potentielOptimisation && p.potentielOptimisation !== 3) {
-                                        <i class="pi pi-arrows-h text-[11px] shrink-0"
-                                           [class.text-surface-400]="p.potentielOptimisation === 1"
-                                           [class.text-blue-400]="p.potentielOptimisation === 2"
-                                           [class.text-amber-500]="p.potentielOptimisation === 4"
-                                           [class.text-red-500]="p.potentielOptimisation === 5"
+                                        <i class="pi pi-arrows-h text-[length:var(--app-text-xs)] shrink-0"
+                                           [class.texte-echelle-1]="p.potentielOptimisation === 1"
+                                           [class.texte-echelle-2]="p.potentielOptimisation === 2"
+                                           [class.texte-echelle-4]="p.potentielOptimisation === 4"
+                                           [class.texte-echelle-5]="p.potentielOptimisation === 5"
                                            [pTooltip]="potentielOptimisationTooltip(p.potentielOptimisation)"></i>
                                     }
                                     @if (!cacherDetails() && p.deriveExterne && p.deriveExterne !== 3) {
-                                        <i class="text-[11px] shrink-0"
+                                        <i class="text-[length:var(--app-text-xs)] shrink-0"
                                            [class.pi]="true"
                                            [class.pi-angle-double-down]="p.deriveExterne === 1"
                                            [class.pi-angle-down]="p.deriveExterne === 2"
                                            [class.pi-angle-up]="p.deriveExterne === 4"
                                            [class.pi-angle-double-up]="p.deriveExterne === 5"
-                                           [class.text-blue-500]="p.deriveExterne === 1"
-                                           [class.text-blue-400]="p.deriveExterne === 2"
-                                           [class.text-amber-500]="p.deriveExterne === 4"
-                                           [class.text-red-500]="p.deriveExterne === 5"
+                                           [class.texte-echelle-1]="p.deriveExterne === 1"
+                                           [class.texte-echelle-2]="p.deriveExterne === 2"
+                                           [class.texte-echelle-4]="p.deriveExterne === 4"
+                                           [class.texte-echelle-5]="p.deriveExterne === 5"
                                            [pTooltip]="deriveExterneTooltip(p.deriveExterne)"></i>
                                     }
                                 </div>
@@ -284,10 +283,10 @@
                                 <div class="min-w-0 flex items-center flex-wrap gap-2 text-xs text-surface-500 dark:text-surface-400">
                                     <span class="flex items-center gap-1 min-w-0">
                                         @if (p.periodiciteMois === 0) {
-                                            <span class="truncate">{{ formatPeriode(p.debut) }}</span>
+                                            <span class="tronque">{{ formatPeriode(p.debut) }}</span>
                                         } @else {
                                             <span
-                                                    class="truncate">{{ formatPeriode(p.debut) }}&nbsp;→&nbsp;{{ formatPeriode(p.fin) }}</span>
+                                                    class="tronque">{{ formatPeriode(p.debut) }}&nbsp;→&nbsp;{{ formatPeriode(p.fin) }}</span>
                                         }
                   </span>
 
@@ -304,17 +303,17 @@
                                 <div class="flex items-center flex-wrap gap-1 text-xs md:justify-end">
                                     @if (p.periodiciteMois === 0) {
                                         <span class="flex items-center gap-1 text-surface-500 dark:text-surface-400">
-                      <i class="pi pi-bolt text-xs text-purple-500" [pTooltip]="t.poste.oneShot"></i>
+                      <i class="pi pi-bolt text-xs texte-attention" [pTooltip]="t.poste.oneShot"></i>
                                             {{ t.poste.oneShot }}
                     </span>
                                     } @else {
                                         <span class="flex items-center gap-1 text-surface-500 dark:text-surface-400">
                       @if (p.periodiciteMois > 1) {
                           @if (p.mode === 'MENSUALISE') {
-                              <i class="pi pi-calendar-clock text-xs text-blue-400"
+                              <i class="pi pi-calendar-clock text-xs texte-attenue"
                                  [pTooltip]="t.poste.montantMensualiseTooltip"></i>
                           } @else {
-                              <i class="pi pi-bolt text-xs text-amber-500"
+                              <i class="pi pi-bolt text-xs texte-attention"
                                  [pTooltip]="t.poste.montantPeriodiqueTooltip + ' · ' + (p.moment === 'FIN_PERIODE' ? t.poste.momentOptions.FIN_PERIODE : t.poste.momentOptions.DEBUT_PERIODE)"></i>
                           }
                       }

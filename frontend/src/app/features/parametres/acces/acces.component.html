@@ -7,7 +7,10 @@
     }
   </div>
 
-  <p-table [value]="acces()" class="p-datatable-sm p-datatable-striped" [loading]="chargement()">
+  <!-- Tableau dense : le scroll horizontal est confiné au conteneur (jamais la page) et
+       la colonne de libellé reste visible. Voir styles/_tableaux.css. -->
+  <div class="table-scroll">
+  <p-table [value]="acces()" class="p-datatable-sm p-datatable-striped table-sticky-1" [loading]="chargement()">
      <ng-template #header>
        <tr>
          <th>{{ t.commun.nom }}</th>
@@ -40,6 +43,7 @@
        <tr><td colspan="4" class="text-center py-8 text-surface-400">{{ t.commun.aucunResultat }}</td></tr>
      </ng-template>
    </p-table>
+   </div>
 </div>
 
 <!-- Dialog invitation -->

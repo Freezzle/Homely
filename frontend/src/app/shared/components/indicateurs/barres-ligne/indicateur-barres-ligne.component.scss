@@ -2,12 +2,13 @@
 :host {
   display: block;
   min-width: 0;
+  container-type: inline-size;
 }
 
 .barres-ligne {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--app-space-2);
   min-width: 0;
 
   // Tracé et libellés d'abscisse forment un bloc solidaire : c'est lui qui passe à gauche
@@ -15,7 +16,7 @@
   &__graphique {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: var(--app-space-2);
     min-width: 0;
   }
 
@@ -36,10 +37,12 @@
 
   &__graduation {
     stroke: var(--app-line-2);
+    // Geometrie SVG intrinseque : largeur independante des tokens de layout.
     stroke-width: 1;
     vector-effect: non-scaling-stroke;
 
     &--pointillee {
+        // Geometrie SVG intrinseque : pointille en coordonnees de trace.
       stroke-dasharray: 2 3;
     }
   }
@@ -48,6 +51,7 @@
   // dans les deux thèmes, sans dépendre de leurs couleurs respectives.
   &__segment {
     stroke: var(--app-card);
+    // Geometrie SVG intrinseque : largeur independante des tokens de layout.
     stroke-width: 1;
     vector-effect: non-scaling-stroke;
   }
@@ -62,9 +66,9 @@
     position: absolute;
     left: 0;
     transform: translateY(-50%);
-    padding-right: 3px;
-    font-size: 9px;
-    font-weight: 600;
+    padding-right: var(--app-space-0-75);
+    font-size: var(--app-text-3xs);
+    font-weight: var(--app-weight-semibold);
     font-variant-numeric: tabular-nums;
     color: var(--app-ink-muted);
     background: var(--app-card);
@@ -80,7 +84,7 @@
   &__survol {
     flex: 1;
     min-width: 0;
-    border-radius: 3px;
+    border-radius: var(--app-radius-md);
 
     &:hover {
       background: var(--app-line-2);
@@ -99,14 +103,14 @@
     flex: 1;
     min-width: 0;
     text-align: center;
-    font-size: 9px;
-    font-weight: 600;
+    font-size: var(--app-text-3xs);
+    font-weight: var(--app-weight-semibold);
     color: var(--app-ink-muted);
     overflow: hidden;
 
     &--surligne {
       color: var(--app-ink);
-      font-weight: 700;
+      font-weight: var(--app-weight-bold);
     }
 
     &--prevision {
@@ -118,33 +122,33 @@
   &__legende {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.375rem 0.875rem;
+    gap: var(--app-space-1-5) var(--app-space-3-5);
     margin: 0;
     padding: 0;
     list-style: none;
-    font-size: 11px;
+    font-size: var(--app-text-xs);
     color: var(--app-ink-muted);
   }
 
   &__entree {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: var(--app-space-1);
     min-width: 0;
   }
 
   &__pave {
     flex-shrink: 0;
-    width: 10px;
-    height: 10px;
-    border-radius: 2px;
+    width: var(--app-space-2-5);
+    height: var(--app-space-2-5);
+    border-radius: var(--app-radius-xs);
   }
 
   &__trait {
     flex-shrink: 0;
-    width: 16px;
-    height: 3px;
-    border-radius: 2px;
+    width: var(--app-space-4);
+    height: var(--app-space-0-75);
+    border-radius: var(--app-radius-xs);
   }
 }
 
@@ -162,7 +166,7 @@
   .barres-ligne {
     flex-direction: row;
     align-items: center;
-    gap: 1rem;
+    gap: var(--app-space-4);
   }
 
   .barres-ligne__graphique {
@@ -171,10 +175,10 @@
 
   .barres-ligne__legende {
     flex: 0 0 auto;
-    width: 11rem;
+    width: min(100%, 11rem);
     flex-direction: column;
     flex-wrap: nowrap;
-    gap: 0.375rem;
+    gap: var(--app-space-1-5);
   }
 
   .barres-ligne__entree {

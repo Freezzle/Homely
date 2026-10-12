@@ -23,7 +23,7 @@
   }
 
   @if (anneesOptions().length === 0 && scenarioA() && scenarioB()) {
-    <p class="text-sm text-orange-600">{{ t.comparaisonScenarios.filtres.aucuneAnneeCommune }}</p>
+    <p class="text-sm texte-alerte">{{ t.comparaisonScenarios.filtres.aucuneAnneeCommune }}</p>
   } @else if (annee() !== null) {
     <p-card styleClass="cs-card">
       <ng-template #header>

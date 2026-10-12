@@ -16,6 +16,7 @@ import { FoyerScenarioSwitcherComponent } from '../foyer-scenario-switcher/foyer
   standalone: true,
   imports: [CommonModule, ButtonComponent, TooltipModule, AvatarModule, MenuModule, SidebarModule, FoyerScenarioSwitcherComponent],
   templateUrl: './topbar.component.html',
+  styleUrl: './topbar.component.scss',
 })
 export class TopbarComponent implements OnInit {
   readonly i18n = inject(I18nService);

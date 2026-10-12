@@ -2,11 +2,11 @@
   display: inline-flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.9rem;
+  gap: var(--app-space-3-5);
 }
 
 .metric-ring {
-  --ring-size: 168px;
+  --ring-size: 10.5rem;
   position: relative;
   width: var(--ring-size);
   height: var(--ring-size);
@@ -26,41 +26,50 @@
   justify-content: center;
   align-items: center;
   text-align: center;
-  padding: 0.75rem;
+  padding: var(--app-space-3);
 }
 
 .metric-ring-value {
-  font-size: 0.9rem;
-  font-weight: 800;
-  line-height: 1.1;
+  font-size: var(--app-donnee-lg);
+  font-weight: var(--app-weight-extrabold);
+  line-height: var(--app-leading-tight);
+  font-variant-numeric: tabular-nums;
   color: var(--app-ink);
 }
 
 .metric-ring-label {
-  margin-top: 0.2rem;
-  font-size: 0.75rem;
-  line-height: 1.2;
+  margin-top: var(--app-space-0-75);
+  font-size: var(--app-text-sm);
+  line-height: var(--app-leading-tight);
   color: var(--app-ink-muted);
 }
 
 .metric-ring-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem 0.9rem;
+  gap: var(--app-space-2) var(--app-space-3-5);
   justify-content: center;
 }
 
 .legend-item {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: var(--app-space-1-5);
   color: var(--app-ink-muted);
-  font-size: 0.8rem;
+  font-size: var(--app-text-md);
 }
 
 .legend-dot {
-  width: 0.7rem;
-  height: 0.7rem;
+  width: var(--app-space-3);
+  height: var(--app-space-3);
   border-radius: var(--app-radius-pill);
   flex-shrink: 0;
+}
+
+// Conteneur étroit : la valeur mise en avant descend d'un cran
+// (voir la règle de la couche `--app-donnee-*`, _typographie.css).
+@container (max-width: 240px) {
+  .metric-ring-value {
+    font-size: var(--app-donnee-md);
+  }
 }

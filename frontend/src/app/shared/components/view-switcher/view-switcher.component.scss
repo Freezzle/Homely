@@ -3,7 +3,7 @@
   right: 0;
   bottom: 0;
   left: 0;
-  z-index: 20;
+  z-index: var(--app-z-entete);
   display: block;
   pointer-events: none;
 }
@@ -11,28 +11,28 @@
 .vs-shell {
   display: flex;
   justify-content: center;
-  padding: 0 0.75rem calc(0.75rem + env(safe-area-inset-bottom, 0));
+  padding: var(--app-space-0) var(--app-space-3) calc(var(--app-space-3) + env(safe-area-inset-bottom, 0));
 }
 
 .vs-bar {
   pointer-events: auto;
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  min-height: 2.3rem;
-  max-width: calc(100vw - 1.5rem);
-  padding: 0.25rem;
-  border: 1px solid color-mix(in srgb, var(--app-line) 85%, transparent);
+  gap: var(--app-space-1);
+  min-height: var(--app-cible-tactile);
+  max-width: calc(100vw - var(--app-space-6));
+  padding: var(--app-space-1);
+  border: var(--app-space-px) solid color-mix(in srgb, var(--app-line) 85%, transparent);
   border-radius: var(--app-radius-pill);
   background: color-mix(in srgb, var(--app-card) 92%, transparent);
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
-  backdrop-filter: blur(14px);
+  box-shadow: var(--app-shadow-lg);
+  backdrop-filter: blur(var(--app-space-3-5));
 }
 
 .vs-button {
   position: relative;
-  width: 2.35rem;
-  height: 2.1rem;
+  width: var(--app-cible-tactile);
+  height: var(--app-cible-tactile);
   border: none;
   border-radius: var(--app-radius-pill);
   background: transparent;
@@ -42,10 +42,10 @@
   justify-content: center;
   cursor: pointer;
   transition:
-    background-color 140ms ease,
-    color 140ms ease,
-    transform 140ms ease,
-    box-shadow 140ms ease;
+    background-color var(--app-duree-rapide) var(--app-easing),
+    color var(--app-duree-rapide) var(--app-easing),
+    transform var(--app-duree-rapide) var(--app-easing),
+    box-shadow var(--app-duree-rapide) var(--app-easing);
 }
 
 .vs-button:hover {
@@ -55,11 +55,11 @@
 
 .vs-button:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--p-primary-color) 22%, transparent);
+  box-shadow: var(--app-shadow-focus);
 }
 
 .vs-button:active {
-  transform: translateY(1px);
+  transform: translateY(var(--app-space-px));
 }
 
 .vs-button.is-active {
@@ -68,17 +68,17 @@
 }
 
 .vs-icon {
-  width: 1.2rem;
-  height: 1.2rem;
+  width: var(--app-space-5);
+  height: var(--app-space-5);
   display: block;
   flex: none;
 }
 
 .vs-label {
-  font-size: 0.65rem;
-  font-weight: 600;
-  line-height: 1;
-  letter-spacing: 0.01em;
+  font-size: var(--app-text-2xs);
+  font-weight: var(--app-weight-semibold);
+  line-height: var(--app-leading-none);
+  letter-spacing: var(--app-tracking-normal);
   white-space: nowrap;
 }
 
@@ -93,52 +93,52 @@
 
 .vs-badge {
   position: absolute;
-  top: 0.1rem;
-  right: 0.05rem;
-  min-width: 1rem;
-  height: 1rem;
-  padding: 0 0.18rem;
-  border: 2px solid var(--app-card);
+  top: var(--app-space-0-5);
+  right: var(--app-space-px);
+  min-width: var(--app-space-4);
+  height: var(--app-space-4);
+  padding: var(--app-space-0) var(--app-space-0-75);
+  border: var(--app-space-0-5) solid var(--app-card);
   border-radius: var(--app-radius-pill);
   background: var(--p-primary-color);
   color: var(--p-primary-contrast-color);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.62rem;
-  font-weight: 700;
-  line-height: 1;
+  font-size: var(--app-text-2xs);
+  font-weight: var(--app-weight-bold);
+  line-height: var(--app-leading-none);
   transform: translate(22%, -20%);
 }
 
 @media (min-width: 768px) {
   .vs-bar {
-    min-height: 3.05rem;
+    min-height: var(--app-space-12);
   }
 
   .vs-button {
     flex-direction: column;
-    gap: 0.2rem;
+    gap: var(--app-space-0-75);
     width: auto;
-    min-width: 3.9rem;
+    min-width: var(--app-space-16);
     height: auto;
-    padding: 0.35rem 0.6rem;
+    padding: var(--app-space-1-5) var(--app-space-2-5);
     border-radius: var(--app-radius-card);
   }
 
   .vs-badge {
-    top: 0.2rem;
-    right: 0.3rem;
+    top: var(--app-space-0-75);
+    right: var(--app-space-1);
   }
 }
 
 @media (max-width: 767.98px) {
   .vs-bar {
-    width: min(100%, 18rem);
+    width: min(100%, 18rem); /* largeur maximale du dock mobile */
     justify-content: space-between;
   }
 
   .vs-button {
-    width: 2.6rem;
+    width: var(--app-cible-tactile);
   }
 }

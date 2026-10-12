@@ -139,7 +139,29 @@
     "periodeFinAvantDebut": "The end date must be on or after the start date.",
     "periodeChevauche": "This period overlaps an existing period.",
     "periodeOuverteDejaExistante": "An open period (no end date) already exists; close it first.",
-    "horizonAnneesUnite": "years"
+    "horizonAnneesUnite": "years",
+    "form": {
+      "titreCreation": "New period",
+      "titreEdition": "Edit split",
+      "badge": "Pro rata",
+      "etapes": {
+        "periode": "Over which period?",
+        "parts": "Who carries which share?"
+      },
+      "fiche": {
+        "periode": "Period",
+        "parts": "Split"
+      },
+      "periodeAide": "The period runs from date to date, both ends included.",
+      "datesVerrouillees": "The dates of an existing period are changed via “Revise the rates” or “Shift the effective date”.",
+      "sansFin": "No end",
+      "sansFinAide": "Until further notice",
+      "cinquante": "50 / 50",
+      "toutMembre": "All {{nom}}",
+      "total": "Total",
+      "resumePeriodeOuverte": "From {{debut}}, no end",
+      "resumePeriode": "From {{debut}} to {{fin}}"
+    }
   },
   "prorata": {
     "titre": "Members' proration",
@@ -216,6 +238,148 @@
     },
     "ventilation": "Account breakdown",
     "apercu": "Monthly preview",
+    "form": {
+      "titreCreation": "New item",
+      "titreEdition": "Edit item",
+      "badgeType": {
+        "CHARGE": "Expense",
+        "REVENU": "Income",
+        "RESERVE": "Reserve"
+      },
+      "sansNom": "Untitled",
+      "categorieAChoisir": "Category to pick",
+      "impactParMois": "per month",
+      "etapes": {
+        "quoi": "What is it for?",
+        "combien": {
+          "CHARGE": "How much does it cost, and how often?",
+          "REVENU": "How much do you receive, and how often?",
+          "RESERVE": "How much do you set aside, and how often?"
+        },
+        "validite": "What is the validity period?",
+        "validitePonctuel": "When?",
+        "paiement": {
+          "CHARGE": "How is it paid?",
+          "REVENU": "How is it paid in?",
+          "RESERVE": "How do you set it aside?"
+        },
+        "repartition": {
+          "CHARGE": "Who pays?",
+          "REVENU": "Who receives?",
+          "RESERVE": "Who saves?"
+        },
+        "analyse": "One last thing, if you want"
+      },
+      "fiche": {
+        "poste": "Item",
+        "montant": "Amount",
+        "validite": "Validity",
+        "paiement": "Payment",
+        "repartition": "Split",
+        "analyse": "Analysis · optional"
+      },
+      "nomPoste": "Item name",
+      "nomPostePlaceholder": "E.g. Flat rent",
+      "categorie": "Category",
+      "frequence": "How often?",
+      "frequences": {
+        "0": "Once",
+        "1": "Monthly",
+        "3": "Quarterly",
+        "6": "Half-yearly",
+        "12": "Yearly",
+        "autre": "Other…"
+      },
+      "autrePeriodicite": "Which frequency?",
+      "rythme": {
+        "0": "once",
+        "1": "every month",
+        "12": "every year",
+        "n": "every {{n}} months"
+      },
+      "convPonctuel": "A single payment of {{montant}}.",
+      "convMensuel": "That is {{montant}} per year.",
+      "convPeriodique": "That is ≈ {{montant}} per month.",
+      "approximatif": "Approximate amount",
+      "marge": "margin ±",
+      "validiteAide": "The dates of the contract or agreement, not necessarily the payment dates.",
+      "debutPoste": "Item start",
+      "date": "Date",
+      "ceMois": "This month",
+      "prochainMois": "Next month",
+      "debutAnnee": "Start of the year",
+      "debutAnneeProchaine": "Start of next year",
+      "finPoste": "Item end",
+      "sansFin": "No end",
+      "sansFinAide": "Until further notice",
+      "unAn": "For 1 year",
+      "finMois": "End of the month",
+      "finAnnee": "End of the year",
+      "finPeriode": "End of the period",
+      "jusquAu": "until {{date}}",
+      "verbe": {
+        "CHARGE": "Charged",
+        "REVENU": "Paid in",
+        "RESERVE": "Set aside"
+      },
+      "verbeQuestion": {
+        "CHARGE": "Charged…",
+        "REVENU": "Paid in…",
+        "RESERVE": "Set aside…"
+      },
+      "momentDebut": "At the start of the period",
+      "momentFin": "At the end of the period",
+      "momentInconnu": "I don't know",
+      "dateInconnue": "unknown date",
+      "enMois": "in {{mois}}",
+      "dansBudget": "In the budget",
+      "lisse": "Spread over each month",
+      "lisseAide": "≈ {{montant}} / month",
+      "moisPaiement": "The month it is paid",
+      "moisPaiementAide": "{{montant}} in {{mois}}",
+      "apercuDes": "Preview from {{mois}}",
+      "legende": {
+        "ponctuel": "The amount occurs only once.",
+        "mensuel": "The same amount every month.",
+        "lisse": "Bars: monthly share · dot: payment month.",
+        "periodique": "The full amount counts in the payment month.",
+        "inconnu": "Unknown date: spread over every month."
+      },
+      "resumeValidite": {
+        "debutSansFin": "From {{debut}}, no end",
+        "debutFin": "From {{debut}} until {{fin}}",
+        "ponctuel": "On {{date}}"
+      },
+      "resumePaiement": {
+        "lisse": "{{verbe}} in {{mois}} · spread over each month",
+        "periodique": "{{verbe}} in {{mois}} · counted that month",
+        "inconnu": "Unknown date · spread over each month"
+      },
+      "resumeAnalyse": "Necessity {{importance}} · Optimisation {{optimisation}} · Drift {{derive}}",
+      "membresConcernes": "Who is involved?",
+      "toutMembre": "All {{nom}}",
+      "auProrata": "Pro rata",
+      "cinquante": "50 / 50",
+      "inverse": "Reversed",
+      "personnalise": "Custom",
+      "curseurRepartition": "Split between {{a}} and {{b}}",
+      "curseurValeur": "{{a}} {{partA}} %, {{b}} {{partB}} %",
+      "depuis": {
+        "CHARGE": "Paid from",
+        "REVENU": "Paid into",
+        "RESERVE": "Set aside on"
+      },
+      "depuisMembre": "{{libelle}} · {{nom}}",
+      "comptesSepares": "Each from a different account",
+      "compteCommun": "The same account for everyone",
+      "aucunCompte": "No account available",
+      "total": "Total",
+      "analyseAide": "You can save without touching it.",
+      "questionImportance": "Could you do without it?",
+      "questionOptimisation": "Could you pay less?",
+      "questionDerive": "Does the amount change without us?",
+      "noteSur5": "{{label}}: {{n}} out of 5"
+    },
     "questionnaire": {
       "nomTitre": "What's the item's name?",
       "freqTitre": "This item is...",
@@ -682,6 +846,16 @@
     "precedent": "Previous",
     "suivant": "Next",
     "enregistrerEtNouveau": "Save and new",
+    "parcours": {
+      "taFiche": "Your summary",
+      "voirFiche": "View summary",
+      "impact": "Budget impact",
+      "continuer": "Continue",
+      "allerFin": "Go to the end",
+      "aideEntree": "Press Enter",
+      "etapePrecedente": "Previous step",
+      "progression": "Step {{n}} of {{total}}"
+    },
     "confirmerAnnulationFormulaire": "Unsaved changes will be lost. Do you really want to close this form?",
     "aRenseigner": "To be filled in",
     "champObligatoire": "This field is required.",
@@ -833,6 +1007,58 @@
       "quand": "Applicable period",
       "formule": "Calculation formula",
       "apercu": "Preview of the next 6 months"
+    },
+    "form": {
+      "politique": {
+        "titreCreation": "New policy",
+        "titreEdition": "Edit policy",
+        "badge": "Policy",
+        "etapes": {
+          "quoi": "For whom, and under what name?",
+          "formule": "How is the amount calculated?",
+          "validite": "Over which period does it apply?",
+          "compte": "Which account is it paid into?"
+        },
+        "fiche": {
+          "membre": "Member",
+          "formule": "Formula",
+          "validite": "Validity",
+          "compte": "Account"
+        },
+        "nomAide": "A short name, to find it again in the list.",
+        "modeVariableAide": "A share of the money left to live on, bounded by a floor and a cap.",
+        "modeFixeAide": "The same amount every month.",
+        "pourcentageLabel": "Share of the money left to live on",
+        "validiteAide": "The policy applies to whole months, from date to date.",
+        "sansFinAide": "Leave empty for an open-ended policy.",
+        "impactSecondaire": "on average per month"
+      },
+      "allocation": {
+        "titreCreation": "New allowance",
+        "titreEdition": "Edit allowance",
+        "badge": "Allowance",
+        "etapes": {
+          "quoi": "For whom, and which month?",
+          "combien": "How much, and why?",
+          "compte": "Which account is it paid into?"
+        },
+        "fiche": {
+          "membreMois": "Member and month",
+          "montant": "Amount",
+          "compte": "Account"
+        },
+        "resolutionAide": "Amount planned for that month before any exception.",
+        "reprendreMontant": "Use this amount",
+        "raisonAide": "Why does this month differ from the usual rule?",
+        "impactSecondaire": "that month"
+      },
+      "ceMois": "This month",
+      "prochainMois": "Next month",
+      "debutAnnee": "Start of the year",
+      "debutAnneeProchaine": "Start of next year",
+      "sansFin": "No end",
+      "finAnnee": "End of the year",
+      "unAn": "For 1 year"
     },
     "apercu": {
       "colonneMois": "Month",

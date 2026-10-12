@@ -5,9 +5,25 @@ import { DividerModule } from 'primeng/divider';
 import { MontantPipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { TagComponent } from '../tag/tag.component';
+import { TonCarte } from '../indicateurs/tons';
 
 /** Zones du taux d'effort — bornes 60/75/90 (cf. spec indicateur 04). */
 export type TauxEffortZone = 'CONFORTABLE' | 'CORRECT' | 'TENDU' | 'SATURE';
+
+/**
+ * Zone → ton de la charte. **Échelle unique** de l'indicateur « Taux d'effort », partagée
+ * par le badge de la carte, la barre de progression de la carte et les 3 jauges du drawer :
+ * vert → jaune → orange → rouge.
+ *
+ * `alerte` (orange) n'ayant pas d'équivalent dans les sévérités PrimeNG, les tags de zone
+ * sont alimentés par `[ton]` et non par `[severity]`.
+ */
+export const TON_PAR_ZONE_EFFORT: Record<TauxEffortZone, TonCarte> = {
+  CONFORTABLE: 'succes',
+  CORRECT: 'attention',
+  TENDU: 'alerte',
+  SATURE: 'danger',
+};
 
 /** Données brutes d'entrée de la carte — le composant calcule lui-même le taux
  *  d'effort, le pire cas, le reste libre et la zone. Purement présentationnel :
@@ -133,12 +149,8 @@ export class TauxEffortCardComponent {
     return 'SATURE';
   }
 
-  readonly severityMap: Record<TauxEffortZone, 'success' | 'info' | 'warn' | 'danger'> = {
-    CONFORTABLE: 'success',
-    CORRECT: 'info',
-    TENDU: 'warn',
-    SATURE: 'danger',
-  };
+  /** Zone → ton de la charte (échelle partagée, voir `TON_PAR_ZONE_EFFORT`). */
+  readonly tonMap = TON_PAR_ZONE_EFFORT;
 
   readonly labelMap = computed<Record<TauxEffortZone, string>>(() => ({
     CONFORTABLE: this.t.projection.effortCardZoneConfortable,

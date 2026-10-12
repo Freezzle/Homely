@@ -4,17 +4,18 @@
 :host {
   display: block;
   min-width: 0;
+  container-type: inline-size;
 }
 
 .barre-empilee {
   display: flex;
   flex-direction: column;
-  gap: 0.625rem;
+  gap: var(--app-space-2-5);
   min-width: 0;
 
   &__barre {
     display: flex;
-    gap: 2px;
+    gap: var(--app-space-0-5);
     border-radius: var(--app-radius-pill);
     background: var(--app-line-2);
     overflow: hidden;
@@ -22,7 +23,7 @@
 
   &__segment {
     height: 100%;
-    transition: opacity 0.15s;
+    transition: opacity var(--app-duree-rapide) var(--app-easing);
 
     &:hover {
       opacity: 0.85;
@@ -35,7 +36,7 @@
 
   &__legende {
     @include legende.legende-liste;
-    gap: 0.25rem 1.25rem;
+    gap: var(--app-space-1) var(--app-space-5);
   }
 
   &__entree {

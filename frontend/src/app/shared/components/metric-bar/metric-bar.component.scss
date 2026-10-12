@@ -1,16 +1,16 @@
 .metric-bar-wrap {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: var(--app-space-2-5);
   width: 100%;
 }
 
 .metric-bar-item-lead {
   display: flex;
   align-items: baseline;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  font-weight: 700;
+  gap: var(--app-space-2);
+  font-size: var(--app-donnee-lg);
+  font-weight: var(--app-weight-bold);
 }
 
 .metric-bar-item-label {
@@ -19,15 +19,16 @@
 
 .metric-bar-item-value {
   margin-left: auto;
-  font-weight: 700;
+  font-weight: var(--app-weight-bold);
+  font-variant-numeric: tabular-nums;
   color: var(--app-ink);
 }
 
 .metric-bar-label-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem 1.25rem;
-  margin: 0.5rem 0 0;
+  gap: var(--app-space-3) var(--app-space-5);
+  margin: var(--app-space-2) var(--app-space-0) var(--app-space-0);
   padding: 0;
   list-style: none;
 }
@@ -35,14 +36,14 @@
 .metric-bar-label-item {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 0.85rem;
+  gap: var(--app-space-1-5);
+  font-size: var(--app-text-md);
   color: var(--app-ink-muted);
 }
 
 .metric-bar-label-marker {
-  width: 0.6rem;
-  height: 0.6rem;
-  border-radius: 50%;
+  width: var(--app-space-2-5);
+  height: var(--app-space-2-5);
+  border-radius: var(--app-radius-pill);
   flex-shrink: 0;
 }

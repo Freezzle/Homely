@@ -1,0 +1,305 @@
+/*
+ * Reset moderne & règles de base.
+ *
+ * Complète le preflight de Tailwind sur les points qu'il ne couvre pas et qui sont
+ * indispensables pour tenir 435px sans débordement horizontal.
+ * Déclaré dans le layer `base` pour rester surchargeable par `primeng`, `components`
+ * et `utilities` (voir l'ordre des layers documenté dans styles.css).
+ */
+@layer base {
+    html {
+        /* Évite tout scroll horizontal parasite sur l'ensemble de l'app. */
+        overflow-x: hidden;
+        -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+        font-family: var(--app-font-sans);
+        font-size: var(--app-text-base);
+        line-height: var(--app-leading-normal);
+        color: var(--app-ink);
+        /* Garantit qu'aucun écran ne casse sous la largeur minimale supportée. */
+        min-width: var(--app-largeur-min);
+    }
+
+    /* Médias fluides par défaut : jamais plus larges que leur conteneur. */
+    img,
+    svg,
+    video,
+    canvas,
+    audio,
+    iframe,
+    embed,
+    object {
+        display: block;
+        max-width: 100%;
+    }
+
+    img,
+    video {
+        height: auto;
+    }
+
+    /* Un enfant flex/grid a `min-width: auto` par défaut : il refuse de rétrécir sous la
+       taille de son contenu et provoque l'essentiel des débordements en mobile. */
+    .flex > *,
+    .grid > * {
+        min-width: 0;
+    }
+
+    /* Les textes longs (libellés de poste, e-mails, noms de scénario) ne doivent jamais
+       pousser la mise en page. */
+    p,
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    li,
+    dt,
+    dd,
+    th,
+    td,
+    label,
+    figcaption {
+        overflow-wrap: break-word;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        font-weight: var(--app-weight-semibold);
+        line-height: var(--app-leading-tight);
+        text-wrap: balance;
+    }
+
+    h1 {
+        font-size: var(--app-text-3xl);
+    }
+
+    h2 {
+        font-size: var(--app-text-2xl);
+    }
+
+    h3 {
+        font-size: var(--app-text-xl);
+    }
+
+    h4 {
+        font-size: var(--app-text-lg);
+    }
+
+    h5,
+    h6 {
+        font-size: var(--app-text-base);
+    }
+
+    /* iOS zoome automatiquement sur un champ dont la police est < 16px. */
+    @media (max-width: 767.98px) {
+        input,
+        select,
+        textarea {
+            font-size: 1rem;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
+    }
+}
+
+@layer components {
+    /* Zone tactile minimale de 44px en mobile, sans modifier l'apparence : on étend la
+       cible via un pseudo-élément plutôt que la boîte visible. */
+    @media (pointer: coarse) {
+        .cible-tactile {
+            position: relative;
+        }
+
+        .cible-tactile::after {
+            content: '';
+            position: absolute;
+            inset: 50% 50% 50% 50%;
+            min-width: var(--app-cible-tactile);
+            min-height: var(--app-cible-tactile);
+            width: 100%;
+            height: 100%;
+            transform: translate(-50%, -50%);
+        }
+    }
+
+    /* Couleurs de texte de la charte, disponibles comme classes utilitaires pour éviter
+       les `text-[var(--app-…)]` arbitraires dans les templates. */
+    .texte-principal {
+        color: var(--app-ink);
+    }
+
+    .texte-attenue {
+        color: var(--app-ink-muted);
+    }
+
+    /* Badge de type (en-tête d'un parcours guidé) : pilule colorée par le ton métier
+       de l'entité éditée. Global plutôt que local au composant, pour rester une
+       classe sémantique de la charte réutilisable par n'importe quel en-tête. */
+    .badge-type {
+        display: inline-flex;
+        align-items: center;
+        padding: var(--app-space-1) var(--app-space-3);
+        border-radius: var(--app-radius-pill);
+        font-size: var(--app-text-xs);
+        font-weight: var(--app-weight-bold);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .badge-type--revenu { background: var(--app-revenu-bg); color: var(--app-revenu); }
+    .badge-type--charge { background: var(--app-charge-bg); color: var(--app-charge); }
+    .badge-type--reserve { background: var(--app-reserve-bg); color: var(--app-reserve); }
+    .badge-type--argent-poche { background: var(--app-argent-poche-bg); color: var(--app-argent-poche); }
+    .badge-type--info { background: var(--app-info-bg); color: var(--app-info); }
+
+    /* Tailles de donnée, disponibles comme classes utilitaires pour les templates (les
+       SCSS de composants utilisent directement les tokens `--app-donnee-*`).
+       Voir _typographie.css pour la définition des 4 rôles. */
+    .montant-heros {
+        font-size: var(--app-donnee-xl);
+        font-weight: var(--app-weight-extrabold);
+        line-height: var(--app-leading-tight);
+        letter-spacing: var(--app-tracking-tight);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .montant-avant {
+        font-size: var(--app-donnee-lg);
+        font-weight: var(--app-weight-bold);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .montant-ligne {
+        font-size: var(--app-donnee-md);
+        font-weight: var(--app-weight-semibold);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .montant-dense {
+        font-size: var(--app-donnee-sm);
+        font-weight: var(--app-weight-bold);
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* Montants : classes sémantiques adossées à la charte (voir _app-tokens.css). */
+    .montant-positif {
+        color: var(--app-positif);
+    }
+
+    .montant-negatif {
+        color: var(--app-negatif);
+    }
+
+    /* Un solde / reste à vivre reste neutre quel que soit son signe : c'est un
+       résultat de calcul, pas un jugement. */
+    .montant-neutre {
+        color: var(--app-neutre);
+    }
+
+    /* Montants typés : à préférer dès que la ligne porte un type de poste connu. */
+    .montant-revenu {
+        color: var(--app-revenu);
+    }
+
+    .montant-charge {
+        color: var(--app-charge);
+    }
+
+    .montant-reserve {
+        color: var(--app-reserve);
+    }
+
+    .montant-argent-poche {
+        color: var(--app-argent-poche);
+    }
+
+    /* Feedback UI (validation de saisie, états, alertes). */
+    .texte-succes {
+        color: var(--app-success);
+    }
+
+    .texte-attention {
+        color: var(--app-warning);
+    }
+
+    .texte-alerte {
+        color: var(--app-alert);
+    }
+
+    .texte-danger {
+        color: var(--app-danger);
+    }
+
+    .texte-info {
+        color: var(--app-info);
+    }
+
+    /* Échelle ordinale 1→5 (importance, optimisation, dérive, nécessité). */
+    .texte-echelle-1 {
+        color: var(--app-echelle-1);
+    }
+
+    .texte-echelle-2 {
+        color: var(--app-echelle-2);
+    }
+
+    .texte-echelle-3 {
+        color: var(--app-echelle-3);
+    }
+
+    .texte-echelle-4 {
+        color: var(--app-echelle-4);
+    }
+
+    .texte-echelle-5 {
+        color: var(--app-echelle-5);
+    }
+
+    /* Encadré « zone dangereuse » (suppression définitive) — bordure d'alerte sur une carte. */
+    .bordure-danger {
+        display: block;
+        border: var(--app-space-px) solid var(--app-danger);
+        border-radius: var(--app-radius-card);
+    }
+
+    /* Surlignage des occurrences d'une recherche (innerHTML contenant des <mark>). */
+    .surlignage-recherche mark {
+        background: var(--app-warning-bg);
+        color: inherit;
+        border-radius: var(--app-radius-item);
+        padding-inline: var(--app-space-0-5);
+    }
+
+    /* Troncature sur une ligne, à privilégier sur les libellés de largeur contrainte. */
+    .tronque {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* Troncature sur N lignes (N porté par --lignes, 2 par défaut). */
+    .tronque-lignes {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: var(--lignes, 2);
+        line-clamp: var(--lignes, 2);
+        overflow: hidden;
+    }
+}

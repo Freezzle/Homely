@@ -2,10 +2,8 @@
     <ng-template #title>
         <div class="flex justify-end">
             <div class="flex items-baseline justify-end gap-1.5 mt-1">
-                <span class="text-sm text-surface-400">{{ devise() }}</span>
-                <span class="text-2xl font-extrabold tabular-nums"
-                      [class.text-emerald-600]="montantPrincipal() >= 0"
-                      [class.text-red-500]="montantPrincipal() < 0">
+                <span class="carte-bilan__devise">{{ devise() }}</span>
+                <span class="carte-bilan__montant montant-neutre">
         {{ formatMontantSansDevise(montantPrincipal()) }}
       </span>
             </div>
@@ -30,10 +28,7 @@
                   }
               }
           </span>
-                    <span class="font-semibold shrink-0 tabular-nums"
-                          [class.text-green-600]="row.signe > 0"
-                          [class.text-blue-500]="row.type === 'RESERVE'"
-                          [class.text-amber-500]="row.type === 'ARGENT_POCHE'">
+                    <span class="carte-bilan__ligne-montant" [class]="classeMontant(row)">
             {{ row.signe > 0 ? '+' : '−' }}&nbsp;{{ formatMontantSansDevise(row.montantAbs) }}
           </span>
                 </div>

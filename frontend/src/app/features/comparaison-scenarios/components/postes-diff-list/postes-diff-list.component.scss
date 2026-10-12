@@ -1,5 +1,5 @@
-.pdl-compteur {
-  font-size: 0.75rem;
+﻿.pdl-compteur {
+  font-size: var(--app-text-sm);
   color: var(--app-ink-muted);
   margin-left: auto;
 }
@@ -7,20 +7,28 @@
 .pdl-lignes {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--app-space-2);
 }
 
 .pdl-ligne {
   display: grid;
-  grid-template-columns: 1.75rem 1fr auto;
+  // Mobile-first : badge + contenu sur la première ligne, montants repliés dessous.
+  grid-template-columns: 1.75rem 1fr;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem 0.75rem;
-  border-left: 3px solid;
-  border-radius: 4px;
+  gap: var(--app-space-1) var(--app-space-3);
+  padding: var(--app-space-2-5) var(--app-space-3);
+  border-left: var(--app-space-0-75) solid;
+  border-radius: var(--app-radius-sm);
   background: var(--app-card);
-  font-size: 0.875rem;
-  transition: opacity 0.15s ease;
+  font-size: var(--app-text-base);
+  transition: opacity var(--app-duree-rapide) var(--app-easing);
+}
+
+@media (min-width: 768px) {
+  .pdl-ligne {
+    grid-template-columns: 1.75rem 1fr auto;
+    gap: var(--app-space-3);
+  }
 }
 
 .pdl-ligne-inchange {
@@ -33,67 +41,76 @@
   justify-content: center;
   width: 1.75rem;
   height: 1.75rem;
-  border-radius: 999px;
+  border-radius: var(--app-radius-pill);
   color: var(--app-ink-muted);
 
-  .pi { font-size: 0.75rem; }
+  .pi { font-size: var(--app-text-sm); }
 }
 
 .pdl-center {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: var(--app-space-0-5);
 }
 
 .pdl-titre {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: var(--app-space-1-5);
   flex-wrap: wrap;
 }
 
 .pdl-description {
-  font-weight: 600;
+  font-weight: var(--app-weight-semibold);
   color: var(--app-ink);
 }
 
 .pdl-meta {
-  font-size: 0.75rem;
+  font-size: var(--app-text-sm);
   color: var(--app-ink-muted);
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .pdl-montants {
+  // En mobile les montants passent sous le libellé, alignés sous la colonne de contenu.
+  grid-column: 2;
   text-align: right;
-  min-width: 10rem;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 0.15rem;
+  gap: var(--app-space-0-5);
+}
+
+@media (min-width: 768px) {
+  .pdl-montants {
+    grid-column: auto;
+    min-width: 10rem;
+  }
 }
 
 .pdl-montant-ligne {
   display: inline-flex;
   align-items: baseline;
-  gap: 0.5rem;
+  gap: var(--app-space-2);
   font-variant-numeric: tabular-nums;
 }
 
 .pdl-ancien {
   text-decoration: line-through;
   color: var(--app-ink-muted);
-  font-size: 0.8125rem;
+  font-size: var(--app-text-md);
 }
 
 .pdl-nouveau {
-  font-weight: 700;
+  font-weight: var(--app-weight-bold);
   color: var(--app-ink);
 }
 
 .pdl-effet {
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: var(--app-text-sm);
+  font-weight: var(--app-weight-semibold);
   font-variant-numeric: tabular-nums;
 }

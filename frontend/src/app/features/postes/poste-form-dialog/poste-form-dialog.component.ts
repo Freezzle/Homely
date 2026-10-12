@@ -1,38 +1,42 @@
-import { Component, inject, input, output, signal, computed, effect, untracked, ViewChild, ElementRef } from '@angular/core';
+import {
+  Component, computed, effect, inject, input, output, signal, untracked, viewChild,
+} from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { startWith } from 'rxjs';
-import { CommonModule } from '@angular/common';
-import { FormBuilder, FormArray, FormsModule, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
-import { DialogModule } from 'primeng/dialog';
-import { MessageModule } from 'primeng/message';
-import { TooltipModule } from 'primeng/tooltip';
-import { StepperModule } from 'primeng/stepper';
-import { SliderModule } from 'primeng/slider';
+import {
+  AbstractControl, FormArray, FormBuilder, ValidationErrors, Validators,
+} from '@angular/forms';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { MessageService, ConfirmationService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
+import { TranslateService } from '@ngx-translate/core';
 import { ContexteService } from '../../../core/services/contexte.service';
 import { PosteService } from '../../../core/services/scenario-poste.service';
 import { CompteService, TauxChangeService } from '../../../core/services/referentiel.service';
-import { CategorieDto, CompteDto, MembreDto, MomentPeriode, PosteDto, TypePoste, TypeRepartition } from '../../../core/models/api.models';
-import { I18nService } from '../../../core/i18n/i18n.service';
-import { creerDevisesDisponibles } from '../../../core/utils/devise-options.util';
-import { toIsoDateLocal, parseIsoDateLocal } from '../../../core/utils/date.util';
-import { arrondirSommeRepartition, sommeRepartitionValide as estSommeRepartitionValide } from '../../../core/utils/repartition.util';
-import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
-import { normaliserCouleur } from '../../../shared/utils/couleur.util';
-import { MembresTagsComponent } from '../../../shared/components/membres-tags/membres-tags.component';
-import { ButtonComponent } from '../../../shared/components/button/button.component';
 import {
-  DatePickerComponent,
-  InputNumberComponent,
-  InputTextComponent,
-  SelectButtonComponent,
-  SelectComponent,
-} from '../../../shared/components/form-fields';
-import { CheckboxComponent } from '../../../shared/components/form-fields/checkbox/checkbox.component';
-import { MontantPipe, PeriodicitePipe } from '../../../core/pipes/format.pipes';
-import { EcheancierMultiAnneesComponent } from '../../../shared/components/echeancier-annuel/echeancier-multi-annees.component';
+  CategorieDto, CompteDto, MomentPeriode, PosteDto, TypePoste, TypeRepartition,
+} from '../../../core/models/api.models';
+import { I18nService } from '../../../core/i18n/i18n.service';
+import { localeDeLangue } from '../../../core/i18n/locale.util';
+import { MontantPipe } from '../../../core/pipes/format.pipes';
+import { creerDevisesDisponibles } from '../../../core/utils/devise-options.util';
+import { parseIsoDateLocal, toIsoDateLocal } from '../../../core/utils/date.util';
+import { arrondirSommeRepartition, sommeRepartitionValide as estSommeRepartitionValide } from '../../../core/utils/repartition.util';
+import { notifierErreur, notifierSucces } from '../../../core/utils/toast.util';
+import { ParcoursGuideComponent } from '../../../shared/components/parcours-guide/parcours-guide.component';
+import { EtapeParcours, LigneFiche, TonBadgeParcours } from '../../../shared/components/parcours-guide/parcours-guide.model';
 import { PosteEcheancier } from '../../../shared/components/echeancier-annuel/echeancier.model';
+import { RepartitionSaisie } from './components/poste-repartition/repartition-saisie.model';
+import { calculerParts } from './components/poste-repartition/repartition.util';
+import { EtapeQuoiComponent } from './etapes/etape-quoi.component';
+import { EtapeCombienComponent } from './etapes/etape-combien.component';
+import { EtapeValiditeComponent } from './etapes/etape-validite.component';
+import { EtapePaiementComponent } from './etapes/etape-paiement.component';
+import { EtapeRepartitionComponent } from './etapes/etape-repartition.component';
+import { EtapeAnalyseComponent } from './etapes/etape-analyse.component';
+import {
+  EtapeCle, PosteFormValeurs, etapesVisibles, moisAnnee, premierDuMois,
+  resumeAnalyse, resumeMontant, resumePaiement, resumeValidite, rythmeLibelle,
+} from './poste-form-etapes';
 
 /**
  * Validateur de groupe : la date de fin (si renseignée) ne peut pas être
@@ -47,18 +51,19 @@ function datesCoherentesValidator(group: AbstractControl): ValidationErrors | nu
   return null;
 }
 
-/** Index des 5 étapes fixes du stepper (jamais plus, jamais moins). */
-type Etape = 0 | 1 | 2 | 3 | 4;
-
+/**
+ * Création et édition d'un poste, en « une question par écran ». Le conteneur
+ * détient le `FormGroup` (inchangé), la navigation entre étapes et le calcul des
+ * chaînes affichées ; les composants d'étape et la fiche ne font que présenter.
+ */
 @Component({
   selector: 'app-poste-form-dialog',
   standalone: true,
   providers: [ConfirmationService],
   imports: [
-    CommonModule, FormsModule, ReactiveFormsModule, DialogModule, ButtonComponent, InputTextComponent,
-    InputNumberComponent, SelectComponent, SelectButtonComponent, DatePickerComponent, MessageModule,
-    TooltipModule, StepperModule, ConfirmDialogModule, SliderModule, MembresTagsComponent, MontantPipe, PeriodicitePipe,
-    CheckboxComponent, EcheancierMultiAnneesComponent,
+    ConfirmDialogModule, ParcoursGuideComponent,
+    EtapeQuoiComponent, EtapeCombienComponent, EtapeValiditeComponent,
+    EtapePaiementComponent, EtapeRepartitionComponent, EtapeAnalyseComponent,
   ],
   templateUrl: './poste-form-dialog.component.html',
 })
@@ -72,6 +77,8 @@ export class PosteFormDialogComponent {
   private readonly toast = inject(MessageService);
   private readonly confirm = inject(ConfirmationService);
   private readonly fb = inject(FormBuilder);
+  private readonly translate = inject(TranslateService);
+  private readonly montantPipe = inject(MontantPipe);
 
   readonly type = input<TypePoste>('REVENU');
   readonly categories = input<CategorieDto[]>([]);
@@ -81,8 +88,10 @@ export class PosteFormDialogComponent {
   readonly visibleChange = output<boolean>();
   readonly enregistre = output<void>();
 
-  @ViewChild('descriptionInput') private descriptionInput?: InputTextComponent;
-  @ViewChild('stepListEl') private stepListEl?: ElementRef<HTMLElement>;
+  private readonly etapeQuoi = viewChild(EtapeQuoiComponent);
+  private readonly parcours = viewChild(ParcoursGuideComponent);
+
+  readonly locale = computed(() => localeDeLangue(this.translate.currentLang()));
 
   comptes = signal<CompteDto[]>([]);
   enregistrementEnCours = signal(false);
@@ -90,10 +99,12 @@ export class PosteFormDialogComponent {
   /** Uniquement les membres actifs du foyer : seuls concernés par une nouvelle répartition. */
   membresActifs = computed(() => this.contexte.membres().filter(m => m.actif));
 
-  // ── Pilotage du stepper ───────────────────────────────────────────────
-  etapeActive = signal<Etape>(0);
-  etapesVisitees = signal<Set<Etape>>(new Set([0]));
-  etapesTouched = signal<Set<Etape>>(new Set());
+  /** membreId → quote-part du scénario courant (0–1). */
+  readonly partsAuto = computed<Record<string, number>>(() => {
+    const out: Record<string, number> = {};
+    for (const r of this.contexte.scenarioCourant()?.repartitions ?? []) out[r.membreId] = r.quotePart;
+    return out;
+  });
 
   form = this.fb.group({
     description:     ['', Validators.required],
@@ -111,6 +122,7 @@ export class PosteFormDialogComponent {
     typeRepartition: ['AUTO' as TypeRepartition],
     debut:           [null as Date | null, Validators.required],
     fin:             [null as Date | null],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     repartitions:    this.fb.array([] as any[]),
     inclureProrataTheorique: [true],
   }, { validators: [datesCoherentesValidator] });
@@ -119,10 +131,6 @@ export class PosteFormDialogComponent {
 
   devisesDisponibles = creerDevisesDisponibles(this.contexte, this.tauxChangeSvc, this.form.get('devise'));
 
-  private readonly typeRepartitionValue = toSignal(
-    this.form.get('typeRepartition')!.valueChanges.pipe(startWith(this.form.get('typeRepartition')!.value as TypeRepartition)),
-    { initialValue: 'AUTO' as TypeRepartition },
-  );
   private readonly natureValue = toSignal(
     this.form.get('nature')!.valueChanges.pipe(startWith(this.form.get('nature')!.value)),
     { initialValue: 'EFFECTIF' },
@@ -131,121 +139,213 @@ export class PosteFormDialogComponent {
     this.form.get('moment')!.valueChanges.pipe(startWith(this.form.get('moment')!.value)),
     { initialValue: 'DEBUT_PERIODE' },
   );
-  /** Valeur courante du formulaire, réactive — utilisée par le récapitulatif (étape 4). */
-  readonly formValue = toSignal(
+
+  /** Valeur courante du formulaire, réactive — alimente la fiche et les étapes (OnPush). */
+  private readonly formValueBrut = toSignal(
     this.form.valueChanges.pipe(startWith(this.form.value)),
     { initialValue: this.form.value },
   );
+  readonly valeurs = computed<PosteFormValeurs>(() => this.formValueBrut() as PosteFormValeurs);
 
-  // ── Mini-questionnaire du rythme (façade au-dessus du form réactif) ──
-  frequenceChoisie = signal<'PONCTUEL' | 'RECURRENT' | null>('PONCTUEL');
-  sousFrequence    = signal<'MENSUEL' | 'AUTRE' | null>(null);
+  /** Saisie de la répartition : source de vérité de l'étape, projetée dans le `FormArray`. */
+  repartitionSaisie = signal<RepartitionSaisie>({
+    typeRepartition: 'AUTO', selection: [], parts: {}, comptes: {}, comptesSepares: false,
+  });
 
-  // ── Sélection des membres concernés (étape 3) ──
-  membresSelectionnesIds = signal<Set<string>>(new Set());
-  /** Dernier type de répartition multi-membres choisi, restauré si on repasse de 1 à 2+ sélectionnés. */
-  private dernierTypeRepartitionMulti: TypeRepartition = 'AUTO';
+  /** Date de référence des raccourcis de l'étape Validité (jamais une date en dur). */
+  readonly aujourdHui = signal(new Date());
 
   sommeRepartition = 0;
   private _focusDescriptionFait = false;
 
-  frequenceOptions = [
-    { label: this.t.poste.questionnaire.ponctuel,  value: 'PONCTUEL' as const },
-    { label: this.t.poste.questionnaire.recurrent, value: 'RECURRENT' as const },
-  ];
-  sousFrequenceOptions = [
-    { label: this.t.poste.questionnaire.chaqueMois,     value: 'MENSUEL' as const },
-    { label: this.t.poste.questionnaire.autreFrequence, value: 'AUTRE' as const },
-  ];
-  momentOptions = [
-    { label: this.t.poste.momentOptions.DEBUT_PERIODE, value: 'DEBUT_PERIODE' },
-    { label: this.t.poste.momentOptions.FIN_PERIODE,   value: 'FIN_PERIODE' },
-    { label: this.t.poste.momentOptions.INCONNU,       value: 'INCONNU' },
-  ];
-  modeOptions = [
-    { label: this.t.poste.modeOptions.MENSUALISE, value: 'MENSUALISE' },
-    { label: this.t.poste.modeOptions.PERIODIQUE, value: 'PERIODIQUE' },
-  ];
-  estimationOptions = [
-    { label: this.t.poste.montantExact, value: 'EFFECTIF' as const },
-    { label: this.t.poste.montantEstime, value: 'ESTIMATION' as const },
-  ];
-  typeRepartitionOptions = [
-    { label: this.t.poste.typeRepartitionOptions.AUTO,         value: 'AUTO' as TypeRepartition },
-    { label: this.t.poste.typeRepartitionOptions.REVERSE_AUTO, value: 'REVERSE_AUTO' as TypeRepartition },
-    { label: this.t.poste.typeRepartitionOptions.CUSTOM,       value: 'CUSTOM' as TypeRepartition },
-  ];
   periodiciteOptions = [
     { label: this.t.poste.periodiciteLabels[0], value: 0 },
     ...this.t.poste.periodiciteLabels.slice(1).map((label, i) => ({ label, value: i + 1 })),
   ];
-  periodiciteOptionsAutre = this.periodiciteOptions.filter(o => o.value !== 0 && o.value !== 1);
+  /** Périodicités hors raccourcis de l'étape « Combien » (0, 1, 3, 6, 12). */
+  periodiciteOptionsAutre = this.periodiciteOptions.filter(o => ![0, 1, 3, 6, 12].includes(o.value));
 
-  etapesTitres = computed(() => [
-    this.t.poste.stepper.etape1Titre,
-    this.t.poste.stepper.etape2Titre,
-    this.t.poste.stepper.etapeMontantTitre,
-    this.t.poste.stepper.etape3Titre,
-    this.t.poste.stepper.etape4Titre,
-  ]);
+  // ── Navigation ────────────────────────────────────────────────────────
 
-  /** Question 1 (fréquence) résolue : one-shot, ou récurrent avec une sous-fréquence choisie. */
-  questionnaireFrequenceResolue = computed(() =>
-    this.frequenceChoisie() === 'PONCTUEL' ||
-    (this.frequenceChoisie() === 'RECURRENT' && this.sousFrequence() !== null)
+  etapeCourante = signal<EtapeCle>('quoi');
+  etapesVisitees = signal<Set<EtapeCle>>(new Set<EtapeCle>(['quoi']));
+  etapesTouchees = signal<Set<EtapeCle>>(new Set<EtapeCle>());
+
+  readonly periodicite = computed(() => this.valeurs().periodiciteMois ?? 0);
+  readonly etapes = computed(() => etapesVisibles(this.periodicite()));
+  readonly indexCourant = computed(() => Math.max(this.etapes().indexOf(this.etapeCourante()), 0));
+  readonly derniereEtape = computed(() => this.indexCourant() === this.etapes().length - 1);
+  readonly modeEdition = computed(() => this.poste() !== null);
+
+  /** « Aller à la fin » n'a de sens qu'une fois la dernière étape déjà vue. */
+  readonly peutAllerFin = computed(() => this.etapesVisitees().has('analyse') && !this.derniereEtape());
+
+  readonly titreEtape = computed(() => this.titreDe(this.etapeCourante()));
+
+  /** Étapes telles que les attend le parcours guidé : clé + titre déjà traduit. */
+  readonly etapesParcours = computed<EtapeParcours[]>(() =>
+    this.etapes().map(cle => ({ cle, titre: this.titreDe(cle) })),
   );
 
-  /** Vrai si moment=INCONNU (date de paiement effective non connue) : impose mode=MENSUALISE. */
-  momentEstInconnu = computed(() => this.momentValue() === 'INCONNU');
+  readonly sousTitre = computed(() =>
+    `${this.contexte.foyerCourant()?.nom ?? ''} · ${this.contexte.scenarioCourant()?.nom ?? ''}`,
+  );
 
-  /**
-   * Aperçu du rythme affiché en bas de l'étape 2 (« Le rythme »). Renvoie
-   * `null` tant que la date de début n'est pas renseignée : le wrapper
-   * affichera alors une réglette vide sur l'année courante.
-   */
-  apercuPoste = computed<PosteEcheancier | null>(() => {
-    const v = this.formValue();
+  readonly badgeTon = computed<TonBadgeParcours>(() => {
+    switch (this.type()) {
+      case 'REVENU':  return 'revenu';
+      case 'RESERVE': return 'reserve';
+      default:        return 'charge';
+    }
+  });
+
+  private titreDe(cle: EtapeCle): string {
+    const f = this.t.poste.form.etapes;
+    switch (cle) {
+      case 'quoi':        return f.quoi;
+      case 'combien':     return f.combien[this.type()];
+      case 'validite':    return this.periodicite() === 0 ? f.validitePonctuel : f.validite;
+      case 'paiement':    return f.paiement[this.type()];
+      case 'repartition': return f.repartition[this.type()];
+      case 'analyse':     return f.analyse;
+    }
+  }
+
+  // ── Aperçu du rythme ──────────────────────────────────────────────────
+
+  readonly apercuPoste = computed<PosteEcheancier | null>(() => {
+    const v = this.valeurs();
     if (!(v.debut instanceof Date)) return null;
-    const debut = toIsoDateLocal(v.debut);
-    const fin = v.fin instanceof Date ? toIsoDateLocal(v.fin) : null;
-    const mode = (v.mode === 'PERIODIQUE' ? 'PERIODIQUE' : 'MENSUALISE') as PosteEcheancier['mode'];
-    const moment = (v.moment ?? 'DEBUT_PERIODE') as PosteEcheancier['moment'];
     return {
       periodicite: v.periodiciteMois ?? 0,
-      mode,
-      moment,
-      debut,
-      fin,
+      mode: (v.mode === 'PERIODIQUE' ? 'PERIODIQUE' : 'MENSUALISE') as PosteEcheancier['mode'],
+      moment: (v.moment ?? 'DEBUT_PERIODE') as PosteEcheancier['moment'],
+      debut: toIsoDateLocal(v.debut),
+      fin: v.fin instanceof Date ? toIsoDateLocal(v.fin) : null,
     };
   });
 
-  /** Vrai si l'étape 3 doit afficher le mode simplifié « foyer mono-membre ». */
-  estMonoMembre = computed(() => this.membresActifs().length <= 1);
-
-  /** Vrai si le sélecteur de type de répartition (bloc 2) doit être visible. */
-  afficherTypeRepartition = computed(() => !this.estMonoMembre() && this.membresSelectionnesIds().size > 1);
-
-  /** Vrai si l'option d'inclusion dans le prorata théorique doit être affichée
-   *  (postes REVENU d'un foyer à plusieurs membres uniquement). */
-  afficherInclureProrataTheorique = computed(() => this.type() === 'REVENU' && !this.estMonoMembre());
-
-  /** Vrai si les quotes-parts affichées sont éditables (Personnalisé, 2+ membres). */
-  estCustomMultiMembre = computed(() =>
-    !this.estMonoMembre() && this.membresSelectionnesIds().size > 1 && this.typeRepartitionValue() === 'CUSTOM'
-  );
-
-  /** Tolérance flottante : une somme visuellement à 100% ne doit jamais être refusée à tort. */
-  get sommeRepartitionValide(): boolean {
-    return estSommeRepartitionValide(this.sommeRepartition);
-  }
-
-  /** Contrôles de répartition des seuls membres actuellement sélectionnés (ordre stable des membres actifs). */
-  controlesSelectionnes = computed(() => {
-    const selection = this.membresSelectionnesIds();
-    return this.repartitionsArray.controls.filter(c => selection.has(c.get('membreId')?.value));
+  readonly apercuEntete = computed(() => {
+    const debut = this.valeurs().debut;
+    if (!(debut instanceof Date)) return '';
+    return this.t.poste.form.apercuDes.replace('{{mois}}', moisAnnee(debut, this.locale()));
   });
 
-  // ── Récupération des comptes du foyer (nécessaires aux ventilations) ──
+  readonly apercuLegende = computed(() => {
+    const l = this.t.poste.form.legende;
+    const v = this.valeurs();
+    const p = v.periodiciteMois ?? 0;
+    if (p === 0) return l.ponctuel;
+    if (p === 1) return l.mensuel;
+    if (v.moment === 'INCONNU') return l.inconnu;
+    return v.mode === 'PERIODIQUE' ? l.periodique : l.lisse;
+  });
+
+  // ── Fiche ─────────────────────────────────────────────────────────────
+
+  readonly ficheTitre = computed(() => this.valeurs().description?.trim() || this.t.poste.form.sansNom);
+
+  readonly ficheCategorie = computed(() => {
+    const libelle = this.categories().find(c => c.id === this.valeurs().categorieId)?.libelle;
+    return libelle ?? this.t.poste.form.categorieAChoisir;
+  });
+
+  readonly lignesFiche = computed<LigneFiche[]>(() => {
+    const f = this.t.poste.form.fiche;
+    const valeurs: Record<EtapeCle, string | null> = {
+      quoi: null,
+      combien: this.resumeCombien(),
+      validite: this.resumeValiditeTexte(),
+      paiement: this.resumePaiementTexte(),
+      repartition: this.resumeRepartition(),
+      analyse: this.resumeAnalyseTexte(),
+    };
+    const libelles: Record<EtapeCle, string> = {
+      quoi: f.poste, combien: f.montant, validite: f.validite,
+      paiement: f.paiement, repartition: f.repartition, analyse: f.analyse,
+    };
+    const visitees = this.etapesVisitees();
+    return this.etapes()
+      .filter(cle => cle !== 'quoi')
+      .map(cle => {
+        // Une étape jamais atteinte reste muette, même si le formulaire porte déjà
+        // une valeur par défaut (date de début, notes d'analyse, répartition…) :
+        // la fiche ne doit refléter que ce que l'utilisateur a réellement vu.
+        const valeur = visitees.has(cle) ? valeurs[cle] : null;
+        const etat = this.etapeCourante() === cle ? 'courante' : valeur ? 'faite' : 'vide';
+        return { cle, libelle: libelles[cle], valeur, etat } as LigneFiche;
+      });
+  });
+
+  /** Impact mensuel du poste : la part qui pèse réellement sur un mois de budget. */
+  readonly impactMensuel = computed(() => {
+    const v = this.valeurs();
+    const montant = v.montant ?? 0;
+    const p = v.periodiciteMois ?? 0;
+    return p <= 1 ? montant : montant / p;
+  });
+
+  /** L'impact n'a de sens qu'une fois le montant demandé : muet avant l'étape « Combien ». */
+  private readonly impactConnu = computed(() => this.etapesVisitees().has('combien'));
+
+  readonly impactPrincipal = computed(() =>
+    this.impactConnu()
+      ? this.montantPipe.transform(this.impactMensuel(), this.valeurs().devise ?? undefined)
+      : '…',
+  );
+
+  readonly impactSecondaire = computed(() => {
+    if (!this.impactConnu()) return '';
+    return (this.valeurs().periodiciteMois ?? 0) === 0
+      ? rythmeLibelle(this.t, 0)
+      : this.t.poste.form.impactParMois;
+  });
+
+  private resumeCombien(): string | null {
+    const v = this.valeurs();
+    if (!v.montant) return null;
+    const montant = this.montantPipe.transform(v.montant, v.devise ?? undefined);
+    const estim = v.nature === 'ESTIMATION' ? v.estimPourcentage ?? null : null;
+    return resumeMontant(this.t, montant, v.periodiciteMois ?? 0, estim);
+  }
+
+  private resumeValiditeTexte(): string | null {
+    const v = this.valeurs();
+    return resumeValidite(this.t, v.debut ?? null, v.fin ?? null, v.periodiciteMois ?? 0, this.locale());
+  }
+
+  private resumePaiementTexte(): string | null {
+    const v = this.valeurs();
+    return resumePaiement(
+      this.t, this.t.poste.form.verbe[this.type()], v.debut ?? null,
+      v.periodiciteMois ?? 1, v.moment ?? 'DEBUT_PERIODE', v.mode ?? 'MENSUALISE', this.locale(),
+    );
+  }
+
+  private resumeAnalyseTexte(): string {
+    const v = this.valeurs();
+    return resumeAnalyse(this.t, v.importance ?? 3, v.potentielOptimisation ?? 3, v.deriveExterne ?? 3);
+  }
+
+  /** « Dylan 58 % · Camille 42 % · Compte joint » — le compte n'apparaît que s'il est commun. */
+  private resumeRepartition(): string | null {
+    const s = this.repartitionSaisie();
+    if (!s.selection.length) return null;
+    const membres = this.membresActifs().filter(m => s.selection.includes(m.id));
+    const parts = membres.map(m =>
+      membres.length === 1 ? m.nom : `${m.nom} ${Math.round(s.parts[m.id] ?? 0)} %`,
+    );
+    const comptesChoisis = new Set(membres.map(m => s.comptes[m.id] ?? null));
+    if (comptesChoisis.size === 1) {
+      const compteId = [...comptesChoisis][0];
+      const libelle = this.comptes().find(c => c.id === compteId)?.libelle;
+      if (libelle) parts.push(libelle);
+    }
+    return parts.join(' · ');
+  }
+
+  // ── Effets ────────────────────────────────────────────────────────────
+
   private readonly _chargerComptes = effect(() => {
     const foyerId = this.contexte.foyerId();
     if (this.visible() && foyerId) {
@@ -253,43 +353,22 @@ export class PosteFormDialogComponent {
     }
   });
 
-  /**
-   * Garde l'étape active toujours visible (centrée) dans la liste des pastilles :
-   * utile dès que le stepper compte plus d'étapes que ce que la largeur du dialog
-   * peut afficher (ex. sur mobile), pour que l'utilisateur suive sa progression.
-   */
-  private readonly _centrerEtapeActive = effect(() => {
-    this.etapeActive();
-    if (!this.visible()) return;
-    untracked(() => {
-      queueMicrotask(() => {
-        const conteneur = this.stepListEl?.nativeElement;
-        const actif = conteneur?.querySelector<HTMLElement>(`[data-p-active="true"]`);
-        actif?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-      });
-    });
-  });
-
-  /** Ouverture/fermeture : (ré)initialise le formulaire sur le poste courant (ou vide en création). */
+  /** Ouverture : (ré)initialise le formulaire sur le poste courant (ou vide en création). */
   private readonly _resetSurOuverture = effect(() => {
     const p = this.poste();
     const v = this.visible();
-    // untracked : évite que les signaux lus par initialiserCreation/initialiserEdition
-    // (membresActifs, membresSelectionnesIds, etc.) ne deviennent des dépendances de cet
-    // effet — sinon une simple interaction (ex. sélection d'un membre étape 3) le
-    // redéclencherait et réinitialiserait tout le formulaire.
+    // untracked : une interaction dans le formulaire ne doit jamais redéclencher la
+    // réinitialisation (les initialisations lisent membresActifs, comptes, etc.).
     untracked(() => {
       if (v) {
-        if (p) {
-          this.initialiserEdition(p);
-        } else {
-          this.initialiserCreation();
-        }
+        this.aujourdHui.set(new Date());
+        if (p) this.initialiserEdition(p);
+        else this.initialiserCreation();
       }
     });
   });
 
-  /** Bascule Nature EFFECTIF→ESTIMATION : pré-remplit 10% si le champ est vide. ESTIMATION→EFFECTIF : vide le champ. */
+  /** Bascule Nature EFFECTIF→ESTIMATION : pré-remplit 10 % si le champ est vide. */
   private readonly _initEstimPourcentageOnNatureChange = effect(() => {
     const nature = this.natureValue();
     const ctrl = this.form.get('estimPourcentage')!;
@@ -305,10 +384,9 @@ export class PosteFormDialogComponent {
     ctrl.updateValueAndValidity({ emitEvent: false });
   });
 
-  /** Moment=INCONNU (date de paiement effective non connue) : seule stratégie possible =
-   * mensualiser. Force et verrouille le select mode tant que ce choix est actif. */
+  /** Moment=INCONNU : seule stratégie possible = mensualiser. Force et verrouille le mode. */
   private readonly _forcerModeMensualiseSiMomentInconnu = effect(() => {
-    const inconnu = this.momentEstInconnu();
+    const inconnu = this.momentValue() === 'INCONNU';
     const ctrl = this.form.get('mode')!;
     if (inconnu) {
       ctrl.setValue('MENSUALISE', { emitEvent: false });
@@ -318,6 +396,38 @@ export class PosteFormDialogComponent {
     }
   });
 
+  /**
+   * La périodicité peut faire disparaître l'étape courante (« Paiement » quand on
+   * repasse au mensuel) : on se replace alors sur une étape qui existe encore.
+   */
+  private readonly _recalerEtapeCourante = effect(() => {
+    const etapes = this.etapes();
+    const courante = this.etapeCourante();
+    if (!etapes.includes(courante)) {
+      untracked(() => this.etapeCourante.set('validite'));
+    }
+  });
+
+  /**
+   * Les comptes arrivent en asynchrone : dès qu'ils sont là, on complète les
+   * ventilations encore vides par le compte par défaut de chaque membre (sans
+   * jamais écraser un choix déjà fait).
+   */
+  private readonly _completerComptesParDefaut = effect(() => {
+    const comptes = this.comptes();
+    if (!comptes.length || !this.visible()) return;
+    untracked(() => {
+      const saisie = this.repartitionSaisie();
+      const manquants = saisie.selection.filter(id => (saisie.parts[id] ?? 0) > 0 && !saisie.comptes[id]);
+      if (!manquants.length) return;
+      const complets = { ...saisie.comptes };
+      for (const id of manquants) complets[id] = this.defaultCompteIdForMembre(id);
+      this.appliquerRepartition({ ...saisie, comptes: complets }, false);
+    });
+  });
+
+  // ── Initialisation ────────────────────────────────────────────────────
+
   private initialiserCreation(): void {
     this.form.reset({
       mode: 'MENSUALISE', moment: 'DEBUT_PERIODE', nature: 'EFFECTIF',
@@ -325,16 +435,29 @@ export class PosteFormDialogComponent {
       typeRepartition: 'AUTO', estimPourcentage: null, importance: 3, potentielOptimisation: 3, deriveExterne: 3,
       inclureProrataTheorique: true,
     });
+    // Défaut de création : le poste démarre au 1er du mois prochain.
+    this.form.get('debut')!.setValue(premierDuMois(this.aujourdHui(), 1));
     this.initialiserRepartitions(undefined);
-    this.frequenceChoisie.set('PONCTUEL');
-    this.sousFrequence.set(null);
-    this.dernierTypeRepartitionMulti = 'AUTO';
-    // Par défaut en création, tous les membres actifs sont sélectionnés.
-    this.membresSelectionnesIds.set(new Set(this.membresActifs().map(m => m.id)));
-    this.appliquerRepartitionSelection();
-    this.etapeActive.set(0);
-    this.etapesVisitees.set(new Set([0]));
-    this.etapesTouched.set(new Set());
+
+    const membres = this.membresActifs();
+    const selection = membres.map(m => m.id);
+    // AUTO par défaut, y compris pour un foyer mono-membre : la répartition du
+    // scénario lui attribue déjà 100 %, et le payload reste identique à l'existant.
+    const typeRepartition: TypeRepartition = 'AUTO';
+    const comptes = this.comptesParDefaut(selection);
+    const comptesDistincts = new Set(selection.map(id => comptes[id] ?? null));
+    this.appliquerRepartition({
+      typeRepartition,
+      selection,
+      parts: calculerParts(membres, selection, typeRepartition, this.partsAuto()),
+      comptes,
+      comptesSepares: comptesDistincts.size > 1,
+    }, false);
+
+    this.form.markAsPristine();
+    this.etapeCourante.set('quoi');
+    this.etapesVisitees.set(new Set<EtapeCle>(['quoi']));
+    this.etapesTouchees.set(new Set<EtapeCle>());
     this._focusDescriptionFait = false;
   }
 
@@ -352,32 +475,51 @@ export class PosteFormDialogComponent {
       fin: p.fin ? parseIsoDateLocal(p.fin) : null,
       inclureProrataTheorique: p.inclureProrataTheorique ?? true,
     });
+
+    const custom = p.typeRepartition === 'CUSTOM';
+    this.initialiserRepartitions(custom ? p.repartitions : undefined, p.ventilations);
+
+    const membres = this.membresActifs();
+    const typeRepartition = (p.typeRepartition ?? 'AUTO') as TypeRepartition;
+    const parts: Record<string, number> = {};
+    const comptes: Record<string, string | null> = {};
+    for (const m of membres) {
+      const rep = custom ? p.repartitions?.find(r => r.membreId === m.id) : undefined;
+      parts[m.id] = custom ? Math.round((rep?.quotePart ?? 0) * 10000) / 100 : 0;
+      comptes[m.id] = p.ventilations?.find(v => v.membreId === m.id)?.compteId ?? null;
+    }
+    const selection = custom
+      ? membres.filter(m => parts[m.id] > 0).map(m => m.id)
+      : membres.map(m => m.id);
+    if (!custom) Object.assign(parts, calculerParts(membres, selection, typeRepartition, this.partsAuto()));
+
+    const comptesRetenus = { ...this.comptesParDefaut(selection) };
+    for (const id of selection) {
+      if (comptes[id]) comptesRetenus[id] = comptes[id];
+    }
+    const comptesDistincts = new Set(selection.map(id => comptesRetenus[id] ?? null));
+
+    this.appliquerRepartition({
+      typeRepartition,
+      selection,
+      parts,
+      comptes: comptesRetenus,
+      comptesSepares: comptesDistincts.size > 1,
+    }, false);
+
     this.form.markAsPristine();
-
-    if (p.typeRepartition === 'CUSTOM') {
-      this.initialiserRepartitions(p.repartitions, p.ventilations);
-    } else {
-      this.initialiserRepartitions(undefined, p.ventilations);
-    }
-
-    const periodicite = p.periodiciteMois ?? 0;
-    this.frequenceChoisie.set(periodicite === 0 ? 'PONCTUEL' : 'RECURRENT');
-    this.sousFrequence.set(periodicite === 0 ? null : periodicite === 1 ? 'MENSUEL' : 'AUTRE');
-
-    if (p.typeRepartition === 'CUSTOM') {
-      const nonZero = this.repartitionsArray.controls.filter(c => (c.get('quotePart')?.value ?? 0) > 0);
-      this.membresSelectionnesIds.set(new Set(nonZero.map(c => c.get('membreId')?.value)));
-      this.dernierTypeRepartitionMulti = 'AUTO';
-    } else {
-      this.membresSelectionnesIds.set(new Set(this.membresActifs().map(m => m.id)));
-      this.dernierTypeRepartitionMulti = (p.typeRepartition ?? 'AUTO') as TypeRepartition;
-      this.appliquerRepartitionSelection();
-    }
-
-    this.etapeActive.set(0);
-    this.etapesVisitees.set(new Set([0, 1, 2, 3, 4]));
-    this.etapesTouched.set(new Set());
+    this.etapeCourante.set('quoi');
+    this.etapesVisitees.set(new Set<EtapeCle>(['quoi', 'combien', 'validite', 'paiement', 'repartition', 'analyse']));
+    this.etapesTouchees.set(new Set<EtapeCle>());
     this._focusDescriptionFait = true; // pas d'autofocus surprise en édition
+  }
+
+  private comptesParDefaut(selection: readonly string[]): Record<string, string | null> {
+    const out: Record<string, string | null> = {};
+    for (const m of this.membresActifs()) {
+      out[m.id] = selection.includes(m.id) ? this.defaultCompteIdForMembre(m.id) : null;
+    }
+    return out;
   }
 
   private defaultCompteId(): string | null {
@@ -390,11 +532,6 @@ export class PosteFormDialogComponent {
     return this.comptes().filter(c => c.membreIds?.includes(membreId));
   }
 
-  /** Membres rattachés à un compte (pour l'affichage du select). */
-  membresForCompte(compte: CompteDto): MembreDto[] {
-    return this.membresActifs().filter(m => compte.membreIds?.includes(m.id));
-  }
-
   private defaultCompteIdForMembre(membreId: string | undefined): string | null {
     if (!membreId) return this.defaultCompteId();
     const rattaches = this.comptesForMembre(membreId);
@@ -403,10 +540,9 @@ export class PosteFormDialogComponent {
 
   /**
    * Le compte n'est requis que pour une ligne de répartition effectivement porteuse
-   * d'une quote-part (membre sélectionné, part > 0). Sans ce garde-fou, une ligne de
-   * membre désélectionné (compteId vidé mais toujours `Validators.required`) rend le
-   * `FormGroup` global invalide alors qu'elle ne fait plus partie de la répartition
-   * envoyée à l'API : le bouton « Enregistrer » resterait grisé à tort.
+   * d'une quote-part : sans ce garde-fou, une ligne de membre désélectionné (compteId
+   * vidé mais toujours `Validators.required`) rendrait le `FormGroup` global invalide
+   * alors qu'elle n'est pas envoyée à l'API.
    */
   private definirValiditeCompte(ctrl: AbstractControl, requis: boolean): void {
     const compteCtrl = ctrl.get('compteId')!;
@@ -432,11 +568,7 @@ export class PosteFormDialogComponent {
 
       if (i < this.repartitionsArray.length) {
         const ctrl = this.repartitionsArray.at(i);
-        ctrl.patchValue({ membreId: m.id, quotePart, compteId });
-        // Requis seulement si le membre porte effectivement une quote-part : sinon (ex.
-        // typeRepartition CUSTOM éditée avec un foyer élargi depuis, membre non inclus
-        // dans la répartition d'origine) la ligne resterait invalide alors qu'elle n'est
-        // pas envoyée à l'API, bloquant à tort le bouton « Enregistrer » (cf. formulaireValide).
+        ctrl.patchValue({ membreId: m.id, quotePart, compteId }, { emitEvent: false });
         this.definirValiditeCompte(ctrl, quotePart > 0);
       } else {
         this.repartitionsArray.push(this.fb.group({
@@ -451,231 +583,156 @@ export class PosteFormDialogComponent {
   }
 
   calculerSomme(): void {
+    const selection = this.repartitionSaisie().selection;
     const total = this.repartitionsArray.controls
+      .filter(c => selection.includes(c.get('membreId')?.value))
       .reduce((s, c) => s + (c.get('quotePart')?.value ?? 0), 0);
     this.sommeRepartition = arrondirSommeRepartition(total);
   }
 
-  choisirFrequence(f: 'PONCTUEL' | 'RECURRENT'): void {
-    this.frequenceChoisie.set(f);
-    if (f === 'PONCTUEL') {
-      this.sousFrequence.set(null);
-      this.form.get('periodiciteMois')?.setValue(0);
-    }
-  }
-
-  choisirSousFrequence(sf: 'MENSUEL' | 'AUTRE'): void {
-    this.sousFrequence.set(sf);
-    if (sf === 'MENSUEL') {
-      this.form.get('periodiciteMois')?.setValue(1);
-    } else {
-      const actuel = this.form.get('periodiciteMois')?.value ?? 0;
-      if (actuel === 0 || actuel === 1) {
-        this.form.get('periodiciteMois')?.setValue(3);
-      }
-    }
-  }
-
-  /** Bascule la sélection d'un membre pour l'étape 3 (au moins un membre doit rester sélectionné). */
-  toggleMembreSelection(membreId: string): void {
-    const current = new Set(this.membresSelectionnesIds());
-    if (current.has(membreId)) {
-      if (current.size === 1) return;
-      current.delete(membreId);
-    } else {
-      current.add(membreId);
-    }
-    this.membresSelectionnesIds.set(current);
-
-    if (current.size === 1) {
-      this.form.get('typeRepartition')?.setValue('CUSTOM', { emitEvent: false });
-    } else {
-      this.form.get('typeRepartition')?.setValue(this.dernierTypeRepartitionMulti, { emitEvent: false });
-    }
-    this.appliquerRepartitionSelection();
-  }
-
-  choisirTypeRepartition(tr: TypeRepartition): void {
-    this.dernierTypeRepartitionMulti = tr;
-    this.form.get('typeRepartition')?.setValue(tr);
-    this.appliquerRepartitionSelection();
+  /** Tolérance flottante : une somme visuellement à 100 % ne doit jamais être refusée à tort. */
+  get sommeRepartitionValide(): boolean {
+    return estSommeRepartitionValide(this.sommeRepartition);
   }
 
   /**
-   * Recalcule les quotes-parts (et vide le compte des membres non sélectionnés) selon la
-   * sélection courante et le type de répartition. AUTO/REVERSE_AUTO affichent une valeur
-   * dérivée du scénario à titre purement informatif (jamais envoyée à l'API pour ces modes,
-   * seul CUSTOM stocke une répartition sur le poste).
+   * Projette la saisie de répartition dans le `FormArray` : c'est lui qui alimente
+   * `enregistrer()`, dont le contrat vers l'API reste inchangé.
    */
-  private appliquerRepartitionSelection(): void {
-    const selection = this.membresSelectionnesIds();
-    const tr = this.form.get('typeRepartition')?.value as TypeRepartition;
+  appliquerRepartition(saisie: RepartitionSaisie, marquerDirty = true): void {
+    this.repartitionSaisie.set(saisie);
 
     this.repartitionsArray.controls.forEach(c => {
-      const selectionne = selection.has(c.get('membreId')?.value);
-      if (!selectionne) {
-        c.patchValue({ quotePart: 0, compteId: null }, { emitEvent: false });
-      }
-      this.definirValiditeCompte(c, selectionne);
+      const id = c.get('membreId')?.value as string;
+      const selectionne = saisie.selection.includes(id);
+      const quotePart = selectionne ? saisie.parts[id] ?? 0 : 0;
+      c.patchValue(
+        { quotePart, compteId: quotePart > 0 ? saisie.comptes[id] ?? null : null },
+        { emitEvent: false },
+      );
+      this.definirValiditeCompte(c, quotePart > 0);
     });
 
-    const controlesSelectionnes = this.repartitionsArray.controls.filter(c => selection.has(c.get('membreId')?.value));
-    const n = controlesSelectionnes.length;
-
-    if (n === 1) {
-      controlesSelectionnes[0].patchValue({ quotePart: 100 }, { emitEvent: false });
-    } else if (tr === 'CUSTOM') {
-      if (n > 0) {
-        const part = Math.round((100 / n) * 100) / 100;
-        const reste = Math.round((100 - part * (n - 1)) * 100) / 100;
-        controlesSelectionnes.forEach((c, i) => {
-          c.patchValue({ quotePart: i === n - 1 ? reste : part }, { emitEvent: false });
-        });
-      }
-    } else {
-      const reps = this.contexte.scenarioCourant()?.repartitions ?? [];
-      controlesSelectionnes.forEach(c => {
-        const membreId = c.get('membreId')?.value;
-        const base = reps.find(r => r.membreId === membreId)?.quotePart ?? (n ? 1 / n : 0);
-        const effective = (tr === 'REVERSE_AUTO' && n > 1) ? (1 - base) / (n - 1) : base;
-        c.patchValue({ quotePart: Math.round(effective * 10000) / 100 }, { emitEvent: false });
-      });
-    }
-
+    this.form.get('typeRepartition')!.setValue(saisie.typeRepartition, { emitEvent: false });
     this.calculerSomme();
+    if (marquerDirty) this.form.markAsDirty();
   }
 
-  /** Appelé à chaque saisie de quotePart en mode Personnalisé (vide le compte si le membre repasse à 0%). */
-  onQuotePartChange(index: number): void {
-    const ctrl = this.repartitionsArray.at(index);
-    const quotePart = ctrl.get('quotePart')?.value ?? 0;
-    if (quotePart === 0) {
-      ctrl.get('compteId')?.setValue(null, { emitEvent: false });
-    }
-    this.definirValiditeCompte(ctrl, quotePart > 0);
-    this.calculerSomme();
+  /** Vrai si la répartition courante est éditée membre par membre (somme à contrôler). */
+  private readonly estCustomMultiMembre = computed(() =>
+    this.repartitionSaisie().typeRepartition === 'CUSTOM' && this.repartitionSaisie().selection.length > 1,
+  );
+
+  readonly erreurRepartition = computed<string | null>(() => {
+    if (!this.etapesTouchees().has('repartition')) return null;
+    if (this.estCustomMultiMembre() && !this.sommeRepartitionValide) return this.t.commun.repartitionInvalide;
+    if (!this.comptesComplets()) return this.t.commun.champObligatoire;
+    return null;
+  });
+
+  private comptesComplets(): boolean {
+    const s = this.repartitionSaisie();
+    return s.selection.every(id => (s.parts[id] ?? 0) <= 0 || !!s.comptes[id]);
   }
 
-  normaliserCouleur(couleur?: string): string {
-    return normaliserCouleur(couleur);
-  }
+  // ── Navigation ────────────────────────────────────────────────────────
 
-  initiales(nom: string): string {
-    return nom.trim().split(/\s+/).map(mot => mot[0]).slice(0, 2).join('').toUpperCase();
-  }
-
-  categorieLibelle(categorieId: string | null | undefined): string {
-    return this.categories().find(c => c.id === categorieId)?.libelle ?? '';
-  }
-
-  nomMembre(membreId: string | null | undefined): string {
-    return this.membresActifs().find(m => m.id === membreId)?.nom ?? '';
-  }
-
-  membre(membreId: string | null | undefined): MembreDto | undefined {
-    return this.membresActifs().find(m => m.id === membreId);
-  }
-
-  compteLibelle(compteId: string | null | undefined): string {
-    return this.comptes().find(c => c.id === compteId)?.libelle ?? '';
-  }
-
-  // ── Navigation du stepper ──────────────────────────────────────────────
-
-  /** Vrai si l'étape donnée est valide et peut être quittée vers la suivante. */
-  etapeValide(etape: Etape): boolean {
+  /** Vrai si l'étape donnée est valide et peut être quittée. */
+  etapeValide(etape: EtapeCle): boolean {
     switch (etape) {
-      case 0:
+      case 'quoi':
         return this.form.get('description')!.valid && this.form.get('categorieId')!.valid;
-      case 1: {
-        if (!this.questionnaireFrequenceResolue()) return false;
-        if (this.form.get('debut')!.invalid) return false;
-        return !this.form.hasError('finAvantDebut');
-      }
-      case 2:
+      case 'combien':
         return this.form.get('montant')!.valid && this.form.get('estimPourcentage')!.valid;
-      case 3:
-        return this.membresSelectionnesIds().size > 0 &&
-               (!this.estCustomMultiMembre() || this.sommeRepartitionValide) &&
-               this.controlesSelectionnes().every(c => c.get('compteId')!.valid);
+      case 'validite':
+        return this.form.get('debut')!.valid && !this.form.hasError('finAvantDebut');
+      case 'repartition':
+        return this.repartitionSaisie().selection.length > 0
+          && (!this.estCustomMultiMembre() || this.sommeRepartitionValide)
+          && this.comptesComplets();
       default:
         return true;
     }
   }
 
-  /** Vrai si l'étape donnée, une fois quittée, contient une erreur de validation. */
-  etapeEnErreur(etape: Etape): boolean {
-    return this.etapesTouched().has(etape) && !this.etapeValide(etape);
-  }
-
-  /** Marque l'étape courante comme quittée (les erreurs deviennent visibles) puis change d'étape. */
-  private quitterEtape(etape: Etape): void {
-    this.etapesTouched.update(s => new Set(s).add(etape));
-    if (etape === 0) {
+  /** Marque l'étape comme quittée : ses erreurs deviennent visibles. */
+  private quitterEtape(etape: EtapeCle): void {
+    this.etapesTouchees.update(s => new Set(s).add(etape));
+    if (etape === 'quoi') {
       this.form.get('description')!.markAsTouched();
+      this.form.get('categorieId')!.markAsTouched();
     }
-    if (etape === 2) {
+    if (etape === 'combien') {
       this.form.get('montant')!.markAsTouched();
       this.form.get('estimPourcentage')!.markAsTouched();
     }
+    if (etape === 'validite') {
+      this.form.get('debut')!.markAsTouched();
+    }
   }
 
   /**
-   * Change d'étape. En avançant, l'étape courante doit être valide : sinon la navigation
-   * est bloquée et ses erreurs deviennent visibles. Revenir en arrière est toujours permis.
+   * Va à une étape. En avançant, toutes les étapes traversées doivent être valides :
+   * sinon la navigation s'arrête sur la première fautive. Revenir est toujours permis.
    */
-  allerA(etape: Etape): void {
-    const courante = this.etapeActive();
-    if (etape > courante) {
-      this.quitterEtape(courante);
-      if (this.etapeEnErreur(courante)) return;
+  allerA(cible: EtapeCle): void {
+    const etapes = this.etapes();
+    const depuis = this.indexCourant();
+    const vers = etapes.indexOf(cible);
+    if (vers < 0) return;
+
+    if (vers > depuis) {
+      for (let i = depuis; i < vers; i++) {
+        this.quitterEtape(etapes[i]);
+        if (!this.etapeValide(etapes[i])) {
+          this.positionner(etapes[i]);
+          return;
+        }
+      }
     }
-    this.etapeActive.set(etape);
-    this.etapesVisitees.update(s => new Set(s).add(etape));
+    this.positionner(cible);
+  }
+
+  private positionner(cle: EtapeCle): void {
+    this.etapeCourante.set(cle);
+    this.etapesVisitees.update(s => new Set(s).add(cle));
+    this.parcours()?.defilerEnHaut();
   }
 
   suivant(): void {
-    const prochaine = Math.min(this.etapeActive() + 1, 4) as Etape;
-    this.allerA(prochaine);
+    const etapes = this.etapes();
+    this.allerA(etapes[Math.min(this.indexCourant() + 1, etapes.length - 1)]);
   }
 
   precedent(): void {
-    const precedente = Math.max(this.etapeActive() - 1, 0) as Etape;
-    this.allerA(precedente);
+    const etapes = this.etapes();
+    this.positionner(etapes[Math.max(this.indexCourant() - 1, 0)]);
   }
 
-  /** Clique sur une pastille déjà visitée : navigation libre, jamais bloquée par la validation. */
-  cliquerPastille(etape: Etape): void {
-    if (!this.etapesVisitees().has(etape) && etape > this.etapeActive()) return;
-    this.allerA(etape);
+  allerALaFin(): void {
+    this.allerA('analyse');
   }
+
+  /** Clic sur une ligne de la fiche : jamais bloqué vers une étape déjà visitée. */
+  naviguerDepuisFiche(cle: EtapeCle): void {
+    if (this.etapesVisitees().has(cle)) this.positionner(cle);
+    else this.allerA(cle);
+  }
+
+  // ── Cycle de vie du dialog ────────────────────────────────────────────
 
   /**
-   * Déclenché une fois le dialog effectivement affiché (animation terminée). C'est le
-   * seul moment fiable pour focus le champ description : un focus tenté trop tôt (ex. dans
-   * l'effet de reset) est écrasé par le focus-trap interne du p-dialog.
+   * Déclenché une fois le dialog effectivement affiché : seul moment fiable pour
+   * placer le focus (un focus trop tôt est écrasé par le focus-trap du p-dialog).
    */
   onDialogShow(): void {
     if (this._focusDescriptionFait) return;
     this._focusDescriptionFait = true;
-    this.descriptionInput?.focus();
+    this.etapeQuoi()?.focus();
   }
 
-  /** Intercepte la fermeture déclenchée par le dialog (croix, clic hors-modal) pour appliquer la confirmation si dirty. */
-  onDialogVisibleChange(v: boolean): void {
-    if (v) {
-      this.visibleChange.emit(true);
-      return;
-    }
-    this.fermer();
-  }
 
-  /**
-   * Ferme le dialog. En création, la brouillon est immédiatement réinitialisé (au lieu
-   * d'attendre la prochaine ouverture) : sinon, si l'effet de reset de la prochaine
-   * ouverture ne se redéclenche pas à temps (ex. ouvertures rapprochées), d'anciennes
-   * valeurs pouvaient rester visibles à la réouverture du formulaire de création.
-   */
+  /** Ferme le dialog (avec confirmation si le formulaire a été modifié). */
   fermer(): void {
     if (this.form.dirty) {
       this.confirm.confirm({
@@ -691,36 +748,34 @@ export class PosteFormDialogComponent {
     }
   }
 
+  // ── Enregistrement ────────────────────────────────────────────────────
+
   /**
-   * Vrai si le formulaire peut être enregistré. Utilisé par le bouton d'enregistrement
-   * (étape récap) : ne doit PAS se baser sur `form.invalid` seul, car les lignes de
-   * répartition des membres non sélectionnés portent un `compteId` requis remis à `null`
-   * (cf. `appliquerSelectionMembres`), ce qui rendrait le formulaire globalement invalide
-   * alors que ces lignes ne concernent pas la répartition effective.
+   * Vrai si le formulaire peut être enregistré. Ne se base pas sur `form.invalid`
+   * seul : les lignes de répartition des membres non sélectionnés portent un
+   * `compteId` remis à `null`, sans incidence sur la requête envoyée.
    */
   formulaireValide(): boolean {
     if (this.form.invalid) return false;
     if (this.form.hasError('finAvantDebut')) return false;
-    if (this.membresSelectionnesIds().size === 0) return false;
+    if (this.repartitionSaisie().selection.length === 0) return false;
     if (this.estCustomMultiMembre() && !this.sommeRepartitionValide) return false;
     return true;
   }
 
-  private premiereEtapeFautive(): Etape {
-    for (const etape of [0, 1, 2, 3] as Etape[]) {
-      this.etapesTouched.update(s => new Set(s).add(etape));
-      if (this.etapeEnErreur(etape)) return etape;
+  private premiereEtapeFautive(): EtapeCle {
+    for (const etape of this.etapes()) {
+      this.etapesTouchees.update(s => new Set(s).add(etape));
+      if (!this.etapeValide(etape)) return etape;
     }
-    return 0;
+    return 'quoi';
   }
 
   enregistrer(etNouveau = false): void {
     if (this.enregistrementEnCours()) return;
     this.form.markAllAsTouched();
     if (!this.formulaireValide()) {
-      const fautive = this.premiereEtapeFautive();
-      this.etapeActive.set(fautive);
-      this.etapesVisitees.update(s => new Set(s).add(fautive));
+      this.positionner(this.premiereEtapeFautive());
       return;
     }
 
@@ -753,8 +808,11 @@ export class PosteFormDialogComponent {
       montant:         v.montant!,
       devise:          v.devise ?? this.contexte.deviseBase(),
       periodiciteMois: periodicite,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       mode:            (estOneShot || momentInconnu ? 'MENSUALISE' : v.mode) as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       moment:          (estOneShot ? 'DEBUT_PERIODE' : v.moment) as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       nature:          (v.nature ?? 'EFFECTIF') as any,
       estimPourcentage: v.nature === 'ESTIMATION' ? v.estimPourcentage ?? undefined : undefined,
       importance:      v.importance ?? 3,
@@ -794,16 +852,15 @@ export class PosteFormDialogComponent {
   }
 
   /**
-   * « Enregistrer et nouveau » : vide les champs qui identifient CE poste (description,
-   * montant, date de fin) mais conserve les champs structurels (catégorie, devise,
-   * fréquence, répartition). Ramène à l'étape 1.
+   * « Enregistrer et nouveau » : vide les champs qui identifient CE poste
+   * (description, montant, date de fin) mais conserve les champs structurels.
    */
   private reinitialiserPourNouveau(): void {
     this.form.patchValue({ description: '', montant: 0, fin: null });
     this.form.markAsPristine();
-    this.etapeActive.set(0);
-    this.etapesTouched.set(new Set());
+    this.etapesTouchees.set(new Set<EtapeCle>());
+    this.positionner('quoi');
     this._focusDescriptionFait = false;
-    setTimeout(() => this.descriptionInput?.focus());
+    setTimeout(() => this.etapeQuoi()?.focus());
   }
 }

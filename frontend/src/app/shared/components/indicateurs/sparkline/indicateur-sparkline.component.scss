@@ -2,37 +2,38 @@
 :host {
   display: block;
   min-width: 0;
+  container-type: inline-size;
 }
 
 .sparkline {
   display: flex;
   flex-direction: column;
-  gap: 0.625rem;
+  gap: var(--app-space-2-5);
   min-width: 0;
 
   &__entete {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.625rem;
+    gap: var(--app-space-2-5);
     min-width: 0;
   }
 
   &__valeur {
     margin: 0;
-    font-size: clamp(20px, 11cqi, 30px);
-    font-weight: 700;
-    line-height: 1.1;
-    letter-spacing: -0.02em;
+    font-size: var(--app-donnee-xl);
+    font-weight: var(--app-weight-bold);
+    line-height: var(--app-leading-tight);
+    letter-spacing: var(--app-tracking-tight);
     font-variant-numeric: tabular-nums;
     color: var(--app-ink);
     overflow-wrap: anywhere;
   }
 
   &__unite {
-    margin-left: 4px;
-    font-size: 0.45em;
-    font-weight: 600;
+    margin-left: var(--app-space-1);
+    font-size: var(--app-text-3xs);
+    font-weight: var(--app-weight-semibold);
     color: var(--app-ink-muted);
   }
 
@@ -42,9 +43,18 @@
   }
 
   &__ligne {
+    // Geometrie SVG intrinseque : largeur independante des tokens de layout.
     stroke-width: 2;
     stroke-linejoin: round;
     stroke-linecap: round;
     vector-effect: non-scaling-stroke;
+  }
+}
+
+// Conteneur étroit : le chiffre héros descend d'un cran pour ne pas déborder
+// (voir la règle de la couche `--app-donnee-*`, _typographie.css).
+@container (max-width: 240px) {
+  .sparkline__valeur {
+    font-size: var(--app-donnee-lg);
   }
 }

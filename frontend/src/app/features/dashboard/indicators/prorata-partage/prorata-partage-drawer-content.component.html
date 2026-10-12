@@ -3,7 +3,7 @@
     <p class="m-0 text-xs text-surface-500 leading-relaxed">{{ t.dashboard.prorataPartageExplication }}</p>
 
     <div class="flex flex-col gap-2">
-      <div class="hidden sm:grid grid-cols-[1fr_auto_auto_auto] gap-3 px-2 text-[10px] font-semibold uppercase tracking-wide text-surface-400">
+      <div class="hidden sm:grid grid-cols-[1fr_auto_auto_auto] gap-3 px-2 text-[length:var(--app-text-2xs)] font-semibold uppercase tracking-wide text-surface-400">
         <span>{{ t.dashboard.prorataPartageColonneMembre }}</span>
         <span class="text-right">{{ t.dashboard.prorataPartageColonneApplique }}</span>
         <span class="text-right">{{ t.dashboard.prorataPartageColonneTheorique }}</span>
@@ -20,8 +20,8 @@
             {{ ligne.theorique !== null ? formatTaux(ligne.theorique) + '%' : '—' }}
           </span>
           <span class="text-right tabular-nums font-medium"
-                [class.text-red-500]="ligne.ecart !== null && ligne.ecart > 0"
-                [class.text-blue-500]="ligne.ecart !== null && ligne.ecart < 0">
+                [class.montant-charge]="ligne.ecart !== null && ligne.ecart > 0"
+                [class.montant-reserve]="ligne.ecart !== null && ligne.ecart < 0">
             {{ ligne.ecart !== null ? (ligne.ecart > 0 ? '+' : '') + formatTaux(ligne.ecart) + ' pts' : '—' }}
           </span>
         </div>

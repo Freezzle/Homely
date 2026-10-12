@@ -1,51 +1,51 @@
 :host { display: block; }
 
 .cs-page {
-  max-width: 1440px;
-  margin: 0 auto;
-  padding: 1.25rem;
+  width: 100%;
+  margin: var(--app-space-0) auto;
+  padding: var(--app-space-5);
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: var(--app-space-5);
 }
 
 .cs-header {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--app-space-1);
 }
 
 .cs-card-header {
-  padding: 1rem 1rem 0;
+  padding: var(--app-space-4) var(--app-space-4) var(--app-space-0);
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: var(--app-space-0-5);
 
   h2 {
-    font-size: 1rem;
-    font-weight: 600;
-    margin: 0;
+    font-size: var(--app-text-lg);
+    font-weight: var(--app-weight-semibold);
+    margin: var(--app-space-0);
   }
 
   p {
-    font-size: 0.8125rem;
+    font-size: var(--app-text-md);
     color: var(--app-ink-muted);
-    margin: 0;
+    margin: var(--app-space-0);
   }
 }
 
 .cs-cascade-toolbar {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  gap: var(--app-space-4);
+  margin-bottom: var(--app-space-4);
   flex-wrap: wrap;
 }
 
 .cs-mois-nav {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: var(--app-space-1);
   overflow-x: auto;
 
   &.cs-hidden { display: none; }

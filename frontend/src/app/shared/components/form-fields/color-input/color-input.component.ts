@@ -2,6 +2,10 @@ import { Component, Input, forwardRef, signal } from '@angular/core';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { FieldWrapperComponent } from '../field-wrapper/field-wrapper.component';
 
+/** Valeur initiale du sélecteur natif. Littéral hexadécimal obligatoire : `<input
+ *  type="color">` n'accepte que la forme `#rrggbb`, pas une variable CSS. */
+const COULEUR_DEFAUT = '#000000';
+
 /**
  * Sélecteur de couleur réutilisable (design system) — remplace
  * `<input type="color">` natif. Compatible `formControlName` et `[(ngModel)]`.
@@ -39,14 +43,14 @@ export class ColorInputComponent implements ControlValueAccessor {
   @Input() hint = '';
   @Input() tooltip = '';
 
-  protected readonly value = signal('#000000');
+  protected readonly value = signal(COULEUR_DEFAUT);
   protected readonly disabled = signal(false);
 
   private onChange: (value: string) => void = () => {};
   protected onTouched: () => void = () => {};
 
   writeValue(value: string): void {
-    this.value.set(value ?? '#000000');
+    this.value.set(value ?? COULEUR_DEFAUT);
   }
 
   registerOnChange(fn: (value: string) => void): void {

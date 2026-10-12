@@ -7,7 +7,10 @@
     }
   </div>
 
-  <p-table [value]="comptes()" class="p-datatable-sm p-datatable-striped" [loading]="chargement()">
+  <!-- Tableau dense : le scroll horizontal est confiné au conteneur (jamais la page) et
+       la colonne de libellé reste visible. Voir styles/_tableaux.css. -->
+  <div class="table-scroll">
+  <p-table [value]="comptes()" class="p-datatable-sm p-datatable-striped table-sticky-1" [loading]="chargement()">
     <ng-template #header>
       <tr>
         <th pSortableColumn="libelle">{{ t.referentiels.compte.libelle }} <p-sort-icon field="libelle" /></th>
@@ -34,11 +37,11 @@
                       <i class="pi"
                          [class.pi-star-fill]="estPrimairePour(c, m.id)"
                          [class.pi-star]="!estPrimairePour(c, m.id)"
-                         [class.text-yellow-500]="estPrimairePour(c, m.id)"
+                         [class.texte-attention]="estPrimairePour(c, m.id)"
                          [class.text-surface-300]="!estPrimairePour(c, m.id)"></i>
                     </button>
                   } @else if (estPrimairePour(c, m.id)) {
-                    <i class="pi pi-star-fill text-yellow-500" [pTooltip]="t.referentiels.compte.definirPrimaire"></i>
+                    <i class="pi pi-star-fill texte-attention" [pTooltip]="t.referentiels.compte.definirPrimaire"></i>
                   }
                 </span>
               }
@@ -61,6 +64,7 @@
       <tr><td colspan="4" class="text-center py-8 text-surface-400">{{ t.commun.aucunResultat }}</td></tr>
     </ng-template>
   </p-table>
+  </div>
 </div>
 
 <p-dialog [(visible)]="dialogVisible" [header]="compteEnEdition ? t.commun.modifier : t.commun.creer"

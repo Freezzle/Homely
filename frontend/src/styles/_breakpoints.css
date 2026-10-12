@@ -1,0 +1,35 @@
+/*
+ * Breakpoints — source unique de vérité de l'application.
+ *
+ * Pourquoi ici et pas dans un `_breakpoints.scss` ?
+ *   Le projet est en Tailwind v4 (CSS-first). Tailwind lit ses breakpoints dans
+ *   `@theme { --breakpoint-* }` : les déclarer ici rend les variants `sm:`/`md:`/`lg:`/`xl:`
+ *   cohérents par construction avec le reste du design system. Une couche SCSS parallèle
+ *   (mixins `respond-to()`) dupliquerait ces valeurs sans rien apporter.
+ *
+ * Règles d'usage :
+ *   - Dans les templates : utiliser les variants Tailwind (`md:flex`, `lg:grid-cols-3`…).
+ *   - Dans les SCSS de composants : préférer une **container query** (`@container`) quand
+ *     le composant doit s'adapter à son conteneur, sinon `@media (min-width: 768px)` en
+ *     approche mobile-first. Les valeurs ci-dessous sont les SEULES autorisées
+ *     (`767.98px` / `1023.98px` pour les rares `max-width`).
+ *   - Dans le TypeScript : passer par `core/layout/breakpoints.ts` (mêmes valeurs).
+ *
+ * Note : `@media` n'accepte pas `var()` dans ses conditions (limitation CSS). Les media
+ * queries écrivent donc la valeur littérale ; c'est ce fichier et `core/layout/breakpoints.ts`
+ * qui font foi.
+ *
+ * Les bornes de la plage fluide (435px → 1360px) vivent dans `_espacements.css`
+ * (`--app-largeur-min` / `--app-largeur-max`).
+ *
+ * Approche mobile-first : styles de base pour 435px, enrichis via `min-width`.
+ */
+@theme {
+    /* Alignés sur l'échelle Tailwind par défaut, sauf `2xl` ramené à la largeur de
+       contenu maximale de l'application. Ne pas diverger de core/layout/breakpoints.ts. */
+    --breakpoint-sm: 640px;
+    --breakpoint-md: 768px;
+    --breakpoint-lg: 1024px;
+    --breakpoint-xl: 1280px;
+    --breakpoint-2xl: 1360px;
+}

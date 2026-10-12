@@ -1,0 +1,62 @@
+/*
+ * Tableaux — scroll horizontal maîtrisé.
+ *
+ * Stratégie retenue pour toutes les tables denses de l'app (échéancier, matrice
+ * budgétaire, postes, virements de comptes) : plutôt que de transformer les lignes en
+ * cartes (qui casse la lecture en colonnes, essentielle à un outil de budget), on
+ * confine le scroll horizontal au tableau lui-même :
+ *   1. la page ne déborde jamais ;
+ *   2. la première colonne (libellé) reste collée à gauche pour garder le contexte ;
+ *   3. une ombre latérale signale qu'il reste du contenu à droite/à gauche.
+ *
+ * Usage :
+ *   <div class="table-scroll">            → scroll + ombres d'indication
+ *     <table class="table-sticky-1">…     → fige en plus la 1re colonne
+ *
+ * L'ombre est obtenue par la technique des 4 dégradés en `background-attachment: local |
+ * scroll` : les voiles ne s'affichent que lorsqu'il reste réellement du contenu à faire
+ * défiler, sans une ligne de JavaScript.
+ */
+@layer components {
+    .table-scroll {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-x: contain;
+        scrollbar-width: thin;
+
+        background-image: linear-gradient(to right, var(--app-card), transparent),
+            linear-gradient(to left, var(--app-card), transparent),
+            linear-gradient(to right, color-mix(in srgb, var(--app-ink) 14%, transparent), transparent),
+            linear-gradient(to left, color-mix(in srgb, var(--app-ink) 14%, transparent), transparent);
+        background-position:
+            left center,
+            right center,
+            left center,
+            right center;
+        background-repeat: no-repeat;
+        background-size:
+            var(--app-space-5) 100%,
+            var(--app-space-5) 100%,
+            var(--app-space-2-5) 100%,
+            var(--app-space-2-5) 100%;
+        background-attachment: local, local, scroll, scroll;
+    }
+
+    /* La table doit pouvoir dépasser la largeur du conteneur, sinon elle se comprime
+       jusqu'à rendre les colonnes illisibles au lieu de déclencher le scroll. */
+    .table-scroll > table,
+    .table-scroll .p-datatable-table {
+        min-width: max-content;
+    }
+
+    /* En mobile, les cellules denses respirent moins et le texte se resserre. */
+    @media (max-width: 767.98px) {
+        .table-scroll :is(th, td) {
+            padding-inline: var(--app-space-2);
+            font-size: var(--app-text-sm);
+        }
+    }
+}

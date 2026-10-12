@@ -1,4 +1,5 @@
-import { TauxEffortCardData, TauxEffortZone } from '../../../../shared/components/taux-effort-card/taux-effort-card.component';
+import { TauxEffortCardData, TauxEffortZone, TON_PAR_ZONE_EFFORT } from '../../../../shared/components/taux-effort-card/taux-effort-card.component';
+import { TonCarte } from '../../../../shared/components/indicateurs/tons';
 import { AppTranslations } from '../../../../core/i18n/i18n.types';
 
 /**
@@ -18,7 +19,8 @@ export interface TauxEffortDrawerView {
   /** Zone du taux d'effort principal (charges + réserves) — pilote le badge et le message. */
   readonly zoneGlobale: TauxEffortZone;
   readonly zoneGlobaleLabel: string;
-  readonly zoneGlobaleSeverity: 'success' | 'info' | 'warn' | 'danger';
+  /** Ton de la zone globale — échelle partagée `TON_PAR_ZONE_EFFORT`. */
+  readonly zoneGlobaleTon: TonCarte;
   /** Conseil affiché sous les 3 cartes (null pour CONFORTABLE et CORRECT). */
   readonly message: string | null;
   /** Une jauge par carte empilée dans le drawer. */
@@ -44,19 +46,14 @@ export interface TauxEffortJaugeView {
   readonly reste: number;
   /** Texte affiché à droite quand les revenus sont entièrement absorbés. */
   readonly libelleAtteint: string;
+  /** Ton de la barre, selon la zone **propre à cette jauge** (`TON_PAR_ZONE_EFFORT`). */
+  readonly ton: TonCarte;
 }
 
 /** Seuils de zone (points de %) — alignés sur `TauxEffortCardComponent` historique. */
 const SEUIL_CORRECT = 75;
 const SEUIL_TENDU = 90;
 const SEUIL_SATURE = 95;
-
-const SEVERITY_PAR_ZONE: Record<TauxEffortZone, 'success' | 'info' | 'warn' | 'danger'> = {
-  CONFORTABLE: 'success',
-  CORRECT: 'info',
-  TENDU: 'warn',
-  SATURE: 'danger',
-};
 
 function zoneDe(taux: number): TauxEffortZone {
   if (taux < SEUIL_CORRECT) return 'CONFORTABLE';
@@ -98,14 +95,16 @@ function construireJauge(
   revenus: number,
   t: AppTranslations,
 ): TauxEffortJaugeView {
+  const taux = tauxDe(montant, revenus);
   return {
     key,
     titre: `${t.projection.effortCardTitreSansNom} ${suffixeTitre}`,
-    tauxLabel: formatTauxLabel(tauxDe(montant, revenus)),
+    tauxLabel: formatTauxLabel(taux),
     actuel: montant,
     cible: revenus,
     reste: Math.max(0, revenus - montant),
     libelleAtteint: t.projection.effortCardRevenusDepasses,
+    ton: TON_PAR_ZONE_EFFORT[zoneDe(taux)],
   };
 }
 export function buildTauxEffortDrawerView(
@@ -140,7 +139,7 @@ export function buildTauxEffortDrawerView(
     membre: data.membre,
     zoneGlobale,
     zoneGlobaleLabel: libelleZone(zoneGlobale, t),
-    zoneGlobaleSeverity: SEVERITY_PAR_ZONE[zoneGlobale],
+    zoneGlobaleTon: TON_PAR_ZONE_EFFORT[zoneGlobale],
     message: messageZone(zoneGlobale, t),
     jauges,
     ariaLabel,

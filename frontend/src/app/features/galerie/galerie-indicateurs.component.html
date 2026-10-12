@@ -1,30 +1,34 @@
-<div class="flex flex-col gap-6 p-6">
+<!-- Page hors shell (route `/galerie`) : gouttières et largeur min portées localement. -->
+<div class="page-hors-shell conteneur-nu flex flex-col gap-6">
   <header class="flex flex-col gap-1">
     <h1 class="text-xl font-bold">Galerie des indicateurs</h1>
-    <p class="text-sm text-[var(--app-ink-muted)]">
+    <p class="text-sm texte-attenue">
       Un exemple de chaque indicateur partagé dans la carte standard <code>app-carte-info</code>.
       Données factices — page de démonstration du design system.
+      Le ton de l'en-tête suit le sens de la donnée : un ton métier seulement si toute la
+      carte porte cette grandeur, un ton de feedback seulement si la carte émet un jugement,
+      <code>neutre</code> sinon.
     </p>
   </header>
 
-  <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-    <app-carte-info titre="Histogramme" sousTitre="Flux mensuels" ton="info">
+  <div class="grille-fluide grille-fluide-large">
+    <app-carte-info titre="Histogramme" sousTitre="Flux mensuels" ton="neutre">
       <app-indicateur-histogramme [valeurs]="valeurs" [libelles]="libelles" [indexSurligne]="8" />
     </app-carte-info>
 
-    <app-carte-info titre="Donut" sousTitre="Répartition par catégorie" ton="charge">
+    <app-carte-info titre="Donut" sousTitre="Charges par catégorie" ton="charge">
       <app-indicateur-donut [segments]="segments" valeurCentrale="79k" libelleCentral="CHF" />
     </app-carte-info>
 
-    <app-carte-info titre="Heatmap" sousTitre="Équilibre mois par mois" ton="succes">
+    <app-carte-info titre="Heatmap" sousTitre="Équilibre mois par mois" ton="neutre">
       <app-indicateur-heatmap [cellules]="cellules" [legende]="legendeHeatmap" />
     </app-carte-info>
 
-    <app-carte-info titre="Nombre + tendance" sousTitre="Exercice 2026" ton="revenu" badgeTexte="KPI">
+    <app-carte-info titre="Nombre + tendance" sousTitre="Revenus 2026" ton="revenu" badgeTexte="KPI">
       <app-indicateur-nombre-tendance valeur="14,8" unite="M CHF" [delta]="0.063" libelleComparaison="vs 2025" />
     </app-carte-info>
 
-    <app-carte-info titre="Progression" sousTitre="Objectif annuel" ton="attention">
+    <app-carte-info titre="Progression" sousTitre="Objectif annuel" ton="reserve">
       <app-indicateur-progression
         [actuel]="680"
         [cible]="900"
@@ -35,11 +39,11 @@
         resteAffiche="220" />
     </app-carte-info>
 
-    <app-carte-info titre="Sparkline" sousTitre="Trésorerie cumulée" ton="info">
+    <app-carte-info titre="Sparkline" sousTitre="Trésorerie cumulée" ton="neutre">
       <app-indicateur-sparkline [serie]="serie" valeur="48'920" unite="CHF" [delta]="0.061" />
     </app-carte-info>
 
-    <app-carte-info titre="Comparaison" sousTitre="Délai moyen de couverture" ton="reserve">
+    <app-carte-info titre="Comparaison" sousTitre="Délai moyen de couverture" ton="neutre">
       <app-indicateur-comparaison
         libelleActuel="2026"
         valeurActuelle="4,0 j"
@@ -57,11 +61,11 @@
         [elements]="elementsComparaison" />
     </app-carte-info>
 
-    <app-carte-info titre="Barre empilée" sousTitre="Poids des catégories" ton="neutre">
+    <app-carte-info titre="Barre empilée" sousTitre="Poids des catégories de charges" ton="charge">
       <app-indicateur-barre-empilee [segments]="segments" />
     </app-carte-info>
 
-    <app-carte-info titre="Niveau" sousTitre="Taux d'effort" ton="attention">
+    <app-carte-info titre="Niveau" sousTitre="Taux d'effort" ton="attention" badgeTexte="Modéré" badgeTon="attention">
       <app-indicateur-niveau
         [niveau]="3"
         libelle="Modéré"
@@ -70,7 +74,7 @@
         libelleFin="Critique" />
     </app-carte-info>
 
-    <app-carte-info titre="Double courbe" sousTitre="Comparaison de périodes" ton="info">
+    <app-carte-info titre="Double courbe" sousTitre="Trésorerie 2026 vs 2025" ton="neutre">
       <app-indicateur-double-courbe
         [serieActuelle]="serie"
         [seriePrecedente]="seriePrecedente"
@@ -81,15 +85,15 @@
         libellePrecedent="2025" />
     </app-carte-info>
 
-    <app-carte-info titre="Entonnoir" sousTitre="Répartition du mois" ton="charge">
+    <app-carte-info titre="Entonnoir" sousTitre="Répartition du revenu du mois" ton="revenu">
       <app-indicateur-entonnoir [etapes]="etapes" />
     </app-carte-info>
 
-    <app-carte-info titre="Gaufre" sousTitre="Besoins / plaisirs / épargne" ton="reserve">
+    <app-carte-info titre="Gaufre" sousTitre="Besoins / plaisirs / épargne" ton="neutre">
       <app-indicateur-gaufre [segments]="segmentsGaufre" />
     </app-carte-info>
 
-    <app-carte-info titre="Courbes multiples" sousTitre="Revenus face aux sorties" ton="info">
+    <app-carte-info titre="Courbes multiples" sousTitre="Revenus face aux sorties" ton="neutre">
       <app-indicateur-courbes-multiples
         [series]="seriesFlux"
         [paire]="paireFlux"
@@ -99,7 +103,7 @@
         [indicesSignales]="moisDeficitaires" />
     </app-carte-info>
 
-    <app-carte-info titre="Barres + ligne" sousTitre="Sorties empilées face aux revenus" ton="charge">
+    <app-carte-info titre="Barres + ligne" sousTitre="Sorties empilées face aux revenus" ton="neutre">
       <app-indicateur-barres-ligne
         [segments]="segmentsFlux"
         [ligne]="ligneFlux"
@@ -115,10 +119,10 @@
     <app-carte-info titre="Donut" sousTitre="Légende sur deux colonnes" ton="charge">
       <app-indicateur-donut [segments]="segments" valeurCentrale="79k" libelleCentral="CHF" />
     </app-carte-info>
-    <app-carte-info titre="Gaufre" sousTitre="Grille alignée à droite" ton="reserve">
+    <app-carte-info titre="Gaufre" sousTitre="Grille alignée à droite" ton="neutre">
       <app-indicateur-gaufre [segments]="segmentsGaufre" />
     </app-carte-info>
-    <app-carte-info titre="Courbes multiples" sousTitre="Zone d'écart sur toute la largeur" ton="info">
+    <app-carte-info titre="Courbes multiples" sousTitre="Zone d'écart sur toute la largeur" ton="neutre">
       <app-indicateur-courbes-multiples
         [series]="seriesFlux"
         [paire]="paireFlux"
@@ -129,7 +133,7 @@
         hauteur="180px" />
     </app-carte-info>
 
-    <app-carte-info titre="Barres + ligne" sousTitre="Ligne en pointillés : budget de référence" ton="charge">
+    <app-carte-info titre="Barres + ligne" sousTitre="Ligne en pointillés : budget de référence" ton="neutre">
       <app-indicateur-barres-ligne
         [segments]="segmentsBudget"
         [ligne]="ligneBudget"
@@ -141,17 +145,19 @@
   </div>
 
   <h2 class="text-lg font-semibold">Conteneur étroit (200px)</h2>
-  <div class="flex w-[200px] flex-col gap-4">
-    <app-carte-info titre="Progression" ton="info">
+  <!-- Démonstration volontaire d'un conteneur étroit : la largeur de 12.5rem (200px) est
+       le sujet même de la section. `max-width` pour ne pas déborder à 435px. -->
+  <div class="flex flex-col gap-4" style="width: 12.5rem; max-width: 100%">
+    <app-carte-info titre="Progression" ton="reserve">
       <app-indicateur-progression [actuel]="950" [cible]="900" unite="CHF" />
     </app-carte-info>
     <app-carte-info titre="Nombre + tendance" ton="revenu">
       <app-indicateur-nombre-tendance valeur="3'450" unite="CHF" [delta]="-0.042" libelleComparaison="vs mois préc." />
     </app-carte-info>
-    <app-carte-info titre="Entonnoir" ton="charge">
+    <app-carte-info titre="Entonnoir" ton="revenu">
       <app-indicateur-entonnoir [etapes]="etapes" />
     </app-carte-info>
-    <app-carte-info titre="Courbes multiples" ton="info">
+    <app-carte-info titre="Courbes multiples" ton="neutre">
       <app-indicateur-courbes-multiples
         [series]="seriesFlux"
         [paire]="paireFlux"
@@ -161,7 +167,7 @@
         hauteur="90px" />
     </app-carte-info>
 
-    <app-carte-info titre="Barres + ligne" ton="charge">
+    <app-carte-info titre="Barres + ligne" ton="neutre">
       <app-indicateur-barres-ligne
         [segments]="segmentsFlux"
         [ligne]="ligneFlux"

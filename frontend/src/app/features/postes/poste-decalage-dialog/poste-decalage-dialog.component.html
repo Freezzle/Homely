@@ -4,7 +4,7 @@
     @if (poste() && precedent()) {
         <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
             @if (intervalleVide()) {
-                <p class="text-sm text-red-600 dark:text-red-400">{{ t.poste.decalerDateEffetAucunMoisDisponible }}</p>
+                <p class="text-sm texte-danger">{{ t.poste.decalerDateEffetAucunMoisDisponible }}</p>
             } @else {
                 <div class="flex flex-row gap-4 items-start">
                     <app-input-text

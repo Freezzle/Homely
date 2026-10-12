@@ -64,9 +64,37 @@ export function couleurDouce(ton: TonIndicateur): string {
   return couleursTon(ton).doux;
 }
 
-/** Variante foncée pour un fond portant du texte blanc (contraste WCAG, ex. heatmap). */
+/** Variante foncée pour une **surface** portant du texte blanc (contraste WCAG, ex.
+ *  cellules de heatmap). Pour colorer du *texte*, utiliser `couleurTexte`. */
 export function couleurForte(ton: TonIndicateur): string {
   return `color-mix(in srgb, ${couleursTon(ton).plein} 70%, #000)`;
+}
+
+/**
+ * Part de couleur conservée pour `couleurTexte` (le reste vient de
+ * `--app-contraste-texte`). 45 % est la valeur la plus claire qui tienne le **contraste
+ * WCAG AA (≥ 4,5:1)** sur tous les tons posés sur leur propre fond doux, dans les deux
+ * thèmes — le jaune `attention` étant le cas limite en clair (5,27:1 à 45 %, contre
+ * 1,17:1 avec la couleur pleine).
+ */
+const PART_COULEUR_TEXTE = 45;
+
+/**
+ * Couleur d'un **texte coloré** : badge de `app-carte-info`, `app-tag [ton]`,
+ * `app-badge-delta`, libellé de `app-indicateur-niveau`.
+ *
+ * La couleur pleine est pensée pour des **surfaces** (barres, segments, pastilles) ; en
+ * texte elle n'a pas un contraste suffisant. Ne jamais utiliser `couleurPleine` ni
+ * `couleurForte` comme `color` d'un libellé — utiliser cette fonction.
+ *
+ * Le mélange se fait vers `--app-contraste-texte` (noir en clair, blanc en sombre), la
+ * couleur reste donc lisible dans les deux thèmes. `neutre` est déjà une couleur d'encre :
+ * il est renvoyé tel quel.
+ */
+export function couleurTexte(ton: TonIndicateur): string {
+  const { plein } = couleursTon(ton);
+  if (ton === 'neutre') return plein;
+  return `color-mix(in srgb, ${plein} ${PART_COULEUR_TEXTE}%, var(--app-contraste-texte))`;
 }
 
 /**

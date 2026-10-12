@@ -3,8 +3,8 @@
           styleClass="w-full sm:w-96">
     @if (evolutionGlobale(); as evolution) {
         <div class="mb-4 px-3 py-2 rounded-lg bg-surface-100 dark:bg-surface-800 text-sm font-medium text-center"
-             [class.text-green-600]="evolution.signe === '+'"
-             [class.text-red-500]="evolution.signe !== '+'">
+             [class.montant-positif]="evolution.signe === '+'"
+             [class.montant-negatif]="evolution.signe !== '+'">
             {{ i18n.instant('poste.historiqueEvolutionGlobale', { signe: evolution.signe, pct: evolution.pct }) }}
         </div>
     }
@@ -35,9 +35,9 @@
                     {{ m.montant | montant:m.devise }}
                 </div>
                 <div class="text-xs mt-0.5"
-                     [class.text-green-600]="m.ecartPositif === true"
-                     [class.text-red-500]="m.ecartPositif === false"
-                     [class.text-surface-400]="m.ecartPositif === null">
+                     [class.montant-positif]="m.ecartPositif === true"
+                     [class.montant-negatif]="m.ecartPositif === false"
+                     [class.texte-attenue]="m.ecartPositif === null">
                     @if (m.ecartLabel === null) {
                         {{ t().poste.historiqueMontantOrigine }}
                     } @else {

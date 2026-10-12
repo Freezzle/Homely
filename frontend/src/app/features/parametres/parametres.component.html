@@ -23,10 +23,10 @@
   </p-card>
 
   @if (contexte.estOwner()) {
-    <p-card class="border border-red-200">
+    <p-card class="bordure-danger">
       <div class="flex items-center justify-between">
         <div>
-          <div class="font-semibold text-red-600">{{ t.parametres.zoneDangereuse }}</div>
+          <div class="font-semibold texte-danger">{{ t.parametres.zoneDangereuse }}</div>
           <div class="text-sm text-surface-500 mt-1">{{ t.parametres.confirmerSuppression }}</div>
         </div>
         <app-button [label]="t.parametres.supprimer" icon="pi pi-trash" severity="danger"

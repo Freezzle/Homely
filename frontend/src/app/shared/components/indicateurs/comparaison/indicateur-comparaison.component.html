@@ -1,33 +1,35 @@
 @if (modeTableau()) {
-  <table class="comparaison-tableau">
-    <thead>
-      <tr>
-        <th scope="col" class="comparaison-tableau__entete">{{ enteteLibelle() }}</th>
-        <th scope="col" class="comparaison-tableau__entete comparaison-tableau__entete--nombre">{{ entetePrecedent() }}</th>
-        <th scope="col" class="comparaison-tableau__entete comparaison-tableau__entete--nombre">{{ enteteActuel() }}</th>
-        <th scope="col" class="comparaison-tableau__entete comparaison-tableau__entete--delta"><span class="sr-only">%</span></th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (ligne of lignes(); track ligne.cle) {
-        <tr class="comparaison-tableau__ligne">
-          <th scope="row" class="comparaison-tableau__libelle">
-            @if (ligne.ton) {
-              <span class="comparaison-tableau__pastille" [style.background]="couleurPastille(ligne.ton)" aria-hidden="true"></span>
-            }
-            <span class="comparaison-tableau__texte">{{ ligne.libelle }}</span>
-          </th>
-          <td class="comparaison-tableau__valeur comparaison-tableau__valeur--attenuee">{{ ligne.valeurPrecedente }}</td>
-          <td class="comparaison-tableau__valeur">{{ ligne.valeurActuelle }}</td>
-          <td class="comparaison-tableau__delta">
-            @if (ligne.delta !== null) {
-              <app-badge-delta [delta]="ligne.delta" [inverserDelta]="ligne.inverserDelta ?? false" [formateur]="formateurDelta()" />
-            }
-          </td>
+  <div class="table-scroll comparaison-tableau-conteneur">
+    <table class="comparaison-tableau">
+      <thead>
+        <tr>
+          <th scope="col" class="comparaison-tableau__entete">{{ enteteLibelle() }}</th>
+          <th scope="col" class="comparaison-tableau__entete comparaison-tableau__entete--nombre">{{ entetePrecedent() }}</th>
+          <th scope="col" class="comparaison-tableau__entete comparaison-tableau__entete--nombre">{{ enteteActuel() }}</th>
+          <th scope="col" class="comparaison-tableau__entete comparaison-tableau__entete--delta"><span class="sr-only">%</span></th>
         </tr>
-      }
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        @for (ligne of lignes(); track ligne.cle) {
+          <tr class="comparaison-tableau__ligne">
+            <th scope="row" class="comparaison-tableau__libelle">
+              @if (ligne.ton) {
+                <span class="comparaison-tableau__pastille" [style.background]="couleurPastille(ligne.ton)" aria-hidden="true"></span>
+              }
+              <span class="comparaison-tableau__texte">{{ ligne.libelle }}</span>
+            </th>
+            <td class="comparaison-tableau__valeur comparaison-tableau__valeur--attenuee">{{ ligne.valeurPrecedente }}</td>
+            <td class="comparaison-tableau__valeur">{{ ligne.valeurActuelle }}</td>
+            <td class="comparaison-tableau__delta">
+              @if (ligne.delta !== null) {
+                <app-badge-delta [delta]="ligne.delta" [inverserDelta]="ligne.inverserDelta ?? false" [formateur]="formateurDelta()" />
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
 } @else {
   @let ligne = lignes()[0];
   <div class="comparaison">

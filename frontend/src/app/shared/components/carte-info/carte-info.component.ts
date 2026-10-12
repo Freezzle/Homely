@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { TooltipModule } from 'primeng/tooltip';
-import { TonCarte, couleurDouce, couleurPleine } from '../indicateurs/tons';
+import { TonCarte, couleurDouce, couleurTexte } from '../indicateurs/tons';
 
 /**
  * Carte d'information standard de l'application (dashboard et autres écrans) :
@@ -38,6 +38,8 @@ export class CarteInfoComponent {
 
   protected readonly couleurBadge = computed(() => {
     const ton = this.badgeTon();
-    return ton ? couleurPleine(ton) : null;
+    // `couleurTexte` et non `couleurPleine` : le badge est posé sur le fond doux de
+    // l'en-tête, la couleur pleine n'y aurait pas un contraste suffisant.
+    return ton ? couleurTexte(ton) : null;
   });
 }

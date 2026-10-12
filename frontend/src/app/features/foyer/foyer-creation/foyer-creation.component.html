@@ -1,5 +1,6 @@
 <p-toast />
-<div class="max-w-6xl mx-auto py-8 px-4">
+<!-- `px-*` retiré : la gouttière fluide est déjà appliquée par le shell (.shell-contenu). -->
+<div class="max-w-6xl mx-auto py-8">
   <h1 class="text-2xl font-bold mb-6">{{ t.foyer.onboarding.titre }}</h1>
 
   <p-stepper [value]="etapeActive()" (valueChange)="etapeActive.set($event ?? 1)">
@@ -174,7 +175,7 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <!-- REVENU -->
               <div class="flex flex-col gap-2">
-                <h3 class="font-semibold text-green-600 dark:text-green-400">{{ revenuLabel }}</h3>
+                <h3 class="font-semibold montant-revenu">{{ revenuLabel }}</h3>
                 @for (_ of categoriesRevenu(); track $index; let i = $index) {
                   <div class="flex items-center gap-1">
                     <app-input-text
@@ -194,7 +195,7 @@
 
               <!-- CHARGE -->
               <div class="flex flex-col gap-2">
-                <h3 class="font-semibold text-red-600 dark:text-red-400">{{ chargeLabel }}</h3>
+                <h3 class="font-semibold montant-charge">{{ chargeLabel }}</h3>
                 @for (_ of categoriesCharge(); track $index; let i = $index) {
                   <div class="flex items-center gap-1">
                     <app-input-text
@@ -214,7 +215,7 @@
 
               <!-- RESERVE -->
               <div class="flex flex-col gap-2">
-                <h3 class="font-semibold text-blue-600 dark:text-blue-400">{{ reserveLabel }}</h3>
+                <h3 class="font-semibold montant-reserve">{{ reserveLabel }}</h3>
                 @for (_ of categoriesReserve(); track $index; let i = $index) {
                   <div class="flex items-center gap-1">
                     <app-input-text
@@ -295,8 +296,8 @@
                   </div>
                 }
                 <div class="flex items-center gap-2 mt-1"
-                  [class.text-red-500]="!repartitionValide()"
-                  [class.text-green-600]="repartitionValide()">
+                  [class.texte-danger]="!repartitionValide()"
+                  [class.texte-succes]="repartitionValide()">
                   <i [class]="repartitionValide() ? 'pi pi-check-circle' : 'pi pi-exclamation-circle'"></i>
                   <span class="text-sm">
                     {{ t.foyer.onboarding.champs.sommeAttendue100 }}

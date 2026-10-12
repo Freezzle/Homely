@@ -31,7 +31,7 @@ import { TooltipModule } from 'primeng/tooltip';
       <div class="text-xs text-surface-500 mt-1">{{ hint }}</div>
     }
   `,
-  styles: [':host { display: block; margin-bottom: 0.75rem; }'],
+  styles: [':host { display: block; margin-bottom: var(--app-space-3); }'],
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,

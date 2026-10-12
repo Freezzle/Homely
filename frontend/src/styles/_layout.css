@@ -1,0 +1,155 @@
+/*
+ * Layout — conteneur centré et utilitaires de grille fluide.
+ *
+ * Objectif : une mise en page qui s'adapte **continûment** entre 435px et 1360px, et non
+ * par paliers figés. On privilégie pour cela `grid-template-columns: repeat(auto-fit,
+ * minmax(…, 1fr))` et `clamp()` plutôt que des media queries.
+ */
+@layer components {
+    /* Conteneur de page : pleine largeur jusqu'à 1360px, puis centré sans s'étirer.
+       Les gouttières latérales sont fluides (voir --app-gouttiere). */
+    .conteneur {
+        width: 100%;
+        max-width: var(--app-largeur-max);
+        margin-inline: auto;
+        padding-inline: var(--app-gouttiere);
+    }
+
+    /* Variante sans gouttière, pour les conteneurs déjà encadrés par un padding parent. */
+    .conteneur-nu {
+        width: 100%;
+        max-width: var(--app-largeur-max);
+        margin-inline: auto;
+    }
+
+    /* Active les container queries sur l'hôte : indispensable pour les composants qui
+       s'adaptent à leur carte (unités `cqi`, règles `@container`). */
+    .cq {
+        container-type: inline-size;
+    }
+
+    /* Grille fluide : autant de colonnes que la largeur le permet, largeur minimale de
+       colonne pilotée par --col-min (défaut 16rem). `min()` évite le débordement quand le
+       conteneur est plus étroit que --col-min (cas 435px). */
+    .grille-fluide {
+        display: grid;
+        gap: var(--app-space-4);
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--col-min, 16rem)), 1fr));
+    }
+
+    .grille-fluide-serree {
+        --col-min: 11rem;
+    }
+
+    .grille-fluide-large {
+        --col-min: 22rem;
+    }
+
+    /* Pile verticale régulière (espacement piloté par --gap). */
+    .pile {
+        display: flex;
+        flex-direction: column;
+        gap: var(--gap, var(--app-space-4));
+    }
+
+    /* Rangée qui passe naturellement à la ligne : remplace les `flex` sans wrap qui
+       débordent en mobile. */
+    .rangee {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--gap, var(--app-space-2));
+    }
+
+    /* Barre d'actions : empilée pleine largeur en mobile, alignée à droite ensuite. */
+    .barre-actions {
+        display: flex;
+        flex-direction: column;
+        gap: var(--app-space-2);
+    }
+
+    .barre-actions > * {
+        width: 100%;
+    }
+
+    @media (min-width: 768px) {
+        .barre-actions {
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            align-items: center;
+        }
+
+        .barre-actions > * {
+            width: auto;
+        }
+    }
+
+    /* Page affichée hors du shell applicatif (login, inscription, galerie) : elle doit
+       porter elle-même les gouttières fluides et la largeur minimale supportée. */
+    .page-hors-shell {
+        min-width: var(--app-largeur-min);
+        padding-inline: var(--app-gouttiere);
+        padding-block: var(--app-space-6);
+    }
+
+    /* ---------------------------------------------------------------------------
+       Dialogues PrimeNG — responsive centralisé.
+       ---------------------------------------------------------------------------
+       Les `class="w-full max-w-md"` posées sur `<p-dialog>` n'ont aucun effet : la
+       classe atterrit sur l'élément hôte, pas sur la boîte de dialogue réellement
+       rendue. Plutôt que de répéter `[style]` + `[breakpoints]` sur la vingtaine de
+       dialogues de l'app, la contrainte est posée une seule fois ici.
+       Le layer `components` passe après `primeng`, donc ces règles l'emportent. */
+    .p-dialog {
+        /* Jamais plus large que l'écran, gouttière comprise — y compris à 435px. */
+        max-width: calc(100vw - 2 * var(--app-gouttiere));
+        max-height: calc(100dvh - 2 * var(--app-gouttiere));
+    }
+
+    @media (max-width: 767.98px) {
+        /* `!important` : seul moyen de passer devant les `[style]="{width: '42rem'}"`
+           posés en style inline par certains dialogues (ex. poste-form-dialog). */
+        .p-dialog {
+            width: calc(100vw - 2 * var(--app-gouttiere)) !important;
+        }
+
+        /* Les champs occupent toute la largeur disponible dans un dialogue en mobile. */
+        .p-dialog :is(input, textarea, .p-select, .p-multiselect, .p-inputnumber, .p-datepicker) {
+            width: 100%;
+        }
+    }
+
+    /* Un contenu long (libellé de poste, e-mail) ne doit pas élargir le dialogue. */
+    .p-dialog-content {
+        overflow-wrap: break-word;
+    }
+
+    /* Zone de graphique (Chart.js) : hauteur fluide entre 435px et 1360px. Les canvas ne
+       se dimensionnent pas tout seuls, il leur faut un parent de hauteur connue. */
+    .zone-graphique {
+        position: relative;
+        display: flex;
+        width: 100%;
+        overflow: hidden;
+        height: clamp(13rem, calc(13rem + 72 * ((100vw - 435px) / 925)), 17.5rem);
+    }
+
+    /* Étape de formulaire défilante (dialogues multi-étapes) : hauteur stable pour que
+       la boîte ne saute pas d'une étape à l'autre, mais plafonnée par le viewport. */
+    .etape-defilante {
+        min-height: min(22rem, 50dvh);
+        max-height: min(22rem, 60dvh);
+    }
+
+    /* Champs de formulaire pleine largeur en mobile. */
+    .champs-pleine-largeur-mobile :is(input, select, textarea, .p-component) {
+        width: 100%;
+    }
+
+    @media (min-width: 768px) {
+        .champs-pleine-largeur-mobile :is(input, select, textarea, .p-component) {
+            width: auto;
+        }
+    }
+}

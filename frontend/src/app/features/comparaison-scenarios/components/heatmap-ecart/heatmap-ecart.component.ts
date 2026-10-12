@@ -16,7 +16,7 @@ const SEUIL_CELLULE = 0.5;
  * (rouge = B coûte plus). Échelle **commune à toute la grille** (contrairement
  * à la cascade budgétaire qui est mise à l'échelle par colonne).
  *
- * Cellules sous `SEUIL_CELLULE` (0.5) affichées vides avec un fond neutre.
+ * Cellules sous `SEUIL_CELLULE` affichées vides avec un fond neutre.
  * Catégories dont `somme(|v|) < 1` sur les 12 mois sont déjà exclues en amont
  * (voir `construireHeatmap`).
  */
@@ -44,15 +44,14 @@ export class HeatmapEcartComponent {
     return Math.abs(valeur) >= SEUIL_CELLULE;
   }
 
-  /** Style d'une cellule : neutre si sous seuil, sinon `color-mix` à opacité
-   *  `0.12 + min(1, |v|/max) * 0.68` (feature_5_bis §8). */
-  protected style(valeur: number): Record<string, string> {
-    if (!this.estSignificatif(valeur)) return { background: 'var(--p-surface-100)' };
+  /** Couleur d'une cellule : neutre si sous seuil, sinon intensité proportionnelle. */
+  protected couleurFond(valeur: number): string {
+    if (!this.estSignificatif(valeur)) return 'var(--app-line-2)';
     const intensite = Math.min(1, Math.abs(valeur) / this.maxAbs());
     const opacite = 0.12 + intensite * 0.68;
     const pct = Math.round(opacite * 100);
-    const token = valeur > 0 ? 'var(--p-primary-500)' : 'var(--p-red-500)';
-    return { background: `color-mix(in srgb, ${token} ${pct}%, transparent)` };
+    const token = valeur > 0 ? 'var(--app-positif)' : 'var(--app-negatif)';
+    return `color-mix(in srgb, ${token} ${pct}%, transparent)`;
   }
 
   protected texte(valeur: number): string {
@@ -68,4 +67,3 @@ export class HeatmapEcartComponent {
       .replace('{devise}', this.devise());
   }
 }
-

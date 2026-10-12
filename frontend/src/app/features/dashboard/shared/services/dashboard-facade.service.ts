@@ -50,10 +50,10 @@ import { BesoinsPlaisirsCardData } from '../../../../shared/components/besoins-p
 import { prorataPartageIndicator, aDesDonneesProrataPartage } from '../../indicators/prorata-partage/prorata-partage.indicator';
 import { moisARisqueIndicator, SoldeMois } from '../../indicators/mois-a-risque/mois-a-risque.indicator';
 import { MoisARisqueDrawerData, MoisARisqueItem } from '../../indicators/mois-a-risque/mois-a-risque-drawer-content.component';
-import { niveauSanteMois } from '../utils/sante-mois.util';
-import { resolveAppColor } from '../../../../shared/utils/css-vars';
+import { niveauSanteMois, NiveauSanteMois } from '../utils/sante-mois.util';
+import { resolveAppColor, withAlpha } from '../../../../shared/utils/css-vars';
 import { SegmentDonut } from '../../../../shared/components/indicateurs/donut/indicateur-donut.component';
-import { TonCarte, TonIndicateur } from '../../../../shared/components/indicateurs/tons';
+import { TonCarte, TonIndicateur, couleurPleine } from '../../../../shared/components/indicateurs/tons';
 import { EtapeEntonnoir } from '../../../../shared/components/indicateurs/entonnoir/indicateur-entonnoir.component';
 import { ElementComparaison } from '../../../../shared/components/indicateurs/comparaison/indicateur-comparaison.component';
 import { LigneBarresLigne, SegmentBarresLigne } from '../../../../shared/components/indicateurs/barres-ligne/indicateur-barres-ligne.component';
@@ -1491,14 +1491,18 @@ export class DashboardFacadeService {
     };
   });
 
+  /** Anneau du drawer « Mois à risque » : **même règle de classement que la heatmap de la
+   *  carte** (`niveauSanteMois`), donc 3 segments et non un simple positif/négatif — un
+   *  mois « à surveiller » ne doit pas être compté comme confortable. Ordre et tons
+   *  alignés sur la légende de la heatmap. */
   readonly ringSegmentsAnnee = computed<MetricRingSegment[]>(() => {
     const mois = this.moisAgregatsCourant();
-    const positifs = mois.filter((item) => item.soldeDisponible >= 0).length;
-    const negatifs = Math.max(mois.length - positifs, 0);
-    const colors = this.chartColors();
+    const compte = (niveau: NiveauSanteMois) =>
+      mois.filter((item) => niveauSanteMois(item.soldeDisponible, item.revenus) === niveau).length;
     return [
-      { value: positifs, color: colors.positif },
-      { value: negatifs, color: colors.negatif },
+      { value: compte('low'), color: couleurPleine('danger'), label: this.t.dashboard.legendeMoisARisque },
+      { value: compte('mid'), color: couleurPleine('attention'), label: this.t.dashboard.legendeMoisASurveiller },
+      { value: compte('high'), color: couleurPleine('succes'), label: this.t.dashboard.legendeMoisConfortable },
     ];
   });
 
@@ -1613,14 +1617,15 @@ export class DashboardFacadeService {
     const valeurs = this.tresorerieCumuleeValeurs();
     if (!valeurs.length) return {};
     const valeursReel = this.tresorerieCumuleeReelValeurs();
+    const colors = this.chartColors();
     return {
       labels: this.t.mois,
       datasets: [
         {
           type: 'line',
           label: this.t.dashboard.tresorerieCumuleeReel,
-          borderColor: '#EF5350',
-          backgroundColor: '#EF5350',
+          borderColor: colors.charge,
+          backgroundColor: colors.charge,
           data: valeursReel,
           tension: 0.25,
           fill: false,
@@ -1631,8 +1636,8 @@ export class DashboardFacadeService {
         {
           type: 'line',
           label: this.t.dashboard.tresorerieCumulee,
-          borderColor: '#42A5F5',
-          backgroundColor: 'rgb(66 165 245 / 0.39)',
+          borderColor: colors.reserve,
+          backgroundColor: withAlpha(colors.reserve, 0.39, colors.reserve),
           data: valeurs,
           tension: 0.25,
           fill: true,
@@ -1651,14 +1656,15 @@ export class DashboardFacadeService {
     const prevu = this.moisAgregatsCourant();
     const reel = this.moisReelAgregatsCourant();
     if (!prevu.length || !reel.length) return {};
+    const colors = this.chartColors();
     return {
       labels: this.t.mois,
       datasets: [
         {
           type: 'line',
           label: this.t.dashboard.previsuMensualise,
-          borderColor: '#42A5F5',
-          backgroundColor: '#42A5F5',
+          borderColor: colors.reserve,
+          backgroundColor: colors.reserve,
           data: prevu.map((m) => m.charges + m.reserves),
           tension: 0.25,
           fill: false,
@@ -1668,8 +1674,8 @@ export class DashboardFacadeService {
         {
           type: 'line',
           label: this.t.dashboard.reelEcheances,
-          borderColor: '#EF5350',
-          backgroundColor: '#EF5350',
+          borderColor: colors.charge,
+          backgroundColor: colors.charge,
           data: reel.map((m) => m.charges + m.reserves),
           tension: 0.25,
           fill: false,

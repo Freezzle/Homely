@@ -1,22 +1,24 @@
 @if (chargement()) {
   <div class="virements-table__skeleton">
     @for (i of [1, 2, 3]; track i) {
-      <p-skeleton height="2.5rem" borderRadius="8px" />
+      <p-skeleton height="2.5rem" borderRadius="0.5rem" />
     }
   </div>
 } @else {
-<p-table
-  [value]="lignes()"
-  styleClass="virements-table"
-  [tableStyle]="{ 'min-width': '100%' }"
->
-  <ng-template #header>
-    <tr>
-      <th></th>
-      <th class="virements-table__col-amount"></th>
-      <th class="virements-table__col-status"></th>
-    </tr>
-  </ng-template>
+<div class="table-scroll">
+  <!-- Pas de `table-sticky-1` ici : les lignes de subheader occupent toute la largeur
+       (`colspan="3"`), une première colonne figée n'aurait pas de sens sur ce tableau. -->
+  <p-table
+    [value]="lignes()"
+    styleClass="virements-table"
+  >
+    <ng-template #header>
+      <tr>
+        <th></th>
+        <th class="virements-table__col-amount"></th>
+        <th class="virements-table__col-status"></th>
+      </tr>
+    </ng-template>
 
   <ng-template #body let-ligne>
     <!-- SUBHEADER : bannière groupe (compte source) -->
@@ -28,7 +30,8 @@
               <p-avatar
                 [label]="initiales(premierProprietaire)"
                 shape="circle"
-                [style]="{ 'background-color': premierProprietaire.couleur, 'color': '#fff' }"
+                class="virements-table__avatar"
+                [style.background-color]="premierProprietaire.couleur"
               />
             }
             <div class="virements-table__subheader-text">
@@ -62,7 +65,8 @@
                   [label]="initiales(m)"
                   shape="circle"
                   size="normal"
-                  [style]="{ 'background-color': m.couleur, 'color': '#fff' }"
+                  class="virements-table__avatar"
+                  [style.background-color]="m.couleur"
                 />
               }
             </p-avatar-group>
@@ -94,5 +98,6 @@
       <td colspan="3" class="virements-table__empty">{{ t.dashboard.comptesTableAucunVirement }}</td>
     </tr>
   </ng-template>
-</p-table>
+  </p-table>
+</div>
 }

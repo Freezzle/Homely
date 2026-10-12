@@ -1,13 +1,17 @@
+.cet-outils {
+  align-items: center;
+}
+
 .cet-col-poids {
-  min-width: 80px;
+  min-width: 5rem;
 }
 
 .cet-bar-track {
   position: relative;
-  min-width: 80px;
-  height: 0.5rem;
+  min-width: 5rem;
+  height: var(--app-space-2);
   background: var(--p-surface-100);
-  border-radius: 999px;
+  border-radius: var(--app-radius-pill);
   overflow: hidden;
 }
 
@@ -20,7 +24,7 @@
   top: 0;
   bottom: 0;
   left: 50%;
-  width: 1px;
+  width: var(--app-space-px);
   background: var(--app-line);
 }
 
@@ -28,7 +32,7 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  border-radius: 999px;
+  border-radius: var(--app-radius-pill);
 }
 
 .cet-bar-pos {

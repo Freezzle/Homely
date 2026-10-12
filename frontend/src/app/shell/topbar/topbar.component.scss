@@ -1,0 +1,39 @@
+:host {
+    display: block;
+    background: var(--app-card);
+}
+
+.topbar {
+    /* Gouttières alignées sur celles du contenu (voir .shell-contenu). */
+    padding-inline: var(--app-gouttiere);
+    /* `nowrap` : la topbar doit rester sur une ligne même à 435px — la troncature du
+       libellé de contexte absorbe le manque de place (voir .topbar-contexte). */
+    flex-wrap: nowrap;
+}
+
+/* Bouton icône : zone tactile d'au moins 44px sur écran tactile, 36px sinon. */
+.topbar-icone {
+    width: var(--app-space-10);
+    height: var(--app-space-10);
+}
+
+@media (pointer: coarse) {
+    .topbar-icone {
+        width: var(--app-cible-tactile);
+        height: var(--app-cible-tactile);
+    }
+}
+
+/* Le libellé de contexte est l'élément élastique de la barre : il se tronque au lieu de
+   pousser le menu utilisateur hors de l'écran. */
+.topbar-contexte {
+    flex: 0 1 auto;
+    padding: var(--app-space-1) var(--app-space-2);
+    font-size: var(--app-text-md);
+}
+
+@media (min-width: 768px) {
+    .topbar-contexte {
+        max-width: 24rem;
+    }
+}

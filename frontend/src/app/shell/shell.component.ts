@@ -16,6 +16,7 @@ import {ViewportService} from '../core/services/viewport.service';
   standalone: true,
   imports: [RouterOutlet, CommonModule, SidebarModule, TopbarComponent, SidebarMenuComponent],
   templateUrl: './shell.component.html',
+  styleUrl: './shell.component.scss',
 })
 export class ShellComponent implements OnInit, OnDestroy {
   contexte             = inject(ContexteService);

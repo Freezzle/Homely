@@ -22,7 +22,7 @@ import { FloatLabelModule } from 'primeng/floatlabel';
         <label [for]="labelFor" [pTooltip]="tooltip || undefined">
           {{ label }}
           @if (required) {
-            <span class="text-red-500">*</span>
+            <span class="texte-danger">*</span>
           }
         </label>
       }
@@ -31,7 +31,7 @@ import { FloatLabelModule } from 'primeng/floatlabel';
       <div class="text-xs text-surface-500 mt-1">{{ hint }}</div>
     }
   `,
-  styles: [':host { display: block; margin-bottom: 0.75rem; }'],
+  styles: [':host { display: block; margin-bottom: var(--app-space-3); }'],
 })
 export class FieldWrapperComponent {
   @Input() label = '';

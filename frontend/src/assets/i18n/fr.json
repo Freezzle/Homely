@@ -139,7 +139,29 @@
     "periodeFinAvantDebut": "La date de fin doit être postérieure ou égale à la date de début.",
     "periodeChevauche": "Cette période chevauche une période existante.",
     "periodeOuverteDejaExistante": "Il existe déjà une période ouverte (sans date de fin) ; fermez-la d'abord.",
-    "horizonAnneesUnite": "ans"
+    "horizonAnneesUnite": "ans",
+    "form": {
+      "titreCreation": "Nouvelle période",
+      "titreEdition": "Modifier la répartition",
+      "badge": "Prorata",
+      "etapes": {
+        "periode": "Sur quelle période ?",
+        "parts": "Qui porte quelle part ?"
+      },
+      "fiche": {
+        "periode": "Période",
+        "parts": "Répartition"
+      },
+      "periodeAide": "La période court de date à date, bornes incluses.",
+      "datesVerrouillees": "Les dates d’une période existante se modifient via « Réviser les taux » ou « Décaler la date d’effet ».",
+      "sansFin": "Sans fin",
+      "sansFinAide": "Jusqu’à nouvel ordre",
+      "cinquante": "50 / 50",
+      "toutMembre": "Tout {{nom}}",
+      "total": "Total",
+      "resumePeriodeOuverte": "Dès le {{debut}}, sans fin",
+      "resumePeriode": "Du {{debut}} au {{fin}}"
+    }
   },
   "prorata": {
     "titre": "Prorata des membres",
@@ -216,6 +238,148 @@
     },
     "ventilation": "Détail par compte",
     "apercu": "Aperçu mensuel",
+    "form": {
+      "titreCreation": "Nouveau poste",
+      "titreEdition": "Modifier le poste",
+      "badgeType": {
+        "CHARGE": "Charge",
+        "REVENU": "Revenu",
+        "RESERVE": "Réserve"
+      },
+      "sansNom": "Sans nom",
+      "categorieAChoisir": "Catégorie à choisir",
+      "impactParMois": "par mois",
+      "etapes": {
+        "quoi": "C’est pour quoi ?",
+        "combien": {
+          "CHARGE": "Combien ça coûte, et à quel rythme ?",
+          "REVENU": "Combien reçois-tu, et à quel rythme ?",
+          "RESERVE": "Combien mets-tu de côté, et à quel rythme ?"
+        },
+        "validite": "Quelle est la période de validité ?",
+        "validitePonctuel": "Quand ?",
+        "paiement": {
+          "CHARGE": "Comment est-il payé ?",
+          "REVENU": "Comment est-il versé ?",
+          "RESERVE": "Comment le mets-tu de côté ?"
+        },
+        "repartition": {
+          "CHARGE": "Qui paie ?",
+          "REVENU": "Qui reçoit ?",
+          "RESERVE": "Qui épargne ?"
+        },
+        "analyse": "Une dernière chose, si tu veux"
+      },
+      "fiche": {
+        "poste": "Poste",
+        "montant": "Montant",
+        "validite": "Validité",
+        "paiement": "Paiement",
+        "repartition": "Répartition",
+        "analyse": "Analyse · facultatif"
+      },
+      "nomPoste": "Nom du poste",
+      "nomPostePlaceholder": "Ex : Loyer appartement",
+      "categorie": "Catégorie",
+      "frequence": "Tous les combien ?",
+      "frequences": {
+        "0": "Une fois",
+        "1": "Mensuel",
+        "3": "Trimestriel",
+        "6": "Semestriel",
+        "12": "Annuel",
+        "autre": "Autre…"
+      },
+      "autrePeriodicite": "Quelle fréquence ?",
+      "rythme": {
+        "0": "une fois",
+        "1": "chaque mois",
+        "12": "chaque année",
+        "n": "tous les {{n}} mois"
+      },
+      "convPonctuel": "Un seul paiement de {{montant}}.",
+      "convMensuel": "Soit {{montant}} par an.",
+      "convPeriodique": "Soit ≈ {{montant}} par mois.",
+      "approximatif": "Montant approximatif",
+      "marge": "marge ±",
+      "validiteAide": "Les dates du contrat ou de l’accord, pas forcément celles des paiements.",
+      "debutPoste": "Début du poste",
+      "date": "Date",
+      "ceMois": "Ce mois",
+      "prochainMois": "Prochain mois",
+      "debutAnnee": "Début d’année",
+      "debutAnneeProchaine": "Début d’année prochaine",
+      "finPoste": "Fin du poste",
+      "sansFin": "Sans fin",
+      "sansFinAide": "Jusqu’à nouvel ordre",
+      "unAn": "Pendant 1 an",
+      "finMois": "Fin du mois",
+      "finAnnee": "Fin de l’année",
+      "finPeriode": "Fin de la période",
+      "jusquAu": "jusqu’au {{date}}",
+      "verbe": {
+        "CHARGE": "Prélevé",
+        "REVENU": "Versé",
+        "RESERVE": "Mis de côté"
+      },
+      "verbeQuestion": {
+        "CHARGE": "Début du paiement",
+        "REVENU": "Début du versement",
+        "RESERVE": "Début de mettre de côté"
+      },
+      "momentDebut": "En début de période",
+      "momentFin": "En fin de période",
+      "momentInconnu": "Je ne sais pas",
+      "dateInconnue": "date inconnue",
+      "enMois": "en {{mois}}",
+      "dansBudget": "Dans le budget",
+      "lisse": "Lissé chaque mois",
+      "lisseAide": "≈ {{montant}} / mois",
+      "moisPaiement": "Le mois du paiement",
+      "moisPaiementAide": "{{montant}} en {{mois}}",
+      "apercuDes": "Aperçu dès {{mois}}",
+      "legende": {
+        "ponctuel": "Le montant tombe une seule fois.",
+        "mensuel": "Le même montant chaque mois.",
+        "lisse": "Barres : part mensuelle · point : mois du paiement.",
+        "periodique": "Le montant entier compte le mois du paiement.",
+        "inconnu": "Date inconnue : réparti sur chaque mois."
+      },
+      "resumeValidite": {
+        "debutSansFin": "Dès le {{debut}}, sans fin",
+        "debutFin": "Dès le {{debut}}, jusqu’au {{fin}}",
+        "ponctuel": "Le {{date}}"
+      },
+      "resumePaiement": {
+        "lisse": "{{verbe}} en {{mois}} · lissé chaque mois",
+        "periodique": "{{verbe}} en {{mois}} · compté ce mois-là",
+        "inconnu": "Date inconnue · lissé chaque mois"
+      },
+      "resumeAnalyse": "Importance {{importance}} · Optimisation {{optimisation}} · Dérive {{derive}}",
+      "membresConcernes": "Qui est concerné ?",
+      "toutMembre": "Tout {{nom}}",
+      "auProrata": "Au prorata",
+      "cinquante": "50 / 50",
+      "inverse": "Inversé",
+      "personnalise": "Personnalisé",
+      "curseurRepartition": "Répartition entre {{a}} et {{b}}",
+      "curseurValeur": "{{a}} {{partA}} %, {{b}} {{partB}} %",
+      "depuis": {
+        "CHARGE": "Prélevé sur",
+        "REVENU": "Versé sur",
+        "RESERVE": "Mis de côté sur"
+      },
+      "depuisMembre": "{{libelle}} · {{nom}}",
+      "comptesSepares": "Chacun depuis un compte différent",
+      "compteCommun": "Le même compte pour tous",
+      "aucunCompte": "Aucun compte disponible",
+      "total": "Total",
+      "analyseAide": "Tu peux enregistrer sans y toucher.",
+      "questionImportance": "Peut-on s’en passer ?",
+      "questionOptimisation": "Peut-on payer moins ?",
+      "questionDerive": "Le montant évolue-t-il sans nous ?",
+      "noteSur5": "{{label}} : {{n}} sur 5"
+    },
     "questionnaire": {
       "nomTitre": "Quel nom de poste ?",
       "freqTitre": "Ce poste est...",
@@ -682,6 +846,16 @@
     "precedent": "Précédent",
     "suivant": "Suivant",
     "enregistrerEtNouveau": "Enregistrer et nouveau",
+    "parcours": {
+      "taFiche": "Ta fiche",
+      "voirFiche": "Voir la fiche",
+      "impact": "Impact sur le budget",
+      "continuer": "Continuer",
+      "allerFin": "Aller à la fin",
+      "aideEntree": "Appuie sur Entrée",
+      "etapePrecedente": "Étape précédente",
+      "progression": "Étape {{n}} sur {{total}}"
+    },
     "confirmerAnnulationFormulaire": "Des modifications non enregistrées seront perdues. Voulez-vous vraiment fermer ce formulaire ?",
     "aRenseigner": "À renseigner",
     "champObligatoire": "Ce champ est obligatoire.",
@@ -834,6 +1008,58 @@
       "formule": "Formule de calcul",
       "apercu": "Aperçu des 6 prochains mois"
     },
+    "form": {
+      "politique": {
+        "titreCreation": "Nouvelle politique",
+        "titreEdition": "Modifier la politique",
+        "badge": "Politique",
+        "etapes": {
+          "quoi": "Pour qui, et sous quel nom ?",
+          "formule": "Comment se calcule le montant ?",
+          "validite": "Sur quelle période s’applique-t-elle ?",
+          "compte": "Sur quel compte est-il versé ?"
+        },
+        "fiche": {
+          "membre": "Membre",
+          "formule": "Formule",
+          "validite": "Validité",
+          "compte": "Compte"
+        },
+        "nomAide": "Un nom court, pour la retrouver dans la liste.",
+        "modeVariableAide": "Un pourcentage du reste à vivre, borné par un socle et un plafond.",
+        "modeFixeAide": "Le même montant chaque mois.",
+        "pourcentageLabel": "Pourcentage du reste à vivre",
+        "validiteAide": "La politique s’applique au mois entier, de date à date.",
+        "sansFinAide": "Laisser vide pour une politique ouverte.",
+        "impactSecondaire": "en moyenne par mois"
+      },
+      "allocation": {
+        "titreCreation": "Nouvelle allocation",
+        "titreEdition": "Modifier l’allocation",
+        "badge": "Allocation",
+        "etapes": {
+          "quoi": "Pour qui, et quel mois ?",
+          "combien": "Combien, et pourquoi ?",
+          "compte": "Sur quel compte est-elle versée ?"
+        },
+        "fiche": {
+          "membreMois": "Membre et mois",
+          "montant": "Montant",
+          "compte": "Compte"
+        },
+        "resolutionAide": "Montant prévu pour ce mois avant exception.",
+        "reprendreMontant": "Reprendre ce montant",
+        "raisonAide": "Pourquoi ce mois diffère-t-il de la règle habituelle ?",
+        "impactSecondaire": "ce mois-là"
+      },
+      "ceMois": "Ce mois",
+      "prochainMois": "Prochain mois",
+      "debutAnnee": "Début d’année",
+      "debutAnneeProchaine": "Début d’année prochaine",
+      "sansFin": "Sans fin",
+      "finAnnee": "Fin de l’année",
+      "unAn": "Pendant 1 an"
+    },
     "apercu": {
       "colonneMois": "Mois",
       "colonneRav": "RàV du mois",
@@ -850,8 +1076,7 @@
       "AUCUNE": "Aucune configuration"
     },
     "erreurs": {
-      "modeFixeMontantRequis": "Le mode fixe exige un montant.",
-      "modeVariableChampsRequis": "Le mode variable exige socle, pourcentage et plafond.",
+      "modeFixeMontantRequis": "Le mode fixe exige un montant.",      "modeVariableChampsRequis": "Le mode variable exige socle, pourcentage et plafond.",
       "plafondInferieurSocle": "Le plafond doit être supérieur ou égal au socle.",
       "chevauchement": "Cette période chevauche une politique existante pour ce membre.",
       "allocationDoublon": "Une allocation existe déjà pour ce membre et ce mois."
