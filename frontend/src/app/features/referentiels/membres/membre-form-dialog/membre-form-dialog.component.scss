@@ -1,0 +1,26 @@
+.apercu {
+  display: flex;
+  align-items: center;
+  gap: var(--app-space-3);
+  padding: var(--app-space-3);
+  background: var(--app-bg);
+  border-radius: var(--app-radius-card);
+}
+
+.pastille {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  border-radius: var(--app-radius-pill);
+}
+
+.nom {
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+.hex {
+  font-size: var(--app-text-xs);
+  color: var(--app-ink-muted);
+  font-variant-numeric: tabular-nums;
+}

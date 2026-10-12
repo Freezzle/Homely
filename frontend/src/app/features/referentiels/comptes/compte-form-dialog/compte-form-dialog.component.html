@@ -1,0 +1,80 @@
+<app-parcours-guide
+    [visible]="visible()"
+    [titre]="modeEdition() ? t.referentiels.compte.form.titreEdition : t.referentiels.compte.form.titreCreation"
+    [sousTitre]="t.referentiels.compte.titre"
+    [badgeTexte]="t.referentiels.compte.form.badge"
+    badgeTon="info"
+    largeur="50rem"
+    [etapes]="etapesParcours()"
+    [etapeCourante]="etapeCourante()"
+    [lignes]="lignesFiche()"
+    [ficheTitre]="ficheTitre()"
+    [impactPrincipal]="impactPrincipal()"
+    [impactSecondaire]="impactSecondaire()"
+    [modeEdition]="modeEdition()"
+    [peutAllerFin]="peutAllerFin()"
+    [enregistrementEnCours]="enregistrementEnCours()"
+    (precedent)="precedent()"
+    (suivant)="suivant()"
+    (allerFin)="allerALaFin()"
+    (naviguerFiche)="naviguerDepuisFiche($event)"
+    (enregistrer)="soumettre()"
+    (fermer)="fermer()"
+>
+    <div class="flex flex-col gap-5" [formGroup]="form">
+        @switch (etapeCourante()) {
+
+            @case ('quoi') {
+                <div>
+                    <app-input-text
+                        [label]="t.referentiels.compte.libelle"
+                        [required]="true"
+                        [hint]="t.referentiels.compte.form.libelleAide"
+                        formControlName="libelle"
+                    />
+                    @if (form.get('libelle')!.invalid && form.get('libelle')!.touched) {
+                        <p-message severity="error">{{ t.commun.champObligatoire }}</p-message>
+                    }
+                </div>
+            }
+
+            @case ('membres') {
+                <p class="aide">{{ t.referentiels.compte.form.membresAide }}</p>
+
+                <div class="membres">
+                    @for (m of membres(); track m.id) {
+                        <button
+                            type="button"
+                            class="membre"
+                            [class.membre--actif]="estRattache(m.id)"
+                            [attr.aria-pressed]="estRattache(m.id)"
+                            (click)="basculerMembre(m.id)"
+                        >
+                            <span class="avatar" [style.background]="couleur(m)">{{ initiales(m.nom) }}</span>
+                            <span class="nom">{{ m.nom }}</span>
+                        </button>
+                    }
+                </div>
+
+                @if (erreurMembres(); as err) {
+                    <p-message severity="error">{{ err }}</p-message>
+                }
+            }
+
+            @case ('argent') {
+                <app-select
+                    [label]="t.referentiels.compte.devise"
+                    formControlName="devise"
+                    [options]="devises()"
+                    [hint]="t.commun.deviseConfigureeAide"
+                />
+                <app-input-number
+                    [label]="t.referentiels.compte.soldeInitial"
+                    formControlName="soldeInitial"
+                    mode="decimal"
+                    [minFractionDigits]="2"
+                />
+            }
+        }
+    </div>
+</app-parcours-guide>

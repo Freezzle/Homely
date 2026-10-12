@@ -1,0 +1,128 @@
+<app-parcours-guide
+    [visible]="visible()"
+    [titre]="modeEdition() ? t.scenario.form.titreEdition : t.scenario.form.titreCreation"
+    [sousTitre]="t.nav.scenarios"
+    [badgeTexte]="t.scenario.form.badge"
+    badgeTon="info"
+    largeur="50rem"
+    [etapes]="etapesParcours()"
+    [etapeCourante]="etapeCourante()"
+    [lignes]="lignesFiche()"
+    [ficheTitre]="ficheTitre()"
+    [modeEdition]="modeEdition()"
+    [enregistrementEnCours]="enregistrementEnCours()"
+    (precedent)="precedent()"
+    (suivant)="suivant()"
+    (naviguerFiche)="naviguerDepuisFiche($event)"
+    (enregistrer)="soumettre()"
+    (fermer)="fermer()"
+>
+    <div class="flex flex-col gap-5" [formGroup]="form">
+        @switch (etapeCourante()) {
+
+            @case ('quoi') {
+                <div>
+                    <app-input-text
+                        [label]="t.commun.nom"
+                        [required]="true"
+                        [hint]="t.scenario.form.nomAide"
+                        formControlName="nom"
+                    />
+                    @if (form.get('nom')!.invalid && form.get('nom')!.touched) {
+                        <p-message severity="error">{{ t.commun.champObligatoire }}</p-message>
+                    }
+                </div>
+            }
+
+            @case ('projection') {
+                <p class="aide">{{ t.scenario.form.projectionAide }}</p>
+
+                <div class="grid grid-cols-1 gap-4">
+                    <app-input-number
+                        class="min-w-0"
+                        [label]="t.scenario.anneeDepart"
+                        formControlName="anneeDepart"
+                        [min]="2020"
+                        [max]="2099"
+                        [useGrouping]="false"
+                    />
+                    <app-input-number
+                        class="min-w-0"
+                        [label]="t.scenario.horizonAnnees"
+                        formControlName="horizonAnnees"
+                        [min]="1"
+                        [max]="100"
+                    />
+                    <app-input-number
+                        class="min-w-0"
+                        [label]="t.scenario.tresorerieInitiale"
+                        formControlName="tresorerieInitiale"
+                        mode="decimal"
+                        [minFractionDigits]="2"
+                    />
+                </div>
+            }
+
+            @case ('repartition') {
+                <p class="aide">{{ t.scenario.form.repartitionAide }}</p>
+
+                @if (deuxMembres()) {
+                    <div class="duo">
+                        <div class="duo-membre">
+                            <span class="avatar" [style.background]="couleur(membreA())">{{ initiales(membreA().nom) }}</span>
+                            <p class="nom">{{ membreA().nom }} · {{ partA() }} %</p>
+                        </div>
+                        <div class="duo-membre duo-membre--fin">
+                            <p class="nom">{{ membreB().nom }} · {{ partB() }} %</p>
+                            <span class="avatar" [style.background]="couleur(membreB())">{{ initiales(membreB().nom) }}</span>
+                        </div>
+                    </div>
+
+                    <input
+                        type="range"
+                        class="curseur"
+                        min="0"
+                        max="100"
+                        step="1"
+                        [value]="partA()"
+                        [attr.aria-label]="curseurLabel()"
+                        [attr.aria-valuetext]="curseurAria()"
+                        (input)="onCurseurInput($event)"
+                        (change)="onCurseurChange($event)"
+                    />
+
+                    <app-choix-puces
+                        [options]="presets()"
+                        [value]="presetActif()"
+                        (valueChange)="appliquerPreset($event)"
+                    />
+                } @else {
+                    <div class="parts">
+                        @for (m of membres(); track m.id) {
+                            <app-input-number
+                                [label]="m.nom"
+                                [min]="0"
+                                [max]="100"
+                                suffix=" %"
+                                [minFractionDigits]="0"
+                                [maxFractionDigits]="2"
+                                [useGrouping]="false"
+                                [ngModel]="partDe(m.id)"
+                                [ngModelOptions]="{ standalone: true }"
+                                (ngModelChange)="majPart(m.id, $event)"
+                            />
+                        }
+                    </div>
+                }
+
+                <p class="total" [class.total--ok]="sommeValide()" [class.total--ko]="!sommeValide()">
+                    {{ t.scenario.form.total }} : {{ somme() }} %
+                </p>
+
+                @if (erreurParts(); as err) {
+                    <p-message severity="error">{{ err }}</p-message>
+                }
+            }
+        }
+    </div>
+</app-parcours-guide>

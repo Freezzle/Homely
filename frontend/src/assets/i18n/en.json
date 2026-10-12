@@ -141,6 +141,47 @@
     "periodeOuverteDejaExistante": "An open period (no end date) already exists; close it first.",
     "horizonAnneesUnite": "years",
     "form": {
+      "titreCreation": "New scenario",
+      "titreEdition": "Edit scenario",
+      "badge": "Scenario",
+      "etapes": {
+        "quoi": "What should this scenario be called?",
+        "projection": "Over which period should it project?",
+        "repartition": "Who carries which share?"
+      },
+      "fiche": {
+        "quoi": "Name",
+        "projection": "Projection",
+        "repartition": "Split"
+      },
+      "nomAide": "A short name, to recognise it in the selector.",
+      "projectionAide": "The scenario starts on 1 January of the starting year.",
+      "repartitionAide": "The household default split; it is revised later under \"Members pro rata\".",
+      "resumeProjection": "{{annee}} · {{horizon}} years · {{tresorerie}}",
+      "cinquante": "50 / 50",
+      "toutMembre": "All {{nom}}",
+      "total": "Total"
+    }
+  },
+  "prorata": {
+    "titre": "Members' proration",
+    "aucunResultat": "No split period defined.",
+    "aucunScenario": "No scenario selected.",
+    "monoMembreNonApplicable": "Proration does not apply to single-member households.",
+    "reviserTaux": "Revise rates",
+    "revisionTitre": "Revise rates",
+    "revisionDateEffet": "Effective date",
+    "revisionResume": "{{avant}} → {{apres}}, from {{date}}",
+    "annulerRevision": "Cancel this revision",
+    "annulerRevisionTitre": "Cancel revision",
+    "annulerRevisionConfirmation": "The current period will be deleted: the previous period will take over its rates until the end of the current period.",
+    "decalerDateEffet": "Shift the effective date",
+    "decalerDateEffetTitre": "Shift the effective date",
+    "decalerDateEffetLabel": "Starts on",
+    "decalerDateEffetDateActuelle": "Current date",
+    "decalerDateEffetResume": "Boundary shifted from {{debutActuel}} to {{nouvelleDate}}",
+    "decalerDateEffetAucunMoisDisponible": "No month is available: the two periods are only one month apart, there is no room to shift the boundary.",
+    "form": {
       "titreCreation": "New period",
       "titreEdition": "Edit split",
       "badge": "Pro rata",
@@ -162,25 +203,6 @@
       "resumePeriodeOuverte": "From {{debut}}, no end",
       "resumePeriode": "From {{debut}} to {{fin}}"
     }
-  },
-  "prorata": {
-    "titre": "Members' proration",
-    "aucunResultat": "No split period defined.",
-    "aucunScenario": "No scenario selected.",
-    "monoMembreNonApplicable": "Proration does not apply to single-member households.",
-    "reviserTaux": "Revise rates",
-    "revisionTitre": "Revise rates",
-    "revisionDateEffet": "Effective date",
-    "revisionResume": "{{avant}} → {{apres}}, from {{date}}",
-    "annulerRevision": "Cancel this revision",
-    "annulerRevisionTitre": "Cancel revision",
-    "annulerRevisionConfirmation": "The current period will be deleted: the previous period will take over its rates until the end of the current period.",
-    "decalerDateEffet": "Shift the effective date",
-    "decalerDateEffetTitre": "Shift the effective date",
-    "decalerDateEffetLabel": "Starts on",
-    "decalerDateEffetDateActuelle": "Current date",
-    "decalerDateEffetResume": "Boundary shifted from {{debutActuel}} to {{nouvelleDate}}",
-    "decalerDateEffetAucunMoisDisponible": "No month is available: the two periods are only one month apart, there is no room to shift the boundary."
   },
   "poste": {
     "description": "Description",
@@ -887,7 +909,24 @@
       "titre": "Members",
       "nom": "Name",
       "couleur": "Color",
-      "actif": "Active"
+      "actif": "Active",
+      "form": {
+        "titreCreation": "New member",
+        "titreEdition": "Edit member",
+        "badge": "Member",
+        "etapes": {
+          "quoi": "What is their name?",
+          "couleur": "Which colour should they get?"
+        },
+        "fiche": {
+          "quoi": "Name",
+          "couleur": "Colour"
+        },
+        "nomAide": "A first name is enough: it is used as a label throughout the app.",
+        "palette": "Palette",
+        "couleurLibre": "Custom colour",
+        "couleurChoisie": "Selected colour"
+      }
     },
     "compte": {
       "titre": "Bank accounts",
@@ -898,7 +937,25 @@
       "membresRequis": "At least one active member required",
       "membresPlaceholder": "Select members…",
       "definirPrimaire": "Set as this member's primary account",
-      "retirerPrimaire": "Remove this primary account"
+      "retirerPrimaire": "Remove this primary account",
+      "form": {
+        "titreCreation": "New account",
+        "titreEdition": "Edit account",
+        "badge": "Account",
+        "etapes": {
+          "quoi": "What is this account?",
+          "membres": "Who uses it?",
+          "argent": "Which currency, and what opening balance?"
+        },
+        "fiche": {
+          "quoi": "Label",
+          "membres": "Members",
+          "argent": "Currency and balance"
+        },
+        "libelleAide": "E.g. Joint account, Dylan savings…",
+        "membresAide": "A shared account is linked to several members.",
+        "resumeArgent": "{{solde}} in {{devise}}"
+      }
     },
     "categorie": {
       "titre": "Categories",
@@ -912,6 +969,24 @@
         "REVENU": "Income",
         "CHARGE": "Expense",
         "RESERVE": "Savings"
+      },
+      "form": {
+        "titreCreation": "New category",
+        "titreEdition": "Edit category",
+        "badge": "Category",
+        "etapes": {
+          "quoi": "What is its label?",
+          "type": "Which kind of item does it apply to?"
+        },
+        "fiche": {
+          "quoi": "Label",
+          "type": "Kind"
+        },
+        "typeAide": {
+          "REVENU": "What comes into the household.",
+          "CHARGE": "What goes out of it.",
+          "RESERVE": "What is set aside."
+        }
       }
     },
     "taux": {
@@ -920,7 +995,22 @@
       "devisePlaceholder": "EUR, USD…",
       "tauxVersBase": "Rate to base currency",
       "tauxDeviseBaseVerrouille": "Rate locked to 1: this is the household's base currency.",
-      "egaliteTauxVersBase": "1 {{devise}} = value in {{deviseBase}}"
+      "egaliteTauxVersBase": "1 {{devise}} = value in {{deviseBase}}",
+      "form": {
+        "titreCreation": "New exchange rate",
+        "titreEdition": "Edit rate",
+        "badge": "Rate",
+        "etapes": {
+          "devise": "Which currency?",
+          "taux": "What is it worth?"
+        },
+        "fiche": {
+          "devise": "Currency",
+          "taux": "Rate"
+        },
+        "deviseAide": "Three-letter code, e.g. EUR or USD.",
+        "deviseVerrouillee": "The currency of an existing rate cannot be changed: delete it and create it again."
+      }
     }
   },
   "parametres": {
@@ -1106,7 +1196,7 @@
     "vueAnnuelleResume": "12 months combined",
     "railLabel": "Period selector",
     "soldeLabel": "balance",
-    "monthTooltip": "{{amount}} \u00b7 {{level}}",
+    "monthTooltip": "{{amount}} · {{level}}",
     "monthAriaLabel": "{{month}} {{year}}, {{soldeLabel}} {{amount}}, {{level}}",
     "yearAriaLabel": "{{year}}, {{soldeLabel}} {{amount}}, {{level}}",
     "levels": {

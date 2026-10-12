@@ -46,20 +46,8 @@
   </div>
 </div>
 
-<p-dialog [(visible)]="dialogVisible" [header]="membreEnEdition ? t.commun.modifier : t.commun.creer"
-          [modal]="true" class="w-full max-w-md">
-  <form [formGroup]="form" class="flex flex-col pt-2">
-    <app-input-text
-      [label]="t.referentiels.membre.nom"
-      formControlName="nom"
-      [required]="true" />
-    <app-color-input
-      [label]="t.referentiels.membre.couleur"
-      formControlName="couleur"
-      [ariaLabel]="t.referentiels.membre.couleur" />
-  </form>
-  <ng-template #footer>
-    <app-button [label]="t.commun.annuler" severity="secondary" (clickEvent)="dialogVisible = false" />
-    <app-button [label]="t.commun.enregistrer" (clickEvent)="enregistrer()" [disabled]="form.invalid" />
-  </ng-template>
-</p-dialog>
+<app-membre-form-dialog
+  [visible]="dialogVisible"
+  [membre]="membreEnEdition"
+  (visibleChange)="dialogVisible = $event"
+  (enregistrer)="enregistrer($event)" />

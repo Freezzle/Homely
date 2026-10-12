@@ -51,62 +51,9 @@
 </div>
 
 <!-- Dialog formulaire -->
-<p-dialog [(visible)]="dialogVisible" [header]="scenarioEnEdition ? t.commun.modifier : t.commun.creer"
-          [modal]="true" class="w-full max-w-lg">
-  <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
-    <app-input-text [label]="t.commun.nom" [required]="true" formControlName="nom" />
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <app-input-number
-        class="min-w-0"
-        [label]="t.scenario.anneeDepart"
-        formControlName="anneeDepart"
-        [min]="2020"
-        [max]="2099"
-        [useGrouping]="false" />
-      <app-input-number
-        class="min-w-0"
-        [label]="t.scenario.tresorerieInitiale"
-        formControlName="tresorerieInitiale"
-        mode="decimal"
-        [minFractionDigits]="2" />
-      <app-input-number
-        class="min-w-0"
-        [label]="t.scenario.horizonAnnees"
-        formControlName="horizonAnnees"
-        [min]="1"
-        [max]="100" />
-    </div>
-    <!-- Répartition (uniquement à la création : non modifiable depuis ce formulaire) -->
-    @if (!scenarioEnEdition && !monoMembre) {
-      <div class="flex flex-col gap-2">
-        <div class="flex items-center justify-between">
-          <label class="text-sm font-medium">{{ t.scenario.repartition }}</label>
-          <span class="text-sm" [class.texte-succes]="sommeRepValide" [class.texte-danger]="!sommeRepValide">
-            {{ sommeRep }}%
-          </span>
-        </div>
-        @for (m of membres(); track m.id) {
-          <div class="flex items-center gap-3">
-            <span class="flex-1 text-sm">{{ m.nom }}</span>
-            <app-input-number
-              class="w-24"
-              [ngModel]="repsMap[m.id]"
-              [ngModelOptions]="{ standalone: true }"
-              (ngModelChange)="onRepChange(m.id, $event)"
-              [min]="0"
-              [max]="100"
-              [minFractionDigits]="0"
-              [maxFractionDigits]="2"
-              [useGrouping]="false" />
-            <span class="text-sm">%</span>
-          </div>
-        }
-      </div>
-    }
-  </form>
-  <ng-template #footer>
-    <app-button [label]="t.commun.annuler" severity="secondary" (clickEvent)="dialogVisible = false" />
-    <app-button [label]="t.commun.enregistrer" (clickEvent)="enregistrer()"
-                [disabled]="form.invalid || (!scenarioEnEdition && !monoMembre && !sommeRepValide)" />
-  </ng-template>
-</p-dialog>
+<app-scenario-form-dialog
+  [visible]="dialogVisible"
+  [scenario]="scenarioEnEdition"
+  [membres]="membres()"
+  (visibleChange)="dialogVisible = $event"
+  (enregistrer)="enregistrer($event)" />

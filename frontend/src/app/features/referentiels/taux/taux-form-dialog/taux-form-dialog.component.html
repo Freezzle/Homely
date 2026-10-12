@@ -1,0 +1,56 @@
+<app-parcours-guide
+    [visible]="visible()"
+    [titre]="modeEdition() ? t.referentiels.taux.form.titreEdition : t.referentiels.taux.form.titreCreation"
+    [sousTitre]="t.referentiels.taux.titre"
+    [badgeTexte]="t.referentiels.taux.form.badge"
+    badgeTon="info"
+    largeur="46rem"
+    [etapes]="etapesParcours()"
+    [etapeCourante]="etapeCourante()"
+    [lignes]="lignesFiche()"
+    [ficheTitre]="ficheTitre()"
+    [modeEdition]="modeEdition()"
+    [enregistrementEnCours]="enregistrementEnCours()"
+    (precedent)="precedent()"
+    (suivant)="suivant()"
+    (naviguerFiche)="naviguerDepuisFiche($event)"
+    (enregistrer)="soumettre()"
+    (fermer)="fermer()"
+>
+    <div class="flex flex-col gap-5" [formGroup]="form">
+        @switch (etapeCourante()) {
+
+            @case ('devise') {
+                <div>
+                    <app-input-text
+                        [label]="t.referentiels.taux.devise"
+                        [required]="true"
+                        [readonly]="modeEdition()"
+                        [maxlength]="3"
+                        [hint]="modeEdition() ? t.referentiels.taux.form.deviseVerrouillee : t.referentiels.taux.form.deviseAide"
+                        formControlName="devise"
+                    />
+                    @if (form.get('devise')!.invalid && form.get('devise')!.touched) {
+                        <p-message severity="error">{{ t.commun.champObligatoire }}</p-message>
+                    }
+                </div>
+            }
+
+            @case ('taux') {
+                @if (estDeviseBase()) {
+                    <p-message severity="info">{{ t.referentiels.taux.tauxDeviseBaseVerrouille }}</p-message>
+                }
+                <app-input-number
+                    [label]="t.referentiels.taux.tauxVersBase"
+                    [required]="true"
+                    formControlName="tauxVersBase"
+                    mode="decimal"
+                    [minFractionDigits]="6"
+                    [maxFractionDigits]="6"
+                    [min]="0.000001"
+                    [hint]="aideEgalite()"
+                />
+            }
+        }
+    </div>
+</app-parcours-guide>

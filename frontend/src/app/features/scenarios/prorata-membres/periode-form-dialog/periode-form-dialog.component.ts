@@ -92,7 +92,7 @@ export class PeriodeFormDialogComponent {
   private readonly etapesTouchees = signal<Set<EtapePeriode>>(new Set<EtapePeriode>());
 
   protected readonly etapesParcours = computed<EtapeParcours[]>(() => {
-    const e = this.t.scenario.form.etapes;
+    const e = this.t.prorata.form.etapes;
     return ETAPES.map(cle => ({ cle, titre: e[cle] }));
   });
 
@@ -199,7 +199,7 @@ export class PeriodeFormDialogComponent {
   }));
 
   protected readonly raccourcisFin = computed<OptionChoix<RaccourciFin>[]>(() => {
-    const f = this.t.scenario.form;
+    const f = this.t.prorata.form;
     const dates = this.datesFin();
     return [
       { value: 'SANS_FIN', titre: f.sansFin, sousTitre: f.sansFinAide },
@@ -282,7 +282,7 @@ export class PeriodeFormDialogComponent {
   protected readonly partB = computed(() => arrondirPart(100 - this.partA()));
 
   protected readonly presets = computed<OptionChoix<Preset>[]>(() => {
-    const f = this.t.scenario.form;
+    const f = this.t.prorata.form;
     return [
       { value: 'TOUT_A', titre: f.toutMembre.replace('{{nom}}', this.membreA()?.nom ?? '') },
       { value: 'CINQUANTE', titre: f.cinquante },
@@ -349,7 +349,7 @@ export class PeriodeFormDialogComponent {
   protected readonly ficheTitre = computed(() => this.t.prorata.titre);
 
   protected readonly lignesFiche = computed<LigneFiche[]>(() => {
-    const f = this.t.scenario.form.fiche;
+    const f = this.t.prorata.form.fiche;
     const visitees = this.etapesVisitees();
     const valeurs: Record<EtapePeriode, string | null> = {
       periode: this.resumePeriode(),
@@ -366,7 +366,7 @@ export class PeriodeFormDialogComponent {
   private resumePeriode(): string | null {
     const debut = this.valeurDebut();
     if (!debut) return null;
-    const f = this.t.scenario.form;
+    const f = this.t.prorata.form;
     const fin = this.valeurFin();
     const debutLisible = dateLisible(debut, this.locale());
     return fin

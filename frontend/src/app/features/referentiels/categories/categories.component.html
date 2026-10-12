@@ -42,26 +42,11 @@
 </div>
 
 <!-- Dialog création / édition -->
-<p-dialog [(visible)]="dialogVisible" [header]="categorieEnEdition ? t.commun.modifier : t.commun.creer"
-          [modal]="true" class="w-full max-w-md">
-  <form [formGroup]="form" class="flex flex-col pt-2">
-    <app-input-text
-      [label]="t.referentiels.categorie.libelle"
-      formControlName="libelle"
-      [required]="true" />
-    <app-select
-      [label]="t.referentiels.categorie.typePoste"
-      formControlName="typePoste"
-      [required]="true"
-      [options]="typeOptions"
-      optionLabel="label"
-      optionValue="value" />
-  </form>
-  <ng-template #footer>
-    <app-button [label]="t.commun.annuler" severity="secondary" (clickEvent)="dialogVisible = false" />
-    <app-button [label]="t.commun.enregistrer" (clickEvent)="enregistrer()" [disabled]="form.invalid" />
-  </ng-template>
-</p-dialog>
+<app-categorie-form-dialog
+  [visible]="dialogVisible"
+  [categorie]="categorieEnEdition"
+  (visibleChange)="dialogVisible = $event"
+  (enregistrer)="enregistrer($event)" />
 
 <!-- Dialog suppression avec migration optionnelle -->
 <app-dialog-suppression

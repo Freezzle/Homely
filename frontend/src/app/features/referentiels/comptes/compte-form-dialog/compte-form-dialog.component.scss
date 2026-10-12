@@ -1,0 +1,48 @@
+.aide {
+  font-size: var(--app-text-sm);
+  color: var(--app-ink-muted);
+}
+
+.membres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--app-space-2);
+}
+
+.membre {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--app-space-2);
+  min-height: 44px;
+  padding: var(--app-space-2) var(--app-space-3);
+  background: var(--app-card);
+  border: 1px solid var(--app-line-3);
+  border-radius: var(--app-radius-pill);
+  cursor: pointer;
+
+  &:hover { border-color: var(--p-primary-color); }
+
+  &--actif {
+    border: 2px solid var(--p-primary-color);
+    background: var(--app-selection-bg);
+    padding: calc(var(--app-space-2) - 1px) calc(var(--app-space-3) - 1px);
+  }
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border-radius: var(--app-radius-pill);
+  color: var(--p-primary-contrast-color);
+  font-size: var(--app-text-xs);
+  font-weight: 700;
+}
+
+.nom {
+  font-weight: 600;
+  color: var(--app-ink);
+}

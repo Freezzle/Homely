@@ -67,44 +67,9 @@
   </div>
 </div>
 
-<p-dialog [(visible)]="dialogVisible" [header]="compteEnEdition ? t.commun.modifier : t.commun.creer"
-          [modal]="true" class="w-full max-w-lg">
-  <form [formGroup]="form" class="flex flex-col pt-2">
-    <app-input-text
-      [label]="t.referentiels.compte.libelle"
-      formControlName="libelle"
-      [required]="true" />
-
-    <!-- Membres rattachés -->
-    <div class="flex flex-col">
-      <app-multi-select
-        [label]="t.referentiels.compte.membres"
-        formControlName="membreIds"
-        [required]="true"
-        [options]="membresActifs()"
-        optionLabel="nom"
-        optionValue="id"
-        display="chip"
-      />
-      @if (form.get('membreIds')?.invalid && form.get('membreIds')?.touched) {
-        <p-message severity="warn">{{ t.referentiels.compte.membresRequis }}</p-message>
-      }
-    </div>
-
-    <app-select
-      [label]="t.referentiels.compte.devise"
-      formControlName="devise"
-      [options]="devisesOptions()"
-      [hint]="t.commun.deviseConfigureeAide" />
-    <app-input-number
-      [label]="t.referentiels.compte.soldeInitial"
-      formControlName="soldeInitial"
-      mode="decimal"
-      [minFractionDigits]="2" />
-  </form>
-  <ng-template #footer>
-    <app-button [label]="t.commun.annuler" severity="secondary" (clickEvent)="dialogVisible = false" />
-    <app-button [label]="t.commun.enregistrer" (clickEvent)="enregistrer()"
-              [disabled]="form.invalid || !membreIdsNonVides()" />
-  </ng-template>
-</p-dialog>
+<app-compte-form-dialog
+  [visible]="dialogVisible"
+  [compte]="compteEnEdition"
+  [membres]="membresActifs()"
+  (visibleChange)="dialogVisible = $event"
+  (enregistrer)="enregistrer($event)" />

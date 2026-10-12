@@ -455,7 +455,7 @@ export class PolitiqueFormDialogComponent {
   private resumeValidite(): string | null {
     const v = this.formValue();
     if (!v.dateDebut) return null;
-    const f = this.t.scenario.form;
+    const f = this.t.prorata.form;
     const debut = moisAnnee(v.dateDebut, this.locale());
     return v.dateFin
       ? f.resumePeriode.replace('{{debut}}', debut).replace('{{fin}}', moisAnnee(v.dateFin, this.locale()))

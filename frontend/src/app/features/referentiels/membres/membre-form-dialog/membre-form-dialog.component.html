@@ -1,0 +1,61 @@
+<app-parcours-guide
+    [visible]="visible()"
+    [titre]="modeEdition() ? t.referentiels.membre.form.titreEdition : t.referentiels.membre.form.titreCreation"
+    [sousTitre]="t.referentiels.membre.titre"
+    [badgeTexte]="t.referentiels.membre.form.badge"
+    badgeTon="info"
+    largeur="46rem"
+    [etapes]="etapesParcours()"
+    [etapeCourante]="etapeCourante()"
+    [lignes]="lignesFiche()"
+    [ficheTitre]="ficheTitre()"
+    [modeEdition]="modeEdition()"
+    [enregistrementEnCours]="enregistrementEnCours()"
+    (precedent)="precedent()"
+    (suivant)="suivant()"
+    (naviguerFiche)="naviguerDepuisFiche($event)"
+    (enregistrer)="soumettre()"
+    (fermer)="fermer()"
+>
+    <div class="flex flex-col gap-5" [formGroup]="form">
+        @switch (etapeCourante()) {
+
+            @case ('quoi') {
+                <div>
+                    <app-input-text
+                        [label]="t.referentiels.membre.nom"
+                        [required]="true"
+                        [hint]="t.referentiels.membre.form.nomAide"
+                        formControlName="nom"
+                    />
+                    @if (form.get('nom')!.invalid && form.get('nom')!.touched) {
+                        <p-message severity="error">{{ t.commun.champObligatoire }}</p-message>
+                    }
+                </div>
+            }
+
+            @case ('couleur') {
+                <div class="apercu">
+                    <span class="pastille" [style.background]="couleur()"></span>
+                    <div class="flex flex-col gap-0.5">
+                        <span class="nom">{{ ficheTitre() }}</span>
+                        <span class="hex">{{ couleur().toUpperCase() }}</span>
+                    </div>
+                </div>
+
+                <app-palette-couleurs
+                    [label]="t.referentiels.membre.form.palette"
+                    [gabaritAria]="t.referentiels.membre.couleur + ' {{n}}'"
+                    [value]="couleur()"
+                    (valueChange)="choisirCouleur($event)"
+                />
+
+                <app-color-input
+                    [label]="t.referentiels.membre.form.couleurLibre"
+                    formControlName="couleur"
+                    [ariaLabel]="t.referentiels.membre.form.couleurLibre"
+                />
+            }
+        }
+    </div>
+</app-parcours-guide>

@@ -1,30 +1,29 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
-import { DialogModule } from 'primeng/dialog';
 import { MessageModule } from 'primeng/message';
 import { MessageService } from 'primeng/api';
 import { ContexteService } from '../../../core/services/contexte.service';
 import { CategorieService } from '../../../core/services/referentiel.service';
-import { CategorieDto, TypeCategorie } from '../../../core/models/api.models';
+import { CategorieDto } from '../../../core/models/api.models';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { DialogSuppressionComponent } from '../../../shared/components/dialog-suppression/dialog-suppression.component';
-import { InputTextComponent, SelectComponent } from '../../../shared/components/form-fields';
+import { SelectComponent } from '../../../shared/components/form-fields';
 import { TagComponent } from '../../../shared/components/tag/tag.component';
 import { creerCrudReferentiel } from '../../../core/utils/crud-referentiel.util';
 import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
+import { CategorieFormDialogComponent, CategorieFormRequest } from './categorie-form-dialog/categorie-form-dialog.component';
 
 /** T10.2 — CRUD Catégories */
 @Component({
   selector: 'app-categories',
   standalone: true,
   imports: [
-    CommonModule, ReactiveFormsModule,
-    TableModule, ButtonComponent, DialogModule, TagComponent, MessageModule,
-    InputTextComponent, SelectComponent, FormsModule,
-    DialogSuppressionComponent,
+    CommonModule, TableModule, ButtonComponent, TagComponent, MessageModule,
+    SelectComponent, FormsModule,
+    DialogSuppressionComponent, CategorieFormDialogComponent,
   ],
   templateUrl: './categories.component.html',
 })
@@ -34,7 +33,6 @@ export class CategoriesComponent {
   contexte = inject(ContexteService);
   private categorieSvc = inject(CategorieService);
   private toast = inject(MessageService);
-  private fb = inject(FormBuilder);
 
   private readonly _crud = creerCrudReferentiel(this.contexte, this.categorieSvc, this.toast, {
     succes: this.t.commun.succes,
@@ -58,36 +56,22 @@ export class CategoriesComponent {
   /** Catégories disponibles pour la migration (même typePoste, hors catégorie à supprimer) */
   categoriesMigration = signal<CategorieDto[]>([]);
 
-  typeOptions: { label: string; value: TypeCategorie }[] = [
-    { label: this.t.referentiels.categorie.typeOptions.REVENU, value: 'REVENU' },
-    { label: this.t.referentiels.categorie.typeOptions.CHARGE, value: 'CHARGE' },
-    { label: this.t.referentiels.categorie.typeOptions.RESERVE, value: 'RESERVE' },
-  ];
-
-  form = this.fb.group({
-    libelle: ['', Validators.required],
-    typePoste: ['REVENU' as TypeCategorie, Validators.required],
-  });
-
   charger(): void {
     this._crud.charger();
   }
 
   ouvrirCreation(): void {
     this.categorieEnEdition = null;
-    this.form.reset({ libelle: '', typePoste: 'REVENU' });
     this.dialogVisible = true;
   }
 
   ouvrirEdition(c: CategorieDto): void {
     this.categorieEnEdition = c;
-    this.form.patchValue({ libelle: c.libelle, typePoste: c.typePoste });
     this.dialogVisible = true;
   }
 
-  enregistrer(): void {
-    const v = this.form.value;
-    const req = { libelle: v.libelle!, typePoste: v.typePoste as TypeCategorie };
+  /** La popin a validé sa saisie : il ne reste qu'à persister et refermer. */
+  enregistrer(req: CategorieFormRequest): void {
     this._crud.enregistrer(this.categorieEnEdition?.id ?? null, req, () => { this.dialogVisible = false; });
   }
 

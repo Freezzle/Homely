@@ -141,6 +141,47 @@
     "periodeOuverteDejaExistante": "Il existe déjà une période ouverte (sans date de fin) ; fermez-la d'abord.",
     "horizonAnneesUnite": "ans",
     "form": {
+      "titreCreation": "Nouveau scénario",
+      "titreEdition": "Modifier le scénario",
+      "badge": "Scénario",
+      "etapes": {
+        "quoi": "Quel nom pour ce scénario ?",
+        "projection": "Sur quelle période projeter ?",
+        "repartition": "Qui porte quelle part ?"
+      },
+      "fiche": {
+        "quoi": "Nom",
+        "projection": "Projection",
+        "repartition": "Répartition"
+      },
+      "nomAide": "Un nom court, pour le reconnaître dans le sélecteur.",
+      "projectionAide": "Le scénario démarre au 1er janvier de l’année de départ.",
+      "repartitionAide": "La répartition par défaut du foyer : elle se révise ensuite dans « Prorata des membres ».",
+      "resumeProjection": "{{annee}} · {{horizon}} ans · {{tresorerie}}",
+      "cinquante": "50 / 50",
+      "toutMembre": "Tout {{nom}}",
+      "total": "Total"
+    }
+  },
+  "prorata": {
+    "titre": "Prorata des membres",
+    "aucunResultat": "Aucune période de répartition définie.",
+    "aucunScenario": "Aucun scénario sélectionné.",
+    "monoMembreNonApplicable": "Le prorata ne s'applique pas aux foyers à un seul membre.",
+    "reviserTaux": "Réviser les taux",
+    "revisionTitre": "Réviser les taux",
+    "revisionDateEffet": "Effet dès le",
+    "revisionResume": "{{avant}} → {{apres}}, dès {{date}}",
+    "annulerRevision": "Annuler cette révision",
+    "annulerRevisionTitre": "Annuler la révision",
+    "annulerRevisionConfirmation": "La période actuelle sera supprimée : la période précédente reprendra ses taux jusqu'à la fin de la période actuelle.",
+    "decalerDateEffet": "Décaler la date d'effet",
+    "decalerDateEffetTitre": "Décaler la date d'effet",
+    "decalerDateEffetLabel": "Débute le",
+    "decalerDateEffetDateActuelle": "Date actuelle",
+    "decalerDateEffetResume": "Frontière déplacée du {{debutActuel}} au {{nouvelleDate}}",
+    "decalerDateEffetAucunMoisDisponible": "Aucun mois n'est disponible : les deux périodes ne sont séparées que d'un mois, il n'y a pas de marge pour décaler la frontière.",
+    "form": {
       "titreCreation": "Nouvelle période",
       "titreEdition": "Modifier la répartition",
       "badge": "Prorata",
@@ -162,25 +203,6 @@
       "resumePeriodeOuverte": "Dès le {{debut}}, sans fin",
       "resumePeriode": "Du {{debut}} au {{fin}}"
     }
-  },
-  "prorata": {
-    "titre": "Prorata des membres",
-    "aucunResultat": "Aucune période de répartition définie.",
-    "aucunScenario": "Aucun scénario sélectionné.",
-    "monoMembreNonApplicable": "Le prorata ne s'applique pas aux foyers à un seul membre.",
-    "reviserTaux": "Réviser les taux",
-    "revisionTitre": "Réviser les taux",
-    "revisionDateEffet": "Effet dès le",
-    "revisionResume": "{{avant}} → {{apres}}, dès {{date}}",
-    "annulerRevision": "Annuler cette révision",
-    "annulerRevisionTitre": "Annuler la révision",
-    "annulerRevisionConfirmation": "La période actuelle sera supprimée : la période précédente reprendra ses taux jusqu'à la fin de la période actuelle.",
-    "decalerDateEffet": "Décaler la date d'effet",
-    "decalerDateEffetTitre": "Décaler la date d'effet",
-    "decalerDateEffetLabel": "Débute le",
-    "decalerDateEffetDateActuelle": "Date actuelle",
-    "decalerDateEffetResume": "Frontière déplacée du {{debutActuel}} au {{nouvelleDate}}",
-    "decalerDateEffetAucunMoisDisponible": "Aucun mois n'est disponible : les deux périodes ne sont séparées que d'un mois, il n'y a pas de marge pour décaler la frontière."
   },
   "poste": {
     "description": "Description",
@@ -887,7 +909,24 @@
       "titre": "Membres",
       "nom": "Nom",
       "couleur": "Couleur",
-      "actif": "Actif"
+      "actif": "Actif",
+      "form": {
+        "titreCreation": "Nouveau membre",
+        "titreEdition": "Modifier le membre",
+        "badge": "Membre",
+        "etapes": {
+          "quoi": "Comment s’appelle-t-il ?",
+          "couleur": "Quelle couleur lui donner ?"
+        },
+        "fiche": {
+          "quoi": "Nom",
+          "couleur": "Couleur"
+        },
+        "nomAide": "Le prénom suffit : il sert d’étiquette partout dans l’app.",
+        "palette": "Palette",
+        "couleurLibre": "Couleur personnalisée",
+        "couleurChoisie": "Couleur choisie"
+      }
     },
     "compte": {
       "titre": "Comptes bancaires",
@@ -898,7 +937,25 @@
       "membresRequis": "Au moins un membre actif requis",
       "membresPlaceholder": "Sélectionner les membres…",
       "definirPrimaire": "Définir comme compte primaire de ce membre",
-      "retirerPrimaire": "Retirer ce compte primaire"
+      "retirerPrimaire": "Retirer ce compte primaire",
+      "form": {
+        "titreCreation": "Nouveau compte",
+        "titreEdition": "Modifier le compte",
+        "badge": "Compte",
+        "etapes": {
+          "quoi": "Quel est ce compte ?",
+          "membres": "Qui l’utilise ?",
+          "argent": "Quelle devise, et quel solde de départ ?"
+        },
+        "fiche": {
+          "quoi": "Libellé",
+          "membres": "Membres",
+          "argent": "Devise et solde"
+        },
+        "libelleAide": "Ex. Compte joint, Épargne Dylan…",
+        "membresAide": "Un compte partagé se rattache à plusieurs membres.",
+        "resumeArgent": "{{solde}} en {{devise}}"
+      }
     },
     "categorie": {
       "titre": "Catégories",
@@ -912,6 +969,24 @@
         "REVENU": "Revenu",
         "CHARGE": "Charge",
         "RESERVE": "Réserve"
+      },
+      "form": {
+        "titreCreation": "Nouvelle catégorie",
+        "titreEdition": "Modifier la catégorie",
+        "badge": "Catégorie",
+        "etapes": {
+          "quoi": "Quel est son libellé ?",
+          "type": "À quel type de poste s’applique-t-elle ?"
+        },
+        "fiche": {
+          "quoi": "Libellé",
+          "type": "Type"
+        },
+        "typeAide": {
+          "REVENU": "Ce qui entre dans le foyer.",
+          "CHARGE": "Ce qui en sort.",
+          "RESERVE": "Ce qui est mis de côté."
+        }
       }
     },
     "taux": {
@@ -920,7 +995,22 @@
       "devisePlaceholder": "EUR, USD…",
       "tauxVersBase": "Taux vers devise de base",
       "tauxDeviseBaseVerrouille": "Taux figé à 1 : il s'agit de la devise de base du foyer.",
-      "egaliteTauxVersBase": "1 {{devise}} = valeur {{deviseBase}}"
+      "egaliteTauxVersBase": "1 {{devise}} = valeur {{deviseBase}}",
+      "form": {
+        "titreCreation": "Nouveau taux de change",
+        "titreEdition": "Modifier le taux",
+        "badge": "Taux",
+        "etapes": {
+          "devise": "Quelle devise ?",
+          "taux": "Combien vaut-elle ?"
+        },
+        "fiche": {
+          "devise": "Devise",
+          "taux": "Taux"
+        },
+        "deviseAide": "Code à trois lettres, ex. EUR ou USD.",
+        "deviseVerrouillee": "La devise d’un taux existant ne se modifie pas : supprime-le et recrée-le."
+      }
     }
   },
   "parametres": {
@@ -1076,7 +1166,8 @@
       "AUCUNE": "Aucune configuration"
     },
     "erreurs": {
-      "modeFixeMontantRequis": "Le mode fixe exige un montant.",      "modeVariableChampsRequis": "Le mode variable exige socle, pourcentage et plafond.",
+      "modeFixeMontantRequis": "Le mode fixe exige un montant.",
+      "modeVariableChampsRequis": "Le mode variable exige socle, pourcentage et plafond.",
       "plafondInferieurSocle": "Le plafond doit être supérieur ou égal au socle.",
       "chevauchement": "Cette période chevauche une politique existante pour ce membre.",
       "allocationDoublon": "Une allocation existe déjà pour ce membre et ce mois."
@@ -1100,12 +1191,12 @@
     }
   },
   "periodRail": {
-    "boutonAnnee": "Ann\u00e9e",
+    "boutonAnnee": "Année",
     "vueMensuelle": "vue mensuelle",
-    "vueAnnuelleResume": "12 mois cumul\u00e9s",
-    "railLabel": "S\u00e9lecteur de p\u00e9riode",
+    "vueAnnuelleResume": "12 mois cumulés",
+    "railLabel": "Sélecteur de période",
     "soldeLabel": "solde",
-    "monthTooltip": "{{amount}} \u00b7 {{level}}",
+    "monthTooltip": "{{amount}} · {{level}}",
     "monthAriaLabel": "{{month}} {{year}}, {{soldeLabel}} {{amount}}, {{level}}",
     "yearAriaLabel": "{{year}}, {{soldeLabel}} {{amount}}, {{level}}",
     "levels": {

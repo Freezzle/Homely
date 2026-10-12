@@ -1,8 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
-import { DialogModule } from 'primeng/dialog';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ContexteService } from '../../../core/services/contexte.service';
@@ -11,7 +9,7 @@ import { MembreDto } from '../../../core/models/api.models';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { creerCrudReferentiel } from '../../../core/utils/crud-referentiel.util';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
-import { ColorInputComponent, InputTextComponent } from '../../../shared/components/form-fields';
+import { MembreFormDialogComponent, MembreFormRequest } from './membre-form-dialog/membre-form-dialog.component';
 
 /** T10.2 — CRUD Membres */
 @Component({
@@ -19,10 +17,8 @@ import { ColorInputComponent, InputTextComponent } from '../../../shared/compone
   standalone: true,
   providers: [ConfirmationService],
   imports: [
-    CommonModule, ReactiveFormsModule,
-    TableModule, ButtonComponent, DialogModule,
-    InputTextComponent, ColorInputComponent,
-    ConfirmDialogModule,
+    CommonModule, TableModule, ButtonComponent, ConfirmDialogModule,
+    MembreFormDialogComponent,
   ],
   templateUrl: './membres.component.html',
 })
@@ -33,7 +29,6 @@ export class MembresComponent {
   private membreSvc = inject(MembreService);
   private toast = inject(MessageService);
   private confirm = inject(ConfirmationService);
-  private fb = inject(FormBuilder);
 
   private readonly _crud = creerCrudReferentiel(this.contexte, this.membreSvc, this.toast, {
     succes: this.t.commun.succes,
@@ -46,29 +41,18 @@ export class MembresComponent {
   dialogVisible = false;
   membreEnEdition: MembreDto | null = null;
 
-  form = this.fb.group({
-    nom: ['', Validators.required],
-    couleur: ['#6366f1'],
-  });
-
   ouvrirCreation(): void {
     this.membreEnEdition = null;
-    this.form.reset({ nom: '', couleur: '#6366f1' });
     this.dialogVisible = true;
   }
 
   ouvrirEdition(m: MembreDto): void {
     this.membreEnEdition = m;
-    this.form.patchValue({ nom: m.nom, couleur: m.couleur });
     this.dialogVisible = true;
   }
 
-  enregistrer(): void {
-    const v = this.form.value;
-    // Normalisation défensive du format hexadécimal
-    const raw = v.couleur ?? '6366f1';
-    const couleur = raw.startsWith('#') ? raw : '#' + raw;
-    const req = { nom: v.nom!, couleur };
+  /** La popin a validé sa saisie : il ne reste qu'à persister et refermer. */
+  enregistrer(req: MembreFormRequest): void {
     this._crud.enregistrer(this.membreEnEdition?.id ?? null, req, () => { this.dialogVisible = false; });
   }
 

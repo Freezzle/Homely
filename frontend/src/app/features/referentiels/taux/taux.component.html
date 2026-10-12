@@ -40,26 +40,8 @@
   </div>
 </div>
 
-<p-dialog [(visible)]="dialogVisible" [header]="tauxEnEdition ? t.commun.modifier : t.commun.creer"
-          [modal]="true" class="w-full max-w-sm">
-  <form [formGroup]="form" class="flex flex-col pt-2">
-    <app-input-text
-      [label]="t.referentiels.taux.devise"
-      formControlName="devise"
-      [required]="true"
-      [readonly]="!!tauxEnEdition" />
-    <app-input-number
-      [label]="t.referentiels.taux.tauxVersBase"
-      formControlName="tauxVersBase"
-      [required]="true"
-      mode="decimal"
-      [minFractionDigits]="6"
-      [maxFractionDigits]="6"
-      [min]="0.000001"
-      [hint]="form.get('tauxVersBase')?.disabled ? t.referentiels.taux.tauxDeviseBaseVerrouille : egaliteTauxVersBase()" />
-  </form>
-  <ng-template #footer>
-    <app-button [label]="t.commun.annuler" severity="secondary" (clickEvent)="dialogVisible = false" />
-    <app-button [label]="t.commun.enregistrer" (clickEvent)="enregistrer()" [disabled]="form.invalid" />
-  </ng-template>
-</p-dialog>
+<app-taux-form-dialog
+  [visible]="dialogVisible"
+  [taux]="tauxEnEdition"
+  (visibleChange)="dialogVisible = $event"
+  (enregistrer)="enregistrer($event)" />

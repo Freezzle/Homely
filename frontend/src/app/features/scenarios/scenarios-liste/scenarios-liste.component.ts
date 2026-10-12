@@ -1,8 +1,6 @@
 import { Component, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { TableModule } from 'primeng/table';
-import { DialogModule } from 'primeng/dialog';
 import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
@@ -11,19 +9,18 @@ import { ScenarioService } from '../../../core/services/scenario-poste.service';
 import { ScenarioDto } from '../../../core/models/api.models';
 import { MontantPipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
-import { arrondirSommeRepartition, sommeRepartitionValide as estSommeRepartitionValide } from '../../../core/utils/repartition.util';
 import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
-import { InputNumberComponent, InputTextComponent } from '../../../shared/components/form-fields';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { TagComponent } from '../../../shared/components/tag/tag.component';
+import { ScenarioFormDialogComponent, ScenarioFormRequest } from './scenario-form-dialog/scenario-form-dialog.component';
 
 @Component({
   selector: 'app-scenarios-liste',
   standalone: true,
   providers: [ConfirmationService],
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, TableModule, ButtonComponent,
-    DialogModule, TagComponent, TooltipModule, ConfirmDialogModule,
-    InputTextComponent, InputNumberComponent, MontantPipe],
+  imports: [CommonModule, TableModule, ButtonComponent,
+    TagComponent, TooltipModule, ConfirmDialogModule,
+    MontantPipe, ScenarioFormDialogComponent],
   templateUrl: './scenarios-liste.component.html',
 })
 export class ScenariosListeComponent {
@@ -33,22 +30,12 @@ export class ScenariosListeComponent {
   private scenarioSvc = inject(ScenarioService);
   private toast = inject(MessageService);
   private confirm = inject(ConfirmationService);
-  private fb = inject(FormBuilder);
 
   scenarios = signal<ScenarioDto[]>([]);
   membres = this.contexte.membres;
   chargement = signal(false);
   dialogVisible = false;
   scenarioEnEdition: ScenarioDto | null = null;
-  repsMap: Record<string, number> = {};
-  sommeRep = 0;
-
-  form = this.fb.group({
-    nom: ['', Validators.required],
-    anneeDepart: [new Date().getFullYear(), Validators.required],
-    tresorerieInitiale: [0],
-    horizonAnnees: [9, [Validators.required, Validators.min(1)]],
-  });
 
   private readonly _chargerEffect = effect(() => {
     if (this.contexte.foyerId()) this.charger();
@@ -73,66 +60,17 @@ export class ScenariosListeComponent {
 
   ouvrirCreation(): void {
     this.scenarioEnEdition = null;
-    this.form.reset({ anneeDepart: new Date().getFullYear(), tresorerieInitiale: 0, horizonAnnees: 9 });
-    this.initReps();
     this.dialogVisible = true;
   }
 
   ouvrirEdition(s: ScenarioDto): void {
     this.scenarioEnEdition = s;
-    this.form.patchValue({ nom: s.nom, anneeDepart: s.anneeDepart, tresorerieInitiale: s.tresorerieInitiale, horizonAnnees: s.horizonAnnees });
-    // La répartition ne se modifie pas depuis ce formulaire : elle se gère via les
-    // périodes de prorata dédiées (page "Prorata des membres"). On n'affiche rien et on
-    // n'en tient pas compte à l'enregistrement.
-    this.repsMap = {};
     this.dialogVisible = true;
   }
 
-  /** Foyer mono-membre : la répartition ne se pose pas, 100% est envoyé sans être affiché. */
-  get monoMembre(): boolean {
-    return this.membres().length === 1;
-  }
-
-  private initReps(): void {
-    this.repsMap = {};
-    const membres = this.membres();
-    if (membres.length === 1) {
-      // Un seul membre : 100% implicite, aucune saisie demandée.
-      this.repsMap[membres[0].id] = 100;
-    } else {
-      // Plusieurs membres : aucune suggestion, l'utilisateur doit renseigner chaque pourcentage.
-      membres.forEach(m => { this.repsMap[m.id] = 0; });
-    }
-    this.calculerSomme();
-  }
-
-  onRepChange(membreId: string, val: number | null): void {
-    this.repsMap[membreId] = val ?? 0;
-    this.calculerSomme();
-  }
-
-  calculerSomme(): void {
-    const total = Object.values(this.repsMap).reduce((s, v) => s + (v || 0), 0);
-    // Neutralise les résidus binaires (ex. 33.33+33.33+33.34 = 100.00000000000001).
-    this.sommeRep = arrondirSommeRepartition(total);
-  }
-
-  /** Tolérance flottante : évite qu'une somme visuellement à 100% (ex. 99.999999) soit refusée à tort. */
-  get sommeRepValide(): boolean {
-    return estSommeRepartitionValide(this.sommeRep);
-  }
-
-  enregistrer(): void {
+  /** La popin a validé sa saisie : il ne reste qu'à persister et recharger. */
+  enregistrer(req: ScenarioFormRequest): void {
     const foyerId = this.contexte.foyerId()!;
-    const v = this.form.value;
-    // En édition, la répartition n'est jamais envoyée : elle n'est pas affichée et ne doit
-    // pas être modifiée par ce formulaire (gérée via les périodes de prorata dédiées).
-    const repartitions = this.scenarioEnEdition
-      ? []
-      : this.membres()
-          .filter(m => (this.repsMap[m.id] ?? 0) > 0)
-          .map(m => ({ membreId: m.id, quotePart: Math.round((this.repsMap[m.id] ?? 0) * 100) / 10000 }));
-    const req = { nom: v.nom!, anneeDepart: v.anneeDepart!, tresorerieInitiale: v.tresorerieInitiale ?? 0, horizonAnnees: v.horizonAnnees!, repartitions };
     const obs = this.scenarioEnEdition
       ? this.scenarioSvc.modifier(foyerId, this.scenarioEnEdition.id, req)
       : this.scenarioSvc.creer(foyerId, req);

@@ -373,8 +373,10 @@ barres + ligne).
 
 **Règle** : tout formulaire long (création/édition d'une entité à plus de quatre ou cinq
 champs) se présente en **« une question par écran »** dans `app-parcours-guide`, et non en
-une popin dense. C'est le cas des postes, des politiques et allocations d'argent de poche,
-et des périodes de prorata.
+une popin dense. C'est le cas de **tous** les formulaires de création/édition de
+l'application : postes, politiques et allocations d'argent de poche, périodes de prorata,
+scénarios, membres, comptes, catégories et taux de change. Les formulaires courts (deux
+champs) suivent la même règle, par souci d'homogénéité.
 
 | Composant | Rôle | Entrées principales |
 |---|---|---|
@@ -383,6 +385,7 @@ et des périodes de prorata.
 | `app-choix-cartes` | Sélection unique en cartes (titre, sous-titre explicatif, pastilles de rattachement) | `options` (`{value, titre, sousTitre?, desactive?, couleur?, pastilles?}`), `label`, `largeurMin`, `[(value)]` |
 | `app-choix-puces` | Même API, rendu en pilules qui passent à la ligne (listes longues, raccourcis de saisie) | idem `app-choix-cartes` |
 | `app-echelle-notation` | Échelle 1 à 5 en cinq boutons (remplace les `p-slider` de notation) | `label`, `question`, `libelleMin`, `libelleMax`, `gabaritAria`, `[(value)]` |
+| `app-palette-couleurs` | Palette des 10 tons catégoriels, pour choisir la couleur d'un membre | `label`, `gabaritAria`, `[(value)]` (hex résolu depuis les tokens, jamais une valeur en dur) |
 
 Règles :
 

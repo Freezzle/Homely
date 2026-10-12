@@ -1,0 +1,46 @@
+<app-parcours-guide
+    [visible]="visible()"
+    [titre]="modeEdition() ? t.referentiels.categorie.form.titreEdition : t.referentiels.categorie.form.titreCreation"
+    [sousTitre]="t.referentiels.categorie.titre"
+    [badgeTexte]="t.referentiels.categorie.form.badge"
+    badgeTon="info"
+    largeur="46rem"
+    [etapes]="etapesParcours()"
+    [etapeCourante]="etapeCourante()"
+    [lignes]="lignesFiche()"
+    [ficheTitre]="ficheTitre()"
+    [modeEdition]="modeEdition()"
+    [enregistrementEnCours]="enregistrementEnCours()"
+    (precedent)="precedent()"
+    (suivant)="suivant()"
+    (naviguerFiche)="naviguerDepuisFiche($event)"
+    (enregistrer)="soumettre()"
+    (fermer)="fermer()"
+>
+    <div class="flex flex-col gap-5" [formGroup]="form">
+        @switch (etapeCourante()) {
+
+            @case ('quoi') {
+                <div>
+                    <app-input-text
+                        [label]="t.referentiels.categorie.libelle"
+                        [required]="true"
+                        formControlName="libelle"
+                    />
+                    @if (form.get('libelle')!.invalid && form.get('libelle')!.touched) {
+                        <p-message severity="error">{{ t.commun.champObligatoire }}</p-message>
+                    }
+                </div>
+            }
+
+            @case ('type') {
+                <app-choix-cartes
+                    [options]="optionsType()"
+                    [value]="form.get('typePoste')!.value"
+                    largeurMin="12rem"
+                    (valueChange)="choisirType($event)"
+                />
+            }
+        }
+    </div>
+</app-parcours-guide>
