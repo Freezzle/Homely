@@ -1,0 +1,130 @@
+<!-- Foyer à un seul membre : pas de répartition à décider, seulement le compte. -->
+@if (monoMembre()) {
+  @if (membreA()) {
+    <div class="membre-seul">
+      <span class="avatar" [style.background]="couleur(membreA())">{{ initiales(membreA().nom) }}</span>
+      <span class="nom">{{ membreA().nom }}</span>
+      <span class="montant">{{ montant() | montant: devise() }}</span>
+    </div>
+  }
+}
+
+<!-- Foyer à deux membres : un curseur unique et ses préréglages. -->
+@if (deuxMembres()) {
+  <div class="duo">
+    <div class="duo-membre">
+      <span class="avatar" [style.background]="couleur(membreA())">{{ initiales(membreA().nom) }}</span>
+      <div>
+        <p class="nom">{{ membreA().nom }} · {{ partA() }} %</p>
+        <p class="montant">{{ montantA() | montant: devise() }}</p>
+      </div>
+    </div>
+    <div class="duo-membre duo-membre--fin">
+      <div class="text-right">
+        <p class="nom">{{ membreB().nom }} · {{ partB() }} %</p>
+        <p class="montant">{{ montantB() | montant: devise() }}</p>
+      </div>
+      <span class="avatar" [style.background]="couleur(membreB())">{{ initiales(membreB().nom) }}</span>
+    </div>
+  </div>
+
+  <input
+    type="range"
+    class="curseur"
+    min="0"
+    max="100"
+    step="1"
+    [value]="partA()"
+    [attr.aria-label]="curseurLabel()"
+    [attr.aria-valuetext]="curseurAria()"
+    (input)="onCurseurInput($event)"
+    (change)="onCurseurChange($event)"
+  />
+
+  <app-choix-puces
+    [options]="presets()"
+    [value]="presetActif()"
+    (valueChange)="appliquerPreset($event)"
+  />
+}
+
+<!-- Foyer à trois membres ou plus : sélection des membres puis mode de répartition. -->
+@if (plusieursMembres()) {
+  <div class="bloc">
+    <p class="libelle">{{ t.poste.form.membresConcernes }}</p>
+    <div class="membres">
+      @for (m of membres(); track m.id) {
+        <button
+          type="button"
+          class="membre"
+          [class.membre--actif]="estSelectionne(m.id)"
+          [attr.aria-pressed]="estSelectionne(m.id)"
+          (click)="basculerMembre(m.id)"
+        >
+          <span class="avatar" [style.background]="couleur(m)">{{ initiales(m.nom) }}</span>
+          <span class="nom">{{ m.nom }}</span>
+        </button>
+      }
+    </div>
+  </div>
+
+  <app-choix-cartes
+    class="bloc"
+    [options]="typeOptions()"
+    [value]="valeur().typeRepartition"
+    largeurMin="11rem"
+    (valueChange)="choisirType($event)"
+  />
+
+  @if (valeur().typeRepartition === 'CUSTOM') {
+    <div class="bloc parts">
+      @for (m of membresSelectionnes(); track m.id) {
+        <app-input-number
+          [label]="m.nom"
+          [min]="0"
+          [max]="100"
+          suffix=" %"
+          [ngModel]="valeur().parts[m.id]"
+          (ngModelChange)="majPart(m.id, $event)"
+        />
+      }
+      <p class="total" [class.total--ok]="sommeValide()" [class.total--ko]="!sommeValide()">
+        {{ t.poste.form.total }} : {{ somme() }} %
+      </p>
+    </div>
+  }
+}
+
+<!-- Comptes de ventilation : un compte commun, ou un compte par personne. -->
+@if (membresAvecPart().length) {
+  <div class="bloc">
+    @if (compteCommunPossible() && !valeur().comptesSepares) {
+      <app-choix-cartes
+        [label]="libelleDepuis()"
+        [options]="optionsComptes()"
+        [value]="compteUnique()"
+        largeurMin="11rem"
+        (valueChange)="choisirCompteCommun($event)"
+      />
+      <button type="button" class="lien" (click)="basculerComptesSepares(true)">
+        {{ t.poste.form.comptesSepares }}
+      </button>
+    } @else {
+      @for (m of membresAvecPart(); track m.id) {
+        <app-choix-cartes
+          class="bloc"
+          [label]="membresAvecPart().length > 1 ? libelleDepuisMembre(m.nom) : libelleDepuis()"
+          [options]="optionsComptes(m.id)"
+          [value]="compteDe(m.id)"
+          largeurMin="11rem"
+          (valueChange)="choisirCompte(m.id, $event)"
+        />
+      }
+      @if (compteCommunPossible()) {
+        <button type="button" class="lien" (click)="basculerComptesSepares(false)">
+          {{ t.poste.form.compteCommun }}
+        </button>
+      }
+    }
+  </div>
+}

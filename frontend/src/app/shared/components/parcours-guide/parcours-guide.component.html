@@ -1,0 +1,129 @@
+<p-dialog [visible]="visible()" (visibleChange)="onVisibleChange($event)" (onShow)="ouvert.emit()"
+          [modal]="true" [draggable]="false" [resizable]="false"
+          [style]="{ width: largeur() }" [breakpoints]="{ '768px': '100vw' }" class="w-full">
+    <ng-template #header>
+        <div class="entete">
+            @if (badgeTexte()) {
+                <span class="badge-type" [class]="'badge-type--' + badgeTon()">{{ badgeTexte() }}</span>
+            }
+            <div class="flex flex-col gap-0.5">
+                <span class="text-lg font-semibold">{{ titre() }}</span>
+                @if (sousTitre()) {
+                    <span class="text-sm text-surface-500">{{ sousTitre() }}</span>
+                }
+            </div>
+        </div>
+    </ng-template>
+
+    <div class="corps">
+        <!-- Colonne « une question par écran » -->
+        <section class="colonne-question" #colonneQuestion>
+            <app-step-progress
+                [total]="etapes().length"
+                [courante]="indexCourant()"
+                [libelleRetour]="t.commun.parcours.etapePrecedente"
+                [libelleProgression]="libelleProgression()"
+                (retour)="precedent.emit()"
+            />
+
+            <h3 class="titre-question">{{ titreEtape() }}</h3>
+
+            <div (keydown.enter)="onEntree($event)">
+                <ng-content/>
+            </div>
+        </section>
+
+        <!-- Fiche permanente (desktop) -->
+        <aside class="colonne-fiche">
+            <ng-container *ngTemplateOutlet="fiche"/>
+        </aside>
+
+        <!-- Tiroir de la fiche (mobile) : panneau interne au dialog, pas de drawer imbriqué -->
+        @if (ficheOuverte()) {
+            <div class="tiroir-fiche">
+                <ng-container *ngTemplateOutlet="fiche"/>
+            </div>
+        }
+    </div>
+
+    <ng-template #footer>
+        <div class="pied">
+            <!-- Barre d'accès à la fiche (mobile uniquement) -->
+            <button type="button" class="barre-fiche" (click)="basculerFiche()">
+                <span class="barre-fiche__nom">{{ ficheTitre() }}</span>
+                @if (impactPrincipal()) {
+                    <span class="barre-fiche__impact">{{ impactPrincipal() }}</span>
+                }
+                <span class="barre-fiche__lien">{{ t.commun.parcours.voirFiche }}</span>
+            </button>
+
+            <div class="pied__actions">
+                <app-button class="pied__annuler" [label]="t.commun.annuler" severity="secondary" [text]="true"
+                            (clickEvent)="fermer.emit()"/>
+
+                <span class="pied__aide">{{ t.commun.parcours.aideEntree }}</span>
+
+                @if (derniereEtape()) {
+                    @if (avecEnregistrerEtNouveau() && !modeEdition()) {
+                        <app-button [label]="t.commun.enregistrerEtNouveau" [outlined]="true"
+                                    [loading]="enregistrementEnCours()" (clickEvent)="enregistrerEtNouveau.emit()"/>
+                    }
+                    <app-button [label]="t.commun.enregistrer" [loading]="enregistrementEnCours()"
+                                (clickEvent)="enregistrer.emit()"/>
+                } @else {
+                    @if (modeEdition()) {
+                        <app-button [label]="t.commun.enregistrer" [outlined]="true"
+                                    [loading]="enregistrementEnCours()" (clickEvent)="enregistrer.emit()"/>
+                    } @else if (peutAllerFin()) {
+                        <app-button [label]="t.commun.parcours.allerFin" severity="secondary" [outlined]="true"
+                                    (clickEvent)="allerFin.emit()"/>
+                    }
+                    <app-button [label]="t.commun.parcours.continuer" icon="pi pi-arrow-right" iconPos="right"
+                                (clickEvent)="suivant.emit()"/>
+                }
+            </div>
+        </div>
+    </ng-template>
+</p-dialog>
+
+<!-- Fiche récapitulative : une ligne par étape, partagée entre la colonne et le tiroir. -->
+<ng-template #fiche>
+    <div class="fiche">
+        <p class="capitales">{{ t.commun.parcours.taFiche }}</p>
+
+        <div>
+            <p class="fiche__nom">{{ ficheTitre() }}</p>
+            @if (ficheSousTitre()) {
+                <p class="fiche__sous-titre">{{ ficheSousTitre() }}</p>
+            }
+        </div>
+
+        <ul class="fiche__lignes">
+            @for (l of lignes(); track l.cle) {
+                <li>
+                    <button
+                        type="button"
+                        class="fiche__ligne"
+                        [class.fiche__ligne--courante]="l.etat === 'courante'"
+                        [disabled]="l.etat === 'vide'"
+                        [attr.aria-current]="l.etat === 'courante' ? 'step' : null"
+                        (click)="naviguer(l.cle)"
+                    >
+                        <span class="capitales">{{ l.libelle }}</span>
+                        <span class="fiche__valeur" [class.fiche__valeur--vide]="!l.valeur">{{ l.valeur ?? '…' }}</span>
+                    </button>
+                </li>
+            }
+        </ul>
+
+        @if (impactPrincipal()) {
+            <div class="fiche__impact">
+                <p class="capitales">{{ t.commun.parcours.impact }}</p>
+                <p class="fiche__impact-principal">{{ impactPrincipal() }}</p>
+                @if (impactSecondaire()) {
+                    <p class="fiche__impact-secondaire">{{ impactSecondaire() }}</p>
+                }
+            </div>
+        }
+    </div>
+</ng-template>

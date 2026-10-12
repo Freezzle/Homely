@@ -1,0 +1,19 @@
+:host {
+    display: block;
+}
+
+/*
+ * Hauteur fluide du graphique : il se tasse à 435px pour ne pas monopoliser l'écran,
+ * et retrouve sa hauteur d'origine (18.75rem = 300px) à partir de la largeur de contenu
+ * maximale, afin de préserver le rendu desktop existant.
+ */
+.graphique-solde {
+    position: relative;
+    width: 100%;
+    height: clamp(13rem, calc(13rem + 92 * ((100vw - 435px) / 925)), 18.75rem);
+}
+
+/* ::ng-deep nécessaire : le canvas est généré par PrimeNG à l'intérieur de p-chart. */
+:host ::ng-deep .graphique-solde .p-chart {
+    height: 100%;
+}

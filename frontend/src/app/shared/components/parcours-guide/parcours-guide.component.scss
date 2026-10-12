@@ -1,0 +1,246 @@
+/* Hauteur fixe du corps : seule la colonne question défile, la fiche a son propre
+   défilement — l'utilisateur garde ses repères d'une étape à l'autre. */
+$hauteur-corps: min(40rem, 70vh);
+
+.entete {
+  display: flex;
+  align-items: center;
+  gap: var(--app-space-3);
+}
+/* `.badge-type` et ses variantes de ton vivent dans styles/_base.css (classe de charte). */
+
+.corps {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 18rem;
+  gap: var(--app-space-5);
+  height: $hauteur-corps;
+  min-height: 0;
+}
+
+.colonne-question {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-space-4);
+  overflow-y: auto;
+  padding-right: var(--app-space-2);
+  padding-left: var(--app-space-2);
+  min-height: 0;
+}
+
+.titre-question {
+  font-size: var(--app-text-2xl);
+  font-weight: 700;
+  color: var(--app-ink);
+  text-wrap: balance;
+}
+
+.colonne-fiche {
+  display: flex;
+  flex-direction: column;
+  padding: var(--app-space-4);
+  background: var(--app-bg);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-card);
+  overflow: hidden;
+  min-height: 0;
+}
+
+.tiroir-fiche {
+  display: none;
+}
+
+/* ── Fiche ────────────────────────────────────────────────────────── */
+
+.fiche {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-space-3);
+  min-height: 0;
+  height: 100%;
+}
+
+.capitales {
+  font-size: var(--app-text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--app-ink-muted);
+}
+
+.fiche__nom {
+  font-size: var(--app-text-lg);
+  font-weight: 700;
+  color: var(--app-ink);
+  overflow-wrap: anywhere;
+}
+
+.fiche__sous-titre {
+  font-size: var(--app-text-sm);
+  color: var(--app-ink-muted);
+}
+
+.fiche__lignes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-space-1);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.fiche__ligne {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-space-0-5);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--app-space-2);
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--app-radius-item);
+  cursor: pointer;
+
+  &:hover:not(:disabled) { background: var(--app-card); }
+  &:disabled { cursor: default; }
+
+  &--courante {
+    background: var(--app-card);
+    border-color: var(--app-selection-bg-fort);
+  }
+}
+
+.fiche__valeur {
+  font-size: var(--app-text-sm);
+  font-weight: 600;
+  color: var(--app-ink);
+  overflow-wrap: anywhere;
+
+  &--vide { color: var(--app-ink-muted); font-weight: 400; }
+}
+
+.fiche__impact {
+  border-top: 1px solid var(--app-line);
+  padding-top: var(--app-space-3);
+}
+
+.fiche__impact-principal {
+  font-size: var(--app-donnee-lg);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-ink);
+}
+
+.fiche__impact-secondaire {
+  font-size: var(--app-text-xs);
+  color: var(--app-ink-muted);
+}
+
+/* ── Pied ─────────────────────────────────────────────────────────── */
+
+.pied {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-space-3);
+  width: 100%;
+}
+
+.pied__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--app-space-3);
+}
+
+.pied__annuler {
+  margin-right: auto;
+}
+
+.pied__aide {
+  font-size: var(--app-text-xs);
+  color: var(--app-ink-muted);
+}
+
+.barre-fiche {
+  display: none;
+}
+
+/* ── Mobile : fiche en tiroir, boutons pleine largeur ─────────────── */
+
+@media (max-width: 767px) {
+  .corps {
+    grid-template-columns: 1fr;
+    height: auto;
+    max-height: calc(100vh - 16rem);
+  }
+
+  .colonne-fiche {
+    display: none;
+  }
+
+  .tiroir-fiche {
+    display: block;
+    position: absolute;
+    inset: auto 0 0 0;
+    max-height: 70%;
+    overflow-y: auto;
+    padding: var(--app-space-4);
+    background: var(--app-bg);
+    border-top: 1px solid var(--app-line);
+    border-radius: var(--app-radius-card) var(--app-radius-card) 0 0;
+    z-index: 1;
+  }
+
+  .barre-fiche {
+    display: flex;
+    align-items: center;
+    gap: var(--app-space-2);
+    width: 100%;
+    min-height: 44px;
+    padding: var(--app-space-2) var(--app-space-3);
+    background: var(--app-bg);
+    border: 1px solid var(--app-line);
+    border-radius: var(--app-radius-card);
+    cursor: pointer;
+  }
+
+  .barre-fiche__nom {
+    flex: 1 1 auto;
+    text-align: left;
+    font-weight: 600;
+    color: var(--app-ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .barre-fiche__impact {
+    font-variant-numeric: tabular-nums;
+    color: var(--app-ink);
+  }
+
+  .barre-fiche__lien {
+    font-size: var(--app-text-xs);
+    color: var(--p-primary-color);
+  }
+
+  .pied__actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  /* La croix du dialog suffit à annuler, et l'aide clavier n'a pas de sens au doigt. */
+  .pied__annuler,
+  .pied__aide {
+    display: none;
+  }
+
+  .pied__actions ::ng-deep .p-button {
+    width: 100%;
+    justify-content: center;
+  }
+}

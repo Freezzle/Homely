@@ -1,0 +1,131 @@
+<app-parcours-guide
+    [visible]="visible()"
+    [titre]="modeEdition() ? t.scenario.form.titreEdition : t.scenario.form.titreCreation"
+    [sousTitre]="t.prorata.titre"
+    [badgeTexte]="t.scenario.form.badge"
+    badgeTon="info"
+    largeur="50rem"
+    [etapes]="etapesParcours()"
+    [etapeCourante]="etapeCourante()"
+    [lignes]="lignesFiche()"
+    [ficheTitre]="ficheTitre()"
+    [modeEdition]="modeEdition()"
+    [enregistrementEnCours]="enregistrementEnCours()"
+    (precedent)="precedent()"
+    (suivant)="suivant()"
+    (naviguerFiche)="naviguerDepuisFiche($event)"
+    (enregistrer)="soumettre()"
+    (fermer)="fermer()"
+>
+    <div class="flex flex-col gap-5" [formGroup]="form">
+        @switch (etapeCourante()) {
+
+            <!-- ── Sur quelle période ? ───────────────────────────────── -->
+            @case ('periode') {
+                @if (modeEdition()) {
+                    <p-message severity="info">{{ t.scenario.form.datesVerrouillees }}</p-message>
+                } @else {
+                    <p class="aide">{{ t.scenario.form.periodeAide }}</p>
+                }
+
+                <div class="flex flex-col gap-2">
+                    <app-date-picker
+                        [label]="t.scenario.debutPeriode"
+                        [required]="true"
+                        formControlName="debut"
+                        dateFormat="dd.mm.yy"
+                    />
+                    @if (!modeEdition()) {
+                        <app-choix-puces
+                            [options]="raccourcisDebut()"
+                            [value]="raccourciDebutActif()"
+                            (valueChange)="appliquerDebut($event)"
+                        />
+                    }
+                    @if (form.get('debut')!.invalid && form.get('debut')!.touched) {
+                        <p-message severity="error">{{ t.commun.champObligatoire }}</p-message>
+                    }
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <app-date-picker
+                        [label]="t.scenario.finPeriode"
+                        formControlName="fin"
+                        dateFormat="dd.mm.yy"
+                        [showClear]="true"
+                    />
+                    @if (!modeEdition()) {
+                        <app-choix-puces
+                            [options]="raccourcisFin()"
+                            [value]="raccourciFinActif()"
+                            (valueChange)="appliquerFin($event)"
+                        />
+                    }
+                </div>
+
+                @if (erreurPeriode(); as err) {
+                    <p-message severity="warn">{{ err }}</p-message>
+                }
+            }
+
+            <!-- ── Qui porte quelle part ? ────────────────────────────── -->
+            @case ('parts') {
+                @if (deuxMembres()) {
+                    <div class="duo">
+                        <div class="duo-membre">
+                            <span class="avatar" [style.background]="couleur(membreA())">{{ initiales(membreA().nom) }}</span>
+                            <p class="nom">{{ membreA().nom }} · {{ partA() }} %</p>
+                        </div>
+                        <div class="duo-membre duo-membre--fin">
+                            <p class="nom">{{ membreB().nom }} · {{ partB() }} %</p>
+                            <span class="avatar" [style.background]="couleur(membreB())">{{ initiales(membreB().nom) }}</span>
+                        </div>
+                    </div>
+
+                    <input
+                        type="range"
+                        class="curseur"
+                        min="0"
+                        max="100"
+                        step="1"
+                        [value]="partA()"
+                        [attr.aria-label]="curseurLabel()"
+                        [attr.aria-valuetext]="curseurAria()"
+                        (input)="onCurseurInput($event)"
+                        (change)="onCurseurChange($event)"
+                    />
+
+                    <app-choix-puces
+                        [options]="presets()"
+                        [value]="presetActif()"
+                        (valueChange)="appliquerPreset($event)"
+                    />
+                } @else {
+                    <div class="parts" formArrayName="parts">
+                        @for (ctrl of partsArray.controls; track ctrl; let i = $index) {
+                            <div [formGroupName]="i">
+                                <app-input-number
+                                    [label]="nomMembre(i)"
+                                    formControlName="quotePart"
+                                    [min]="0"
+                                    [max]="100"
+                                    suffix=" %"
+                                    [minFractionDigits]="0"
+                                    [maxFractionDigits]="2"
+                                />
+                            </div>
+                        }
+                    </div>
+                }
+
+                <p class="total" [class.total--ok]="sommeValide()" [class.total--ko]="!sommeValide()">
+                    {{ t.scenario.form.total }} : {{ somme() }} %
+                </p>
+
+                @if (erreurParts(); as err) {
+                    <p-message severity="error">{{ err }}</p-message>
+                }
+            }
+        }
+    </div>
+</app-parcours-guide>

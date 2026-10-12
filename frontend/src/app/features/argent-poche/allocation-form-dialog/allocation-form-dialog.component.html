@@ -1,0 +1,106 @@
+<app-parcours-guide
+    [visible]="visible()"
+    [titre]="modeEdition() ? t.argentPoche.form.allocation.titreEdition : t.argentPoche.form.allocation.titreCreation"
+    [sousTitre]="t.argentPoche.titre"
+    [badgeTexte]="t.argentPoche.form.allocation.badge"
+    badgeTon="argent-poche"
+    largeur="50rem"
+    [etapes]="etapesParcours()"
+    [etapeCourante]="etapeCourante()"
+    [lignes]="lignesFiche()"
+    [ficheTitre]="ficheTitre()"
+    [impactPrincipal]="impactPrincipal()"
+    [impactSecondaire]="impactSecondaire()"
+    [modeEdition]="modeEdition()"
+    [peutAllerFin]="peutAllerFin()"
+    [enregistrementEnCours]="enregistrementEnCours()"
+    (precedent)="precedent()"
+    (suivant)="suivant()"
+    (allerFin)="allerALaFin()"
+    (naviguerFiche)="naviguerDepuisFiche($event)"
+    (enregistrer)="soumettre()"
+    (fermer)="fermer()"
+>
+    <div class="flex flex-col gap-5" [formGroup]="form">
+        @switch (etapeCourante()) {
+
+            <!-- ── Pour qui, et quel mois ? ───────────────────────────── -->
+            @case ('quoi') {
+                <app-choix-puces
+                    [label]="t.argentPoche.champs.membre"
+                    [options]="optionsMembres()"
+                    [value]="form.get('membreId')!.value"
+                    (valueChange)="choisirMembre($event)"
+                />
+
+                <div class="flex flex-col gap-2">
+                    <app-date-picker
+                        [label]="t.argentPoche.champs.mois"
+                        [required]="true"
+                        formControlName="mois"
+                        view="month"
+                        dateFormat="mm/yy"
+                    />
+                    <app-choix-puces
+                        [options]="raccourcisMois()"
+                        [value]="raccourciMoisActif()"
+                        (valueChange)="appliquerMois($event)"
+                    />
+                    @if (form.get('mois')!.invalid && form.get('mois')!.touched) {
+                        <p-message severity="error">{{ t.commun.champObligatoire }}</p-message>
+                    }
+                </div>
+            }
+
+            <!-- ── Combien, et pourquoi ? ─────────────────────────────── -->
+            @case ('combien') {
+                @if (resolution(); as r) {
+                    <div class="theorique">
+                        <div class="flex flex-col gap-0.5">
+                            <span class="capitales">{{ t.argentPoche.source[r.source] }}</span>
+                            <span class="theorique__montant">{{ r.montant | montant }}</span>
+                            <span class="aide">{{ t.argentPoche.form.allocation.resolutionAide }}</span>
+                        </div>
+                        <app-button [label]="t.argentPoche.form.allocation.reprendreMontant"
+                                    severity="secondary" [outlined]="true" size="small"
+                                    (clickEvent)="reprendreMontantTheorique()"/>
+                    </div>
+                }
+
+                <div>
+                    <app-input-number
+                        [label]="t.argentPoche.champs.montant"
+                        [required]="true"
+                        formControlName="montant"
+                        mode="decimal"
+                        [min]="0"
+                        [minFractionDigits]="2"
+                    />
+                    @if (form.get('montant')!.invalid && form.get('montant')!.touched) {
+                        <p-message severity="error">{{ t.commun.champObligatoire }}</p-message>
+                    }
+                </div>
+
+                <app-input-text
+                    [label]="t.argentPoche.champs.raison"
+                    [hint]="t.argentPoche.form.allocation.raisonAide"
+                    formControlName="raison"
+                />
+            }
+
+            <!-- ── Sur quel compte ? ──────────────────────────────────── -->
+            @case ('compte') {
+                <app-choix-cartes
+                    [label]="t.argentPoche.champs.compte"
+                    [options]="optionsComptes()"
+                    [value]="form.get('compteId')!.value"
+                    largeurMin="11rem"
+                    (valueChange)="choisirCompte($event)"
+                />
+                @if (form.get('compteId')!.invalid && form.get('compteId')!.touched) {
+                    <p-message severity="error">{{ t.commun.champObligatoire }}</p-message>
+                }
+            }
+        }
+    </div>
+</app-parcours-guide>

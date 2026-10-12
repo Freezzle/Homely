@@ -1,0 +1,157 @@
+<app-parcours-guide
+    [visible]="visible()"
+    [titre]="modeEdition() ? t.argentPoche.form.politique.titreEdition : t.argentPoche.form.politique.titreCreation"
+    [sousTitre]="ficheSousTitre()"
+    [badgeTexte]="t.argentPoche.form.politique.badge"
+    badgeTon="argent-poche"
+    [etapes]="etapesParcours()"
+    [etapeCourante]="etapeCourante()"
+    [lignes]="lignesFiche()"
+    [ficheTitre]="ficheTitre()"
+    [impactPrincipal]="impactPrincipal()"
+    [impactSecondaire]="impactSecondaire()"
+    [modeEdition]="modeEdition()"
+    [peutAllerFin]="peutAllerFin()"
+    [enregistrementEnCours]="enregistrementEnCours()"
+    (precedent)="precedent()"
+    (suivant)="suivant()"
+    (allerFin)="allerALaFin()"
+    (naviguerFiche)="naviguerDepuisFiche($event)"
+    (enregistrer)="soumettre()"
+    (fermer)="fermer()"
+>
+    <div class="flex flex-col gap-5" [formGroup]="form">
+        @switch (etapeCourante()) {
+
+            <!-- ── Pour qui, et sous quel nom ? ───────────────────────── -->
+            @case ('quoi') {
+                <app-choix-puces
+                    [label]="t.argentPoche.champs.membre"
+                    [options]="optionsMembres()"
+                    [value]="form.get('membreId')!.value"
+                    (valueChange)="choisirMembre($event)"
+                />
+                <div>
+                    <app-input-text
+                        [label]="t.argentPoche.champs.nom"
+                        [required]="true"
+                        [hint]="t.argentPoche.form.politique.nomAide"
+                        formControlName="nom"
+                    />
+                    @if (form.get('nom')!.invalid && form.get('nom')!.touched) {
+                        <p-message severity="error">{{ t.commun.champObligatoire }}</p-message>
+                    }
+                </div>
+            }
+
+            <!-- ── Comment se calcule le montant ? ────────────────────── -->
+            @case ('formule') {
+                <app-choix-cartes
+                    [options]="optionsMode()"
+                    [value]="form.get('mode')!.value"
+                    largeurMin="13rem"
+                    (valueChange)="choisirMode($event)"
+                />
+
+                @if (estVariable()) {
+                    <div class="grid grid-cols-3 gap-3">
+                        <app-input-number [label]="t.argentPoche.champs.socle" formControlName="socle"
+                                          mode="decimal" [minFractionDigits]="0" [min]="0"/>
+                        <app-input-number [label]="t.argentPoche.form.politique.pourcentageLabel"
+                                          formControlName="pourcentage" suffix=" %"
+                                          [min]="0" [max]="100" [minFractionDigits]="0"/>
+                        <app-input-number [label]="t.argentPoche.champs.plafond" formControlName="plafond"
+                                          mode="decimal" [minFractionDigits]="0" [min]="0"/>
+                    </div>
+                } @else {
+                    <app-input-number [label]="t.argentPoche.champs.montantFixe" [required]="true"
+                                      formControlName="montantFixe" mode="decimal"
+                                      [minFractionDigits]="2" [min]="0"/>
+                }
+
+                @if (erreurFormule(); as err) {
+                    <p-message severity="error">{{ err }}</p-message>
+                }
+
+                <!-- Aperçu des 6 prochains mois, recalculé au fil de la saisie -->
+                <div class="apercu">
+                    <p class="capitales">{{ t.argentPoche.sections.apercu }}</p>
+                    @if (!form.get('membreId')!.value) {
+                        <p class="aide">{{ t.argentPoche.apercu.selectionnerMembre }}</p>
+                    } @else if (chargementApercu()) {
+                        <p-skeleton height="140px"/>
+                    } @else {
+                        <div class="flex flex-col gap-3">
+                            @for (ligne of apercu(); track ligne.moisLibelle) {
+                                <div class="flex items-center gap-3">
+                                    <div class="flex flex-col w-24 shrink-0">
+                                        <span class="text-sm font-medium">{{ ligne.moisLibelle }}</span>
+                                        <span class="text-xs tabular-nums aide">{{ ligne.rav | montant }}</span>
+                                    </div>
+                                    <p-metergroup class="flex-1" [value]="ligne.meterItems" [max]="ligne.meterMax">
+                                        <ng-template #label></ng-template>
+                                    </p-metergroup>
+                                    <span class="montant-apercu" [style.color]="ligne.couleurCss">
+                                        {{ ligne.montant | montant }}
+                                    </span>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+
+            <!-- ── Sur quelle période ? ───────────────────────────────── -->
+            @case ('validite') {
+                <p class="aide">{{ t.argentPoche.form.politique.validiteAide }}</p>
+
+                <div class="flex flex-col gap-2">
+                    <app-date-picker
+                        [label]="t.argentPoche.champs.dateDebut"
+                        [required]="true"
+                        formControlName="dateDebut"
+                        view="month"
+                        dateFormat="mm/yy"
+                    />
+                    <app-choix-puces
+                        [options]="raccourcisDebut()"
+                        [value]="raccourciDebutActif()"
+                        (valueChange)="appliquerDebut($event)"
+                    />
+                    @if (form.get('dateDebut')!.invalid && form.get('dateDebut')!.touched) {
+                        <p-message severity="error">{{ t.commun.champObligatoire }}</p-message>
+                    }
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <app-date-picker
+                        [label]="t.argentPoche.champs.dateFin"
+                        formControlName="dateFin"
+                        view="month"
+                        dateFormat="mm/yy"
+                        [showClear]="true"
+                    />
+                    <app-choix-puces
+                        [options]="raccourcisFin()"
+                        [value]="raccourciFinActif()"
+                        (valueChange)="appliquerFin($event)"
+                    />
+                </div>
+            }
+
+            <!-- ── Sur quel compte ? ──────────────────────────────────── -->
+            @case ('compte') {
+                <app-choix-cartes
+                    [label]="t.argentPoche.champs.compte"
+                    [options]="optionsComptes()"
+                    [value]="form.get('compteId')!.value"
+                    largeurMin="11rem"
+                    (valueChange)="choisirCompte($event)"
+                />
+                @if (form.get('compteId')!.invalid && form.get('compteId')!.touched) {
+                    <p-message severity="error">{{ t.commun.champObligatoire }}</p-message>
+                }
+            }
+        }
+    </div>
+</app-parcours-guide>

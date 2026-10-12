@@ -1,0 +1,29 @@
+.aide {
+  font-size: var(--app-text-xs);
+  color: var(--app-ink-muted);
+}
+
+.capitales {
+  font-size: var(--app-text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--app-ink-muted);
+}
+
+.theorique {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--app-space-3);
+  padding: var(--app-space-3);
+  background: var(--app-info-bg);
+  border-radius: var(--app-radius-card);
+}
+
+.theorique__montant {
+  font-size: var(--app-donnee-md);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-ink);
+}

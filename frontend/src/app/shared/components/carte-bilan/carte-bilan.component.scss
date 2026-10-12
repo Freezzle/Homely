@@ -1,0 +1,41 @@
+// Tokens --app-* globaux : voir frontend/src/styles/_typographie.css (couche « donnée »).
+:host {
+  display: block;
+  min-width: 0;
+  container-type: inline-size;
+}
+
+// Chiffre héros de la carte : reste à vivre du mois / solde disponible de l'année.
+// Un seul par carte (voir la règle de la couche `--app-donnee-*`).
+.carte-bilan__montant {
+  font-size: var(--app-donnee-xl);
+  font-weight: var(--app-weight-extrabold);
+  line-height: var(--app-leading-tight);
+  letter-spacing: var(--app-tracking-tight);
+  font-variant-numeric: tabular-nums;
+}
+
+.carte-bilan__devise {
+  font-size: var(--app-text-2xs);
+  font-weight: var(--app-weight-semibold);
+  color: var(--app-ink-muted);
+}
+
+// Montants de la décomposition : rôle « montant de ligne ».
+.carte-bilan__ligne-montant {
+  flex-shrink: 0;
+  font-size: var(--app-donnee-md);
+  font-weight: var(--app-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+// Conteneur étroit : le chiffre héros descend d'un cran pour ne pas déborder.
+@container (max-width: 240px) {
+  .carte-bilan__montant {
+    font-size: var(--app-donnee-lg);
+  }
+
+  .carte-bilan__ligne-montant {
+    font-size: var(--app-donnee-sm);
+  }
+}

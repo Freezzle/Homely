@@ -1,0 +1,133 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-space-4);
+}
+
+.bloc {
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.libelle {
+  font-size: var(--app-text-sm);
+  font-weight: 600;
+  color: var(--app-ink-muted);
+  margin-bottom: var(--app-space-2);
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border-radius: var(--app-radius-pill);
+  color: var(--p-primary-contrast-color);
+  font-size: var(--app-text-xs);
+  font-weight: 700;
+}
+
+.nom {
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+.montant {
+  font-size: var(--app-text-sm);
+  color: var(--app-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.membre-seul,
+.duo-membre {
+  display: flex;
+  align-items: center;
+  gap: var(--app-space-3);
+}
+
+.membre-seul {
+  padding: var(--app-space-3);
+  background: var(--app-bg);
+  border-radius: var(--app-radius-card);
+}
+
+.duo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--app-space-3);
+}
+
+.duo-membre--fin {
+  justify-content: flex-end;
+}
+
+.curseur {
+  width: 100%;
+  height: 44px;
+  accent-color: var(--p-primary-color);
+  cursor: pointer;
+}
+
+.membres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--app-space-2);
+}
+
+.membre {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--app-space-2);
+  min-height: 44px;
+  padding: var(--app-space-2) var(--app-space-3);
+  background: var(--app-card);
+  border: 1px solid var(--app-line-3);
+  border-radius: var(--app-radius-pill);
+  cursor: pointer;
+}
+
+.membre:hover {
+  border-color: var(--p-primary-color);
+}
+
+.membre--actif {
+  border: 2px solid var(--p-primary-color);
+  background: var(--app-selection-bg);
+  padding: calc(var(--app-space-2) - 1px) calc(var(--app-space-3) - 1px);
+}
+
+.parts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: var(--app-space-3);
+  align-items: end;
+}
+
+.total {
+  grid-column: 1 / -1;
+  font-size: var(--app-text-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.total--ok {
+  color: var(--app-success);
+}
+
+.total--ko {
+  color: var(--app-danger);
+}
+
+.lien {
+  margin-top: var(--app-space-2);
+  padding: var(--app-space-1) 0;
+  background: none;
+  border: none;
+  color: var(--p-primary-color);
+  font-size: var(--app-text-sm);
+  text-decoration: underline;
+  cursor: pointer;
+}
