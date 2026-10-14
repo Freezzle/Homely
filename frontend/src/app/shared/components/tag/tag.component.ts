@@ -38,7 +38,9 @@ const COULEURS_SEVERITE: Record<TagSeverity, { fond: string; texte: string }> = 
 @Component({
   selector: 'app-tag',
   standalone: true,
-  template: '{{ texte() }}',
+  // `ng-content` permet de préfixer le texte d'une icône (ex. flèche de dérive dans le
+  // pied des cartes de poste) sans wrapper supplémentaire.
+  template: '<ng-content/>{{ texte() }}',
   host: {
     class: 'app-tag',
     '[style.background-color]': 'couleurFond()',
@@ -48,6 +50,7 @@ const COULEURS_SEVERITE: Record<TagSeverity, { fond: string; texte: string }> = 
     :host {
       display: inline-flex;
       align-items: center;
+      gap: var(--app-space-1);
       padding: var(--app-space-0-5) var(--app-space-1-5);
       border-radius: var(--app-radius-sm);
       font-size: var(--app-text-2xs);

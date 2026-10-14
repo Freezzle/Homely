@@ -1,0 +1,57 @@
+<!--
+  Tête de la carte, rendue par `app-carte-liste` dans l'une de ses deux variantes
+  (bouton dépliant / label de sélection) : d'où le `ng-template` plutôt qu'un contenu
+  projeté. Les classes `zone-*` sont globales (`styles/_cartes-liste.css`).
+-->
+<ng-template #tete>
+  @if (modeSelection()) {
+    <app-checkbox class="zone-select"
+                  [inputId]="'select-' + poste().id"
+                  [ngModel]="selectionne()"
+                  (ngModelChange)="selectionChange.emit()"/>
+  }
+
+  <span class="zone-nom tronque surlignage-recherche" [innerHTML]="descriptionHtml()"></span>
+
+  <span class="zone-montant montant-ligne" [class]="classeMontant()">
+    @if (approche()) {
+      <span class="approximation" aria-hidden="true">≈</span>
+    }
+    {{ montantMois() | montant:poste().devise }}
+    @if (!ponctuel()) {
+      <span class="unite">{{ t.poste.liste.parMois }}</span>
+    }
+  </span>
+
+  <span class="zone-dates tronque">{{ texteDates() }}</span>
+
+  <span class="zone-complement tronque">
+    @if (ponctuel()) {
+      {{ t.poste.oneShot }}
+    } @else if (poste().periodiciteMois === 1) {
+      {{ poste().periodiciteMois | periodicite }}
+    } @else {
+      {{ poste().montant | montant:poste().devise }} · {{ poste().periodiciteMois | periodicite }}
+    }
+  </span>
+
+  <app-poste-etiquettes class="zone-pied"
+                        [poste]="poste()"
+                        [cacherDetails]="cacherDetails()"
+                        [categorie]="categorie()"
+                        [comptes]="comptes()"
+                        [natureTexte]="natureTexte()"
+                        [successeurTexte]="successeurTexte()"/>
+</ng-template>
+
+<app-carte-liste [contenuTete]="tete"
+                 [deplie]="deplie()"
+                 [enSurbrillance]="enSurbrillance()"
+                 [lisere]="!!poste()._estChaine"
+                 [modeSelection]="modeSelection()"
+                 [selectionInputId]="'select-' + poste().id"
+                 [idDetail]="idDetail()"
+                 [libelleBascule]="libelleBascule()"
+                 (basculer)="basculer.emit()">
+  <ng-content/>
+</app-carte-liste>

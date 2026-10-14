@@ -24,8 +24,14 @@ export class IndicateurNiveauComponent {
   readonly libelle = input.required<string>();
   /** Ton sémantique du niveau (succes / attention / danger / info…). */
   readonly ton = input<TonIndicateur>('info');
-  readonly libelleDebut = input.required<string>();
-  readonly libelleFin = input.required<string>();
+  readonly libelleDebut = input('');
+  readonly libelleFin = input('');
+  /**
+   * Variante dense : libellé de chrome (pas de chiffre héros) et échelle sur la même
+   * ligne, bornes masquées. Pour empiler plusieurs notes dans un panneau de détail
+   * sans enfreindre l'invariant « un seul `--app-donnee-xl` par carte ».
+   */
+  readonly compact = input(false);
 
   protected readonly segments = computed(() => {
     const actif = Math.min(NB_SEGMENTS, Math.max(0, Math.trunc(this.niveau())));

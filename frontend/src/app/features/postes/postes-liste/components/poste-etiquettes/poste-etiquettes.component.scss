@@ -1,0 +1,28 @@
+/*
+ * Pied d'étiquettes : rattaché visuellement à son poste par un simple trait pointillé
+ * (pas de fond gris, qui le détacherait de la carte).
+ */
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.pied {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--app-space-1);
+  margin-top: var(--app-space-1-5);
+  padding-top: var(--app-space-1-5);
+  border-top: var(--app-space-px) dashed var(--app-line);
+}
+
+.etiquette {
+  border-radius: var(--app-radius-pill);
+  font-size: var(--app-text-2xs);
+  font-weight: var(--app-weight-semibold);
+  line-height: var(--app-leading-none);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

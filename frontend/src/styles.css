@@ -46,6 +46,7 @@
  *   _base.css         → reset moderne + accessibilité (layer base)
  *   _layout.css       → conteneur 1360px, grilles fluides (layer components)
  *   _tableaux.css     → scroll horizontal maîtrisé + colonne figée (layer components)
+ *   _cartes-liste.css → grille de la tête des cartes de liste (layer components)
  */
 @import "./styles/_breakpoints.css";
 @import "./styles/_app-tokens.css";
@@ -54,6 +55,7 @@
 @import "./styles/_base.css";
 @import "./styles/_layout.css";
 @import "./styles/_tableaux.css";
+@import "./styles/_cartes-liste.css";
 
 html, body {
   height: 100%;

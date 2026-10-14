@@ -1,0 +1,12 @@
+@if (etiquettes().length) {
+  <div class="pied">
+    @for (e of etiquettes(); track e.cle) {
+      <app-tag [texte]="e.texte" [severity]="e.severity" [couleur]="e.couleur"
+               [pTooltip]="e.tooltip ?? ''" class="etiquette">
+        @if (e.icone) {
+          <i [class]="e.icone" aria-hidden="true"></i>
+        }
+      </app-tag>
+    }
+  </div>
+}

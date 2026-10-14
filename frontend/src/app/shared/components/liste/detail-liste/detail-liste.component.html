@@ -1,0 +1,45 @@
+<div class="corps">
+  <dl class="paires">
+    @for (l of lignes(); track l.cle) {
+      <div class="paire">
+        <dt class="paire__libelle">{{ l.libelle }}</dt>
+        <dd class="paire__valeur">{{ l.valeur }}</dd>
+      </div>
+    }
+  </dl>
+
+  <!-- Blocs additionnels propres à l'écran (colonne d'analyse, aperçus…). -->
+  <ng-content/>
+</div>
+
+<!-- Rangée d'actions : remplace l'ancien menu roue dentée de chaque ligne. -->
+<div class="actions">
+  @if (actionPrincipale(); as principale) {
+    <span class="action action--pleine">
+      <app-button [label]="principale.label" [icon]="principale.icon" size="small"
+                  (clickEvent)="executer(principale)"/>
+    </span>
+  }
+
+  @for (a of actionsSecondaires(); track a.label) {
+    <span class="action">
+      <app-button [label]="a.label" [icon]="a.icon" size="small" severity="secondary" [outlined]="true"
+                  (clickEvent)="executer(a)"/>
+    </span>
+  }
+
+  @if (sousMenu(); as menu) {
+    <span class="action">
+      <app-button [label]="menu.label" [icon]="menu.icon" size="small" severity="secondary" [outlined]="true"
+                  (clickEvent)="menuValeurs.toggle($event)"/>
+      <p-menu #menuValeurs [popup]="true" [model]="menu.items ?? []" appendTo="body"/>
+    </span>
+  }
+
+  @if (actionDestructive(); as destructive) {
+    <span class="action action--pleine action--destructive">
+      <app-button [label]="destructive.label" [icon]="destructive.icon" size="small" severity="danger" [outlined]="true"
+                  (clickEvent)="executer(destructive)"/>
+    </span>
+  }
+</div>

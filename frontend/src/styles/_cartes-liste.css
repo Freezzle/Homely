@@ -1,0 +1,118 @@
+/*
+ * Cartes de liste — grille de la tête.
+ *
+ * Classes **globales** (et non des styles de `app-carte-liste`) parce que le contenu de
+ * la tête est fourni par l'écran appelant sous forme de `TemplateRef` : il reste dans la
+ * portée de styles de son composant déclarant, pas dans celle de la carte. Même
+ * mécanisme que `_tableaux.css` / `.table-scroll`, posé par les consommateurs.
+ *
+ * Usage (voir `shared/components/liste/carte-liste`) :
+ *   <ng-template #tete>
+ *     <span class="zone-nom tronque">…</span>
+ *     <span class="zone-montant">…</span>
+ *     <span class="zone-dates">…</span>
+ *     <span class="zone-complement">…</span>
+ *     <app-xxx-etiquettes class="zone-pied"/>
+ *   </ng-template>
+ *
+ * Mobile-first : la colonne du chevron n'apparaît qu'à partir de 768px — sous ce seuil,
+ * toute la tête reste cliquable et l'espace est rendu au contenu.
+ */
+@layer components {
+    .zone-select {
+        grid-area: select;
+        align-self: center;
+    }
+
+    .zone-nom {
+        grid-area: nom;
+        min-width: 0;
+        font-size: var(--app-text-base);
+        font-weight: var(--app-weight-semibold);
+        line-height: var(--app-leading-snug);
+        color: var(--app-ink);
+    }
+
+    .zone-montant {
+        grid-area: montant;
+        justify-self: end;
+        white-space: nowrap;
+    }
+
+    .zone-dates {
+        grid-area: dates;
+        min-width: 0;
+        font-size: var(--app-text-xs);
+        color: var(--app-ink-muted);
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* Colonne de droite de la 2e ligne : périodicité (postes), mode (argent de poche),
+       résumé des parts (prorata). */
+    .zone-complement {
+        grid-area: complement;
+        justify-self: end;
+        font-size: var(--app-text-xs);
+        color: var(--app-ink-muted);
+        text-align: end;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .zone-pied {
+        grid-area: pied;
+    }
+
+    /* Suffixe d'unité d'un montant (« / mois ») et préfixe d'approximation (« ≈ ») :
+       communs aux trois écrans, toujours en retrait par rapport au chiffre. */
+    .zone-montant .approximation {
+        color: var(--app-ink-muted);
+    }
+
+    .zone-montant .unite {
+        margin-inline-start: var(--app-space-0-5);
+        font-size: var(--app-text-xs);
+        font-weight: var(--app-weight-medium);
+        color: var(--app-ink-muted);
+    }
+
+    /* Pied d'étiquettes : même gouttière et même séparation que `app-poste-etiquettes`. */
+    .zone-pied.etiquettes {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--app-space-1);
+        margin-top: var(--app-space-1-5);
+        padding-top: var(--app-space-1-5);
+        border-top: var(--app-space-px) dashed var(--app-line);
+        min-width: 0;
+    }
+
+    /*
+     * États transitoires d'une liste — mêmes gabarits sur les trois écrans, et surtout
+     * les mêmes tokens : la version Tailwind (`bg-white dark:bg-surface-900`) ne suivait
+     * pas la charte et cassait en thème sombre.
+     */
+    .squelette-carte {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: var(--app-space-2) var(--app-space-3);
+        padding: var(--app-space-2-5) var(--app-space-3-5);
+        border: var(--app-space-px) solid var(--app-line);
+        border-radius: var(--app-radius-item);
+        background: var(--app-card);
+    }
+
+    .etat-vide {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: var(--app-space-3);
+        padding: var(--app-space-16) var(--app-space-4);
+        border: var(--app-space-px) dashed var(--app-line-3);
+        border-radius: var(--app-radius-card);
+        background: var(--app-bg);
+        color: var(--app-ink-muted);
+        text-align: center;
+    }
+}

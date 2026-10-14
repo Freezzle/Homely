@@ -1,0 +1,19 @@
+<app-detail-liste [lignes]="lignes()" [actions]="actions()" [colonneLaterale]="analyses().length > 0">
+  @if (analyses().length) {
+    <section class="analyse">
+      <h3 class="analyse__titre">{{ t.poste.liste.detail.analyse }}</h3>
+      @for (a of analyses(); track a.cle) {
+        <app-indicateur-niveau [compact]="true" [niveau]="a.valeur" [libelle]="a.libelle" [ton]="a.ton"/>
+      }
+    </section>
+  }
+
+  <!-- Dernière ligne du corps, pleine largeur : le rythme du poste sur 12 mois. -->
+  @if (apercu(); as a) {
+    <app-poste-apercu-periodicite class="apercu"
+                                  [poste]="a.poste"
+                                  [locale]="a.locale"
+                                  [entete]="a.entete"
+                                  [legende]="a.legende"/>
+  }
+</app-detail-liste>

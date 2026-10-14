@@ -1,0 +1,9 @@
+﻿/*
+ * La carte elle-même (cadre, tête en grille, chevron, détail) vit dans
+ * `shared/components/liste/carte-liste` ; les zones de la tête dans le partiel global
+ * `styles/_cartes-liste.css`. Il ne reste ici que ce qui est propre aux postes.
+ */
+:host {
+  display: block;
+  min-width: 0;
+}

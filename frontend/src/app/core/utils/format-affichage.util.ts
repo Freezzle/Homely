@@ -15,6 +15,19 @@ export function formatPeriodeMois(v: string | null | undefined, locale: string):
 }
 
 /**
+ * Formatte une date ISO (`"2025-01-15"` ou `"2025-01"`) en mois/année `mm.yyyy`
+ * (ex. « 01.2025 »). Volontairement **indépendant de la locale** (contrairement à
+ * `formatPeriodeMois`, dont le séparateur et l'ordre varient) : la liste des postes a
+ * besoin d'un format court, stable et alignable en colonne.
+ */
+export function formatMoisAnnee(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const [annee, mois] = iso.split('-');
+  if (!annee || !mois) return iso;
+  return `${mois.padStart(2, '0')}.${annee}`;
+}
+
+/**
  * Formatte un montant simple (sans style « devise » Intl, juste le nombre + code devise
  * en suffixe), ex. « 1'950 CHF ». Distinct du pipe `montant` (qui utilise `style: currency`)
  * — ce format plus compact est utilisé dans les résumés/écarts des dialogs de poste.

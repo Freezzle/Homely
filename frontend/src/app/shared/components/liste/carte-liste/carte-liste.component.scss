@@ -1,0 +1,132 @@
+/*
+ * Coquille d'une carte de liste (docs/features/refonte.md §3) : mobile-first, la colonne
+ * chevron n'apparaît qu'à partir de 768px — sous ce seuil, toute la tête reste cliquable.
+ *
+ * Les zones de la grille (`zone-nom`, `zone-montant`…) sont décrites dans le partiel
+ * global `styles/_cartes-liste.css` : leur contenu vient d'un `TemplateRef` de
+ * l'appelant, donc hors de la portée de styles de ce composant.
+ */
+:host {
+  display: block;
+  background: var(--app-card);
+  border: var(--app-space-px) solid var(--app-line);
+  border-radius: var(--app-radius-item);
+  overflow: hidden;
+  transition: border-color var(--app-duree-rapide) var(--app-easing);
+}
+
+:host(:hover) {
+  border-color: var(--app-line-3);
+}
+
+:host(.carte--surbrillance) {
+  border-color: var(--p-primary-color);
+  box-shadow: var(--app-shadow-focus);
+}
+
+/* Liseré d'accent à gauche : marque l'appartenance à une suite d'éléments liés.
+   Les trois combinaisons sont écrites ici pour que l'ombre de surbrillance et le liseré
+   puissent coexister (une seule propriété `box-shadow` porte les deux). */
+:host(.carte--lisere) {
+  box-shadow: inset var(--app-space-0-75) 0 0 var(--p-primary-color);
+}
+
+:host(.carte--lisere.carte--surbrillance) {
+  box-shadow: inset var(--app-space-0-75) 0 0 var(--p-primary-color), var(--app-shadow-focus);
+}
+
+/* ── Tête ───────────────────────────────────────────────── */
+.tete {
+  display: grid;
+  width: 100%;
+  min-height: var(--app-space-12);
+  padding: var(--app-space-2-5) var(--app-space-3-5);
+  gap: var(--app-space-0-5) var(--app-space-3);
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'nom montant'
+    'dates complement'
+    'pied pied';
+  align-items: center;
+  background: none;
+  border: 0;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.tete--selection {
+  grid-template-columns: var(--app-space-6) minmax(0, 1fr) auto;
+  grid-template-areas:
+    'select nom montant'
+    'select dates complement'
+    'select pied pied';
+}
+
+.tete:focus-visible {
+  outline: var(--app-space-0-5) solid var(--p-primary-color);
+  outline-offset: calc(-1 * var(--app-space-0-5));
+}
+
+:host(.carte--deplie) .tete {
+  background: var(--app-selection-bg);
+}
+
+.zone-chevron {
+  grid-area: chevron;
+  display: none;
+  align-self: center;
+  font-size: var(--app-text-xs);
+  color: var(--app-ink-muted);
+  transition: transform var(--app-duree-rapide) var(--app-easing);
+}
+
+:host(.carte--deplie) .zone-chevron {
+  transform: rotate(180deg);
+}
+
+/* ── Détail déplié ──────────────────────────────────────── */
+.detail {
+  border-top: var(--app-space-px) solid var(--app-info-bg);
+  padding: var(--app-space-3-5) var(--app-space-4);
+  animation: apparition var(--app-duree-rapide) var(--app-easing);
+}
+
+@keyframes apparition {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host,
+  .zone-chevron {
+    transition: none;
+  }
+
+  .detail {
+    animation: none;
+  }
+}
+
+@media (min-width: 768px) {
+  .tete {
+    grid-template-columns: minmax(0, 1fr) auto var(--app-space-6);
+    grid-template-areas:
+      'nom montant chevron'
+      'dates complement chevron'
+      'pied pied pied';
+  }
+
+  .tete--selection {
+    grid-template-columns: var(--app-space-6) minmax(0, 1fr) auto;
+    grid-template-areas:
+      'select nom montant'
+      'select dates complement'
+      'select pied pied';
+  }
+
+  .zone-chevron {
+    display: inline-block;
+    justify-self: end;
+  }
+}

@@ -1,22 +1,29 @@
-import { Component, inject, signal, effect } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject, signal, computed, effect } from '@angular/core';
 import { MessageModule } from 'primeng/message';
 import { SkeletonModule } from 'primeng/skeleton';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { MenuModule } from 'primeng/menu';
 import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
 import { ContexteService } from '../../../core/services/contexte.service';
 import { RepartitionPeriodeService } from '../../../core/services/scenario-poste.service';
 import { RepartitionPeriodeDto } from '../../../core/models/api.models';
-import { PctPipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
+import { localeDeLangue } from '../../../core/i18n/locale.util';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
-import { TagComponent } from '../../../shared/components/tag/tag.component';
+import { CarteListeComponent, DetailListeComponent, EnteteGroupeComponent, LigneDetail,
+  ACTION_MODIFIER, ACTION_SUPPRIMER } from '../../../shared/components/liste';
 import { toIsoDateLocal, parseIsoDateLocal } from '../../../core/utils/date.util';
 import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
 import { PeriodeFormDialogComponent, RepartitionPeriodeRequest } from './periode-form-dialog/periode-form-dialog.component';
 import { PeriodeRevisionDialogComponent } from './periode-revision-dialog/periode-revision-dialog.component';
 import { PeriodeDecalageDialogComponent } from './periode-decalage-dialog/periode-decalage-dialog.component';
+
+/** Groupe affiché : les périodes partageant la même année de début. */
+interface GroupeAffiche {
+  /** Année de début, ou `null` pour les périodes sans date de début. */
+  annee: number | null;
+  libelle: string;
+  periodes: RepartitionPeriodeDto[];
+}
 
 /**
  * Écran <b>Prorata des membres</b> — gestion des périodes de répartition (prorata)
@@ -29,11 +36,16 @@ import { PeriodeDecalageDialogComponent } from './periode-decalage-dialog/period
   selector: 'app-prorata-membres',
   standalone: true,
   providers: [ConfirmationService],
-  imports: [CommonModule, ButtonComponent,
-    MessageModule, SkeletonModule, ConfirmDialogModule, MenuModule,
-    PctPipe, TagComponent,
+  imports: [ButtonComponent,
+    MessageModule, SkeletonModule, ConfirmDialogModule,
+    CarteListeComponent, DetailListeComponent, EnteteGroupeComponent,
     PeriodeFormDialogComponent, PeriodeRevisionDialogComponent, PeriodeDecalageDialogComponent],
   templateUrl: './prorata-membres.component.html',
+  styleUrl: './prorata-membres.component.scss',
+  host: {
+    // Échap referme le détail ouvert et rend le focus à la tête de sa carte.
+    '(document:keydown.escape)': 'fermerDetail()',
+  },
 })
 export class ProrataMembresComponent {
   private readonly i18n = inject(I18nService);
@@ -121,11 +133,11 @@ export class ProrataMembresComponent {
 
   private toIso(d: Date): string { return toIsoDateLocal(d); }
 
-  /** Menu d'actions (icône + popup), sur le modèle de {@code PostesListeComponent}. */
+  /** Menu d'actions du détail déplié ; les clés `data` pilotent la mise en page. */
   actionItemsFor(p: RepartitionPeriodeDto): MenuItem[] {
     const items: MenuItem[] = [];
     if (this.contexte.estEditor()) {
-      items.push({ label: this.t.commun.modifier, icon: 'pi pi-pencil', command: () => this.ouvrirEdition(p) });
+      items.push({ label: this.t.commun.modifier, icon: 'pi pi-pencil', data: ACTION_MODIFIER, command: () => this.ouvrirEdition(p) });
       if (this.estRevisable(p)) {
         items.push({ label: this.t.prorata.reviserTaux, icon: 'pi pi-sync', command: () => this.ouvrirRevision(p) });
       }
@@ -135,9 +147,90 @@ export class ProrataMembresComponent {
       if (this.estDecalable(p)) {
         items.push({ label: this.t.prorata.decalerDateEffet, icon: 'pi pi-arrows-h', command: () => this.ouvrirDecalage(p) });
       }
-      items.push({ label: this.t.commun.supprimer, icon: 'pi pi-trash', command: () => this.confirmerSuppression(p) });
+      items.push({ label: this.t.commun.supprimer, icon: 'pi pi-trash', data: ACTION_SUPPRIMER, command: () => this.confirmerSuppression(p) });
     }
     return items;
+  }
+
+  // ── Regroupement par année de début ────────────────────────
+  /**
+   * Périodes découpées en groupes consécutifs par année de début — un conteneur par
+   * groupe dans le template, nécessaire pour que le `position: sticky` de l'en-tête se
+   * désépingle au profit du groupe suivant. Les périodes sans date de début (champ
+   * optionnel du DTO) tombent dans un groupe de repli placé en tête.
+   */
+  readonly groupesAffiches = computed<GroupeAffiche[]>(() => {
+    const triees = [...this.periodes()].sort((a, b) => (a.debut ?? '').localeCompare(b.debut ?? ''));
+    const groupes: GroupeAffiche[] = [];
+    for (const p of triees) {
+      const annee = p.debut ? +p.debut.slice(0, 4) : null;
+      const dernier = groupes.at(-1);
+      if (dernier && dernier.annee === annee) dernier.periodes.push(p);
+      else groupes.push({ annee, libelle: annee !== null ? String(annee) : '—', periodes: [p] });
+    }
+    return groupes;
+  });
+
+  /** Compteur accessible de l'en-tête de groupe (« 2 périodes »). */
+  libelleCompteurGroupe(n: number): string {
+    return this.i18n.instant('prorata.nbPeriodesGroupe', { n });
+  }
+
+  // ── Détail déplié ──────────────────────────────────────────
+  /** Période dont le détail est ouvert ; une seule à la fois, comme sur les postes. */
+  readonly periodeDeplieId = signal<string | null>(null);
+
+  basculerDeplie(p: RepartitionPeriodeDto): void {
+    this.periodeDeplieId.update(id => (id === p.id ? null : p.id));
+  }
+
+  /** Échap : referme le détail ouvert et rend le focus à la tête de sa carte. */
+  fermerDetail(): void {
+    const id = this.periodeDeplieId();
+    if (!id) return;
+    this.periodeDeplieId.set(null);
+    setTimeout(() => document.querySelector<HTMLElement>(`#periode-${id} .tete`)?.focus());
+  }
+
+  libelleBascule(p: RepartitionPeriodeDto): string {
+    return this.i18n.instant(
+      this.periodeDeplieId() === p.id ? 'prorata.liste.replier' : 'prorata.liste.deplier',
+      { periode: this.texteperiode(p) });
+  }
+
+  /**
+   * Plage de dates de la période, bornes incluses (« 01.01.2025 → 31.12.2025 »). Une
+   * période ouverte se termine par « → … » : depuis la suppression du pied de carte,
+   * c'est le seul endroit de la tête qui signale l'absence de date de fin.
+   */
+  texteperiode(p: RepartitionPeriodeDto): string {
+    const debut = this.formaterDate(p.debut);
+    return `${debut} → ${p.fin ? this.formaterDate(p.fin) : '…'}`;
+  }
+
+  /** Résumé compact des parts, affiché en seconde ligne de la carte. */
+  resumeParts(p: RepartitionPeriodeDto): string {
+    return p.parts.map(part => `${part.nomMembre} ${Math.round(part.quotePart * 100)} %`).join(' · ');
+  }
+
+  /** Paires libellé / valeur du détail déplié, déjà formatées. */
+  lignesDetail(p: RepartitionPeriodeDto): LigneDetail[] {
+    const d = this.t.prorata.detail;
+    return [
+      { cle: 'debut', libelle: d.debut, valeur: this.formaterDate(p.debut) },
+      { cle: 'fin', libelle: d.fin, valeur: p.fin ? this.formaterDate(p.fin) : this.t.scenario.periodeOuverte },
+      ...p.parts.map(part => ({
+        cle: `part-${part.membreId}`,
+        libelle: part.nomMembre,
+        valeur: `${Math.round(part.quotePart * 1000) / 10} %`,
+      })),
+    ];
+  }
+
+  private formaterDate(iso?: string): string {
+    if (!iso) return '–';
+    return new Intl.DateTimeFormat(localeDeLangue(this.i18n.currentLang()),
+      { day: '2-digit', month: '2-digit', year: 'numeric' }).format(parseIsoDateLocal(iso));
   }
 
   // ── Chaîne de périodes (contiguïté par les dates, pas de posteOrigineId/posteSuivantId) ──

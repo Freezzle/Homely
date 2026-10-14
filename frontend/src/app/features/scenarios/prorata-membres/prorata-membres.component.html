@@ -19,64 +19,54 @@
 
     <!-- ── État chargement (skeletons) ──────────────────────── -->
   } @else if (chargement()) {
-    <div class="flex flex-col gap-2">
+    <div class="liste">
       @for (_ of [1, 2, 3]; track $index) {
-        <div class="flex items-center gap-3 px-4 py-3 rounded-xl border border-surface-200
-              dark:border-surface-700 bg-white dark:bg-surface-900">
-          <div class="flex-1 flex flex-col gap-2">
+        <div class="squelette-carte">
+          <div class="flex flex-col gap-2 min-w-0">
             <p-skeleton width="35%" height="1rem" />
             <p-skeleton width="55%" height="0.75rem" />
           </div>
           <p-skeleton width="90px" height="1.25rem" class="shrink-0" />
-          <p-skeleton width="36px" height="2rem" class="shrink-0 rounded-lg" />
         </div>
       }
     </div>
 
     <!-- ── État vide ────────────────────────────────────────── -->
   } @else if (periodes().length === 0) {
-    <div class="flex flex-col items-center justify-center gap-3 py-16
-          rounded-xl border border-dashed border-surface-300 dark:border-surface-700
-          bg-surface-50 dark:bg-surface-900 text-surface-400">
+    <div class="etat-vide">
       <i class="pi pi-inbox text-5xl opacity-30"></i>
       <span class="text-sm">{{ t.prorata.aucunResultat }}</span>
     </div>
 
-    <!-- ── Liste des périodes ────────────────────────────────── -->
+    <!-- ── Liste des périodes, groupées par année de début ───── -->
   } @else {
-    <div class="flex flex-col gap-2">
-      @for (p of periodes(); track p.id) {
-        <div class="grid gap-3 px-4 py-2.5 md:py-2 grid-cols-[minmax(0,1fr)_auto]
-            border border-surface-200 dark:border-surface-700
-            bg-white dark:bg-surface-900 hover:shadow-sm transition-all duration-300 rounded-xl">
+    <div class="flex flex-col">
+      @for (groupe of groupesAffiches(); track groupe.libelle) {
+        <!-- Un conteneur par groupe : borne le `position: sticky` de l'en-tête, qui se
+             désépingle ainsi au profit du groupe suivant. -->
+        <div class="flex flex-col">
+          <app-entete-groupe [libelle]="groupe.libelle"
+                             [nbElements]="groupe.periodes.length"
+                             [libelleCompteur]="libelleCompteurGroupe(groupe.periodes.length)"/>
 
-          <!-- Colonne 1 : contenu -->
-          <div class="min-w-0 flex flex-col gap-1.5 md:gap-1">
-            <!-- Ligne 1 : période -->
-            <div class="min-w-0 flex items-center gap-2 flex-wrap">
-              <span class="font-medium leading-snug">
-                {{ p.debut | date:'dd.MM.yyyy' }} → {{ p.fin ? (p.fin | date:'dd.MM.yyyy') : '' }}
-              </span>
-              @if (!p.fin) {
-                <app-tag [texte]="t.scenario.periodeOuverte" severity="success"/>
-              }
-            </div>
+          <div class="liste">
+            @for (p of groupe.periodes; track p.id) {
+              <!-- Tête de carte : rendue par `app-carte-liste` (cf. refonte.md §3). -->
+              <ng-template #tete>
+                <span class="zone-nom tronque">{{ texteperiode(p) }}</span>
+                <span class="zone-montant tronque">{{ resumeParts(p) }}</span>
+              </ng-template>
 
-            <!-- Ligne 2 : parts par membre -->
-            <div class="min-w-0 flex items-center flex-wrap gap-1">
-              @for (part of p.parts; track part.membreId) {
-                <app-tag [couleur]="part.couleurMembre" [texte]="part.nomMembre + ' · ' + (part.quotePart | pct)" />
-              }
-            </div>
-          </div>
-
-          <!-- Colonne 2 : actions -->
-          <div class="flex items-center justify-end shrink-0">
-            @if (contexte.estEditor()) {
-              <app-button icon="pi pi-cog" [rounded]="true" [text]="true" severity="secondary" size="small"
-                          [ariaLabel]="t.commun.actions" [tooltip]="t.commun.actions"
-                          (clickEvent)="menuActions.toggle($event)" />
-              <p-menu #menuActions [popup]="true" [model]="actionItemsFor(p)" appendTo="body" />
+              <app-carte-liste [id]="'periode-' + p.id"
+                               [contenuTete]="tete"
+                               [deplie]="periodeDeplieId() === p.id"
+                               [idDetail]="'detail-periode-' + p.id"
+                               [libelleBascule]="libelleBascule(p)"
+                               (basculer)="basculerDeplie(p)">
+                @if (periodeDeplieId() === p.id) {
+                  <app-detail-liste [lignes]="lignesDetail(p)" [actions]="actionItemsFor(p)"/>
+                }
+              </app-carte-liste>
             }
           </div>
         </div>

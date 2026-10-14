@@ -25,6 +25,7 @@ import { notifierErreur, notifierSucces } from '../../../core/utils/toast.util';
 import { ParcoursGuideComponent } from '../../../shared/components/parcours-guide/parcours-guide.component';
 import { EtapeParcours, LigneFiche, TonBadgeParcours } from '../../../shared/components/parcours-guide/parcours-guide.model';
 import { PosteEcheancier } from '../../../shared/components/echeancier-annuel/echeancier.model';
+import { legendeApercuPeriodicite } from '../../../shared/components/echeancier-annuel/poste-apercu-periodicite/poste-apercu-periodicite.component';
 import { RepartitionSaisie } from './components/poste-repartition/repartition-saisie.model';
 import { calculerParts } from './components/poste-repartition/repartition.util';
 import { EtapeQuoiComponent } from './etapes/etape-quoi.component';
@@ -232,13 +233,8 @@ export class PosteFormDialogComponent {
   });
 
   readonly apercuLegende = computed(() => {
-    const l = this.t.poste.form.legende;
     const v = this.valeurs();
-    const p = v.periodiciteMois ?? 0;
-    if (p === 0) return l.ponctuel;
-    if (p === 1) return l.mensuel;
-    if (v.moment === 'INCONNU') return l.inconnu;
-    return v.mode === 'PERIODIQUE' ? l.periodique : l.lisse;
+    return legendeApercuPeriodicite(this.t.poste.form.legende, v.periodiciteMois ?? 0, v.moment, v.mode);
   });
 
   // ── Fiche ─────────────────────────────────────────────────────────────

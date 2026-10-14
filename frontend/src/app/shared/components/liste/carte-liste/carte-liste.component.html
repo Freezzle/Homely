@@ -1,0 +1,23 @@
+@if (modeSelection()) {
+  <!-- Mode sélection : la tête devient la cible de la case à cocher (projetée par
+       l'appelant dans son template, avec la classe `zone-select`) ; le dépliage est
+       désactivé. -->
+  <label class="tete tete--selection" [for]="selectionInputId()">
+    <ng-container *ngTemplateOutlet="contenuTete()"/>
+  </label>
+} @else {
+  <button type="button" class="tete"
+          [attr.aria-expanded]="deplie()"
+          [attr.aria-controls]="idDetail()"
+          [attr.aria-label]="libelleBascule()"
+          (click)="basculer.emit()">
+    <ng-container *ngTemplateOutlet="contenuTete()"/>
+    <i class="zone-chevron pi pi-chevron-down" aria-hidden="true"></i>
+  </button>
+}
+
+@if (deplie()) {
+  <div class="detail" [id]="idDetail()">
+    <ng-content/>
+  </div>
+}

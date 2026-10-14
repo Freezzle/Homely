@@ -168,6 +168,15 @@
     "aucunResultat": "Aucune période de répartition définie.",
     "aucunScenario": "Aucun scénario sélectionné.",
     "monoMembreNonApplicable": "Le prorata ne s'applique pas aux foyers à un seul membre.",
+    "nbPeriodesGroupe": "{{n}} période(s)",
+    "liste": {
+      "deplier": "Déplier la période {{periode}}",
+      "replier": "Replier la période {{periode}}"
+    },
+    "detail": {
+      "debut": "Début",
+      "fin": "Fin"
+    },
     "reviserTaux": "Réviser les taux",
     "revisionTitre": "Réviser les taux",
     "revisionDateEffet": "Effet dès le",
@@ -502,6 +511,28 @@
       "effacerFiltresEtRecherche": "Effacer la recherche et les filtres ({{n}})"
     },
     "nbPostesGroupe": "{{n}} poste(s)",
+    "liste": {
+      "parMois": "/ mois",
+      "depuisLe": "Depuis le {{debut}}",
+      "duAu": "Du {{debut}} au {{fin}}",
+      "depuisLeSansFin": "Depuis le {{debut}}, sans fin",
+      "ponctuel": "ponctuel",
+      "mensualise": "Mensualisé",
+      "revisionSuivante": "→ {{montant}} dès le {{date}}",
+      "revisionsMasqueesAvant": "{{n}} révision(s) précédente(s) masquée(s)",
+      "revisionsMasqueesApres": "{{n}} révision(s) suivante(s) masquée(s)",
+      "partDuTotal": "{{n}} % du total affiché",
+      "detail": {
+        "montant": "Montant",
+        "validite": "Validité",
+        "paiement": "Paiement",
+        "repartition": "Répartition",
+        "comptes": "Comptes",
+        "analyse": "Analyse"
+      },
+      "deplier": "Afficher le détail de {{nom}}",
+      "replier": "Masquer le détail de {{nom}}"
+    },
     "oneShot": "Ponctuel",
     "contribution": "Contribution",
     "reviserMontant": "Réviser le montant",
@@ -1048,6 +1079,22 @@
     "aucunResultat": "Aucun élément ne correspond aux filtres actifs.",
     "allocationSansRaison": "Allocation ponctuelle",
     "nbElementsGroupe": "{{n}} élément(s)",
+    "liste": {
+      "deplier": "Déplier {{nom}}",
+      "replier": "Replier {{nom}}",
+      "parMois": "/ mois",
+      "duRav": "du RàV"
+    },
+    "detail": {
+      "membre": "Membre",
+      "compte": "Compte crédité",
+      "periode": "Période",
+      "mois": "Mois",
+      "mode": "Mode",
+      "formule": "Formule",
+      "montant": "Montant",
+      "motif": "Motif"
+    },
     "regroupementOptions": {
       "MEMBRE": "Par membre",
       "TYPE": "Par type",

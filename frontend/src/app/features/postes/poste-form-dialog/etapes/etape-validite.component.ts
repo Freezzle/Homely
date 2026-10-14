@@ -5,7 +5,7 @@ import { I18nService } from '../../../../core/i18n/i18n.service';
 import { DatePickerComponent } from '../../../../shared/components/form-fields';
 import { ChoixPucesComponent } from '../../../../shared/components/choix-puces/choix-puces.component';
 import { OptionChoix } from '../../../../shared/components/choix-cartes/option-choix.model';
-import { PosteApercuPeriodiciteComponent } from '../components/poste-apercu-periodicite/poste-apercu-periodicite.component';
+import { PosteApercuPeriodiciteComponent } from '../../../../shared/components/echeancier-annuel/poste-apercu-periodicite/poste-apercu-periodicite.component';
 import { PosteEcheancier } from '../../../../shared/components/echeancier-annuel/echeancier.model';
 import {
   PosteFormValeurs,

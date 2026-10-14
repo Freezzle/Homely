@@ -129,8 +129,9 @@ fait côté frontend via `Intl.NumberFormat`.
 frontend/src/app
 ├── core/     guards, interceptors (jwt, date), services (ContexteService, I18nService…),
 │             pipes (montant/date/pct/périodicité), constants, models
-├── shared/   composants réutilisables (button, carte-info, indicateurs/*, carte-bilan,
-│             tag, metric-ring, event-grid, taux-effort-card) — `button`/`tag` wrappent
+├── shared/   composants réutilisables (button, carte-info, indicateurs/*, liste/*,
+│             carte-bilan, tag, metric-ring, event-grid, taux-effort-card) —
+│             `button`/`tag` wrappent
 │             `p-button`/`p-tag` (API restreinte au sous-ensemble utilisé, `tag` supporte
 │             `severity` PrimeNG, `ton` de la charte, ou une couleur libre — dans cet
 │             ordre de priorité)
@@ -368,6 +369,32 @@ barres + ligne).
   queries. Y ajouter tout nouvel indicateur. Seule page de l'application dont les libellés
   sont en dur (données factices, aucune donnée de foyer) — exception assumée à la règle
   « tout en clés i18n ».
+
+### 7.2 bis Design system — listes (cartes dépliables)
+
+**Règle** : tout écran qui liste des entités éditables (postes, argent de poche, prorata)
+utilise les primitives de `shared/components/liste/` — jamais un `<div>` habillé à la
+main, et **plus de bouton roue dentée** : les actions vivent dans le détail déplié.
+
+| Composant | Rôle | Entrées principales |
+|---|---|---|
+| `app-carte-liste` | Coquille d'une carte : cadre, tête cliquable (`<button>` ou `<label>` en mode sélection), chevron, zone de détail dépliable, `aria-expanded`/`aria-controls` | `contenuTete` (**`TemplateRef`**, requis), `deplie`, `enSurbrillance`, `lisere`, `modeSelection`, `selectionInputId`, `idDetail`, `libelleBascule` ; `(basculer)` ; `ng-content` = détail |
+| `app-entete-groupe` | En-tête de section sticky : libellé, compteur, sous-total et barre de proportion **optionnels** | `libelle`, `nbElements`, `libelleCompteur`, `sousTotal?`, `sousTotalPonctuel`, `part?`, `couleur`, `devise`, `uniteParMois`, `unitePonctuel`, `titreBarre` |
+| `app-detail-liste` | Contenu déplié : paires libellé/valeur + rangée d'actions | `lignes: LigneDetail[]`, `actions: MenuItem[]`, `colonneLaterale` ; `ng-content` = blocs propres à l'écran |
+
+- La tête passe par un `TemplateRef` (et non `ng-content`) : elle est rendue dans deux
+  branches `@if` exclusives, où un même sélecteur de projection ne peut pas être satisfait
+  deux fois.
+- Les classes de zones (`zone-nom`, `zone-montant`, `zone-dates`, `zone-complement`,
+  `zone-pied`) et les états de liste (`squelette-carte`, `etat-vide`) sont **globales**
+  (`src/styles/_cartes-liste.css`, layer `components`), car le contenu d'un `TemplateRef`
+  garde la portée de styles de son composant déclarant.
+- Classement de la rangée d'actions par la clé `data` du `MenuItem` : `modifier`
+  (primaire), `supprimer` (danger, poussé à droite sur desktop), `changer-valeur` (un
+  bouton ouvrant un `p-menu` popup), le reste en secondaire outlined.
+- Un seul élément déplié à la fois par écran ; Échap referme et rend le focus à la tête.
+
+Détail du patron et déclinaisons par écran : `docs/features/refonte.md`.
 
 ### 7.3 Design system — parcours guidés (formulaires en plusieurs étapes)
 

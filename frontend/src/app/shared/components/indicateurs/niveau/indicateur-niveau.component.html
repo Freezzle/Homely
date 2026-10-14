@@ -1,5 +1,5 @@
-<div class="niveau">
-  <p class="niveau__titre" [style.color]="couleur()">
+<div class="niveau" [class.niveau--compact]="compact()">
+  <p class="niveau__titre" [style.color]="compact() ? null : couleur()">
     {{ libelle() }}<span class="niveau__ratio">{{ ratio() }}</span>
   </p>
   <div class="niveau__echelle" role="img" [attr.aria-label]="libelle() + ' ' + ratio()">
@@ -10,8 +10,10 @@
         [style.background]="segment.actif ? segment.couleur : null"></span>
     }
   </div>
-  <div class="niveau__bornes">
-    <span>{{ libelleDebut() }}</span>
-    <span>{{ libelleFin() }}</span>
-  </div>
+  @if (!compact()) {
+    <div class="niveau__bornes">
+      <span>{{ libelleDebut() }}</span>
+      <span>{{ libelleFin() }}</span>
+    </div>
+  }
 </div>

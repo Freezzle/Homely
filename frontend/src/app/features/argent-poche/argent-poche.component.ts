@@ -1,12 +1,8 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { forkJoin } from 'rxjs';
 
 import { SkeletonModule } from 'primeng/skeleton';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { AvatarModule } from 'primeng/avatar';
-import { TooltipModule } from 'primeng/tooltip';
-import { MessageModule } from 'primeng/message';
 import { MenuModule } from 'primeng/menu';
 import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
 
@@ -24,6 +20,8 @@ import {
 } from '../../core/models/api.models';
 import { ButtonComponent } from '../../shared/components/button/button.component';
 import { TagComponent } from '../../shared/components/tag/tag.component';
+import { CarteListeComponent, DetailListeComponent, EnteteGroupeComponent, LigneDetail,
+  ACTION_MODIFIER, ACTION_SUPPRIMER } from '../../shared/components/liste';
 import { ArgentPocheBarreFiltresComponent } from './argent-poche-barre-filtres/argent-poche-barre-filtres.component';
 import { PolitiqueFormDialogComponent, PolitiqueArgentPocheRequest } from './politique-form-dialog/politique-form-dialog.component';
 import { AllocationFormDialogComponent, AllocationArgentPocheRequest } from './allocation-form-dialog/allocation-form-dialog.component';
@@ -76,15 +74,18 @@ export interface ArgentPocheAffiche {
   standalone: true,
   providers: [ConfirmationService],
   imports: [
-    CommonModule,
     ButtonComponent, TagComponent,
-    SkeletonModule, ConfirmDialogModule, AvatarModule, TooltipModule, MessageModule,
-    MenuModule,
+    SkeletonModule, ConfirmDialogModule, MenuModule,
+    CarteListeComponent, DetailListeComponent, EnteteGroupeComponent,
     ArgentPocheBarreFiltresComponent,
     PolitiqueFormDialogComponent, AllocationFormDialogComponent,
   ],
   templateUrl: './argent-poche.component.html',
   styleUrl: './argent-poche.component.scss',
+  host: {
+    // Échap referme le détail ouvert et rend le focus à la tête de sa carte.
+    '(document:keydown.escape)': 'fermerDetail()',
+  },
 })
 export class ArgentPocheComponent {
   readonly i18n = inject(I18nService);
@@ -225,7 +226,9 @@ export class ArgentPocheComponent {
   /** Nombre total d'éléments affichés (tous groupes confondus), pour le badge résultats et l'état vide. */
   readonly nbElementsAffiches = computed(() => this._itemsFiltres().length);
 
-  /** Clé + libellé de séparateur d'un item selon le regroupement actif. */
+  /**
+   * Clé + libellé de séparateur d'un item selon le regroupement actif.
+   */
   private _clefSeparateur(item: ArgentPocheAffiche): { clef: string; label: string } {
     switch (this.regroupement()) {
       case 'MEMBRE': {
@@ -274,31 +277,94 @@ export class ArgentPocheComponent {
   });
 
   /**
-   * Paire de tokens (fond doux / accent plein) pour le bandeau de regroupement,
-   * sur le modèle de {@code separateurAccent} dans {@code PostesListeComponent}
-   * — ici fixe (pas de dimension "type" comme REVENU/CHARGE/RESERVE), avec le
-   * token dédié à l'écran Argent de poche.
+   * Menu d'actions du détail déplié ; les clés `data` pilotent la mise en page.
    */
-  readonly separateurAccent = { bg: 'var(--app-argent-poche-bg)', fg: 'var(--app-argent-poche)' };
-
-  /** Menu d'actions (icône + popup), routé vers la bonne méthode selon le type. */
   actionItemsFor(item: ArgentPocheAffiche): MenuItem[] {
     const items: MenuItem[] = [];
     if (this.contexte.estEditor()) {
       items.push({
-        label: this.t.commun.modifier, icon: 'pi pi-pencil',
+        label: this.t.commun.modifier, icon: 'pi pi-pencil', data: ACTION_MODIFIER,
         command: () => item._type === 'POLITIQUE'
           ? this.ouvrirEditionPolitique(item.source as PolitiqueArgentPocheDto)
           : this.ouvrirEditionAllocation(item.source as AllocationArgentPocheDto),
       });
       items.push({
-        label: this.t.commun.supprimer, icon: 'pi pi-trash',
+        label: this.t.commun.supprimer, icon: 'pi pi-trash', data: ACTION_SUPPRIMER,
         command: () => item._type === 'POLITIQUE'
           ? this.supprimerPolitique(item.source as PolitiqueArgentPocheDto)
           : this.supprimerAllocation(item.source as AllocationArgentPocheDto),
       });
     }
     return items;
+  }
+
+  // ── Détail déplié ───────────────────────────────────────────────────────────
+  /** Élément dont le détail est ouvert ; un seul à la fois, comme sur les postes. */
+  readonly itemDeplieId = signal<string | null>(null);
+
+  basculerDeplie(item: ArgentPocheAffiche): void {
+    this.itemDeplieId.update(id => (id === item.id ? null : item.id));
+  }
+
+  /** Échap : referme le détail ouvert et rend le focus à la tête de sa carte. */
+  fermerDetail(): void {
+    const id = this.itemDeplieId();
+    if (!id) return;
+    this.itemDeplieId.set(null);
+    setTimeout(() => document.querySelector<HTMLElement>(`#argent-poche-${id} .tete`)?.focus());
+  }
+
+  libelleBascule(item: ArgentPocheAffiche): string {
+    return this.i18n.instant(
+      this.itemDeplieId() === item.id ? 'argentPoche.liste.replier' : 'argentPoche.liste.deplier',
+      { nom: item.libellePrincipal });
+  }
+
+  /** Compteur accessible de l'en-tête de groupe. */
+  libelleCompteurGroupe(n: number): string {
+    return this.i18n.instant('argentPoche.nbElementsGroupe', { n });
+  }
+
+  /**
+   * Montant affiché en tête de carte : toujours un chiffre court, jamais la formule
+   * complète (qui ne tiendrait pas sur une ligne). Pour une politique VARIABLE, c'est le
+   * pourcentage du reste à vivre ; la formule détaillée vit dans le détail déplié.
+   */
+  montantCarte(item: ArgentPocheAffiche): { valeur: string; unite: string | null } {
+    if (item._type === 'ALLOCATION') {
+      return { valeur: this._formaterMontantCourt((item.source as AllocationArgentPocheDto).montant), unite: null };
+    }
+    const p = item.source as PolitiqueArgentPocheDto;
+    return p.mode === 'FIXE'
+      ? { valeur: this._formaterMontantCourt(p.montantFixe ?? 0), unite: this.t.argentPoche.liste.parMois }
+      : { valeur: `${p.pourcentage ?? 0} %`, unite: this.t.argentPoche.liste.duRav };
+  }
+
+  /** Paires libellé / valeur du détail déplié, déjà formatées. */
+  lignesDetail(item: ArgentPocheAffiche): LigneDetail[] {
+    const d = this.t.argentPoche.detail;
+    const lignes: LigneDetail[] = [
+      { cle: 'membre', libelle: d.membre, valeur: item.membre?.nom ?? '–' },
+      { cle: 'compte', libelle: d.compte, valeur: item.compteLibelle || '–' },
+    ];
+
+    if (item._type === 'POLITIQUE') {
+      const p = item.source as PolitiqueArgentPocheDto;
+      lignes.push(
+        { cle: 'periode', libelle: d.periode, valeur: item.libelleSecondaire },
+        { cle: 'mode', libelle: d.mode, valeur: this.t.argentPoche.modes[p.mode] },
+        { cle: 'formule', libelle: d.formule, valeur: item.montantLibelle },
+      );
+    } else {
+      const a = item.source as AllocationArgentPocheDto;
+      lignes.push(
+        { cle: 'mois', libelle: d.mois, valeur: item.libelleSecondaire },
+        { cle: 'montant', libelle: d.montant, valeur: this._formaterMontantCourt(a.montant) },
+      );
+      if (a.raison) lignes.push({ cle: 'raison', libelle: d.motif, valeur: a.raison });
+    }
+
+    return lignes;
   }
 
   /** Libellé du mode de la politique (utilisé côté template, où l'union du type

@@ -1,29 +1,18 @@
 /*
- * Bandeau de regroupement (docs/features/feature_4.md) : sticky, coloré selon le
- * type de la liste. Le fond (bg) et l'accent du monogramme (fg) sont posés en
- * `[style.*]` par le template (valeurs dynamiques, cf. `separateurAccent`) — ce
- * fichier ne définit que la structure/typo, pas les couleurs elles-mêmes.
+ * Zone liste des postes (docs/features/refonte.md) : les cartes sont espacées par le
+ * `gap` du conteneur, jamais par des marges. L'en-tête de groupe vit dans
+ * `app-entete-groupe` ; il ne reste ici que la mise en page de la liste elle-même.
  */
-.separateur-groupe {
-  position: sticky;
-  top: 0;
-  z-index: var(--app-z-eleve);
+.liste {
   display: flex;
-  align-items: center;
-  gap: var(--app-space-3);
-  padding: var(--app-space-3);
-  border: var(--app-space-px) solid var(--app-line);
+  flex-direction: column;
+  gap: var(--app-space-1-5);
+  min-width: 0;
+  padding-left: var(--app-space-3-5);
+}
 
-  &__label {
-    font-weight: var(--app-weight-semibold);
-    color: var(--app-ink);
-  }
-
-  &__count {
-    margin-left: auto;
-    font-size: var(--app-text-xs);
-    font-weight: var(--app-weight-semibold);
-    color: var(--app-ink-muted);
-    white-space: nowrap;
-  }
+/* Maillons consécutifs d'une même chaîne de révisions : resserrés, pour qu'ils se
+   lisent comme un seul bloc relié par le liseré gauche de la carte. */
+app-poste-carte.carte--suite-chaine {
+  margin-top: calc(-1 * (var(--app-space-1-5) - var(--app-space-0-5)));
 }

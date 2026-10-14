@@ -168,6 +168,15 @@
     "aucunResultat": "No split period defined.",
     "aucunScenario": "No scenario selected.",
     "monoMembreNonApplicable": "Proration does not apply to single-member households.",
+    "nbPeriodesGroupe": "{{n}} period(s)",
+    "liste": {
+      "deplier": "Expand period {{periode}}",
+      "replier": "Collapse period {{periode}}"
+    },
+    "detail": {
+      "debut": "Start",
+      "fin": "End"
+    },
     "reviserTaux": "Revise rates",
     "revisionTitre": "Revise rates",
     "revisionDateEffet": "Effective date",
@@ -502,6 +511,28 @@
       "effacerFiltresEtRecherche": "Clear search and filters ({{n}})"
     },
     "nbPostesGroupe": "{{n}} item(s)",
+    "liste": {
+      "parMois": "/ month",
+      "depuisLe": "Since {{debut}}",
+      "duAu": "From {{debut}} to {{fin}}",
+      "depuisLeSansFin": "Since {{debut}}, no end date",
+      "ponctuel": "one-off",
+      "mensualise": "Spread monthly",
+      "revisionSuivante": "→ {{montant}} from {{date}}",
+      "revisionsMasqueesAvant": "{{n}} earlier revision(s) hidden",
+      "revisionsMasqueesApres": "{{n}} later revision(s) hidden",
+      "partDuTotal": "{{n}} % of the displayed total",
+      "detail": {
+        "montant": "Amount",
+        "validite": "Validity",
+        "paiement": "Payment",
+        "repartition": "Split",
+        "comptes": "Accounts",
+        "analyse": "Analysis"
+      },
+      "deplier": "Show details for {{nom}}",
+      "replier": "Hide details for {{nom}}"
+    },
     "oneShot": "One-off",
     "contribution": "Contribution",
     "reviserMontant": "Revise amount",
@@ -1048,6 +1079,22 @@
     "aucunResultat": "No item matches the active filters.",
     "allocationSansRaison": "One-off allowance",
     "nbElementsGroupe": "{{n}} item(s)",
+    "liste": {
+      "deplier": "Expand {{nom}}",
+      "replier": "Collapse {{nom}}",
+      "parMois": "/ month",
+      "duRav": "of leftover"
+    },
+    "detail": {
+      "membre": "Member",
+      "compte": "Credited account",
+      "periode": "Period",
+      "mois": "Month",
+      "mode": "Mode",
+      "formule": "Formula",
+      "montant": "Amount",
+      "motif": "Reason"
+    },
     "regroupementOptions": {
       "MEMBRE": "By member",
       "TYPE": "By type",

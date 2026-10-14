@@ -1,0 +1,20 @@
+<div class="entete">
+  <span class="entete__libelle tronque">{{ libelle() }}</span>
+  <span class="entete__compteur" [attr.aria-label]="libelleCompteur()">{{ nbElements() }}</span>
+
+  @if (sousTotal() !== null) {
+    <span class="entete__total montant-ligne">
+      <span class="approximation" aria-hidden="true">≈</span>{{ sousTotal()! | montant:devise() }}<span
+        class="unite">{{ uniteParMois() }}</span>
+      @if (sousTotalPonctuel()) {
+        <span class="entete__ponctuel">+ {{ sousTotalPonctuel() | montant:devise() }} {{ unitePonctuel() }}</span>
+      }
+    </span>
+  }
+</div>
+
+@if (part() !== null) {
+  <div class="barre" [title]="titreBarre()">
+    <span class="barre__remplissage" [style.width.%]="largeur()" [style.background]="couleur()"></span>
+  </div>
+}

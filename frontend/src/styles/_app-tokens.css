@@ -150,4 +150,15 @@
      */
     --app-line-2: var(--p-surface-700);
     --app-line-3: var(--p-surface-600);
+
+    /*
+     * Même cause pour `--app-bg` (= surface.50, soit #f5f5f5 en sombre) : sans cette
+     * surcharge, les fonds « en retrait » (en-tête de groupe épinglé, sous-panneaux de
+     * dialogue, survol de ligne) restaient quasi blancs sous du texte blanc. On reprend
+     * le palier **entre le canvas et la carte**, comme en clair :
+     *   clair  : canvas surface.100 → --app-bg surface.50  → carte surface.0
+     *   sombre : canvas surface.950 → --app-bg surface.900 → carte surface.800
+     * (surface.700 serait confondu avec `--app-line`, qui borde ces mêmes surfaces.)
+     */
+    --app-bg: var(--p-surface-900);
 }

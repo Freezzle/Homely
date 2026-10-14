@@ -2,11 +2,9 @@ import { Component, inject, signal, computed, input, effect, WritableSignal } fr
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
-import { TableModule } from 'primeng/table';
 import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { SkeletonModule } from 'primeng/skeleton';
-import { MenuModule } from 'primeng/menu';
 import { PopoverModule } from 'primeng/popover';
 import { DrawerModule } from 'primeng/drawer';
 import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
@@ -19,13 +17,13 @@ import { MontantPipe, PeriodicitePipe } from '../../../core/pipes/format.pipes';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { localeDeLangue } from '../../../core/i18n/locale.util';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
-import { TagComponent } from '../../../shared/components/tag/tag.component';
 import { CheckboxComponent } from '../../../shared/components/form-fields';
-import { toIsoDateLocal } from '../../../core/utils/date.util';
+import { toIsoDateLocal, parseIsoDateLocal } from '../../../core/utils/date.util';
 import { formatPeriodeMois, formaterMontantSimple } from '../../../core/utils/format-affichage.util';
 import { notifierSucces, notifierErreur } from '../../../core/utils/toast.util';
 import { contientInsensibleAccents, surlignerFragment } from '../../../core/utils/normalisation-texte.util';
 import { PosteApercuDialogComponent } from '../poste-apercu-dialog/poste-apercu-dialog.component';
+import { legendeApercuPeriodicite } from '../../../shared/components/echeancier-annuel/poste-apercu-periodicite/poste-apercu-periodicite.component';
 import { PosteHistoriqueDrawerComponent, MaillonHistorique } from '../poste-historique-drawer/poste-historique-drawer.component';
 import { PosteRevisionDialogComponent } from '../poste-revision-dialog/poste-revision-dialog.component';
 import { PosteClotureDialogComponent } from '../poste-cloture-dialog/poste-cloture-dialog.component';
@@ -34,6 +32,14 @@ import { PosteFormDialogComponent } from '../poste-form-dialog/poste-form-dialog
 import { PosteBulkChampDialogComponent } from '../poste-bulk-champ-dialog/poste-bulk-champ-dialog.component';
 import { PosteBulkSuppressionDialogComponent } from '../poste-bulk-suppression-dialog/poste-bulk-suppression-dialog.component';
 import { PostesBarreFiltresComponent } from './postes-barre-filtres/postes-barre-filtres.component';
+import { PosteCarteComponent } from './components/poste-carte/poste-carte.component';
+import { PosteDetailComponent, AnalysePoste } from './components/poste-detail/poste-detail.component';
+import { EnteteGroupeComponent } from '../../../shared/components/liste';
+import { EtiquettePoste, LigneDetailPoste, PosteAffiche, ApercuPeriodicitePoste } from './poste-affiche.model';
+import {
+  estPonctuel, partDuTotal, sousTotalGroupe, texteDates, echeancierDepuisPoste,
+} from './postes-affichage.util';
+import { formatMoisAnnee } from '../../../core/utils/format-affichage.util';
 import {
   EtatFiltresPostes, FiltreEtatPoste, OptionFacette, ETAT_FILTRES_PAR_DEFAUT, CritereTri,
 } from './etat-filtres-postes.model';
@@ -42,22 +48,17 @@ import {
   lirePreferencesAffichage, ecrirePreferencesAffichage, assurerCoherenceTri,
 } from './etat-filtres-postes.util';
 
-/**
- * Poste enrichi de métadonnées d'affichage calculées côté front pour le regroupement
- * en chaîne de révisions (voir `postesVisibles`). Champs purement transitoires, non
- * envoyés à l'API.
- */
-interface PosteAffiche extends PosteDto {
-  _estChaine?: boolean;
-  _premierDuBloc?: boolean;
-  _estActifChaine?: boolean;
-  _nbVersions?: number;
-  _clefSeparateur?: string;
-  _labelSeparateur?: string;
-  /** Nombre de maillons de la chaîne masqués chronologiquement avant celui-ci (toutes causes confondues : option « révision active », filtre État, autres filtres). Non renseigné si 0. */
-  _nbMasquesAvant?: number;
-  /** Nombre de maillons de la chaîne masqués chronologiquement après celui-ci. Non renseigné si 0. */
-  _nbMasquesApres?: number;
+/** Groupe affiché : son en-tête (libellé, compteur, sous-totaux, part) et ses postes. */
+interface GroupeAffiche {
+  separator: string | null;
+  nbPostes: number;
+  postes: PosteAffiche[];
+  /** Somme des montants par mois des postes récurrents du groupe. */
+  sousTotal: number;
+  /** Somme des montants des postes ponctuels du groupe. */
+  sousTotalPonctuel: number;
+  /** Part du groupe dans le total affiché (0–1), pour la barre de proportion. */
+  part: number;
 }
 
 /**
@@ -72,14 +73,19 @@ interface VisibiliteMenuItem extends MenuItem {
 @Component({
   selector: 'app-postes-liste',
   standalone: true,
-  providers: [ConfirmationService],
-  imports: [CommonModule, FormsModule, TableModule, ButtonComponent,
-            TagComponent, TooltipModule, ConfirmDialogModule, SkeletonModule, CheckboxComponent,
-            MenuModule, PopoverModule, DrawerModule, PostesBarreFiltresComponent,
-            MontantPipe, PeriodicitePipe, PosteApercuDialogComponent, PosteHistoriqueDrawerComponent, PosteRevisionDialogComponent, PosteClotureDialogComponent, PosteDecalageDialogComponent, PosteFormDialogComponent,
+  providers: [ConfirmationService, PeriodicitePipe],
+  imports: [CommonModule, FormsModule, ButtonComponent,
+            TooltipModule, ConfirmDialogModule, SkeletonModule, CheckboxComponent,
+            PopoverModule, DrawerModule, PostesBarreFiltresComponent,
+            PosteCarteComponent, PosteDetailComponent, EnteteGroupeComponent,
+            PosteApercuDialogComponent, PosteHistoriqueDrawerComponent, PosteRevisionDialogComponent, PosteClotureDialogComponent, PosteDecalageDialogComponent, PosteFormDialogComponent,
             PosteBulkChampDialogComponent, PosteBulkSuppressionDialogComponent],
   templateUrl: './postes-liste.component.html',
   styleUrl: './postes-liste.component.scss',
+  host: {
+    // Échap referme le détail ouvert et rend le focus à la tête de sa carte.
+    '(document:keydown.escape)': 'fermerDetail()',
+  },
 })
 export class PostesListeComponent {
   readonly i18n = inject(I18nService);
@@ -94,6 +100,15 @@ export class PostesListeComponent {
   private confirm = inject(ConfirmationService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  /** Pipes injectés : les libellés du détail déplié sont construits côté TS. */
+  private readonly montantPipe = inject(MontantPipe);
+  private readonly periodicitePipe = inject(PeriodicitePipe);
+
+  /**
+   * Poste dont le détail est déplié — un seul à la fois, pour que la liste reste
+   * lisible et qu'il n'y ait jamais deux rangées d'actions visibles.
+   */
+  posteDeplieId = signal<string | null>(null);
 
   postes = signal<PosteDto[]>([]);
   categories = signal<CategorieDto[]>([]);
@@ -484,21 +499,30 @@ export class PostesListeComponent {
   ));
 
 
-  // ── Séparateurs de groupe ─────────────────────────────────
+  // ── En-têtes de groupe ────────────────────────────────────
   /**
-   * Paire de tokens (fond doux / accent plein) pour le bandeau de regroupement, selon
-   * le type de la liste (docs/features/feature_4.md §3). Nouveau computed dédié : ne
-   * pas réutiliser/modifier `typeAccentClass`, utilisé ailleurs (spine des chaînes de
-   * révision).
+   * Couleur d'accent de l'en-tête de groupe (barre de proportion), selon le type de la
+   * liste. Computed dédié : ne pas réutiliser/modifier `typeAccentClass`, utilisé
+   * ailleurs. Depuis la refonte de la liste (docs/features/refonte.md §5), seule la
+   * couleur pleine est nécessaire — l'en-tête n'a plus de fond coloré.
    */
-  separateurAccent = computed<{ bg: string; fg: string }>(() => {
+  separateurAccent = computed<string>(() => {
     switch (this.type()) {
-      case 'REVENU':  return { bg: 'var(--app-revenu-bg)',  fg: 'var(--app-revenu)' };
-      case 'CHARGE':  return { bg: 'var(--app-charge-bg)',  fg: 'var(--app-charge)' };
-      case 'RESERVE': return { bg: 'var(--app-reserve-bg)', fg: 'var(--app-reserve)' };
-      default:        return { bg: 'var(--app-revenu-bg)',  fg: 'var(--app-revenu)' };
+      case 'CHARGE':  return 'var(--app-charge)';
+      case 'RESERVE': return 'var(--app-reserve)';
+      default:        return 'var(--app-revenu)';
     }
   });
+
+  /** Compteur accessible de l'en-tête de groupe (« 3 postes »). */
+  libelleCompteurGroupe(n: number): string {
+    return this.i18n.instant('poste.nbPostesGroupe', { n });
+  }
+
+  /** Infobulle de la barre de proportion de l'en-tête de groupe. */
+  titreBarreGroupe(part: number): string {
+    return this.i18n.instant('poste.liste.partDuTotal', { n: Math.round(part * 1000) / 10 });
+  }
 
   /**
    * Liste finale affichée : filtrée, regroupée par chaîne de révisions (bloc contigu
@@ -602,10 +626,12 @@ export class PostesListeComponent {
    * limite basse et TOUS les bandeaux déjà défilés restent épinglés en haut,
    * superposés (visibles par transparence du fond).
    */
-  groupesAffiches = computed<{ separator: string | null; nbPostes: number; postes: PosteAffiche[] }[]>(() => {
+  groupesAffiches = computed<GroupeAffiche[]>(() => {
     const visibles = this.postesVisibles();
     if (this.etat().regrouperPar === 'AUCUN') {
-      return visibles.length ? [{ separator: null, nbPostes: 0, postes: visibles }] : [];
+      return visibles.length
+        ? [{ separator: null, nbPostes: 0, postes: visibles, sousTotal: 0, sousTotalPonctuel: 0, part: 0 }]
+        : [];
     }
 
     // Nombre de postes par clé de séparateur, calculé une fois.
@@ -615,16 +641,33 @@ export class PostesListeComponent {
       comptesParClef.set(clef, (comptesParClef.get(clef) ?? 0) + 1);
     }
 
-    const groupes: { separator: string | null; nbPostes: number; postes: PosteAffiche[] }[] = [];
+    const groupes: GroupeAffiche[] = [];
     let lastKey: string | null = null;
 
     for (const p of visibles) {
       const key = p._clefSeparateur ?? '';
       if (key !== lastKey || groupes.length === 0) {
-        groupes.push({ separator: p._labelSeparateur ?? '', nbPostes: comptesParClef.get(key) ?? 0, postes: [] });
+        groupes.push({
+          separator: p._labelSeparateur ?? '', nbPostes: comptesParClef.get(key) ?? 0, postes: [],
+          sousTotal: 0, sousTotalPonctuel: 0, part: 0,
+        });
         lastKey = key;
       }
       groupes[groupes.length - 1].postes.push(p);
+    }
+
+    // Sous-totaux mensuels, puis part de chaque groupe dans le total affiché : la barre
+    // de proportion compare les groupes entre eux, ponctuels exclus (ils ne sont pas
+    // une charge mensuelle récurrente).
+    let total = 0;
+    for (const g of groupes) {
+      const { recurrent, ponctuel } = sousTotalGroupe(g.postes);
+      g.sousTotal = recurrent;
+      g.sousTotalPonctuel = ponctuel;
+      total += recurrent;
+    }
+    for (const g of groupes) {
+      g.part = partDuTotal(g.sousTotal, total);
     }
     return groupes;
   });
@@ -657,15 +700,192 @@ export class PostesListeComponent {
     }
   });
 
+  /**
+   * Changer de type de liste ou de filtres referme le détail ouvert : le poste déplié
+   * peut très bien ne plus faire partie de la liste affichée.
+   */
+  private readonly _fermerDetailSurChangement = effect(() => {
+    this.etat();
+    this.type();
+    this.posteDeplieId.set(null);
+  });
+
   charger(): void {
     const foyerId = this.contexte.foyerId();
     const scenarioId = this.contexte.scenarioId();
     if (!foyerId || !scenarioId) return;
     this.chargement.set(true);
     this.posteSvc.lister(foyerId, scenarioId).subscribe({
-      next: all => { this.postes.set(all.filter(p => p.type === this.type())); this.chargement.set(false); },
+      next: all => {
+        const postes = all.filter(p => p.type === this.type());
+        this.postes.set(postes);
+        // Le poste déplié le reste après enregistrement, tant qu'il existe encore.
+        if (!postes.some(p => p.id === this.posteDeplieId())) this.posteDeplieId.set(null);
+        this.chargement.set(false);
+      },
       error: () => this.chargement.set(false),
     });
+  }
+
+  // ── Détail déplié ─────────────────────────────────────────
+  /** Un clic sur une tête de carte ouvre son détail et referme celui qui l'était. */
+  basculerDeplie(p: PosteDto): void {
+    this.posteDeplieId.update(id => (id === p.id ? null : p.id));
+  }
+
+  /** Échap : referme le détail ouvert et rend le focus à la tête de sa carte. */
+  fermerDetail(): void {
+    const id = this.posteDeplieId();
+    if (!id) return;
+    this.posteDeplieId.set(null);
+    setTimeout(() => document.querySelector<HTMLElement>(`#poste-${id} .tete`)?.focus());
+  }
+
+  /** Traduction instantanée, passée aux utils d'affichage purs. */
+  private readonly traduire = (cle: string, params?: Record<string, unknown>): string =>
+    this.i18n.instant(cle, params);
+
+  /** Fenêtre de validité condensée affichée en ligne 2 de la carte. */
+  texteDatesPoste(p: PosteDto): string {
+    return texteDates(p, this.traduire);
+  }
+
+  /** Catégorie affichée en étiquette — redondante quand la liste est groupée par catégorie. */
+  categorieEtiquette(p: PosteDto): string {
+    if (this.etat().regrouperPar === 'CATEGORIE') return '';
+    const label = this.categorieLabel(p.categorieId);
+    return label === '–' ? '' : label;
+  }
+
+  /**
+   * Étiquettes de comptes : une seule (neutre) quand tous les membres concernés
+   * partagent le même compte, sinon une par membre (« Dylan : Compte perso »), colorée
+   * à la couleur du membre comme les anciens tags de la liste.
+   */
+  etiquettesComptes(p: PosteDto): EtiquettePoste[] {
+    const ventilations = p.ventilations ?? [];
+    if (!ventilations.length) return [];
+
+    const membres = this.membres();
+    if (membres.length <= 1) {
+      const v = ventilations[0];
+      const label = this.libelleCompteVentilationPourMembre(v, v.membreId);
+      return label ? [{ cle: 'compte', texte: label, severity: 'secondary' }] : [];
+    }
+
+    const parMembre = membres
+      .map(m => {
+        const v = ventilations.find(x => x.membreId === m.id);
+        return { membre: m, label: v ? this.libelleCompteVentilationPourMembre(v, m.id) : '' };
+      })
+      .filter(x => !!x.label);
+    if (!parMembre.length) return [];
+
+    const labelsDistincts = new Set(parMembre.map(x => x.label));
+    if (labelsDistincts.size === 1 && parMembre.length === membres.length) {
+      return [{ cle: 'compte', texte: parMembre[0].label, severity: 'secondary' }];
+    }
+
+    return parMembre.map(x => ({
+      cle: `compte-${x.membre.id}`,
+      texte: `${x.membre.nom} : ${x.label}`,
+      couleur: this.normaliserCouleur(x.membre.couleur),
+    }));
+  }
+
+  /** Ids réellement rendus, pour savoir si le maillon suivant d'une chaîne est masqué. */
+  private readonly idsVisibles = computed(() => new Set(this.postesVisibles().map(p => p.id)));
+
+  /**
+   * Résumé du maillon suivant quand il est masqué (« → 210,00 CHF dès le 01.2027 ») :
+   * sans lui, une révision planifiée serait invisible dans la liste.
+   */
+  successeurTexte(p: PosteDto): string | null {
+    if (!p.posteSuivantId || this.idsVisibles().has(p.posteSuivantId)) return null;
+    const suivant = this.postes().find(x => x.id === p.posteSuivantId);
+    if (!suivant) return null;
+    return this.i18n.instant('poste.liste.revisionSuivante', {
+      montant: this.montantPipe.transform(suivant.montant, suivant.devise),
+      date: formatMoisAnnee(suivant.debut),
+    });
+  }
+
+  /** Paires libellé / valeur du détail déplié, déjà formatées. */
+  lignesDetail(p: PosteDto): LigneDetailPoste[] {
+    const d = this.t.poste.liste.detail;
+    const montant = this.montantPipe.transform(p.montant, p.devise);
+    const periodicite = estPonctuel(p) ? this.t.poste.oneShot : this.periodicitePipe.transform(p.periodiciteMois);
+    const lignes: LigneDetailPoste[] = [
+      {
+        cle: 'montant',
+        libelle: d.montant,
+        valeur: p.nature === 'ESTIMATION'
+          ? `${montant} · ${periodicite} · ${this.natureAffichee(p)}`
+          : `${montant} · ${periodicite}`,
+      },
+      { cle: 'validite', libelle: d.validite, valeur: this.texteValidite(p) },
+    ];
+
+    if (p.periodiciteMois > 1) {
+      const moment = this.t.poste.momentOptions[p.moment as keyof typeof this.t.poste.momentOptions];
+      const mode = this.t.poste.modeOptions[p.mode as keyof typeof this.t.poste.modeOptions];
+      lignes.push({ cle: 'paiement', libelle: d.paiement, valeur: [moment, mode].filter(Boolean).join(' · ') });
+    }
+
+    lignes.push({ cle: 'repartition', libelle: d.repartition, valeur: this.texteRepartition(p) });
+
+    const comptes = this.etiquettesComptes(p);
+    if (comptes.length) {
+      lignes.push({ cle: 'comptes', libelle: d.comptes, valeur: comptes.map(c => c.texte).join(' · ') });
+    }
+    return lignes;
+  }
+
+  /** Fenêtre de validité en dates complètes (le détail est plus précis que la carte). */
+  private texteValidite(p: PosteDto): string {
+    if (!p.debut) return '';
+    const debut = this.formaterDateComplete(p.debut);
+    return p.fin
+      ? this.i18n.instant('poste.liste.duAu', { debut, fin: this.formaterDateComplete(p.fin) })
+      : this.i18n.instant('poste.liste.depuisLeSansFin', { debut });
+  }
+
+  /** Mode de répartition suivi, si pertinent, des parts de chaque membre. */
+  private texteRepartition(p: PosteDto): string {
+    const options = this.t.poste.typeRepartitionOptions;
+    const type = options[(p.typeRepartition ?? 'AUTO') as keyof typeof options];
+    const parts = this.repartitionsAffichees(p)
+      .map(r => `${r.nomMembre} ${Math.round(r.quotePart * 100)} %`)
+      .join(' · ');
+    return parts ? `${type} · ${parts}` : type;
+  }
+
+  /** Les trois échelles d'analyse, affichées en lecture seule dans le détail. */
+  analysesPoste(p: PosteDto): AnalysePoste[] {
+    return [
+      { cle: 'importance', libelle: this.t.poste.importance, valeur: p.importance ?? 3, ton: 'info' as const },
+      { cle: 'optimisation', libelle: this.t.poste.potentielOptimisation, valeur: p.potentielOptimisation ?? 3, ton: 'info' as const },
+      { cle: 'derive', libelle: this.t.poste.deriveExterne, valeur: p.deriveExterne ?? 3, ton: 'info' as const },
+    ];
+  }
+
+  /**
+   * Aperçu du rythme sur 12 mois affiché en dernière ligne du détail déplié. Les deux
+   * textes réutilisent les clés du formulaire : même indicateur, même vocabulaire.
+   */
+  apercuPeriodicite(p: PosteDto): ApercuPeriodicitePoste | null {
+    const poste = echeancierDepuisPoste(p);
+    if (!poste) return null;
+    const locale = this.localeCourante();
+    return {
+      poste,
+      locale,
+      entete: this.i18n.instant('poste.form.apercuDes', {
+        mois: new Intl.DateTimeFormat(locale, { month: 'short', year: 'numeric' })
+          .format(parseIsoDateLocal(poste.debut)),
+      }),
+      legende: legendeApercuPeriodicite(this.t.poste.form.legende, poste.periodicite, poste.moment, poste.mode),
+    };
   }
 
   categorieLabel(id?: string): string {
@@ -686,48 +906,37 @@ export class PostesListeComponent {
       : this.t.poste.natureOptions.EFFECTIF;
   }
 
-  importanceTooltip(n: number): string {
-    return this.t.poste.importanceValeur.replace('{{n}}', String(n));
-  }
-
-  potentielOptimisationTooltip(n: number): string {
-    return this.t.poste.potentielOptimisationValeur.replace('{{n}}', String(n));
-  }
-
-  deriveExterneTooltip(n: number): string {
-    return this.t.poste.deriveExterneValeur.replace('{{n}}', String(n));
-  }
-
   actionItemsFor(p: PosteDto): MenuItem[] {
     const items: MenuItem[] = [
-      { label: this.t.poste.apercu, icon: 'pi pi-eye', command: () => this.ouvrirApercu(p) },
+      { label: this.t.poste.apercu, icon: 'pi pi-eye', data: 'apercu', command: () => this.ouvrirApercu(p) },
     ];
 
     if (this.estDansChaine(p)) {
-      items.push({ label: this.t.poste.voirHistorique, icon: 'pi pi-history', command: () => this.ouvrirHistorique(p) });
+      items.push({ label: this.t.poste.voirHistorique, icon: 'pi pi-history', data: 'historique', command: () => this.ouvrirHistorique(p) });
     }
 
     if (this.contexte.estEditor()) {
-      items.push({ label: this.t.commun.modifier, icon: 'pi pi-pencil', command: () => this.ouvrirEdition(p) });
+      items.push({ label: this.t.commun.modifier, icon: 'pi pi-pencil', data: 'modifier', command: () => this.ouvrirEdition(p) });
       if (this.estRevisable(p)) {
-        items.push({ label: this.t.poste.reviserMontant, icon: 'pi pi-sync', command: () => this.ouvrirRevision(p) });
+        items.push({ label: this.t.poste.reviserMontant, icon: 'pi pi-sync', data: 'reviser', command: () => this.ouvrirRevision(p) });
       }
       if (this.estFusionnable(p)) {
-        items.push({ label: this.t.poste.annulerRevision, icon: 'pi pi-replay', command: () => this.annulerRevision(p) });
+        items.push({ label: this.t.poste.annulerRevision, icon: 'pi pi-replay', data: 'annuler-revision', command: () => this.annulerRevision(p) });
       }
       if (this.estDecalable(p)) {
-        items.push({ label: this.t.poste.decalerDateEffet, icon: 'pi pi-arrows-h', command: () => this.ouvrirDecalage(p) });
+        items.push({ label: this.t.poste.decalerDateEffet, icon: 'pi pi-arrows-h', data: 'decaler', command: () => this.ouvrirDecalage(p) });
       }
       if (this.estActionClotureApplicable(p)) {
         if (this.estPosteTermine(p)) {
-          items.push({ label: this.t.poste.reactiver, icon: 'pi pi-play', command: () => this.reactiverPoste(p) });
+          items.push({ label: this.t.poste.reactiver, icon: 'pi pi-play', data: 'reactiver', command: () => this.reactiverPoste(p) });
         } else {
-          items.push({ label: this.t.poste.terminer, icon: 'pi pi-stop-circle', command: () => this.ouvrirCloture(p) });
+          items.push({ label: this.t.poste.terminer, icon: 'pi pi-stop-circle', data: 'terminer', command: () => this.ouvrirCloture(p) });
         }
       }
       items.push({
         label: this.t.poste.bulk.sousMenuChangerValeur,
         icon: 'pi pi-sliders-h',
+        data: 'changer-valeur',
         items: [
           { label: this.t.poste.bulk.actionCategorie, icon: 'pi pi-tag', command: () => this.ouvrirBulkChampPourPoste(p, 'CATEGORIE') },
           { label: this.t.poste.bulk.actionImportance, icon: 'pi pi-heart', command: () => this.ouvrirBulkChampPourPoste(p, 'IMPORTANCE') },
@@ -735,7 +944,7 @@ export class PostesListeComponent {
           { label: this.t.poste.bulk.actionDerive, icon: 'pi pi-chart-line', command: () => this.ouvrirBulkChampPourPoste(p, 'DERIVE_EXTERNE') },
         ],
       });
-      items.push({ label: this.t.commun.supprimer, icon: 'pi pi-trash', command: () => this.supprimer(p) });
+      items.push({ label: this.t.commun.supprimer, icon: 'pi pi-trash', data: 'supprimer', command: () => this.supprimer(p) });
     }
 
     return items;
@@ -794,49 +1003,6 @@ export class PostesListeComponent {
         };
       })
       .filter(r => r.nomMembre);
-  }
-
-  /**
-   * Tags membres à afficher dans la liste des postes.
-   * AUTO / REVERSE_AUTO → "Nom · Compte" (tous les membres actifs).
-   * CUSTOM              → "Nom · XX% · Compte" si plusieurs membres ont une quotePart > 0,
-   *                        sinon "Nom · Compte" (pourcentage 100% implicite, redondant).
-   * Mono-membre         → aucun tag (inutile d'afficher l'unique membre).
-   * Si aucune ventilation pour le membre, le compte est omis du label.
-   */
-  membresAffichesPoste(p: PosteDto): { membreId: string; label: string; couleur: string; couleurTexte: string }[] {
-    const membres = this.membres();
-    // Mono-membre : inutile d'afficher un tag
-    if (membres.length <= 1) return [];
-
-    /** Helper : libellé du compte ventilé pour un membre donné (ou '' si absent). */
-    const compteLabel = (membreId: string): string => {
-      const ventilation = p.ventilations?.find(v => v.membreId === membreId);
-      if (!ventilation) return '';
-      return this.libelleCompteVentilationPourMembre(ventilation, membreId);
-    };
-
-    if (p.typeRepartition === 'CUSTOM') {
-      // Parts explicites stockées → afficher avec pourcentage + compte, uniquement si plusieurs membres concernés
-      const repartitions = this.repartitionsAffichees(p);
-      const afficherPourcentage = repartitions.length > 1;
-      return repartitions.map(r => {
-        const compte = compteLabel(r.membreId);
-        const parts = [r.nomMembre];
-        if (afficherPourcentage) parts.push(`${Math.round(r.quotePart * 100)}%`);
-        if (compte) parts.push(compte);
-        return { membreId: r.membreId, label: parts.join(' · '), couleur: r.couleur, couleurTexte: r.couleurTexte };
-      });
-    }
-
-    // AUTO ou REVERSE_AUTO (ou null = AUTO) → tous les membres actifs, nom + compte
-    return membres.map(m => {
-      const couleur = this.normaliserCouleur(m.couleur);
-      const couleurTexte = this.couleurTexteContraste(couleur);
-      const compte = compteLabel(m.id);
-      const label = compte ? `${m.nom} · ${compte}` : m.nom;
-      return { membreId: m.id, label, couleur, couleurTexte };
-    });
   }
 
 
@@ -1042,6 +1208,7 @@ export class PostesListeComponent {
     this.historiqueDrawerVisible.set(false);
     setTimeout(() => {
       this.posteEnSurbrillanceId.set(posteId);
+      this.posteDeplieId.set(posteId);
       document.getElementById('poste-' + posteId)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       setTimeout(() => this.posteEnSurbrillanceId.set(null), 2000);
     }, 200);

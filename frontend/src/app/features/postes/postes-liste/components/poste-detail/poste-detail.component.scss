@@ -1,0 +1,32 @@
+﻿/*
+ * Blocs propres au détail d'un poste. La grille des paires et la rangée d'actions
+ * vivent dans `shared/components/liste/detail-liste` : ne restent ici que la colonne
+ * « Analyse » et l'aperçu de périodicité, projetés dans le corps de ce composant.
+ */
+:host {
+  display: block;
+  min-width: 0;
+}
+
+/* ── Colonne droite : notes d'analyse en lecture seule ──── */
+.analyse {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-space-2);
+  min-width: 0;
+
+  &__titre {
+    margin: var(--app-space-0);
+    font-size: var(--app-text-xs);
+    text-transform: uppercase;
+    letter-spacing: var(--app-tracking-wide);
+    font-weight: var(--app-weight-semibold);
+    color: var(--app-ink-muted);
+  }
+}
+
+/* ── Dernière ligne du corps : aperçu du rythme ─────────── */
+/* Pleine largeur, y compris quand le corps passe à deux colonnes (≥ 768px). */
+.apercu {
+  grid-column: 1 / -1;
+}

@@ -1,0 +1,83 @@
+/*
+ * En-tête de section (docs/features/refonte.md §5) : remplace l'ancien bandeau coloré
+ * `.separateur-groupe` par un en-tête léger, toujours épinglé. Le fond opaque
+ * `--app-bg` est indispensable : il masque les cartes qui défilent dessous.
+ */
+:host {
+  position: sticky;
+  top: 0;
+  z-index: var(--app-z-eleve);
+  display: block;
+  margin: var(--app-space-2) 0;
+  padding: var(--app-space-3-5);
+  background: var(--app-bg);
+  user-select: none;
+  border: 1px solid var(--app-line);
+}
+
+.entete {
+  display: flex;
+  align-items: baseline;
+  gap: var(--app-space-2);
+  min-width: 0;
+}
+
+.entete__libelle {
+  min-width: 0;
+  font-size: var(--app-text-base);
+  font-weight: var(--app-weight-bold);
+  color: var(--app-ink);
+}
+
+.entete__compteur {
+  flex: none;
+  padding: var(--app-space-0-5) var(--app-space-2);
+  border-radius: var(--app-radius-pill);
+  background: var(--app-line-2);
+  color: var(--app-ink);
+  font-size: var(--app-text-2xs);
+  font-weight: var(--app-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.entete__total {
+  margin-inline-start: auto;
+  color: var(--app-ink);
+  text-align: end;
+  white-space: nowrap;
+}
+
+.approximation,
+.unite {
+  color: var(--app-ink-muted);
+  font-weight: var(--app-weight-medium);
+}
+
+.unite {
+  margin-inline-start: var(--app-space-0-5);
+  font-size: var(--app-text-xs);
+}
+
+.entete__ponctuel {
+  margin-inline-start: var(--app-space-1-5);
+  font-size: var(--app-text-xs);
+  font-weight: var(--app-weight-medium);
+  color: var(--app-ink-muted);
+}
+
+.barre {
+  height: var(--app-space-1);
+  /* Marge portée par la barre (et non par l'en-tête) : sans barre, l'en-tête ne laisse
+     pas d'espace mort sous le libellé. */
+  margin-top: var(--app-space-1-5);
+  border-radius: var(--app-radius-pill);
+  /* Piste de la jauge : surface en retrait (`--app-line-2`), pas un trait de bordure. */
+  background: var(--app-line-2);
+  overflow: hidden;
+}
+
+.barre__remplissage {
+  display: block;
+  height: 100%;
+  border-radius: var(--app-radius-pill);
+}

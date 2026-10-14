@@ -1,0 +1,96 @@
+/*
+ * Détail déplié d'une carte de liste (docs/features/refonte.md §4) : mobile-first —
+ * une seule colonne et des actions en grille 2 colonnes, qui s'étalent en ligne à
+ * partir de 768px.
+ *
+ * Les blocs projetés par l'écran (colonne d'analyse, aperçus) gardent la portée de
+ * styles de leur composant déclarant : seules la grille et la rangée d'actions vivent
+ * ici.
+ */
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.corps {
+  display: grid;
+  gap: var(--app-space-4);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.paires {
+  display: grid;
+  gap: var(--app-space-3);
+  grid-template-columns: minmax(0, 1fr);
+  margin: var(--app-space-0);
+}
+
+.paire {
+  min-width: 0;
+
+  &__libelle {
+    font-size: var(--app-text-xs);
+    text-transform: uppercase;
+    letter-spacing: var(--app-tracking-wide);
+    color: var(--app-ink-muted);
+  }
+
+  &__valeur {
+    margin: var(--app-space-0-5) var(--app-space-0) var(--app-space-0);
+    font-size: var(--app-text-sm);
+    font-weight: var(--app-weight-semibold);
+    color: var(--app-ink);
+    overflow-wrap: anywhere;
+  }
+}
+
+/* ── Rangée d'actions ───────────────────────────────────── */
+.actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--app-space-2);
+  margin-top: var(--app-space-3-5);
+  padding-top: var(--app-space-3);
+  border-top: var(--app-space-px) dashed var(--app-line);
+}
+
+.action {
+  display: block;
+  min-width: 0;
+}
+
+.action--pleine {
+  grid-column: 1 / -1;
+}
+
+/* Les boutons occupent toute leur cellule en mobile : `app-button` étant en
+   `display: contents`, la largeur doit être posée sur le `p-button` rendu. */
+.action ::ng-deep .p-button {
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  /* Deux colonnes seulement si l'écran projette une colonne latérale : sinon les paires
+     occuperaient les deux tiers de la largeur en laissant un vide à droite. */
+  :host(.detail--duo) .corps {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  }
+
+  .paires {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .action ::ng-deep .p-button {
+    width: auto;
+  }
+
+  .action--destructive {
+    margin-inline-start: auto;
+  }
+}

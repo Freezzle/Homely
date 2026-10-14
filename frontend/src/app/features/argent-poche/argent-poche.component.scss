@@ -1,29 +1,16 @@
-/*
- * Bandeau de regroupement (sur le modèle de `postes-liste.component.scss`) :
- * sticky, coloré selon l'accent dédié à l'écran Argent de poche
- * (`--app-argent-poche` / `--app-argent-poche-bg`, posés en `[style.*]` par le
- * template) — ce fichier ne définit que la structure/typo, pas les couleurs.
+﻿/*
+ * Zone liste de l'argent de poche : même gabarit que la liste des postes. La carte, son
+ * en-tête de groupe et son détail viennent de `shared/components/liste` ; les états
+ * transitoires (`squelette-carte`, `etat-vide`) et les zones de la tête du partiel
+ * global `styles/_cartes-liste.css`.
  */
-.separateur-groupe {
-  position: sticky;
-  top: 0;
-  z-index: var(--app-z-eleve);
+.liste,
+.liste-squelettes {
   display: flex;
-  align-items: center;
-  gap: var(--app-space-3);
-  padding: var(--app-space-3);
-  border: var(--app-space-px) solid var(--app-line);
-
-  &__label {
-    font-weight: var(--app-weight-semibold);
-    color: var(--app-ink);
-  }
-
-  &__count {
-    margin-left: auto;
-    font-size: var(--app-text-xs);
-    font-weight: var(--app-weight-semibold);
-    color: var(--app-ink-muted);
-    white-space: nowrap;
-  }
+  flex-direction: column;
+  gap: var(--app-space-1-5);
+  min-width: 0;
+  /* Même retrait que la liste des postes : les cartes se décalent sous leur en-tête de
+     groupe, qui reste aligné sur le bord de la zone. */
+  padding-left: var(--app-space-3-5);
 }

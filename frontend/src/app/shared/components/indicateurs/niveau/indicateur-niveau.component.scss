@@ -61,3 +61,32 @@
     font-size: var(--app-donnee-lg);
   }
 }
+
+// Variante dense : le libellé redevient du chrome (pas une donnée héros) et l'échelle
+// se place à sa droite, pour empiler plusieurs notes dans un panneau de détail.
+.niveau--compact {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--app-space-2);
+
+  .niveau__titre {
+    margin: var(--app-space-0);
+    font-size: var(--app-text-sm);
+    font-weight: var(--app-weight-semibold);
+    color: var(--app-ink);
+    letter-spacing: normal;
+  }
+
+  .niveau__ratio {
+    font-size: var(--app-text-2xs);
+  }
+
+  .niveau__echelle {
+    width: var(--app-space-16);
+  }
+
+  .niveau__segment {
+    height: var(--app-space-1-5);
+  }
+}

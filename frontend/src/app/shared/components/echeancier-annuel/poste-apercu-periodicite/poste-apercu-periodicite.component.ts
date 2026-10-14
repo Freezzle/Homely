@@ -1,6 +1,32 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { PosteEcheancier } from '../../../../../shared/components/echeancier-annuel/echeancier.model';
-import { estActif, imputations } from '../../../../../shared/components/echeancier-annuel/echeancier.util';
+import { MomentImputation, ModeImputation, PosteEcheancier } from '../echeancier.model';
+import { estActif, imputations } from '../echeancier.util';
+
+/** Textes de légende de l'aperçu, tels qu'ils vivent dans `poste.form.legende`. */
+export interface LegendesApercuPeriodicite {
+  readonly ponctuel: string;
+  readonly mensuel: string;
+  readonly lisse: string;
+  readonly periodique: string;
+  readonly inconnu: string;
+}
+
+/**
+ * Légende d'une ligne qui explique ce que montrent les barres. Règle unique, partagée
+ * par le formulaire de poste (valeurs en cours de saisie) et par le détail d'une carte
+ * de la liste (poste enregistré).
+ */
+export function legendeApercuPeriodicite(
+  legendes: LegendesApercuPeriodicite,
+  periodicite: number,
+  moment: MomentImputation | string | null | undefined,
+  mode: ModeImputation | string | null | undefined,
+): string {
+  if (periodicite === 0) return legendes.ponctuel;
+  if (periodicite === 1) return legendes.mensuel;
+  if (moment === 'INCONNU') return legendes.inconnu;
+  return mode === 'PERIODIQUE' ? legendes.periodique : legendes.lisse;
+}
 
 /** Une colonne de l'aperçu : un mois, sa hauteur de barre et son éventuelle échéance. */
 interface MoisApercu {

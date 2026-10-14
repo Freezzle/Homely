@@ -32,90 +32,73 @@
 
   <!-- ── État chargement (skeletons) ──────────────────────── -->
   @if (chargementListe()) {
-    <div class="flex flex-col gap-2">
+    <div class="liste-squelettes">
       @for (_ of [1, 2, 3]; track $index) {
-        <div class="flex items-center gap-3 px-4 py-3 rounded-xl border border-surface-200
-              dark:border-surface-700 bg-white dark:bg-surface-900">
-          <div class="flex-1 flex flex-col gap-2">
+        <div class="squelette-carte">
+          <div class="flex flex-col gap-2 min-w-0">
             <p-skeleton width="35%" height="1rem" />
             <p-skeleton width="55%" height="0.75rem" />
           </div>
           <p-skeleton width="90px" height="1.25rem" class="shrink-0" />
-          <p-skeleton width="36px" height="2rem" class="shrink-0 rounded-lg" />
         </div>
       }
     </div>
 
     <!-- ── État vide ────────────────────────────────────────── -->
   } @else if (nbElementsAffiches() === 0) {
-    <div class="flex flex-col items-center justify-center gap-3 py-16
-          rounded-xl border border-dashed border-surface-300 dark:border-surface-700
-          bg-surface-50 dark:bg-surface-900 text-surface-400">
+    <div class="etat-vide">
       <i class="pi pi-inbox text-5xl opacity-30"></i>
       <span class="text-sm">{{ t.argentPoche.aucunResultat }}</span>
     </div>
 
     <!-- ── Liste de groupes ─────────────────────────────────── -->
   } @else {
-    <div class="flex flex-col gap-2">
+    <div class="flex flex-col">
       @for (groupe of groupesAffiches(); track $index) {
-        <div class="flex flex-col gap-2">
-          <!-- ── Séparateur de groupe (sticky), façon PostesListeComponent ── -->
-          <div class="separateur-groupe select-none" [style.background]="separateurAccent.bg">
-            <span class="separateur-groupe__label">{{ groupe.separator }}</span>
-            <span class="separateur-groupe__count">
-              {{ i18n.instant('argentPoche.nbElementsGroupe', { n: groupe.nbElements }) }}
-            </span>
-          </div>
+        <!-- Un conteneur par groupe : borne le `position: sticky` de l'en-tête, qui se
+             désépingle ainsi au profit du groupe suivant. -->
+        <div class="flex flex-col">
+          <app-entete-groupe [libelle]="groupe.separator"
+                             [nbElements]="groupe.nbElements"
+                             [libelleCompteur]="libelleCompteurGroupe(groupe.nbElements)"/>
 
-          @for (i of groupe.items; track i.id) {
-            <div class="grid gap-3 px-4 py-2.5 md:py-2 grid-cols-[minmax(0,1fr)_auto]
-                border-y border-r border-l border-surface-200 dark:border-surface-700
-                bg-white dark:bg-surface-900 hover:shadow-sm transition-all duration-300">
+          <div class="liste">
+            @for (i of groupe.items; track i.id) {
+              <!-- Tête de carte : rendue par `app-carte-liste` (cf. refonte.md §3). -->
+              <ng-template #tete>
+                <span class="zone-nom tronque">{{ i.libellePrincipal }}</span>
 
-              <!-- Colonne 1 : contenu -->
-              <div class="min-w-0 flex flex-col gap-1.5 md:gap-1">
-                <!-- Ligne 1 : identité (gauche) · montant (droite sur desktop) -->
-                <div class="grid gap-1 md:gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-                  <div class="min-w-0 flex items-center gap-2 flex-wrap">
-                    <span class="font-medium leading-snug wrap-break-word">{{ i.libellePrincipal }}</span>
-                  </div>
-                  <div class="min-w-0 flex items-center flex-wrap gap-x-2 gap-y-1 md:justify-end">
-                    <span class="montant-ligne whitespace-nowrap">{{ i.montantLibelle }}</span>
-                  </div>
-                </div>
+                @let montant = montantCarte(i);
+                <span class="zone-montant montant-ligne montant-argent-poche">
+                  {{ montant.valeur }}
+                  @if (montant.unite) {
+                    <span class="unite">{{ montant.unite }}</span>
+                  }
+                </span>
 
-                <!-- Ligne 2 : période/mois + membre+compte (gauche) · périodicité (droite sur desktop) -->
-                <div class="grid gap-1 md:gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-                  <div class="min-w-0 flex items-center flex-wrap gap-2 text-xs text-surface-500 dark:text-surface-400">
-                    <span class="flex items-center gap-1 min-w-0">
-                      <i class="pi pi-calendar text-xs text-surface-400"></i>
-                      <span class="truncate">{{ i.libelleSecondaire }}</span>
-                    </span>
-                    @let membreCompte = membreCompteLabel(i);
-                    @if (membreCompte) {
-                      <app-tag [texte]="membreCompte.label"
-                               [couleur]="membreCompte.couleur"
-                               class="text-xs py-1 px-2 border-none max-w-full" />
-                    }
-                  </div>
-                  <div class="flex items-center flex-wrap gap-1 md:justify-end text-xs text-surface-500 dark:text-surface-400">
-                      <span>{{ modeLabel(i) }}</span>
-                  </div>
-                </div>
-              </div>
+                <span class="zone-dates tronque">{{ i.libelleSecondaire }}</span>
+                <span class="zone-complement tronque">{{ modeLabel(i) }}</span>
 
-              <!-- Colonne 2 : actions -->
-              <div class="flex items-center justify-end shrink-0">
-                @if (contexte.estEditor()) {
-                  <app-button icon="pi pi-cog" [rounded]="true" [text]="true" severity="secondary" size="small"
-                              [ariaLabel]="t.commun.actions" [tooltip]="t.commun.actions"
-                              (clickEvent)="menuActions.toggle($event)" />
-                  <p-menu #menuActions [popup]="true" [model]="actionItemsFor(i)" appendTo="body" />
+                @let membreCompte = membreCompteLabel(i);
+                @if (membreCompte) {
+                  <span class="zone-pied etiquettes">
+                    <app-tag [texte]="membreCompte.label" [couleur]="membreCompte.couleur" />
+                  </span>
                 }
-              </div>
-            </div>
-          }
+              </ng-template>
+
+              <app-carte-liste [id]="'argent-poche-' + i.id"
+                               [contenuTete]="tete"
+                               [deplie]="itemDeplieId() === i.id"
+                               [idDetail]="'detail-argent-poche-' + i.id"
+                               [libelleBascule]="libelleBascule(i)"
+                               (basculer)="basculerDeplie(i)">
+                @if (itemDeplieId() === i.id) {
+                  <app-detail-liste [lignes]="lignesDetail(i)" [actions]="actionItemsFor(i)"/>
+                }
+              </app-carte-liste>
+            }
+          </div>
         </div>
       }
     </div>
