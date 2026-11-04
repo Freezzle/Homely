@@ -68,7 +68,7 @@ class ArgentPocheApiTest {
 
         JsonNode politique = creerPolitique(c, Map.of(
                 "membreId",    c.membreId,
-                "compteId",    c.compteId,
+                "routage",    List.of(Map.of("compteId", c.compteId)),
                 "nom",         "Poche 2026",
                 "dateDebut",   "2026-01",
                 "dateFin",     "2026-12",
@@ -91,7 +91,7 @@ class ArgentPocheApiTest {
 
         assertThatThrownBy(() -> creerPolitique(c, Map.of(
                 "membreId",  c.membreId,
-                "compteId",  c.compteId,
+                "routage",  List.of(Map.of("compteId", c.compteId)),
                 "nom",       "Poche fixe KO",
                 "dateDebut", "2026-01",
                 "mode",      "FIXE"
@@ -106,7 +106,7 @@ class ArgentPocheApiTest {
 
         assertThatThrownBy(() -> creerPolitique(c, Map.of(
                 "membreId",    c.membreId,
-                "compteId",    c.compteId,
+                "routage",    List.of(Map.of("compteId", c.compteId)),
                 "nom",         "Poche KO",
                 "dateDebut",   "2026-01",
                 "mode",        "VARIABLE",
@@ -124,7 +124,7 @@ class ArgentPocheApiTest {
 
         creerPolitique(c, Map.of(
                 "membreId",    c.membreId,
-                "compteId",    c.compteId,
+                "routage",    List.of(Map.of("compteId", c.compteId)),
                 "nom",         "Politique 1",
                 "dateDebut",   "2026-01",
                 "dateFin",     "2026-06",
@@ -134,7 +134,7 @@ class ArgentPocheApiTest {
 
         assertThatThrownBy(() -> creerPolitique(c, Map.of(
                 "membreId",    c.membreId,
-                "compteId",    c.compteId,
+                "routage",    List.of(Map.of("compteId", c.compteId)),
                 "nom",         "Politique 2 qui chevauche",
                 "dateDebut",   "2026-05",
                 "dateFin",     "2026-12",
@@ -150,12 +150,12 @@ class ArgentPocheApiTest {
         Contexte c = setupFoyerScenarioCompte("pol_adjacentes@test.ch");
 
         creerPolitique(c, Map.of(
-                "membreId", c.membreId, "compteId", c.compteId,
+                "membreId", c.membreId, "routage", List.of(Map.of("compteId", c.compteId)),
                 "nom", "P1", "dateDebut", "2026-01", "dateFin", "2026-06",
                 "mode", "FIXE", "montantFixe", 100));
 
         JsonNode p2 = creerPolitique(c, Map.of(
-                "membreId", c.membreId, "compteId", c.compteId,
+                "membreId", c.membreId, "routage", List.of(Map.of("compteId", c.compteId)),
                 "nom", "P2", "dateDebut", "2026-07", "dateFin", "2026-12",
                 "mode", "FIXE", "montantFixe", 200));
         assertThat(p2.get("id").asText()).isNotBlank();
@@ -166,14 +166,14 @@ class ArgentPocheApiTest {
     void modifier_politique_meme_id_ne_declenche_pas_chevauchement() throws Exception {
         Contexte c = setupFoyerScenarioCompte("pol_modif@test.ch");
         JsonNode p = creerPolitique(c, Map.of(
-                "membreId", c.membreId, "compteId", c.compteId,
+                "membreId", c.membreId, "routage", List.of(Map.of("compteId", c.compteId)),
                 "nom", "P", "dateDebut", "2026-01", "dateFin", "2026-06",
                 "mode", "FIXE", "montantFixe", 100));
 
         String url = "/api/foyers/" + c.foyerId + "/scenarios/" + c.scenarioId
                 + "/argent-poche/politiques/" + p.get("id").asText();
         Map<String, Object> update = Map.of(
-                "membreId", c.membreId, "compteId", c.compteId,
+                "membreId", c.membreId, "routage", List.of(Map.of("compteId", c.compteId)),
                 "nom", "P v2", "dateDebut", "2026-02", "dateFin", "2026-08",
                 "mode", "FIXE", "montantFixe", 150);
         try {
@@ -195,11 +195,11 @@ class ArgentPocheApiTest {
         Contexte c = setupFoyerScenarioCompte("alloc_doublon@test.ch");
 
         creerAllocation(c, Map.of(
-                "membreId", c.membreId, "compteId", c.compteId,
+                "membreId", c.membreId, "routage", List.of(Map.of("compteId", c.compteId)),
                 "mois", "2026-07", "montant", 200, "raison", "Vacances"));
 
         assertThatThrownBy(() -> creerAllocation(c, Map.of(
-                "membreId", c.membreId, "compteId", c.compteId,
+                "membreId", c.membreId, "routage", List.of(Map.of("compteId", c.compteId)),
                 "mois", "2026-07", "montant", 999, "raison", "Duplicata"
         ))).isInstanceOfSatisfying(HttpClientErrorException.class,
                 ex -> assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
@@ -214,13 +214,13 @@ class ArgentPocheApiTest {
 
         // Politique FIXE 300 CHF/mois toute l'année 2026
         creerPolitique(c, Map.of(
-                "membreId", c.membreId, "compteId", c.compteId,
+                "membreId", c.membreId, "routage", List.of(Map.of("compteId", c.compteId)),
                 "nom", "Poche 2026", "dateDebut", "2026-01", "dateFin", "2026-12",
                 "mode", "FIXE", "montantFixe", 300));
 
         // Allocation ponctuelle pour juillet 2026 : 200 CHF (remplace les 300 de la politique)
         creerAllocation(c, Map.of(
-                "membreId", c.membreId, "compteId", c.compteId,
+                "membreId", c.membreId, "routage", List.of(Map.of("compteId", c.compteId)),
                 "mois", "2026-07", "montant", 200));
 
         // Juillet 2026 → allocation
@@ -246,7 +246,7 @@ class ArgentPocheApiTest {
     void acces_croise_politique_renvoie_403() throws Exception {
         Contexte cA = setupFoyerScenarioCompte("cross_a@test.ch");
         JsonNode p = creerPolitique(cA, Map.of(
-                "membreId", cA.membreId, "compteId", cA.compteId,
+                "membreId", cA.membreId, "routage", List.of(Map.of("compteId", cA.compteId)),
                 "nom", "P foyer A", "dateDebut", "2026-01",
                 "mode", "FIXE", "montantFixe", 100));
         String politiqueAId = p.get("id").asText();
@@ -280,7 +280,7 @@ class ArgentPocheApiTest {
     void acces_croise_allocation_renvoie_403() throws Exception {
         Contexte cA = setupFoyerScenarioCompte("cross_alloc_a@test.ch");
         JsonNode a = creerAllocation(cA, Map.of(
-                "membreId", cA.membreId, "compteId", cA.compteId,
+                "membreId", cA.membreId, "routage", List.of(Map.of("compteId", cA.compteId)),
                 "mois", "2026-03", "montant", 150));
         String allocationAId = a.get("id").asText();
 
@@ -318,12 +318,12 @@ class ArgentPocheApiTest {
         Contexte c = setupFoyerScenarioCompte("resol_annee@test.ch");
 
         creerPolitique(c, Map.of(
-                "membreId", c.membreId, "compteId", c.compteId,
+                "membreId", c.membreId, "routage", List.of(Map.of("compteId", c.compteId)),
                 "nom", "Poche 2026", "dateDebut", "2026-01", "dateFin", "2026-12",
                 "mode", "FIXE", "montantFixe", 300));
 
         creerAllocation(c, Map.of(
-                "membreId", c.membreId, "compteId", c.compteId,
+                "membreId", c.membreId, "routage", List.of(Map.of("compteId", c.compteId)),
                 "mois", "2026-07", "montant", 200));
 
         String url = "/api/foyers/" + c.foyerId + "/scenarios/" + c.scenarioId
@@ -376,7 +376,7 @@ class ArgentPocheApiTest {
         // Politique/allocation persistées : ne doivent PAS influencer le RàV brut,
         // seulement le montant "résolu" (endpoint /resolution-annee).
         creerPolitique(c, Map.of(
-                "membreId", c.membreId, "compteId", c.compteId,
+                "membreId", c.membreId, "routage", List.of(Map.of("compteId", c.compteId)),
                 "nom", "Poche 2026", "dateDebut", "2026-01", "dateFin", "2026-12",
                 "mode", "FIXE", "montantFixe", 300));
 
@@ -410,11 +410,11 @@ class ArgentPocheApiTest {
         Contexte c = setupFoyerScenarioDeuxMembres("resol_foyer@test.ch");
 
         creerPolitique(c, Map.of(
-                "membreId", c.membreId, "compteId", c.compteId,
+                "membreId", c.membreId, "routage", List.of(Map.of("compteId", c.compteId)),
                 "nom", "Poche membre 1", "dateDebut", "2026-01", "dateFin", "2026-12",
                 "mode", "FIXE", "montantFixe", 300));
         creerPolitique(c, Map.of(
-                "membreId", c.membreId2, "compteId", c.compteId,
+                "membreId", c.membreId2, "routage", List.of(Map.of("compteId", c.compteId)),
                 "nom", "Poche membre 2", "dateDebut", "2026-01", "dateFin", "2026-12",
                 "mode", "FIXE", "montantFixe", 150));
 

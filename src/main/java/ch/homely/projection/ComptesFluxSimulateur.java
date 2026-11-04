@@ -5,9 +5,13 @@ import ch.homely.moteur.AggregatMensuel;
 import ch.homely.moteur.DetailCompteMembre;
 import ch.homely.moteur.MoteurCalcul;
 import ch.homely.moteur.ParametresScenario;
+import ch.homely.moteur.PosteImputationDetail;
 import ch.homely.moteur.VentilationsCompteDetail;
+import ch.homely.moteur.VirementRoutage;
 import ch.homely.poche.ArgentPocheService;
 import ch.homely.poche.ResolutionArgentPoche;
+import ch.homely.poste.TypePoste;
+import ch.homely.projection.dto.OrigineVirement;
 
 import java.time.YearMonth;
 import java.util.*;
@@ -18,7 +22,22 @@ import java.util.*;
  *
  * <p>Réutilise {@link MoteurCalcul#ventilationsCompteMembreDetail} (prorata, fenêtres
  * de validité, mensualisé vs échu déjà gérés par le moteur pur) puis applique, en
- * couche service, la logique de <b>compte primaire</b> :</p>
+ * couche service, deux mécanismes de routage :</p>
+ *
+ * <p><b>1. Routage explicite du poste</b> ({@link MoteurCalcul#virementsRoutage}) — prioritaire.
+ * Un poste doté d'un <b>compte pivot</b> impute toute sa contribution sur ce compte (c'est là
+ * que la transaction a physiquement lieu) et déclare des <b>contreparties</b> par membre, avec
+ * leur quote-part :</p>
+ * <ul>
+ *   <li>{@code CHARGE}/{@code RESERVE} : chaque contrepartie <b>alimente</b> le pivot
+ *       (virement contrepartie → pivot), au prorata de sa quote-part ;</li>
+ *   <li>{@code REVENU} : le pivot <b>redistribue</b> vers chaque contrepartie
+ *       (virement pivot → contrepartie), sur le montant échu ;</li>
+ *   <li>contrepartie confondue avec le pivot ⇒ aucun virement (l'argent est déjà au bon endroit).</li>
+ * </ul>
+ *
+ * <p><b>2. Compte primaire</b> — repli, pour la part <i>non</i> couverte par un routage
+ * explicite (postes sans pivot, données antérieures) :</p>
  * <ul>
  *   <li>Pour chaque compte et chaque mois, un manque de trésorerie ("topUp") est
  *       calculé <b>au niveau du compte</b> (tous co-titulaires confondus) si la
@@ -151,6 +170,8 @@ final class ComptesFluxSimulateur {
                 params, parCompteMembreDetail, argentPocheService, scenarioId, annee, mois,
                 primairesParMembre, comptesActifsIds);
 
+        RoutageMois routage = extraireRoutage(params, annee, mois);
+
         Map<UUID, Double> entreesParCompte = new HashMap<>();
         Map<UUID, Double> baseParCompte = new HashMap<>();
         Map<UUID, Double> echuParCompte = new HashMap<>();
@@ -244,22 +265,53 @@ final class ComptesFluxSimulateur {
                 UUID primaireId = primairesParMembre.get(membreId);
                 boolean estMembreCible = membreId.equals(membreCible);
 
+                // Part financée par un routage explicite (compte pivot + contreparties) :
+                // les sources sont déclarées sur le poste, pas déduites du compte primaire.
+                Map<UUID, Double> poidsRoutes = poidsSources(
+                        routage.financements().getOrDefault(compteId, Map.of()).getOrDefault(membreId, Map.of()),
+                        baseShare, echuShare);
+                double partRoutee = 0;
+                for (Map.Entry<UUID, Double> e : poidsRoutes.entrySet()) {
+                    partRoutee += e.getValue();
+                    UUID sourceId = e.getKey();
+                    double montant = montantFinance * e.getValue();
+                    // Contrepartie confondue avec le compte lui-même, ou compte source inactif :
+                    // aucun virement (même garde-fou que pour le compte primaire ci-dessous).
+                    if (sourceId.equals(compteId) || !comptesActifsIds.contains(sourceId)) continue;
+                    virementsEntrantsTotalParCompte.merge(compteId, montant, Double::sum);
+                    virementsSortantsTotalParCompte.merge(sourceId, montant, Double::sum);
+                    if (estMembreCible) {
+                        virementsEntrantsMembreParCompte.merge(compteId, montant, Double::sum);
+                        virementsSortantsMembreParCompte.merge(sourceId, montant, Double::sum);
+                    }
+                    if (restituerAuCoTitulaire(membreCible, membreId, compteId,
+                            coTitulairesParCompte, membresActifsParCompte)) {
+                        virementsEntrantsMembreParCompte.merge(compteId, montant, Double::sum);
+                    }
+                }
+
+                // Reste à financer selon le mode hérité (compte primaire du membre).
+                double resteProportion = Math.max(0, 1 - partRoutee);
+                if (resteProportion <= 0) continue;
+                double baseShareReste = baseShare * resteProportion;
+                double montantFinanceReste = montantFinance * resteProportion;
+
                 if (primaireId == null || !comptesActifsIds.contains(primaireId)) {
                     // Mode legacy (pas de primaire configuré, ou primaire désactivé/introuvable) :
                     // comportement historique, budget planifié seul, pas de comblement automatique.
-                    virementsEntrantsTotalParCompte.merge(compteId, baseShare, Double::sum);
+                    virementsEntrantsTotalParCompte.merge(compteId, baseShareReste, Double::sum);
                     if (estMembreCible) {
-                        virementsEntrantsMembreParCompte.merge(compteId, baseShare, Double::sum);
+                        virementsEntrantsMembreParCompte.merge(compteId, baseShareReste, Double::sum);
                     }
                 } else if (primaireId.equals(compteId)) {
                     // Auto-financé : ce compte EST le primaire du membre, l'argent y est déjà.
                     // (aucun virement à simuler pour cette part)
                 } else {
-                    virementsEntrantsTotalParCompte.merge(compteId, montantFinance, Double::sum);
-                    virementsSortantsTotalParCompte.merge(primaireId, montantFinance, Double::sum);
+                    virementsEntrantsTotalParCompte.merge(compteId, montantFinanceReste, Double::sum);
+                    virementsSortantsTotalParCompte.merge(primaireId, montantFinanceReste, Double::sum);
                     if (estMembreCible) {
-                        virementsEntrantsMembreParCompte.merge(compteId, montantFinance, Double::sum);
-                        virementsSortantsMembreParCompte.merge(primaireId, montantFinance, Double::sum);
+                        virementsEntrantsMembreParCompte.merge(compteId, montantFinanceReste, Double::sum);
+                        virementsSortantsMembreParCompte.merge(primaireId, montantFinanceReste, Double::sum);
                     }
                     // Un co-titulaire du compte crédité, non actif lui-même dessus ce mois (voir
                     // membresActifsParCompte), voit cet argent arriver réellement sur son compte —
@@ -267,13 +319,30 @@ final class ComptesFluxSimulateur {
                     // courant, une épargne, etc.) : on le lui restitue aussi comme virement entrant,
                     // en plus de la restitution au contributeur ci-dessus (deux vues distinctes du
                     // même montant réel, jamais sommées entre elles côté UI).
-                    Set<UUID> coTitulaires = coTitulairesParCompte.getOrDefault(compteId, Set.of());
-                    Set<UUID> membresActifs = membresActifsParCompte.getOrDefault(compteId, Set.of());
-                    if (!membreCible.equals(membreId) && coTitulaires.contains(membreCible)
-                            && !membresActifs.contains(membreCible)) {
-                        virementsEntrantsMembreParCompte.merge(compteId, montantFinance, Double::sum);
+                    if (restituerAuCoTitulaire(membreCible, membreId, compteId,
+                            coTitulairesParCompte, membresActifsParCompte)) {
+                        virementsEntrantsMembreParCompte.merge(compteId, montantFinanceReste, Double::sum);
                     }
                 }
+            }
+        }
+
+        // Redistribution d'un REVENU : le compte pivot (crédité) alimente les contreparties
+        // déclarées. Sens inverse du financement d'une charge, et inexistant dans le modèle
+        // « compte primaire ». Montant échu : l'argent ne bouge qu'une fois le revenu encaissé.
+        for (VirementRoutage v : routage.redistributions()) {
+            if (v.echu() == 0) continue;
+            if (!comptesActifsIds.contains(v.compteSourceId())
+                    || !comptesActifsIds.contains(v.compteDestinationId())) continue;
+            virementsSortantsTotalParCompte.merge(v.compteSourceId(), v.echu(), Double::sum);
+            virementsEntrantsTotalParCompte.merge(v.compteDestinationId(), v.echu(), Double::sum);
+            if (v.membreId().equals(membreCible)) {
+                virementsSortantsMembreParCompte.merge(v.compteSourceId(), v.echu(), Double::sum);
+                virementsEntrantsMembreParCompte.merge(v.compteDestinationId(), v.echu(), Double::sum);
+            }
+            if (restituerAuCoTitulaire(membreCible, v.membreId(), v.compteDestinationId(),
+                    coTitulairesParCompte, membresActifsParCompte)) {
+                virementsEntrantsMembreParCompte.merge(v.compteDestinationId(), v.echu(), Double::sum);
             }
         }
 
@@ -283,10 +352,10 @@ final class ComptesFluxSimulateur {
         // moteur pur (pas de baseShare/echuShare, pas de topUp — le montant est déjà exact).
         for (PocheAFinancer p : pochesAFinancer) {
             virementsEntrantsTotalParCompte.merge(p.compteCible(), p.montant(), Double::sum);
-            virementsSortantsTotalParCompte.merge(p.comptePrimaire(), p.montant(), Double::sum);
+            virementsSortantsTotalParCompte.merge(p.comptePivot(), p.montant(), Double::sum);
             if (p.membreId().equals(membreCible)) {
                 virementsEntrantsMembreParCompte.merge(p.compteCible(), p.montant(), Double::sum);
-                virementsSortantsMembreParCompte.merge(p.comptePrimaire(), p.montant(), Double::sum);
+                virementsSortantsMembreParCompte.merge(p.comptePivot(), p.montant(), Double::sum);
             }
             // Même règle que pour les postes ventilés (voir ci-dessus) : un co-titulaire du
             // compte crédité, non actif lui-même dessus ce mois, voit aussi cet argent de poche
@@ -326,20 +395,29 @@ final class ComptesFluxSimulateur {
     }
 
     /**
-     * Résout l'argent de poche par membre (montant + compte crédité) et applique la même règle
-     * de compte primaire que le financement des postes. L'argent de poche est traité comme une
-     * <b>dépense</b> du compte crédité (sortiesPlanifiees/sortiesEchues), pas comme un revenu :
-     * une fois versée au membre pour sa consommation personnelle, elle réduit la trésorerie
-     * disponible du compte exactement comme une charge, même si elle n'est pas un poste.
+     * Résout l'argent de poche par membre (montant + comptes crédités) et applique le
+     * <b>routage</b> de la politique/allocation. L'argent de poche est traité comme une
+     * <b>dépense</b> des comptes crédités (sortiesPlanifiees/sortiesEchues), pas comme un
+     * revenu : une fois versée au membre pour sa consommation personnelle, elle réduit la
+     * trésorerie disponible du compte exactement comme une charge, même si elle n'est pas
+     * un poste.
+     *
+     * <p>Le versement suit le <b>sens REVENU</b> : il part du compte <b>pivot</b> (la
+     * source qui finance) vers chaque contrepartie, au prorata de sa quote-part.</p>
      * <ul>
-     *   <li>Si le membre n'a pas de primaire configuré (mode legacy), ou si son primaire EST le
-     *       compte crédité (auto-financé) : le montant est fusionné directement dans
-     *       {@code parCompteMembreDetail} comme une charge sur le compte crédité.</li>
-     *   <li>Sinon (primaire différent, actif) : rien n'est fusionné ici — le montant est
-     *       restitué dans la liste retournée pour être traité, dans {@link #simulerMois}, comme
-     *       un virement entrant sur le compte crédité et sortant sur le primaire.</li>
+     *   <li>Contrepartie == pivot (auto-routage), pivot absent/inactif, ou contrepartie
+     *       inactive : la part est fusionnée directement dans
+     *       {@code parCompteMembreDetail} comme une charge sur la contrepartie, sans
+     *       virement.</li>
+     *   <li>Sinon : rien n'est fusionné pour cette part — elle est restituée dans la liste
+     *       retournée pour être traitée, dans {@link #simulerMois}, comme un virement
+     *       entrant sur la contrepartie et sortant sur le pivot.</li>
      * </ul>
-     * Mute {@code parCompteMembreDetail} pour le cas auto-financé/legacy uniquement.
+     * Mute {@code parCompteMembreDetail} pour les parts non virées uniquement.
+     *
+     * <p>{@code primairesParMembre} ne sert plus que de <b>repli</b> quand le pivot est
+     * absent (données antérieures à V29) : la source est désormais portée par la
+     * politique/allocation elle-même, plus par un réglage global au membre.</p>
      */
     private static List<PocheAFinancer> fusionnerArgentPocheDansDetail(
             ParametresScenario params, Map<UUID, Map<UUID, DetailCompteMembre>> parCompteMembreDetail,
@@ -351,37 +429,129 @@ final class ComptesFluxSimulateur {
             AggregatMensuel ag = MoteurCalcul.aggregatMembreMois(params, membreId, annee, mois);
             double ravBrut = ag.revenus() - ag.charges() - ag.reserves();
             ResolutionArgentPoche poche = argentPocheService.resoudre(scenarioId, membreId, YearMonth.of(annee, mois), ravBrut);
-            if (poche.compteId() == null || poche.montant() <= 0) continue;
+            if (poche.montant() <= 0) continue;
 
-            UUID compteCible = poche.compteId();
-            UUID primaireId = primairesParMembre.get(membreId);
+            // Repli sur le compte primaire tant que le pivot n'est pas renseigné.
+            UUID pivotId = poche.comptePivotId() != null
+                    ? poche.comptePivotId()
+                    : primairesParMembre.get(membreId);
+            boolean pivotUtilisable = pivotId != null && comptesActifsIds.contains(pivotId);
 
-            // Défense en profondeur : si le compte crédité n'est plus actif (ex. compte
-            // désactivé après coup alors qu'une politique/allocation le référence encore —
-            // normalement empêché à la source par CompteService#supprimer, mais des données
-            // existantes peuvent déjà être dans cet état), ne JAMAIS router via le primaire :
-            // le compte cible étant hors de `tousComptes`, son entrant ne serait lu par
-            // aucune boucle du résultat, alors que le sortant sur le primaire, lui, resterait
-            // affiché — créant un virement sortant sans contrepartie visible.
-            boolean compteCibleActif = comptesActifsIds.contains(compteCible);
+            for (Map.Entry<UUID, Double> e : poche.montantsParCompte().entrySet()) {
+                UUID compteCible = e.getKey();
+                double part = e.getValue();
+                if (part <= 0) continue;
 
-            if (!compteCibleActif || primaireId == null || !comptesActifsIds.contains(primaireId)
-                    || primaireId.equals(compteCible)) {
-                // Mode legacy, compte cible inactif, ou auto-financé (le compte cible EST le
-                // primaire) : comptée directement comme une charge (dépense), aucun virement
-                // à simuler pour cette part.
-                DetailCompteMembre delta = new DetailCompteMembre(0, 0, poche.montant(), poche.montant(), 0, 0);
-                parCompteMembreDetail.computeIfAbsent(compteCible, k -> new LinkedHashMap<>())
-                        .merge(membreId, delta, DetailCompteMembre::plus);
-            } else {
-                aFinancer.add(new PocheAFinancer(membreId, compteCible, primaireId, poche.montant()));
+                // Défense en profondeur : si le compte crédité n'est plus actif (ex. compte
+                // désactivé après coup alors qu'une politique/allocation le référence encore —
+                // normalement empêché à la source par CompteService#supprimer, mais des données
+                // existantes peuvent déjà être dans cet état), ne JAMAIS router via le pivot :
+                // le compte cible étant hors de `tousComptes`, son entrant ne serait lu par
+                // aucune boucle du résultat, alors que le sortant sur le pivot, lui, resterait
+                // affiché — créant un virement sortant sans contrepartie visible.
+                boolean compteCibleActif = comptesActifsIds.contains(compteCible);
+
+                if (!compteCibleActif || !pivotUtilisable || pivotId.equals(compteCible)) {
+                    // Auto-routage, pivot inutilisable ou compte cible inactif : comptée
+                    // directement comme une charge (dépense), aucun virement à simuler.
+                    DetailCompteMembre delta = new DetailCompteMembre(0, 0, part, part, 0, 0);
+                    parCompteMembreDetail.computeIfAbsent(compteCible, k -> new LinkedHashMap<>())
+                            .merge(membreId, delta, DetailCompteMembre::plus);
+                } else {
+                    aFinancer.add(new PocheAFinancer(membreId, compteCible, pivotId, part));
+                }
             }
         }
         return aFinancer;
     }
 
-    /** Montant d'argent de poche à financer depuis le compte primaire du membre (voir ci-dessus). */
-    private record PocheAFinancer(UUID membreId, UUID compteCible, UUID comptePrimaire, double montant) {}
+    /** Part d'argent de poche à financer depuis le compte pivot du membre (voir ci-dessus). */
+    private record PocheAFinancer(UUID membreId, UUID compteCible, UUID comptePivot, double montant) {}
+
+    /**
+     * Routage explicite des postes pour un mois, éclaté selon son sens.
+     *
+     * @param financements   {compteDestination (= pivot) → membre → compteSource → {mensualisé, échu}}
+     *                       pour les postes CHARGE/RESERVE : les contreparties alimentent le pivot
+     * @param financementsParPoste même découpage que {@code financements}, mais conservant le
+     *                       détail poste par poste ({@code … → compteSource → poste → {mensualisé,
+     *                       échu}}) — sert uniquement à restituer la composition d'un virement,
+     *                       jamais au calcul des montants
+     * @param redistributions mouvements des postes REVENU : le pivot alimente les contreparties
+     */
+    private record RoutageMois(
+            Map<UUID, Map<UUID, Map<UUID, double[]>>> financements,
+            Map<UUID, Map<UUID, Map<UUID, Map<UUID, double[]>>>> financementsParPoste,
+            List<VirementRoutage> redistributions) {}
+
+    private static RoutageMois extraireRoutage(ParametresScenario params, int annee, int mois) {
+        Map<UUID, Map<UUID, Map<UUID, double[]>>> financements = new HashMap<>();
+        Map<UUID, Map<UUID, Map<UUID, Map<UUID, double[]>>>> parPoste = new HashMap<>();
+        List<VirementRoutage> redistributions = new ArrayList<>();
+        for (VirementRoutage v : MoteurCalcul.virementsRoutage(params, annee, mois)) {
+            if (v.type() == TypePoste.REVENU) {
+                redistributions.add(v);
+            } else {
+                financements
+                        .computeIfAbsent(v.compteDestinationId(), k -> new HashMap<>())
+                        .computeIfAbsent(v.membreId(), k -> new LinkedHashMap<>())
+                        .merge(v.compteSourceId(), new double[]{v.mensualise(), v.echu()},
+                                (a, b) -> new double[]{a[0] + b[0], a[1] + b[1]});
+                parPoste
+                        .computeIfAbsent(v.compteDestinationId(), k -> new HashMap<>())
+                        .computeIfAbsent(v.membreId(), k -> new LinkedHashMap<>())
+                        .computeIfAbsent(v.compteSourceId(), k -> new LinkedHashMap<>())
+                        .merge(v.posteId(), new double[]{v.mensualise(), v.echu()},
+                                (a, b) -> new double[]{a[0] + b[0], a[1] + b[1]});
+            }
+        }
+        return new RoutageMois(financements, parPoste, redistributions);
+    }
+
+    /**
+     * Convertit les montants routés d'un (compte, membre) en <b>fractions</b> de sa charge
+     * totale sur ce compte, afin de répartir {@code montantFinance} (budget planifié +
+     * comblement) entre les sources explicites. Le complément à 1 reste financé selon le mode
+     * hérité (compte primaire).
+     *
+     * <p>Le dénominateur est la part mensualisée du membre sur le compte ; on retombe sur la
+     * part échue si la première est nulle (cas limite d'un poste purement échu).</p>
+     */
+    private static Map<UUID, Double> poidsSources(
+            Map<UUID, double[]> sources, double baseShare, double echuShare) {
+        if (sources.isEmpty()) return Map.of();
+        boolean surMensualise = baseShare != 0;
+        double denom = surMensualise ? baseShare : echuShare;
+        if (denom == 0) return Map.of();
+
+        Map<UUID, Double> poids = new LinkedHashMap<>();
+        double cumul = 0;
+        for (Map.Entry<UUID, double[]> e : sources.entrySet()) {
+            double montant = surMensualise ? e.getValue()[0] : e.getValue()[1];
+            double p = montant / denom;
+            if (p <= 0) continue;
+            // Garde-fou : la somme des parts routées ne peut jamais dépasser la charge totale
+            // du membre sur ce compte (sinon on financerait plus que dû).
+            p = Math.min(p, 1 - cumul);
+            if (p <= 0) break;
+            cumul += p;
+            poids.put(e.getKey(), p);
+        }
+        return poids;
+    }
+
+    /**
+     * Un co-titulaire du compte crédité, non actif lui-même dessus ce mois, voit l'argent d'un
+     * autre membre arriver réellement sur son compte : on le lui restitue aussi comme virement
+     * entrant (vue distincte du même montant réel, jamais sommée avec celle du contributeur).
+     */
+    private static boolean restituerAuCoTitulaire(
+            UUID membreCible, UUID contributeur, UUID compteCredite,
+            Map<UUID, Set<UUID>> coTitulairesParCompte, Map<UUID, Set<UUID>> membresActifsParCompte) {
+        if (membreCible == null || membreCible.equals(contributeur)) return false;
+        return coTitulairesParCompte.getOrDefault(compteCredite, Set.of()).contains(membreCible)
+                && !membresActifsParCompte.getOrDefault(compteCredite, Set.of()).contains(membreCible);
+    }
 
     /**
      * Paire de virement simulée pour un mois donné : {@code compteSourceId} (compte primaire qui
@@ -390,6 +560,22 @@ final class ComptesFluxSimulateur {
      * différence de {@link #simuler}/{@link CompteFluxMensuel}.
      */
     record VirementPaire(UUID compteSourceId, UUID compteDestinationId, double montant) {}
+
+    /**
+     * Part élémentaire d'un virement simulé : ce que ce mouvement {@code compteSourceId} →
+     * {@code compteDestinationId} doit à un poste précis, à l'argent de poche d'un membre, ou
+     * au comblement du découvert du compte destination.
+     *
+     * <p>Purement descriptif : ces composantes n'interviennent jamais dans le calcul des
+     * montants (elles en sont déduites), et leur somme sur une paire redonne exactement le
+     * montant de {@link VirementPaire}.</p>
+     */
+    record VirementComposante(
+            UUID compteSourceId, UUID compteDestinationId, UUID membreId,
+            UUID posteId, OrigineVirement origine, double montant) {}
+
+    /** Résultat d'un mois : les paires agrégées + leur composition détaillée. */
+    record PairesMois(List<VirementPaire> paires, List<VirementComposante> composantes) {}
 
     /**
      * Simule, mois par mois depuis {@code params.anneeDepart()} jusqu'à {@code (anneeCible,
@@ -404,8 +590,12 @@ final class ComptesFluxSimulateur {
      * comblement "topUp", financement depuis un primaire différent) plutôt que de faire muter
      * {@link #simulerMois} pour y ajouter un accumulateur de paires : cela évite tout risque de
      * régression sur la simulation par membre déjà validée par les vecteurs golden.</p>
+     *
+     * <p>Chaque mois restitue aussi la <b>composition</b> des paires
+     * ({@link VirementComposante}) : de quel poste, de quel argent de poche ou de quel
+     * comblement de trésorerie vient chaque franc viré.</p>
      */
-    static Map<YearMonth, List<VirementPaire>> simulerPaires(
+    static Map<YearMonth, PairesMois> simulerPaires(
             ParametresScenario params, List<Compte> tousComptes, Map<UUID, UUID> primairesParMembre,
             int anneeCible, int moisCible, ArgentPocheService argentPocheService, UUID scenarioId) {
 
@@ -416,7 +606,7 @@ final class ComptesFluxSimulateur {
             cumulTotalParCompte.put(c.getId(), c.getSoldeInitial().doubleValue());
         }
 
-        Map<YearMonth, List<VirementPaire>> resultat = new LinkedHashMap<>();
+        Map<YearMonth, PairesMois> resultat = new LinkedHashMap<>();
         int y = params.anneeDepart();
         int m = 1;
         while (y < anneeCible || (y == anneeCible && m <= moisCible)) {
@@ -428,7 +618,7 @@ final class ComptesFluxSimulateur {
         return resultat;
     }
 
-    private static List<VirementPaire> simulerPairesMois(
+    private static PairesMois simulerPairesMois(
             ParametresScenario params, List<Compte> tousComptes, Set<UUID> comptesActifsIds,
             Map<UUID, UUID> primairesParMembre, Map<UUID, Double> cumulTotalParCompte,
             int annee, int mois, ArgentPocheService argentPocheService, UUID scenarioId) {
@@ -440,6 +630,8 @@ final class ComptesFluxSimulateur {
         List<PocheAFinancer> pochesAFinancer = fusionnerArgentPocheDansDetail(
                 params, parCompteMembreDetail, argentPocheService, scenarioId, annee, mois,
                 primairesParMembre, comptesActifsIds);
+
+        RoutageMois routage = extraireRoutage(params, annee, mois);
 
         Map<UUID, Double> entreesParCompte = new HashMap<>();
         Map<UUID, Double> baseParCompte = new HashMap<>();
@@ -478,6 +670,7 @@ final class ComptesFluxSimulateur {
         Map<UUID, Double> virementsEntrantsTotalParCompte = new HashMap<>();
         Map<UUID, Double> virementsSortantsTotalParCompte = new HashMap<>();
         Map<UUID, Map<UUID, Double>> paires = new LinkedHashMap<>(); // source -> destination -> montant
+        List<VirementComposante> composantes = new ArrayList<>();
         for (Compte c : tousComptes) {
             virementsEntrantsTotalParCompte.put(c.getId(), 0.0);
             virementsSortantsTotalParCompte.put(c.getId(), 0.0);
@@ -503,30 +696,94 @@ final class ComptesFluxSimulateur {
                 double baseProportion = totalBase != 0 ? baseShare / totalBase : 1.0 / membreIds.size();
                 double echuProportion = totalEchu != 0 ? echuShare / totalEchu : baseProportion;
                 double montantFinance = baseShare + topUp * echuProportion;
+                // Part de montantFinance qui ne finance aucun poste du mois : elle comble le
+                // découvert du compte. Restituée telle quelle dans la composition des virements.
+                double comblement = topUp * echuProportion;
 
                 UUID primaireId = primairesParMembre.get(membreId);
 
+                // Imputations poste par poste du membre sur ce compte : sert uniquement à
+                // décomposer les montants déjà calculés (jamais à les calculer).
+                Map<UUID, Double> basePostes = new LinkedHashMap<>();
+                for (PosteImputationDetail d : MoteurCalcul.imputationsCompteMembre(params, compteId, membreId, annee, mois)) {
+                    if (d.type() == TypePoste.REVENU) continue;
+                    basePostes.merge(d.posteId(), d.mensualise(), Double::sum);
+                }
+                Map<UUID, Map<UUID, double[]>> routesParSource =
+                        routage.financementsParPoste().getOrDefault(compteId, Map.of()).getOrDefault(membreId, Map.of());
+
+                // Part financée par un routage explicite (compte pivot + contreparties).
+                Map<UUID, Double> poidsRoutes = poidsSources(
+                        routage.financements().getOrDefault(compteId, Map.of()).getOrDefault(membreId, Map.of()),
+                        baseShare, echuShare);
+                double partRoutee = 0;
+                for (Map.Entry<UUID, Double> e : poidsRoutes.entrySet()) {
+                    partRoutee += e.getValue();
+                    UUID sourceId = e.getKey();
+                    double poids = e.getValue();
+                    double montant = montantFinance * poids;
+                    if (sourceId.equals(compteId) || !comptesActifsIds.contains(sourceId)) continue;
+                    virementsEntrantsTotalParCompte.merge(compteId, montant, Double::sum);
+                    virementsSortantsTotalParCompte.merge(sourceId, montant, Double::sum);
+                    if (montant > 0) {
+                        paires.computeIfAbsent(sourceId, k -> new LinkedHashMap<>())
+                                .merge(compteId, montant, Double::sum);
+                        Map<UUID, Double> partsPostes = new LinkedHashMap<>();
+                        routesParSource.getOrDefault(sourceId, Map.of())
+                                .forEach((posteId, montants) -> partsPostes.merge(posteId, montants[0], Double::sum));
+                        ventilerSurPostes(composantes, sourceId, compteId, membreId,
+                                partsPostes, baseShare * poids, comblement * poids);
+                    }
+                }
+
+                double resteProportion = Math.max(0, 1 - partRoutee);
+                if (resteProportion <= 0) continue;
+                double baseShareReste = baseShare * resteProportion;
+                double montantFinanceReste = montantFinance * resteProportion;
+
                 if (primaireId == null || !comptesActifsIds.contains(primaireId)) {
-                    virementsEntrantsTotalParCompte.merge(compteId, baseShare, Double::sum);
+                    virementsEntrantsTotalParCompte.merge(compteId, baseShareReste, Double::sum);
                 } else if (primaireId.equals(compteId)) {
                     // Auto-financé : aucun virement à simuler pour cette part.
                 } else {
-                    virementsEntrantsTotalParCompte.merge(compteId, montantFinance, Double::sum);
-                    virementsSortantsTotalParCompte.merge(primaireId, montantFinance, Double::sum);
-                    if (montantFinance > 0) {
+                    virementsEntrantsTotalParCompte.merge(compteId, montantFinanceReste, Double::sum);
+                    virementsSortantsTotalParCompte.merge(primaireId, montantFinanceReste, Double::sum);
+                    if (montantFinanceReste > 0) {
                         paires.computeIfAbsent(primaireId, k -> new LinkedHashMap<>())
-                                .merge(compteId, montantFinance, Double::sum);
+                                .merge(compteId, montantFinanceReste, Double::sum);
+                        // Mode primaire hérité : la part non routée de chaque poste, c.-à-d. son
+                        // imputation moins ce qui part déjà par une contrepartie déclarée.
+                        Map<UUID, Double> partsPostes = new LinkedHashMap<>(basePostes);
+                        routesParSource.values().forEach(parPoste -> parPoste.forEach((posteId, montants) ->
+                                partsPostes.computeIfPresent(posteId, (k, v) -> Math.max(0, v - montants[0]))));
+                        ventilerSurPostes(composantes, primaireId, compteId, membreId,
+                                partsPostes, baseShareReste, comblement * resteProportion);
                     }
                 }
             }
         }
 
+        // Redistribution d'un REVENU : pivot → contreparties (montant échu).
+        for (VirementRoutage v : routage.redistributions()) {
+            if (v.echu() <= 0) continue;
+            if (!comptesActifsIds.contains(v.compteSourceId())
+                    || !comptesActifsIds.contains(v.compteDestinationId())) continue;
+            virementsSortantsTotalParCompte.merge(v.compteSourceId(), v.echu(), Double::sum);
+            virementsEntrantsTotalParCompte.merge(v.compteDestinationId(), v.echu(), Double::sum);
+            paires.computeIfAbsent(v.compteSourceId(), k -> new LinkedHashMap<>())
+                    .merge(v.compteDestinationId(), v.echu(), Double::sum);
+            composantes.add(new VirementComposante(v.compteSourceId(), v.compteDestinationId(),
+                    v.membreId(), v.posteId(), OrigineVirement.POSTE, v.echu()));
+        }
+
         for (PocheAFinancer p : pochesAFinancer) {
             virementsEntrantsTotalParCompte.merge(p.compteCible(), p.montant(), Double::sum);
-            virementsSortantsTotalParCompte.merge(p.comptePrimaire(), p.montant(), Double::sum);
+            virementsSortantsTotalParCompte.merge(p.comptePivot(), p.montant(), Double::sum);
             if (p.montant() > 0) {
-                paires.computeIfAbsent(p.comptePrimaire(), k -> new LinkedHashMap<>())
+                paires.computeIfAbsent(p.comptePivot(), k -> new LinkedHashMap<>())
                         .merge(p.compteCible(), p.montant(), Double::sum);
+                composantes.add(new VirementComposante(p.comptePivot(), p.compteCible(),
+                        p.membreId(), null, OrigineVirement.ARGENT_POCHE, p.montant()));
             }
         }
 
@@ -545,7 +802,36 @@ final class ComptesFluxSimulateur {
                 resultatMois.add(new VirementPaire(source, destination, montant));
             }
         }));
-        return resultatMois;
+        return new PairesMois(resultatMois, composantes);
+    }
+
+    /**
+     * Répartit un montant viré entre ses postes d'origine. {@code partPostes} donne le poids
+     * de chaque poste (part mensualisée) ; {@code montantPostes} est la fraction du virement
+     * qui finance réellement des postes et {@code comblement} celle qui comble le découvert du
+     * compte destination.
+     *
+     * <p>Purement descriptif : aucune de ces valeurs n'influence le calcul des virements.</p>
+     */
+    private static void ventilerSurPostes(
+            List<VirementComposante> composantes, UUID sourceId, UUID destinationId, UUID membreId,
+            Map<UUID, Double> partPostes, double montantPostes, double comblement) {
+
+        double totalPoids = partPostes.values().stream().mapToDouble(Double::doubleValue).filter(v -> v > 0).sum();
+        if (montantPostes > 0 && totalPoids > 0) {
+            for (Map.Entry<UUID, Double> e : partPostes.entrySet()) {
+                if (e.getValue() <= 0) continue;
+                composantes.add(new VirementComposante(sourceId, destinationId, membreId,
+                        e.getKey(), OrigineVirement.POSTE, montantPostes * e.getValue() / totalPoids));
+            }
+        } else if (montantPostes > 0) {
+            // Aucun poste identifiable (part purement échue) : rattachée au comblement.
+            comblement += montantPostes;
+        }
+        if (comblement > 0) {
+            composantes.add(new VirementComposante(sourceId, destinationId, membreId,
+                    null, OrigineVirement.COMBLEMENT_TRESORERIE, comblement));
+        }
     }
 }
 

@@ -57,7 +57,14 @@
     <!-- DATA : ligne de virement -->
     @if (ligne.type === 'data') {
       <tr class="virements-table__row">
-        <td class="virements-table__cell-dest">
+        <td
+          class="virements-table__cell-dest virements-table__cell-dest--cliquable"
+          role="button"
+          tabindex="0"
+          [attr.aria-label]="t.dashboard.virementDetailOuvrir + ' : ' + ligne.virement.destination.libelle"
+          (click)="onOuvrirDetail(ligne.virement)"
+          (keydown.enter)="onOuvrirDetail(ligne.virement)"
+          (keydown.space)="onOuvrirDetail(ligne.virement)">
           <div class="virements-table__dest">
             <p-avatar-group>
               @for (m of ligne.virement.destination.proprietaires; track m.id) {
@@ -77,7 +84,13 @@
             </div>
           </div>
         </td>
-        <td class="virements-table__cell-amount">
+        <td class="virements-table__cell-amount virements-table__cell-amount--cliquable"
+            role="button"
+            tabindex="0"
+            [attr.aria-label]="t.dashboard.virementDetailOuvrir + ' : ' + ligne.virement.destination.libelle"
+            (click)="onOuvrirDetail(ligne.virement)"
+            (keydown.enter)="onOuvrirDetail(ligne.virement)"
+            (keydown.space)="onOuvrirDetail(ligne.virement)">
           {{ ligne.virement.montant | montant:devise() }}
         </td>
         <td class="virements-table__cell-status">

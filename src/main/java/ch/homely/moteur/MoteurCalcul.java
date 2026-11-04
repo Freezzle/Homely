@@ -648,12 +648,13 @@ public class MoteurCalcul {
                         * quotePartEffective(poste, membreId, annee, mois, params.periodesDefaut(), nbMembres);
                 if (partMembre == 0) continue;
 
-                UUID compteId = resolveCompte(poste, membreId);
-                if (compteId == null) continue;
-
-                parCompteMembre
-                        .computeIfAbsent(compteId, k -> new LinkedHashMap<>())
-                        .merge(membreId, partMembre, Double::sum);
+                for (RoutageCalcul r : imputations(poste, membreId)) {
+                    double part = partMembre * r.quotePart();
+                    if (part == 0) continue;
+                    parCompteMembre
+                            .computeIfAbsent(r.compteId(), k -> new LinkedHashMap<>())
+                            .merge(membreId, part, Double::sum);
+                }
             }
         }
 
@@ -691,20 +692,19 @@ public class MoteurCalcul {
                 double qp = quotePartEffective(poste, membreId, annee, mois, params.periodesDefaut(), nbMembres);
                 if (qp == 0) continue;
 
-                UUID compteId = resolveCompte(poste, membreId);
-                if (compteId == null) continue;
+                for (RoutageCalcul r : imputations(poste, membreId)) {
+                    double partMensualise = contribMensualise * qp * r.quotePart();
+                    double partEchue = contribEchue * qp * r.quotePart();
+                    DetailCompteMembre delta = estRevenu
+                            ? new DetailCompteMembre(partMensualise, partEchue, 0, 0, 0, 0)
+                            : estReserve
+                                    ? new DetailCompteMembre(0, 0, 0, 0, partMensualise, partEchue)
+                                    : new DetailCompteMembre(0, 0, partMensualise, partEchue, 0, 0);
 
-                double partMensualise = contribMensualise * qp;
-                double partEchue = contribEchue * qp;
-                DetailCompteMembre delta = estRevenu
-                        ? new DetailCompteMembre(partMensualise, partEchue, 0, 0, 0, 0)
-                        : estReserve
-                                ? new DetailCompteMembre(0, 0, 0, 0, partMensualise, partEchue)
-                                : new DetailCompteMembre(0, 0, partMensualise, partEchue, 0, 0);
-
-                parCompteMembre
-                        .computeIfAbsent(compteId, k -> new LinkedHashMap<>())
-                        .merge(membreId, delta, DetailCompteMembre::plus);
+                    parCompteMembre
+                            .computeIfAbsent(r.compteId(), k -> new LinkedHashMap<>())
+                            .merge(membreId, delta, DetailCompteMembre::plus);
+                }
             }
         }
 
@@ -712,50 +712,139 @@ public class MoteurCalcul {
     }
 
     /**
-     * Détail poste par poste des contributions échues d'un membre sur un compte donné,
-     * pour un mois donné (montants déjà proratisés selon {@link #quotePartEffective}) —
-     * alimente la liste des postes affichée lorsqu'un compte est sélectionné dans la vue
-     * "Virements des comptes" du dashboard.
+     * Détail poste par poste des parts d'un membre <b>imputées</b> sur un compte donné,
+     * pour un mois donné (montants déjà proratisés selon {@link #quotePartEffective}),
+     * en vision mensualisée <i>et</i> échue — permet de remonter, en couche service, la
+     * composition poste par poste d'un virement inter-comptes simulé.
      *
      * <p>Réutilise exactement les mêmes briques que {@link #ventilationsCompteMembreDetail}
-     * (résolution du compte cible, quote-part effective, contribution échue) — aucune
-     * nouvelle règle de calcul, uniquement une désagrégation par poste au lieu d'une
-     * somme, filtrée sur un {@code compteId} donné.</p>
+     * (résolution du compte cible via {@link #imputations}, quote-part effective,
+     * contributions mensualisée/échue) — aucune nouvelle règle de calcul, uniquement une
+     * désagrégation par poste au lieu d'une somme, filtrée sur un {@code compteId} donné.</p>
+     *
+     * <p>Fonction pure : aucun accès base/horloge, mêmes entrées → mêmes sorties.</p>
      */
-    public static List<PosteContributionDetail> posteContributionsCompteMembre(
+    public static List<PosteImputationDetail> imputationsCompteMembre(
             ParametresScenario params, UUID compteId, UUID membreId, int annee, int mois) {
-        List<PosteContributionDetail> resultat = new ArrayList<>();
+        List<PosteImputationDetail> resultat = new ArrayList<>();
         int nbMembres = params.membres().size();
 
         for (PosteCalcul poste : params.postes()) {
-            UUID cible = resolveCompte(poste, membreId);
-            if (!compteId.equals(cible)) continue;
+            double qpCompte = imputations(poste, membreId).stream()
+                    .filter(r -> compteId.equals(r.compteId()))
+                    .mapToDouble(RoutageCalcul::quotePart)
+                    .sum();
+            if (qpCompte == 0) continue;
 
             double qp = quotePartEffective(poste, membreId, annee, mois, params.periodesDefaut(), nbMembres);
             if (qp == 0) continue;
 
             double taux = tauxConversion(poste.devise(), params.deviseBase(), params.taux());
-            double contribEchue = contributionReelle(poste, annee, mois) * taux;
-            if (contribEchue == 0) continue;
+            double mensualise = contribution(poste, annee, mois) * taux * qp * qpCompte;
+            double echu = contributionReelle(poste, annee, mois) * taux * qp * qpCompte;
+            if (mensualise == 0 && echu == 0) continue;
 
-            resultat.add(new PosteContributionDetail(
-                    poste.id(), poste.description(), poste.type(), contribEchue * qp, qp));
+            resultat.add(new PosteImputationDetail(
+                    poste.id(), poste.description(), poste.categorieId(), poste.type(),
+                    mensualise, echu));
         }
 
         return resultat;
     }
 
     /**
-     * Résout le compte cible d'un membre pour un poste (ventilationComptes).
-     * Package-visible (non {@code private}) pour être réutilisé par d'autres calculs
-     * ayant besoin de la même résolution compte/membre sans dupliquer la logique.
+     * Lignes de routage (compte contrepartie + quote-part dans la part du membre)
+     * déclarées sur le poste pour ce membre, normalisées de sorte que la somme des
+     * quotes-parts vaille 1 (les lignes à quote-part nulle ou négative sont ignorées).
+     *
+     * <p>Ne tient <b>pas</b> compte du compte pivot : ce sont les contreparties
+     * déclarées, utilisées en couche service pour simuler les virements inter-comptes.
+     * Pour savoir sur quel(s) compte(s) la contribution du poste est imputée, utiliser
+     * {@link #imputations(PosteCalcul, UUID)}.</p>
      */
-    static UUID resolveCompte(PosteCalcul poste, UUID membreId) {
-        if (poste.ventilations() == null) return null;
-        return poste.ventilations().stream()
-                .filter(v -> membreId.equals(v.membreId()))
-                .map(VentilationCalcul::compteId)
-                .findFirst()
-                .orElse(null);
+    static List<RoutageCalcul> routages(PosteCalcul poste, UUID membreId) {
+        if (poste.ventilations() == null) return List.of();
+        List<VentilationCalcul> lignes = poste.ventilations().stream()
+                .filter(v -> membreId.equals(v.membreId()) && v.compteId() != null && v.quotePart() > 0)
+                .toList();
+        if (lignes.isEmpty()) return List.of();
+
+        double somme = lignes.stream().mapToDouble(VentilationCalcul::quotePart).sum();
+        if (somme <= 0) return List.of();
+
+        List<RoutageCalcul> resultat = new ArrayList<>(lignes.size());
+        for (VentilationCalcul v : lignes) {
+            resultat.add(new RoutageCalcul(v.compteId(), v.quotePart() / somme));
+        }
+        return resultat;
+    }
+
+    /**
+     * Compte(s) sur le(s)quel(s) la part d'un membre est <b>imputée</b> pour un poste,
+     * avec la fraction de sa part imputée sur chacun.
+     *
+     * <ul>
+     *   <li><b>Avec compte pivot</b> : toute la part est imputée sur le pivot — c'est là
+     *       que la transaction a physiquement lieu (compte débité pour une CHARGE/RESERVE,
+     *       crédité pour un REVENU). Les contreparties de {@code ventilations} ne changent
+     *       pas l'imputation : elles génèrent des virements, simulés en couche service.</li>
+     *   <li><b>Sans compte pivot</b> (mode hérité) : la part est répartie directement sur
+     *       les comptes de {@code ventilations}, au prorata de leurs quotes-parts.</li>
+     * </ul>
+     */
+    static List<RoutageCalcul> imputations(PosteCalcul poste, UUID membreId) {
+        if (poste.comptePivotId() != null) {
+            return List.of(new RoutageCalcul(poste.comptePivotId(), 1.0));
+        }
+        return routages(poste, membreId);
+    }
+
+    /**
+     * Mouvements inter-comptes induits par le <b>routage explicite</b> des postes pour un
+     * mois donné (voir {@link VirementRoutage}).
+     *
+     * <p>Ne concerne que les postes dotés d'un compte pivot : pour une {@code CHARGE} ou une
+     * {@code RESERVE}, chaque contrepartie alimente le pivot ; pour un {@code REVENU}, le
+     * pivot redistribue vers chaque contrepartie. Les contreparties confondues avec le pivot
+     * sont omises (aucun mouvement réel). Les postes sans pivot restent en mode hérité
+     * (financement déduit du compte primaire du membre, en couche service).</p>
+     *
+     * <p>Fonction pure : aucun accès base/horloge, mêmes entrées → mêmes sorties.</p>
+     */
+    public static List<VirementRoutage> virementsRoutage(ParametresScenario params, int annee, int mois) {
+        List<VirementRoutage> resultat = new ArrayList<>();
+        int nbMembres = params.membres().size();
+
+        for (PosteCalcul poste : params.postes()) {
+            UUID pivot = poste.comptePivotId();
+            if (pivot == null) continue;
+
+            double taux = tauxConversion(poste.devise(), params.deviseBase(), params.taux());
+            double contribMensualise = contribution(poste, annee, mois) * taux;
+            double contribEchue = contributionReelle(poste, annee, mois) * taux;
+            if (contribMensualise == 0 && contribEchue == 0) continue;
+
+            boolean estRevenu = poste.type() == TypePoste.REVENU;
+
+            for (UUID membreId : params.membres()) {
+                double qp = quotePartEffective(poste, membreId, annee, mois, params.periodesDefaut(), nbMembres);
+                if (qp == 0) continue;
+
+                for (RoutageCalcul r : routages(poste, membreId)) {
+                    // Contrepartie confondue avec le pivot : l'argent est déjà au bon endroit.
+                    if (pivot.equals(r.compteId())) continue;
+
+                    double mensualise = contribMensualise * qp * r.quotePart();
+                    double echu = contribEchue * qp * r.quotePart();
+                    if (mensualise == 0 && echu == 0) continue;
+
+                    resultat.add(estRevenu
+                            ? new VirementRoutage(poste.id(), membreId, poste.type(), pivot, r.compteId(), mensualise, echu)
+                            : new VirementRoutage(poste.id(), membreId, poste.type(), r.compteId(), pivot, mensualise, echu));
+                }
+            }
+        }
+
+        return resultat;
     }
 }

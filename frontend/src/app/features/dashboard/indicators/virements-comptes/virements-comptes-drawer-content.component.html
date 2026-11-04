@@ -7,5 +7,6 @@
           [membreActuelId]="d.membreActuelId()"
           [devise]="d.devise()"
           [chargement]="d.chargement()"
-          (virementBascule)="d.onBascule($event.virementId)"/>
+          (virementBascule)="d.onBascule($event.virementId)"
+          (virementClick)="d.onVirementClick($event)"/>
 }

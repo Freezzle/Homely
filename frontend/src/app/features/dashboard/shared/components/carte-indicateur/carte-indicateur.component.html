@@ -5,6 +5,7 @@
   [sousTitre]="ind.subtitle ?? ''"
   [badgeTexte]="ind.badgeTexte ?? ''"
   [badgeTon]="ind.badgeTon ?? null">
+  @if (!ind.sansBoutonDetail) {
   <app-button
     carte-actions
     icon="pi pi-arrow-up-right"
@@ -16,6 +17,7 @@
     tooltipPosition="top"
     [ariaLabel]="t.dashboard.voirDetail + ' : ' + ind.title"
     (clickEvent)="detailsClick.emit()" />
+  }
 
   @let visuel = ind.visuel;
   @switch (visuel.type) {
@@ -52,6 +54,12 @@
     }
     @case ('entonnoir') {
       <app-indicateur-entonnoir [etapes]="visuel.etapes" />
+    }
+    @case ('liste-groupee') {
+      <app-indicateur-liste-groupee
+        [groupes]="visuel.groupes"
+        [interactif]="!!visuel.onLigneClick"
+        (ligneClick)="visuel.onLigneClick?.($event)" />
     }
     @case ('sparkline') {
       <app-indicateur-sparkline

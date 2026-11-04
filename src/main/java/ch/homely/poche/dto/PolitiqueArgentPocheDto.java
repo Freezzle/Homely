@@ -4,6 +4,7 @@ import ch.homely.poche.ModePolitiqueArgentPoche;
 
 import java.math.BigDecimal;
 import java.time.YearMonth;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -18,7 +19,10 @@ public record PolitiqueArgentPocheDto(
         UUID id,
         UUID scenarioId,
         UUID membreId,
-        UUID compteId,
+        /** Compte source qui finance le versement. */
+        UUID comptePivotId,
+        /** Comptes de poche crédités et leurs quotes-parts (somme = 1). */
+        List<LigneRoutagePocheDto> routage,
         String nom,
         YearMonth dateDebut,
         YearMonth dateFin,

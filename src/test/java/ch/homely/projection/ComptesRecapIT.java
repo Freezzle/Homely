@@ -359,85 +359,6 @@ class ComptesRecapIT {
                         ex -> assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
     }
 
-    @Test
-    @DisplayName("Détail des postes d'un compte : montants échus corrects (revenu + charge D=12)")
-    void detailPostesCompteCoherent() throws Exception {
-        String token = creerEtLogin("detail_postes@test.ch");
-        String foyerId = creerFoyer(token, "Foyer Detail Postes");
-        String membreId = premierMembreId(token, foyerId);
-        String scenarioId = creerScenario(token, foyerId, membreId);
-        String compteId = creerCompte(token, foyerId, membreId, "Compte courant");
-
-        String catRevenu = creerCategorie(token, foyerId, "Salaire", "REVENU");
-        String catCharge = creerCategorie(token, foyerId, "Loyer", "CHARGE");
-
-        creerPoste(token, foyerId, scenarioId, catRevenu, "REVENU", "2025-01-01", null, 5000, 1, "MENSUALISE", membreId, compteId);
-        // Charge annuelle 1200 (D=12), échue en pleine en janvier (mois d'ancrage).
-        creerPoste(token, foyerId, scenarioId, catCharge, "CHARGE", "2025-01-01", null, 1200, 12, "MENSUALISE", membreId, compteId);
-
-        List<JsonNode> postes = comptePostes(token, foyerId, scenarioId, 2025, 1, membreId, compteId);
-        assertThat(postes).hasSize(2);
-
-        JsonNode revenu = postes.stream().filter(p -> p.get("type").asText().equals("REVENU")).findFirst().orElseThrow();
-        assertThat(revenu.get("montant").asDouble()).isCloseTo(5000.0, within(0.01));
-        assertThat(revenu.get("quotePart").asDouble()).isCloseTo(1.0, within(0.001));
-        assertThat(revenu.get("argentPoche").asBoolean()).isFalse();
-
-        JsonNode charge = postes.stream().filter(p -> p.get("type").asText().equals("CHARGE")).findFirst().orElseThrow();
-        assertThat(charge.get("montant").asDouble()).isCloseTo(1200.0, within(0.01)); // échu en janvier (ancre)
-
-        // Février : la charge D=12 n'échoit pas -> absente de la liste (montant nul).
-        List<JsonNode> postesFevrier = comptePostes(token, foyerId, scenarioId, 2025, 2, membreId, compteId);
-        assertThat(postesFevrier).hasSize(1);
-        assertThat(postesFevrier.get(0).get("type").asText()).isEqualTo("REVENU");
-    }
-
-    @Test
-    @DisplayName("Détail des postes d'un compte joint : quote-part effective correcte (prorata 60/40)")
-    void detailPostesCompteJointProrata() throws Exception {
-        String token = creerEtLogin("detail_postes_joint@test.ch");
-        String foyerId = creerFoyer(token, "Foyer Detail Postes Joint");
-        String membreAId = premierMembreId(token, foyerId);
-        String membreBId = creerMembre(token, foyerId, "Membre 2");
-        String scenarioId = creerScenarioDeuxMembres(token, foyerId, membreAId, membreBId, 0.6, 0.4);
-        String compteJoint = creerCompteJoint(token, foyerId, List.of(membreAId, membreBId), "Compte commun");
-
-        String catCharge = creerCategorie(token, foyerId, "Loyer", "CHARGE");
-        creerPosteDeuxMembres(token, foyerId, scenarioId, catCharge, "CHARGE", "2025-01-01", 1000, 1, "MENSUALISE",
-                membreAId, membreBId, compteJoint);
-
-        List<JsonNode> postesA = comptePostes(token, foyerId, scenarioId, 2025, 1, membreAId, compteJoint);
-        assertThat(postesA).hasSize(1);
-        assertThat(postesA.get(0).get("montant").asDouble()).isCloseTo(600.0, within(0.01));
-        assertThat(postesA.get(0).get("quotePart").asDouble()).isCloseTo(0.6, within(0.001));
-
-        List<JsonNode> postesB = comptePostes(token, foyerId, scenarioId, 2025, 1, membreBId, compteJoint);
-        assertThat(postesB).hasSize(1);
-        assertThat(postesB.get(0).get("montant").asDouble()).isCloseTo(400.0, within(0.01));
-        assertThat(postesB.get(0).get("quotePart").asDouble()).isCloseTo(0.4, within(0.001));
-    }
-
-    @Test
-    @DisplayName("Accès inter-foyers refusé (403) sur comptes-recap/postes")
-    void accesInterFoyersRefusePostes() {
-        String tokenA = creerEtLogin("detail_postes_a@test.ch");
-        String foyerAId = creerFoyer(tokenA, "Foyer A Detail Postes");
-        String membreAId = premierMembreId(tokenA, foyerAId);
-        String scenarioId = creerScenario(tokenA, foyerAId, membreAId);
-        String compteId = creerCompte(tokenA, foyerAId, membreAId, "Compte");
-
-        String tokenB = creerEtLogin("detail_postes_b@test.ch");
-        creerFoyer(tokenB, "Foyer B Detail Postes");
-
-        assertThatThrownBy(() -> client.get()
-                .uri("/api/foyers/" + foyerAId + "/scenarios/" + scenarioId
-                        + "/projection/comptes-recap/postes?annee=2025&mois=1&membreId=" + membreAId
-                        + "&compteId=" + compteId)
-                .header("Authorization", "Bearer " + tokenB)
-                .retrieve().toBodilessEntity())
-                .isInstanceOfSatisfying(HttpClientErrorException.class,
-                        ex -> assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
-    }
 
     @Test
     @DisplayName("Accès inter-foyers refusé (403) sur comptes-recap")
@@ -604,7 +525,7 @@ class ComptesRecapIT {
                                                 String membreId, String compteId, double montantFixe) {
         Map<String, Object> payload = new HashMap<>();
         payload.put("membreId", membreId);
-        payload.put("compteId", compteId);
+        payload.put("routage", List.of(Map.of("compteId", compteId)));
         payload.put("nom", "Poche Test");
         payload.put("dateDebut", "2025-01");
         payload.put("mode", "FIXE");
@@ -808,22 +729,6 @@ class ComptesRecapIT {
             String body = client.get()
                     .uri("/api/foyers/" + foyerId + "/scenarios/" + scenarioId
                             + "/projection/comptes-recap-annuel?annee=" + annee + "&membreId=" + membreId)
-                    .header("Authorization", "Bearer " + token)
-                    .retrieve().body(String.class);
-            JsonNode arr = MAPPER.readTree(body);
-            List<JsonNode> result = new ArrayList<>();
-            arr.forEach(result::add);
-            return result;
-        } catch (Exception e) { throw new RuntimeException(e); }
-    }
-
-    private List<JsonNode> comptePostes(String token, String foyerId, String scenarioId, int annee, int mois,
-                                         String membreId, String compteId) {
-        try {
-            String body = client.get()
-                    .uri("/api/foyers/" + foyerId + "/scenarios/" + scenarioId
-                            + "/projection/comptes-recap/postes?annee=" + annee + "&mois=" + mois
-                            + "&membreId=" + membreId + "&compteId=" + compteId)
                     .header("Authorization", "Bearer " + token)
                     .retrieve().body(String.class);
             JsonNode arr = MAPPER.readTree(body);

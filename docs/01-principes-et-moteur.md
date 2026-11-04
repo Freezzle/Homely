@@ -31,10 +31,10 @@ il est soustrait. Le RàV peut être négatif (affiché tel quel, pas clampé).
 
 | Type | RàV | Comptes impactés | Modèle de données |
 |---|---|---|---|
-| Revenu | ↑ | 1 (crédité) | `compteDestination` |
-| Charge | ↓ | 1 (débité) | `compteSource` |
-| Réserve | ↓ | 2 (débité + crédité) | ventilation du membre (transfert interne) |
-| Argent de poche | inchangé | 1 (débité) | `compteId` de dépôt |
+| Revenu | ↑ | 1 (crédité) | compte **pivot** (puis redistribué vers les contreparties) |
+| Charge | ↓ | 1 (débité) | compte **pivot** (alimenté par les contreparties) |
+| Réserve | ↓ | 2 (débité + crédité) | idem charge (transfert interne) |
+| Argent de poche | inchangé | 1..N (débité) | compte **pivot** (source) → contreparties créditées |
 
 ## 2. Rôle du moteur
 
@@ -55,7 +55,8 @@ annuelle** (12 mois), la **projection pluriannuelle** avec **trésorerie chaîn�
 | `moment` | DEBUT_PERIODE \| FIN_PERIODE \| INCONNU | mois d'imputation si périodique ; `INCONNU` impose `MENSUALISE` |
 | `nature` | EFFECTIF \| ESTIMATION | étiquette descriptive (sans impact sur `contribution`) |
 | `repartition` | `{membre → quotePart}` \| null | découpe entre membres (§5) |
-| `ventilationComptes` | `{membre → compte}` | ventilation par compte |
+| `comptePivotId` | UUID \| null | compte où la transaction a physiquement lieu (§8 bis) |
+| `ventilationComptes` | liste `(membre, compte, quotePart)` | **routage** : comptes contreparties du pivot (§8 bis) |
 
 ## 3. Brique élémentaire — `contribution(poste, année, mois)`
 
@@ -207,14 +208,79 @@ pourcentage tombe en dessous) et le `plafond` un **maximum** absolu.
 Le solde disponible peut devenir négatif (découvert assumé). Les politiques d'un membre ne
 se chevauchent jamais (validation en service) ; les allocations sont indépendantes.
 
+### 7 bis. Routage des comptes d'un versement d'argent de poche
+
+Même modèle **pivot + contreparties** que les postes (§8 bis), appliqué au versement :
+
+- Le **compte pivot** (`compte_pivot_id`) est la **source** qui finance le versement.
+- Les **contreparties** (`routage_politique_poche` / `routage_allocation_poche`) sont les
+  **comptes de poche crédités**, chacun avec une `quote_part` ∈ [0,1] ; la somme vaut **1**.
+- Le sens est donc toujours celui d'un **REVENU** : le pivot alimente les contreparties.
+  C'est l'inverse d'une CHARGE, où les contreparties alimentent le pivot.
+- **Auto-routage neutre** : si une contrepartie est le pivot lui-même, aucun virement n'est
+  simulé pour cette part — l'argent est déjà sur le bon compte (cas le plus courant).
+- L'argent de poche reste comptabilisé comme une **dépense** des comptes crédités, jamais
+  comme un revenu : le routage ne décrit que le chemin de l'argent, pas sa nature.
+- `compte_membre.est_primaire` n'intervient plus que comme **repli** (données antérieures à
+  la V29) et comme règle de pré-remplissage du pivot côté serveur.
+
+Vecteurs de référence (`ComptesFluxSimulateurPocheRoutageTest`) :
+
+| Cas | Pivot | Contreparties | Virements simulés |
+|---|---|---|---|
+| Versement simple | Salaire | Poche (100 %) | Salaire → Poche |
+| Versement éclaté de 200 | Salaire | Poche (75 %), Loisirs (25 %) | Salaire → Poche 150 ; Salaire → Loisirs 50 |
+| Auto-routage | Salaire | Salaire (100 %) | *aucun* |
+
 ## 8. Ventilations (tableau de bord mensuel)
 ```
 # Par catégorie
 montantCategorie(cat)          = Σ postes de cat de contribution × tauxConversion
 # Par compte (pour un membre m)
-montantCompteMembre(compte, m) = Σ postes de type T dont ventilationComptes[m] == compte
-                                   de partMembre(poste, m, Y, M) × tauxConversion
+montantCompteMembre(compte, m) = Σ postes de type T dont imputations(poste, m) contient
+                                   compte, de partMembre(poste, m, Y, M) × part imputée
+                                   × tauxConversion
 ```
+
+## 8 bis. Routage comptes — compte pivot & contreparties
+
+Un poste porte **un compte pivot** (`comptePivotId`) : le compte où la transaction a
+physiquement lieu — **débité** pour une CHARGE/RESERVE, **crédité** pour un REVENU.
+Il porte en plus N **lignes de routage** `(membre, compte, quotePart)` : les comptes
+**contreparties**.
+
+**Sens, dérivé du type de poste** (jamais saisi) :
+
+| Type | Source du virement | Destination |
+|---|---|---|
+| `CHARGE`, `RESERVE` | compte contrepartie | compte pivot |
+| `REVENU` | compte pivot | compte contrepartie |
+
+**Quote-part de routage imbriquée** : `quotePart` ∈ [0,1] est la part **dans la part du
+membre**, donc `Σ quotePart = 1` **par membre** ayant une part non nulle (tolérance 1e-6 ;
+`MoteurCalcul#routages` renormalise systématiquement, des poids bruts type `1`/`3`
+donnent 25 % / 75 %).
+
+**Imputation** (`MoteurCalcul#imputations`) :
+- pivot renseigné → **toute** la contribution du membre est imputée sur le pivot
+  (c'est physiquement correct : la facture ne débite qu'un compte) ; les contreparties ne
+  changent pas l'imputation, elles produisent des **virements** calculés en couche service
+  (`ComptesFluxSimulateur`) ;
+- pivot absent (postes construits sans pivot) → mode hérité : la part du membre est
+  éclatée sur ses comptes de routage au prorata de `quotePart`.
+
+**Auto-routage neutre** : une ligne dont le compte **est** le pivot ne produit aucun
+virement (l'argent est déjà au bon endroit).
+
+**Fallback** : un membre sans ligne de routage est financé depuis son **compte primaire**
+(`compte_membre.est_primaire`) — aucun poste existant n'a besoin d'être reconfiguré.
+
+### Vecteurs golden (`MoteurCalculRoutageTest`, `ComptesFluxSimulateurRoutageTest`)
+
+| Cas | Type | Pivot | Routage | Virements attendus |
+|---|---|---|---|---|
+| **A2** — facture voiture 1200/an, 60 % M1 / 40 % M2 | CHARGE | compte 1 | `(M1, compte 1, 100 %)`, `(M2, compte 2, 100 %)` | compte 2 → compte 1 pour la part de M2 ; **rien** pour M1 (auto-routage) |
+| **A3** — allocations 260, M1 seul | REVENU | compte 1 | `(M1, compte 2, 60 %)`, `(M1, compte 3, 40 %)` | compte 1 → compte 2 : 156 ; compte 1 → compte 3 : 104 |
 
 ## 9. Événements budgétaires — `MoteurCalcul#evenements`
 

@@ -1,10 +1,12 @@
 package ch.homely.poche.dto;
 
 import ch.homely.poche.ModePolitiqueArgentPoche;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
 import java.time.YearMonth;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -15,7 +17,16 @@ import java.util.UUID;
  */
 public record PolitiqueArgentPocheRequest(
         @NotNull UUID membreId,
-        @NotNull UUID compteId,
+
+        /**
+         * Compte source finançant le versement. Null → résolu par le serveur
+         * (compte primaire du membre, sinon 1re contrepartie, sinon 1er compte actif).
+         */
+        UUID comptePivotId,
+
+        /** Comptes de poche crédités ; somme des quotes-parts = 1 (validée en service). */
+        @NotEmpty @Valid List<LigneRoutagePocheDto> routage,
+
         @NotBlank @Size(max = 160) String nom,
         @NotNull YearMonth dateDebut,
         YearMonth dateFin,

@@ -282,7 +282,7 @@ class ScenarioDupliquerIT {
     private void creerPolitique(String token, String foyerId, String scenarioId, String membreId, String compteId) {
         Map<String, Object> payload = new HashMap<>();
         payload.put("membreId", membreId);
-        payload.put("compteId", compteId);
+        payload.put("routage", List.of(Map.of("compteId", compteId)));
         payload.put("nom", "Politique test");
         payload.put("dateDebut", "2025-01");
         payload.put("dateFin", null);
@@ -301,7 +301,7 @@ class ScenarioDupliquerIT {
     private void creerAllocation(String token, String foyerId, String scenarioId, String membreId, String compteId) {
         Map<String, Object> payload = Map.of(
                 "membreId", membreId,
-                "compteId", compteId,
+                "routage", List.of(Map.of("compteId", compteId)),
                 "mois", "2025-06",
                 "montant", 75,
                 "raison", "Vacances"

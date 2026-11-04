@@ -384,7 +384,8 @@ public class ProjectionService {
                     return new PosteCalcul(pc.id(), pc.type(), pc.montant() * facteur, pc.devise(),
                             pc.periodiciteMois(), pc.debut(), pc.fin(), pc.mode(), pc.moment(),
                             pc.nature(), pc.typeRepartition(), pc.repartitions(), pc.ventilations(),
-                            pc.categorieId(), pc.posteOrigineId(), pc.description(), pc.inclureProrataTheorique());
+                            pc.categorieId(), pc.posteOrigineId(), pc.description(),
+                            pc.inclureProrataTheorique(), pc.comptePivotId());
                 })
                 .toList();
         return new ParametresScenario(
@@ -452,14 +453,13 @@ public class ProjectionService {
                 parMembreSplit.merge(membreId, MoteurCalcul.aggregatMembreMoisSplit(params, membreId, annee, m), this::plusSplit);
 
                 // Argent de poche du mois : n'est pas un poste, absent de
-                // `MoteurCalcul.ventilations` — fusionné ici dans `parCM` sur le compte
-                // crédité (même RàV brut = revenus − charges − réserves qu'en mensuel).
+                // `MoteurCalcul.ventilations` — fusionné ici dans `parCM` sur le ou les
+                // comptes crédités (même RàV brut = revenus − charges − réserves qu'en mensuel).
                 double ravBrut = agMembreMois.revenus() - agMembreMois.charges() - agMembreMois.reserves();
                 ResolutionArgentPoche poche = argentPocheService.resoudre(scenarioId, membreId, YearMonth.of(annee, m), ravBrut);
-                if (poche.compteId() != null && poche.montant() > 0) {
-                    parCM.computeIfAbsent(poche.compteId(), k -> new LinkedHashMap<>())
-                            .merge(membreId, poche.montant(), Double::sum);
-                }
+                poche.montantsParCompte().forEach((compteId, part) ->
+                        parCM.computeIfAbsent(compteId, k -> new LinkedHashMap<>())
+                                .merge(membreId, part, Double::sum));
             }
 
             Ventilations v = MoteurCalcul.ventilations(params, annee, m);
@@ -509,19 +509,18 @@ public class ProjectionService {
      * ventilation par compte/membre issue du moteur (`v.parCompteMembre()`, qui ne
      * connaît que les postes). Retourne une nouvelle map mutable, sans modifier
      * l'original — un membre sans politique/allocation active (source
-     * {@code AUCUNE}, `compteId` null) ne modifie rien, comportement strictement
-     * inchangé.
+     * {@code AUCUNE}, routage vide) ne modifie rien, comportement strictement
+     * inchangé. Un versement éclaté sur plusieurs comptes est réparti au prorata.
      */
     private Map<UUID, Map<UUID, Double>> fusionnerArgentPocheDansComptes(
             Map<UUID, Map<UUID, Double>> parCompteMembre,
             Map<UUID, ResolutionArgentPoche> pocheParMembre) {
         Map<UUID, Map<UUID, Double>> resultat = new LinkedHashMap<>();
         parCompteMembre.forEach((compteId, memMap) -> resultat.put(compteId, new LinkedHashMap<>(memMap)));
-        pocheParMembre.forEach((membreId, poche) -> {
-            if (poche.compteId() == null || poche.montant() <= 0) return;
-            resultat.computeIfAbsent(poche.compteId(), k -> new LinkedHashMap<>())
-                    .merge(membreId, poche.montant(), Double::sum);
-        });
+        pocheParMembre.forEach((membreId, poche) ->
+                poche.montantsParCompte().forEach((compteId, part) ->
+                        resultat.computeIfAbsent(compteId, k -> new LinkedHashMap<>())
+                                .merge(membreId, part, Double::sum)));
         return resultat;
     }
 
@@ -721,37 +720,6 @@ public class ProjectionService {
     }
 
     /**
-     * Détail poste par poste (+ argent de poche éventuel) alimentant un compte donné pour
-     * un membre et un mois donnés — sous-tend l'affichage de la liste des postes lorsqu'un
-     * compte est sélectionné dans la vue "Virements des comptes" (org-chart hub & rayons).
-     * Ne retourne rien (liste vide) si {@code compteId} n'est pas un compte actif du foyer.
-     */
-    @Cacheable(value = "projections",
-               key = "#scenarioId + '-recap-compte-postes-' + #annee + '-' + #mois + '-' + #membreId + '-' + #compteId + '-' + T(ch.homely.projection.ProjectionService).versionKey(#foyerId, #scenarioId, @scenarioRepository)")
-    public List<ComptePosteDetailDto> recapComptePostes(UUID foyerId, UUID scenarioId, int annee, int mois, UUID membreId, UUID compteId) {
-        boolean compteActifDuFoyer = compteRepo.findAllByFoyerIdAndActifTrueOrderByLibelleAsc(foyerId).stream()
-                .anyMatch(c -> c.getId().equals(compteId));
-        if (!compteActifDuFoyer) return List.of();
-
-        ParametresScenario params = chargerParametres(foyerId, scenarioId);
-
-        List<ComptePosteDetailDto> resultat = new ArrayList<>();
-        for (PosteContributionDetail d : MoteurCalcul.posteContributionsCompteMembre(params, compteId, membreId, annee, mois)) {
-            resultat.add(new ComptePosteDetailDto(d.posteId(), d.libelle(), d.type(), false, bd(d.montant()), bd(d.quotePart())));
-        }
-
-        AggregatMensuel ag = MoteurCalcul.aggregatMembreMois(params, membreId, annee, mois);
-        double ravBrut = ag.revenus() - ag.charges() - ag.reserves();
-        ResolutionArgentPoche poche = argentPocheService.resoudre(scenarioId, membreId, YearMonth.of(annee, mois), ravBrut);
-        if (compteId.equals(poche.compteId()) && poche.montant() > 0) {
-            // Comptée comme une dépense (CHARGE), pas un revenu — voir ComptesFluxSimulateur.
-            resultat.add(new ComptePosteDetailDto(null, null, TypePoste.CHARGE, true, bd(poche.montant()), null));
-        }
-
-        return resultat;
-    }
-
-    /**
      * Virements inter-comptes simulés pour un mois donné (dashboard "Virements des comptes") :
      * paires compte source (primaire) → compte destination (crédité), montant agrégé. Filtré
      * pour ne conserver que les paires dont le compte destination inclut {@code membreId}
@@ -766,9 +734,10 @@ public class ProjectionService {
         List<Compte> tousComptes = compteRepo.findAllByFoyerIdAndActifTrueOrderByLibelleAsc(foyerId);
         Map<UUID, UUID> primairesParMembre = chargerPrimairesParMembre(foyerId);
 
-        Map<YearMonth, List<ComptesFluxSimulateur.VirementPaire>> paires = ComptesFluxSimulateur.simulerPaires(
+        Map<YearMonth, ComptesFluxSimulateur.PairesMois> paires = ComptesFluxSimulateur.simulerPaires(
                 params, tousComptes, primairesParMembre, annee, mois, argentPocheService, scenarioId);
-        List<ComptesFluxSimulateur.VirementPaire> paireDuMois = paires.getOrDefault(YearMonth.of(annee, mois), List.of());
+        List<ComptesFluxSimulateur.VirementPaire> paireDuMois =
+                moisOuVide(paires, annee, mois).paires();
 
         return toVirementCompteDtos(filtrerParDestinataire(paireDuMois, tousComptes, membreId), tousComptes);
     }
@@ -784,13 +753,13 @@ public class ProjectionService {
         List<Compte> tousComptes = compteRepo.findAllByFoyerIdAndActifTrueOrderByLibelleAsc(foyerId);
         Map<UUID, UUID> primairesParMembre = chargerPrimairesParMembre(foyerId);
 
-        Map<YearMonth, List<ComptesFluxSimulateur.VirementPaire>> paires = ComptesFluxSimulateur.simulerPaires(
+        Map<YearMonth, ComptesFluxSimulateur.PairesMois> paires = ComptesFluxSimulateur.simulerPaires(
                 params, tousComptes, primairesParMembre, annee, 12, argentPocheService, scenarioId);
 
         Map<UUID, Map<UUID, Double>> agregeParPaire = new LinkedHashMap<>();
-        paires.forEach((ym, liste) -> {
+        paires.forEach((ym, mois) -> {
             if (ym.getYear() != annee) return;
-            for (ComptesFluxSimulateur.VirementPaire p : liste) {
+            for (ComptesFluxSimulateur.VirementPaire p : mois.paires()) {
                 agregeParPaire.computeIfAbsent(p.compteSourceId(), k -> new LinkedHashMap<>())
                         .merge(p.compteDestinationId(), p.montant(), Double::sum);
             }
@@ -801,6 +770,110 @@ public class ProjectionService {
                 paireAnnee.add(new ComptesFluxSimulateur.VirementPaire(source, destination, montant))));
 
         return toVirementCompteDtos(filtrerParDestinataire(paireAnnee, tousComptes, membreId), tousComptes);
+    }
+
+    /**
+     * Composition poste par poste d'un virement simulé d'un mois : ce que le mouvement
+     * {@code compteSourceId} → {@code compteDestinationId} doit à chaque poste, à l'argent de
+     * poche et au comblement de trésorerie. La somme des lignes égale le montant du virement
+     * renvoyé par {@link #virementsComptes}.
+     *
+     * <p>Non scopé à un membre : une même paire de comptes peut agréger les parts de plusieurs
+     * co-titulaires, et la popin affiche la composition complète de ce qui transite.</p>
+     */
+    @Cacheable(value = "projections",
+               key = "#scenarioId + '-virement-detail-' + #annee + '-' + #mois + '-' + #compteSourceId + '-' + #compteDestinationId + '-' + T(ch.homely.projection.ProjectionService).versionKey(#foyerId, #scenarioId, @scenarioRepository)")
+    public List<VirementDetailLigneDto> virementDetail(UUID foyerId, UUID scenarioId, int annee, int mois,
+                                                        UUID compteSourceId, UUID compteDestinationId) {
+        return toVirementDetailDtos(foyerId, scenarioId,
+                composantes(foyerId, scenarioId, annee, mois).stream()
+                        .filter(c -> c.compteSourceId().equals(compteSourceId)
+                                && c.compteDestinationId().equals(compteDestinationId))
+                        .toList());
+    }
+
+    /** Variante annuelle de {@link #virementDetail} : composantes sommées sur les 12 mois. */
+    @Cacheable(value = "projections",
+               key = "#scenarioId + '-virement-detail-annuel-' + #annee + '-' + #compteSourceId + '-' + #compteDestinationId + '-' + T(ch.homely.projection.ProjectionService).versionKey(#foyerId, #scenarioId, @scenarioRepository)")
+    public List<VirementDetailLigneDto> virementDetailAnnuel(UUID foyerId, UUID scenarioId, int annee,
+                                                               UUID compteSourceId, UUID compteDestinationId) {
+        return toVirementDetailDtos(foyerId, scenarioId,
+                composantesAnnee(foyerId, scenarioId, annee).stream()
+                        .filter(c -> c.compteSourceId().equals(compteSourceId)
+                                && c.compteDestinationId().equals(compteDestinationId))
+                        .toList());
+    }
+
+    /** Composantes du seul mois {@code (annee, mois)}. */
+    private List<ComptesFluxSimulateur.VirementComposante> composantes(
+            UUID foyerId, UUID scenarioId, int annee, int mois) {
+        return moisOuVide(simulerPairesParMois(foyerId, scenarioId, annee, mois), annee, mois).composantes();
+    }
+
+    /** Composantes de tous les mois de {@code annee}, concaténées (l'agrégation par poste est
+     *  faite ensuite par {@link #toVirementDetailDtos}). */
+    private List<ComptesFluxSimulateur.VirementComposante> composantesAnnee(
+            UUID foyerId, UUID scenarioId, int annee) {
+        List<ComptesFluxSimulateur.VirementComposante> toutes = new ArrayList<>();
+        simulerPairesParMois(foyerId, scenarioId, annee, 12).forEach((ym, paires) -> {
+            if (ym.getYear() == annee) toutes.addAll(paires.composantes());
+        });
+        return toutes;
+    }
+
+    private Map<YearMonth, ComptesFluxSimulateur.PairesMois> simulerPairesParMois(
+            UUID foyerId, UUID scenarioId, int annee, int mois) {
+        ParametresScenario params = chargerParametres(foyerId, scenarioId);
+        List<Compte> tousComptes = compteRepo.findAllByFoyerIdAndActifTrueOrderByLibelleAsc(foyerId);
+        Map<UUID, UUID> primairesParMembre = chargerPrimairesParMembre(foyerId);
+
+        return ComptesFluxSimulateur.simulerPaires(
+                params, tousComptes, primairesParMembre, annee, mois, argentPocheService, scenarioId);
+    }
+
+    private static ComptesFluxSimulateur.PairesMois moisOuVide(
+            Map<YearMonth, ComptesFluxSimulateur.PairesMois> paires, int annee, int mois) {
+        return paires.getOrDefault(YearMonth.of(annee, mois),
+                new ComptesFluxSimulateur.PairesMois(List.of(), List.of()));
+    }
+
+    /** Agrège les composantes par poste (ou par origine pour les lignes sans poste), résout
+     *  libellé et catégorie, et trie par montant décroissant. Les miettes d'arrondi (< 1 ct)
+     *  sont écartées pour ne pas polluer la liste. */
+    private List<VirementDetailLigneDto> toVirementDetailDtos(
+            UUID foyerId, UUID scenarioId, List<ComptesFluxSimulateur.VirementComposante> composantes) {
+        if (composantes.isEmpty()) return List.of();
+
+        Map<UUID, Poste> postesParId = new HashMap<>();
+        for (Poste p : posteRepo.findForMoteur(scenarioId, foyerId)) {
+            postesParId.put(p.getId(), p);
+        }
+
+        // Clé d'agrégation : le poste, ou l'origine elle-même pour les lignes qui n'en ont pas.
+        Map<Object, Double> montants = new LinkedHashMap<>();
+        Map<Object, ComptesFluxSimulateur.VirementComposante> modeles = new LinkedHashMap<>();
+        for (ComptesFluxSimulateur.VirementComposante c : composantes) {
+            Object cle = c.posteId() != null ? c.posteId() : c.origine();
+            montants.merge(cle, c.montant(), Double::sum);
+            modeles.putIfAbsent(cle, c);
+        }
+
+        List<VirementDetailLigneDto> resultat = new ArrayList<>();
+        montants.forEach((cle, montant) -> {
+            if (montant < 0.005) return;
+            ComptesFluxSimulateur.VirementComposante modele = modeles.get(cle);
+            Poste poste = modele.posteId() != null ? postesParId.get(modele.posteId()) : null;
+            resultat.add(new VirementDetailLigneDto(
+                    poste != null ? poste.getId() : null,
+                    poste != null ? poste.getDescription() : null,
+                    poste != null && poste.getCategorie() != null ? poste.getCategorie().getId() : null,
+                    poste != null && poste.getCategorie() != null ? poste.getCategorie().getLibelle() : null,
+                    poste != null ? poste.getType() : TypePoste.CHARGE,
+                    poste != null ? OrigineVirement.POSTE : modele.origine(),
+                    bd(montant)));
+        });
+        resultat.sort(Comparator.comparing(VirementDetailLigneDto::montant).reversed());
+        return resultat;
     }
 
     /** Ne conserve que les paires dont le compte destination inclut {@code membreId} parmi ses
@@ -910,9 +983,15 @@ public class ProjectionService {
                 .toList();
         List<VentilationCalcul> ventilations = (pVent != null)
                 ? pVent.getVentilations().stream()
-                        .map(v -> new VentilationCalcul(v.getMembre().getId(), v.getCompte().getId()))
+                        .map(v -> new VentilationCalcul(v.getMembre().getId(), v.getCompte().getId(),
+                                v.getQuotePart() != null ? v.getQuotePart().doubleValue() : 1.0))
                         .toList()
                 : List.of();
+        // Le compte pivot fait partie de la configuration de routage : il est lu sur la même
+        // source que les ventilations (pVent), pour rester cohérent dans les chaînes de révision.
+        UUID comptePivotId = (pVent != null && pVent.getComptePivot() != null)
+                ? pVent.getComptePivot().getId()
+                : null;
         return new PosteCalcul(p.getId(), p.getType(), p.getMontant().doubleValue(),
                 p.getDevise() != null ? p.getDevise() : deviseBase,
                 p.getPeriodiciteMois(), p.getDebut(), p.getFin(), p.getMode(), p.getMoment(),
@@ -920,7 +999,8 @@ public class ProjectionService {
                 p.getTypeRepartition(),
                 repartitions, ventilations,
                 p.getCategorie() != null ? p.getCategorie().getId() : null,
-                p.getPosteOrigineId(), p.getDescription(), p.isInclureProrataTheorique());
+                p.getPosteOrigineId(), p.getDescription(), p.isInclureProrataTheorique(),
+                comptePivotId);
     }
 
     // ── mappers ───────────────────────────────────────────────────────────────

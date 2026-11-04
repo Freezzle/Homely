@@ -74,7 +74,7 @@ public class ArgentPocheController {
             @PathVariable UUID scenarioId,
             @Valid @RequestBody PolitiqueArgentPocheRequest req) {
         PolitiqueArgentPoche p = service.creerPolitique(
-                foyerId, scenarioId, req.membreId(), req.compteId(), req.nom(),
+                foyerId, scenarioId, req.membreId(), req.comptePivotId(), req.routage(), req.nom(),
                 req.dateDebut(), req.dateFin(), req.mode(),
                 req.socle(), req.pourcentage(), req.plafond(), req.montantFixe());
         return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toDto(p));
@@ -87,7 +87,7 @@ public class ArgentPocheController {
             @PathVariable UUID id,
             @Valid @RequestBody PolitiqueArgentPocheRequest req) {
         PolitiqueArgentPoche p = service.modifierPolitique(
-                foyerId, scenarioId, id, req.membreId(), req.compteId(), req.nom(),
+                foyerId, scenarioId, id, req.membreId(), req.comptePivotId(), req.routage(), req.nom(),
                 req.dateDebut(), req.dateFin(), req.mode(),
                 req.socle(), req.pourcentage(), req.plafond(), req.montantFixe());
         return mapper.toDto(p);
@@ -127,7 +127,7 @@ public class ArgentPocheController {
             @PathVariable UUID scenarioId,
             @Valid @RequestBody AllocationArgentPocheRequest req) {
         AllocationArgentPoche a = service.creerAllocation(
-                foyerId, scenarioId, req.membreId(), req.compteId(),
+                foyerId, scenarioId, req.membreId(), req.comptePivotId(), req.routage(),
                 req.mois(), req.montant(), req.raison());
         return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toDto(a));
     }
@@ -139,7 +139,7 @@ public class ArgentPocheController {
             @PathVariable UUID id,
             @Valid @RequestBody AllocationArgentPocheRequest req) {
         AllocationArgentPoche a = service.modifierAllocation(
-                foyerId, scenarioId, id, req.membreId(), req.compteId(),
+                foyerId, scenarioId, id, req.membreId(), req.comptePivotId(), req.routage(),
                 req.mois(), req.montant(), req.raison());
         return mapper.toDto(a);
     }

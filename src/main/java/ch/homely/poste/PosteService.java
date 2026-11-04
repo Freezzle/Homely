@@ -32,6 +32,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.Comparator;
+import java.util.Optional;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -268,6 +272,7 @@ public class PosteService {
         nouveau.setPotentielOptimisation(actuel.getPotentielOptimisation());
         nouveau.setDeriveExterne(actuel.getDeriveExterne());
         nouveau.setPosteOrigineId(actuel.getId());
+        nouveau.setComptePivot(actuel.getComptePivot());
 
         for (RepartitionPoste rp : actuel.getRepartitions()) {
             RepartitionPoste copie = new RepartitionPoste();
@@ -281,6 +286,7 @@ public class PosteService {
             copie.setPoste(nouveau);
             copie.setMembre(vc.getMembre());
             copie.setCompte(vc.getCompte());
+            copie.setQuotePart(vc.getQuotePart());
             nouveau.getVentilations().add(copie);
         }
 
@@ -469,6 +475,17 @@ public class PosteService {
             p.setCategorie(cat);
         }
 
+        // Compte pivot : compte où la transaction a physiquement lieu (débité pour une
+        // CHARGE/RESERVE, crédité pour un REVENU). Les ventilations sont les contreparties
+        // qui l'alimentent (ou qu'il alimente), et ne changent pas l'imputation.
+        // Résolu plus bas (après les ventilations) pour pouvoir retomber sur elles.
+        Compte pivotExplicite = null;
+        if (req.comptePivotId() != null) {
+            pivotExplicite = compteRepo.findByIdAndFoyerId(req.comptePivotId(), foyerId)
+                    .orElseThrow(() -> new RessourceIntrouvableException(
+                            "Compte introuvable : " + req.comptePivotId()));
+        }
+
 
         // Stocker les répartitions UNIQUEMENT pour CUSTOM
         if (typeRep == TypeRepartition.CUSTOM && req.repartitions() != null) {
@@ -501,11 +518,22 @@ public class PosteService {
                 membresAutorisesVentilation = null; // null = aucune restriction (AUTO / REVERSE_AUTO)
             }
 
+            // Somme des quotes-parts de routage par membre : doit valoir 1 (cf. validerRoutage).
+            Map<UUID, BigDecimal> sommeParMembre = new LinkedHashMap<>();
+            Set<String> dejaVu = new HashSet<>();
+
             for (PosteRequest.VentilationCompteDto vd : req.ventilations()) {
                 // Ignorer si compteId absent (sélection vidée dans l'UI)
                 if (vd.compteId() == null) continue;
                 // Pour CUSTOM : ignorer si le membre a 0% (pas dans la liste blanche)
                 if (membresAutorisesVentilation != null && !membresAutorisesVentilation.contains(vd.membreId())) continue;
+                BigDecimal qp = vd.quotePart() != null ? vd.quotePart() : BigDecimal.ONE;
+                // Une ligne à 0% n'apporte rien : on l'ignore plutôt que de la stocker.
+                if (qp.compareTo(BigDecimal.ZERO) <= 0) continue;
+                if (!dejaVu.add(vd.membreId() + "|" + vd.compteId())) {
+                    throw new RegleMetierException(CodesErreur.ROUTAGE_INVALIDE,
+                            "Le même compte est déclaré deux fois pour le membre " + vd.membreId() + ".");
+                }
                 Membre m = membreRepo.findByIdAndFoyerId(vd.membreId(), foyerId)
                         .orElseThrow(() -> new RessourceIntrouvableException(
                                 "Membre introuvable : " + vd.membreId()));
@@ -516,7 +544,73 @@ public class PosteService {
                 vc.setPoste(p);
                 vc.setMembre(m);
                 vc.setCompte(c);
+                vc.setQuotePart(qp);
                 p.getVentilations().add(vc);
+                sommeParMembre.merge(vd.membreId(), qp, BigDecimal::add);
+            }
+
+            validerRoutage(sommeParMembre);
+        }
+
+        p.setComptePivot(pivotExplicite != null ? pivotExplicite : resoudrePivotParDefaut(p, foyerId));
+    }
+
+    /**
+     * Résout le compte pivot quand la requête n'en fournit pas, selon la même règle
+     * déterministe que le backfill de {@code V28__compte_pivot_routage.sql} :
+     * <ol>
+     *   <li>compte de la ventilation du membre ayant la plus grosse quote-part
+     *       (départage stable par {@code membreId}) ;</li>
+     *   <li>sinon compte primaire du membre majoritaire ;</li>
+     *   <li>sinon premier compte actif du foyer (tri par libellé).</li>
+     * </ol>
+     * Renvoie {@code null} uniquement si le foyer n'a aucun compte actif.
+     */
+    private Compte resoudrePivotParDefaut(Poste p, UUID foyerId) {
+        Map<UUID, BigDecimal> partParMembre = new HashMap<>();
+        for (RepartitionPoste rp : p.getRepartitions()) {
+            partParMembre.put(rp.getMembre().getId(), rp.getQuotePart());
+        }
+        Comparator<VentilationCompte> parPoids = Comparator
+                .comparing((VentilationCompte v) ->
+                        partParMembre.getOrDefault(v.getMembre().getId(), BigDecimal.ZERO))
+                .reversed()
+                .thenComparing(v -> v.getMembre().getId());
+
+        Optional<Compte> depuisVentilation = p.getVentilations().stream()
+                .min(parPoids)
+                .map(VentilationCompte::getCompte);
+        if (depuisVentilation.isPresent()) return depuisVentilation.get();
+
+        Optional<Compte> depuisPrimaire = p.getRepartitions().stream()
+                .min(Comparator.comparing(RepartitionPoste::getQuotePart).reversed()
+                        .thenComparing(rp -> rp.getMembre().getId()))
+                .flatMap(rp -> comptePrimaire(foyerId, rp.getMembre().getId()));
+        if (depuisPrimaire.isPresent()) return depuisPrimaire.get();
+
+        return compteRepo.findAllByFoyerIdAndActifTrueOrderByLibelleAsc(foyerId)
+                .stream().findFirst().orElse(null);
+    }
+
+    private Optional<Compte> comptePrimaire(UUID foyerId, UUID membreId) {
+        return compteRepo.findAllByFoyerIdAndActifTrueOrderByLibelleAsc(foyerId).stream()
+                .filter(c -> c.getCompteMembres().stream()
+                        .anyMatch(cm -> cm.isEstPrimaire() && cm.getMembre().getId().equals(membreId)))
+                .findFirst();
+    }
+
+    /**
+     * Vérifie que la somme des quotes-parts de routage vaut 1 pour chaque membre ayant au
+     * moins une ligne. Tolérance identique à {@link MoteurCalcul#validerRepartition} (1e-6),
+     * pour absorber les arrondis d'affichage côté frontend.
+     */
+    private void validerRoutage(Map<UUID, BigDecimal> sommeParMembre) {
+        for (Map.Entry<UUID, BigDecimal> e : sommeParMembre.entrySet()) {
+            double somme = e.getValue().doubleValue();
+            if (Math.abs(somme - 1.0) > 1e-6) {
+                throw new RegleMetierException(CodesErreur.ROUTAGE_INVALIDE,
+                        "La somme des quotes-parts de routage du membre " + e.getKey()
+                                + " doit valoir 1 (obtenu " + somme + ").");
             }
         }
     }
@@ -557,7 +651,8 @@ public class PosteService {
 
         List<PosteDto.VentilationCompteDto> vents = p.getVentilations().stream()
                 .map(v -> new PosteDto.VentilationCompteDto(
-                        v.getMembre().getId(), v.getCompte().getId(), v.getCompte().getLibelle()))
+                        v.getMembre().getId(), v.getCompte().getId(), v.getCompte().getLibelle(),
+                        v.getQuotePart()))
                 .toList();
 
         return new PosteDto(p.getId(), p.getType(), p.getDescription(),
@@ -566,6 +661,8 @@ public class PosteService {
                 p.getDebut(), p.getFin(), p.getMode(), p.getMoment(), p.getNature(),
                 p.getEstimPourcentage(),
                 p.getTypeRepartition(),
+                p.getComptePivot() != null ? p.getComptePivot().getId() : null,
+                p.getComptePivot() != null ? p.getComptePivot().getLibelle() : null,
                 p.getOrdre(), p.getImportance(), p.getPotentielOptimisation(),
                 p.getDeriveExterne(), reps, vents,
                 p.getPosteOrigineId(), successeurParOrigine.get(p.getId()), p.getSourcePosteId(),

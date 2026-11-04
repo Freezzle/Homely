@@ -28,7 +28,7 @@ import java.util.UUID;
  * @param nature          EFFECTIF | ANTICIPE — descriptif ; n'altère pas les calculs
  * @param typeRepartition AUTO | REVERSE_AUTO | CUSTOM (null → AUTO)
  * @param repartitions    quotes-parts par membre (utilisé uniquement si typeRepartition=CUSTOM)
- * @param ventilations    compte cible par membre
+ * @param ventilations    comptes contreparties par membre, avec leur quote-part (routage)
  * @param categorieId     id de la catégorie (pour les ventilations par catégorie)
  * @param posteOrigineId  id du poste dont ce poste est issu par révision de montant planifiée
  *                        (null si ce poste n'appartient pas à une chaîne de révisions).
@@ -39,6 +39,13 @@ import java.util.UUID;
  *                        du prorata théorique des membres — voir
  *                        {@link ch.homely.projection.ProjectionService#prorataPartage}. Sans effet
  *                        pour les postes {@code CHARGE}/{@code RESERVE}. Défaut {@code true}.
+ * @param comptePivotId   compte où la transaction a physiquement lieu : débité pour une
+ *                        {@code CHARGE}/{@code RESERVE}, crédité pour un {@code REVENU}.
+ *                        Quand il est renseigné, <b>toute</b> la contribution du poste est
+ *                        imputée sur ce compte (les {@code ventilations} ne servent alors
+ *                        qu'à déterminer les virements inter-comptes, en couche service).
+ *                        {@code null} = mode hérité : la part de chaque membre est imputée
+ *                        directement sur ses comptes de {@code ventilations}.
  */
 public record PosteCalcul(
         UUID id,
@@ -57,12 +64,28 @@ public record PosteCalcul(
         UUID categorieId,
         UUID posteOrigineId,
         String description,
-        boolean inclureProrataTheorique
+        boolean inclureProrataTheorique,
+        UUID comptePivotId
 ) {
     /** Compact constructor : defaults {@code nature} → EFFECTIF, {@code typeRepartition} → AUTO. */
     public PosteCalcul {
         if (nature == null) nature = NaturePoste.EFFECTIF;
         if (typeRepartition == null) typeRepartition = TypeRepartition.AUTO;
+    }
+
+    /**
+     * Constructeur de compatibilité (sans {@code comptePivotId}, défaut {@code null} = mode
+     * hérité d'imputation directe sur les comptes de {@code ventilations}).
+     */
+    public PosteCalcul(UUID id, TypePoste type, double montant, String devise, int periodiciteMois,
+                        LocalDate debut, LocalDate fin, ModeComptabilisation mode, MomentPeriode moment,
+                        NaturePoste nature, TypeRepartition typeRepartition,
+                        List<RepartitionCalcul> repartitions, List<VentilationCalcul> ventilations,
+                        UUID categorieId, UUID posteOrigineId, String description,
+                        boolean inclureProrataTheorique) {
+        this(id, type, montant, devise, periodiciteMois, debut, fin, mode, moment, nature,
+                typeRepartition, repartitions, ventilations, categorieId, posteOrigineId, description,
+                inclureProrataTheorique, null);
     }
 
     /**
@@ -76,13 +99,14 @@ public record PosteCalcul(
                         List<RepartitionCalcul> repartitions, List<VentilationCalcul> ventilations,
                         UUID categorieId, UUID posteOrigineId, String description) {
         this(id, type, montant, devise, periodiciteMois, debut, fin, mode, moment, nature,
-                typeRepartition, repartitions, ventilations, categorieId, posteOrigineId, description, true);
+                typeRepartition, repartitions, ventilations, categorieId, posteOrigineId, description,
+                true, null);
     }
 
     /**
      * Constructeur de compatibilité (sans {@code posteOrigineId}/{@code description}/
-     * {@code inclureProrataTheorique}) — conservé pour ne pas casser les tests existants qui
-     * construisent un {@code PosteCalcul} sans ces champs descriptifs.
+     * {@code inclureProrataTheorique}/{@code comptePivotId}) — conservé pour ne pas casser les
+     * tests existants qui construisent un {@code PosteCalcul} sans ces champs descriptifs.
      */
     public PosteCalcul(UUID id, TypePoste type, double montant, String devise, int periodiciteMois,
                         LocalDate debut, LocalDate fin, ModeComptabilisation mode, MomentPeriode moment,
@@ -90,6 +114,6 @@ public record PosteCalcul(
                         List<RepartitionCalcul> repartitions, List<VentilationCalcul> ventilations,
                         UUID categorieId) {
         this(id, type, montant, devise, periodiciteMois, debut, fin, mode, moment, nature,
-                typeRepartition, repartitions, ventilations, categorieId, null, null, true);
+                typeRepartition, repartitions, ventilations, categorieId, null, null, true, null);
     }
 }

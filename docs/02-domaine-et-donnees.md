@@ -26,7 +26,8 @@ Utilisateur ──< AccesFoyer >── Foyer
    Poste  RepartitionPeriode      ArgentPoche
       │      └─< RepartitionPeriodePart >─ Membre
       ├──< RepartitionPoste >── Membre   (CUSTOM uniquement)
-      └──< VentilationCompte >── (Membre, Compte)
+      ├──── comptePivot ──────── Compte (compte où la transaction a lieu)
+      └──< VentilationCompte >── (Membre, Compte, quotePart)  (routage/contreparties)
 ```
 - **Niveau Foyer** (référentiels partagés) : Membre, Compte, Categorie, TauxChange,
   `deviseBase`.
@@ -67,18 +68,29 @@ Dupliquer un scénario copie les postes/hypothèses sans toucher aux référenti
   `montant`, `devise`, `periodiciteMois` (0 = one-shot), `debut`/`fin`, `mode`, `moment`,
   `nature`, `estimPourcentage` (obligatoire si ESTIMATION), `importance` /
   `potentielOptimisation` (1-5, **descriptifs**, sans impact moteur), `typeRepartition`,
+  `comptePivotId` (compte où la transaction a lieu — cf. `docs/01` §8 bis ; résolu
+  automatiquement par `PosteService` si la requête ne le fournit pas),
   `posteOrigineId` (chaînage des révisions). **Cycle de vie** : révision de montant
   (crée un poste chaîné + clôture l'ancien), annulation de révision, décalage de fenêtre,
   clôture/réactivation. Pas d'endpoint de duplication de poste.
 - **RepartitionPoste** — override CUSTOM (`Σ par poste = 1`), présent uniquement pour
   `typeRepartition = CUSTOM`.
-- **VentilationCompte** — compte utilisé par chaque membre pour un poste (le membre ne
-  peut choisir qu'un compte auquel il est rattaché).
-- **PolitiqueArgentPoche** — politique récurrente par `(scenario, membre)` : `compteId`,
-  `dateDebut`/`dateFin` (null = ouverte), `mode` (VARIABLE : socle/pourcentage/plafond, ou
-  FIXE : montantFixe). Chevauchements interdits, trous autorisés (validation en service).
+- **VentilationCompte** — **ligne de routage** `(poste, membre, compte, quotePart)` : un
+  compte contrepartie du compte pivot du poste. Plusieurs lignes par `(poste, membre)` sont
+  autorisées (unique `(poste_id, membre_id, compte_id)`). `quotePart` est la part **dans la
+  part du membre** (`Σ = 1` par membre, tolérance 1e-6, sinon `422 ROUTAGE_INVALIDE`). Le
+  membre ne peut choisir qu'un compte auquel il est rattaché. Voir `docs/01` §8 bis.
+- **PolitiqueArgentPoche** — politique récurrente par `(scenario, membre)` : `comptePivotId`
+  (compte **source** finançant le versement), `dateDebut`/`dateFin` (null = ouverte), `mode`
+  (VARIABLE : socle/pourcentage/plafond, ou FIXE : montantFixe). Chevauchements interdits,
+  trous autorisés (validation en service).
 - **AllocationArgentPoche** — allocation ponctuelle `(scenario, membre, mois)`,
-  prioritaire sur la politique, unique par clé.
+  prioritaire sur la politique, unique par clé. Même `comptePivotId` que la politique.
+- **RoutagePolitiquePoche / RoutageAllocationPoche** — contreparties d'un versement :
+  `(compte, quotePart)`, un compte au plus par versement (unique `(politique_id, compte_id)`
+  / `(allocation_id, compte_id)`). `Σ quotePart = 1` (tolérance 1e-6, sinon
+  `422 ROUTAGE_INVALIDE`). Sens **REVENU** : le pivot alimente les comptes crédités.
+  Voir `docs/01` §7 bis.
 
 ## 3. Énumérations
 ```
@@ -204,6 +216,7 @@ CREATE TABLE poste (
   importance INT NOT NULL DEFAULT 3 CHECK (importance BETWEEN 1 AND 5),                        -- descriptif
   potentiel_optimisation INT NOT NULL DEFAULT 3 CHECK (potentiel_optimisation BETWEEN 1 AND 5), -- descriptif
   type_repartition VARCHAR(16) NOT NULL DEFAULT 'AUTO' CHECK (type_repartition IN ('AUTO','REVERSE_AUTO','CUSTOM')),
+  compte_pivot_id UUID REFERENCES compte(id),     -- compte où la transaction a lieu (cf. doc 01 §8 bis)
   ordre INT NOT NULL DEFAULT 0,
   poste_origine_id UUID REFERENCES poste(id) ON DELETE SET NULL,   -- chaînage des révisions
   date_creation TIMESTAMPTZ NOT NULL DEFAULT now(), date_modification TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -219,18 +232,20 @@ CREATE TABLE repartition_poste (
   quote_part NUMERIC(9,6) NOT NULL, UNIQUE (poste_id, membre_id)
 );
 
-CREATE TABLE ventilation_compte (
+CREATE TABLE ventilation_compte (        -- lignes de routage (contreparties du pivot)
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   poste_id UUID NOT NULL REFERENCES poste(id) ON DELETE CASCADE,
   membre_id UUID NOT NULL REFERENCES membre(id) ON DELETE CASCADE,
-  compte_id UUID NOT NULL REFERENCES compte(id), UNIQUE (poste_id, membre_id)
+  compte_id UUID NOT NULL REFERENCES compte(id),
+  quote_part NUMERIC(9,6) NOT NULL DEFAULT 1,     -- part DANS la part du membre (Σ = 1 par membre)
+  UNIQUE (poste_id, membre_id, compte_id)
 );
 
 CREATE TABLE politique_argent_poche (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   scenario_id UUID NOT NULL REFERENCES scenario(id) ON DELETE CASCADE,
   membre_id UUID NOT NULL REFERENCES membre(id) ON DELETE CASCADE,
-  compte_id UUID NOT NULL REFERENCES compte(id),
+  compte_pivot_id UUID REFERENCES compte(id),   -- compte SOURCE qui finance le versement
   nom VARCHAR(160) NOT NULL, date_debut DATE NOT NULL, date_fin DATE,
   mode VARCHAR(16) NOT NULL CHECK (mode IN ('VARIABLE','FIXE')),
   socle NUMERIC(15,2), pourcentage NUMERIC(5,2), plafond NUMERIC(15,2), montant_fixe NUMERIC(15,2),
@@ -245,10 +260,27 @@ CREATE TABLE allocation_argent_poche (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   scenario_id UUID NOT NULL REFERENCES scenario(id) ON DELETE CASCADE,
   membre_id UUID NOT NULL REFERENCES membre(id) ON DELETE CASCADE,
-  compte_id UUID NOT NULL REFERENCES compte(id),
+  compte_pivot_id UUID REFERENCES compte(id),
   mois DATE NOT NULL, montant NUMERIC(15,2) NOT NULL CHECK (montant >= 0), raison VARCHAR(255),
   date_creation TIMESTAMPTZ NOT NULL DEFAULT now(), date_modif TIMESTAMPTZ NOT NULL DEFAULT now(),
   CONSTRAINT uq_allocation_poche_scenario_membre_mois UNIQUE (scenario_id, membre_id, mois)
+);
+
+-- Contreparties d'un versement d'argent de poche : comptes CRÉDITÉS (sens REVENU).
+CREATE TABLE routage_politique_poche (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  politique_id UUID NOT NULL REFERENCES politique_argent_poche(id) ON DELETE CASCADE,
+  compte_id UUID NOT NULL REFERENCES compte(id),
+  quote_part NUMERIC(9,6) NOT NULL CHECK (quote_part > 0 AND quote_part <= 1),
+  CONSTRAINT uq_routage_politique_poche UNIQUE (politique_id, compte_id)
+);
+
+CREATE TABLE routage_allocation_poche (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  allocation_id UUID NOT NULL REFERENCES allocation_argent_poche(id) ON DELETE CASCADE,
+  compte_id UUID NOT NULL REFERENCES compte(id),
+  quote_part NUMERIC(9,6) NOT NULL CHECK (quote_part > 0 AND quote_part <= 1),
+  CONSTRAINT uq_routage_allocation_poche UNIQUE (allocation_id, compte_id)
 );
 ```
 
@@ -270,6 +302,8 @@ CREATE TABLE allocation_argent_poche (
 | V18 / V19 | `poste.importance` / `poste.potentiel_optimisation` (1-5, descriptifs) |
 | V20 / V21 | Compte primaire → `compte_membre.est_primaire` |
 | V22 / V23 | `politique_argent_poche` / `allocation_argent_poche` |
+| V28 | `poste.compte_pivot_id` + `ventilation_compte.quote_part` (routage pivot/contreparties) ; unique `(poste, membre, compte)` ; backfill déterministe du pivot |
+| V29 | `compte_pivot_id` sur `politique_argent_poche` / `allocation_argent_poche` + `routage_politique_poche` / `routage_allocation_poche` ; `compte_id` supprimé ; backfill neutre (pivot = compte primaire actif, sinon ancien `compte_id` ⇒ auto-routage) |
 
 > Le foyer d'exemple n'est **jamais** codé en dur : il vit dans le seed Flyway et sert de
 > base aux vecteurs golden ([doc 01](01-principes-et-moteur.md#12-vecteurs-de-test-golden)).

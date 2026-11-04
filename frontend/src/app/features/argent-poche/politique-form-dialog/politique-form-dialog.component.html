@@ -139,17 +139,17 @@
                 </div>
             }
 
-            <!-- ── Sur quel compte ? ──────────────────────────────────── -->
+            <!-- ── Depuis quel compte, vers lequel ? ──────────────────── -->
             @case ('compte') {
-                <app-choix-cartes
-                    [label]="t.argentPoche.champs.compte"
-                    [options]="optionsComptes()"
-                    [value]="form.get('compteId')!.value"
-                    largeurMin="11rem"
-                    (valueChange)="choisirCompte($event)"
+                <app-poche-routage
+                    [comptes]="comptes()"
+                    [membres]="membres()"
+                    [membreId]="form.get('membreId')!.value"
+                    [(comptePivotId)]="comptePivotId"
+                    [(lignes)]="lignesRoutage"
                 />
-                @if (form.get('compteId')!.invalid && form.get('compteId')!.touched) {
-                    <p-message severity="error">{{ t.commun.champObligatoire }}</p-message>
+                @if (!routageValide()) {
+                    <p-message severity="error">{{ t.argentPoche.form.routage.invalide }}</p-message>
                 }
             }
         }

@@ -6,6 +6,7 @@ import { IndicateurBarreEmpileeComponent } from '../../../../../shared/component
 import { IndicateurEntonnoirComponent } from '../../../../../shared/components/indicateurs/entonnoir/indicateur-entonnoir.component';
 import { IndicateurGaufreComponent } from '../../../../../shared/components/indicateurs/gaufre/indicateur-gaufre.component';
 import { IndicateurHeatmapComponent } from '../../../../../shared/components/indicateurs/heatmap/indicateur-heatmap.component';
+import { IndicateurListeGroupeeComponent } from '../../../../../shared/components/indicateurs/liste-groupee/indicateur-liste-groupee.component';
 import { IndicateurSparklineComponent } from '../../../../../shared/components/indicateurs/sparkline/indicateur-sparkline.component';
 import { IndicateurNombreTendanceComponent } from '../../../../../shared/components/indicateurs/nombre-tendance/indicateur-nombre-tendance.component';
 import { IndicateurProgressionComponent } from '../../../../../shared/components/indicateurs/progression/indicateur-progression.component';
@@ -26,6 +27,7 @@ import { Indicator } from '../../models/indicator.model';
     IndicateurEntonnoirComponent,
     IndicateurGaufreComponent,
     IndicateurHeatmapComponent,
+    IndicateurListeGroupeeComponent,
     IndicateurNombreTendanceComponent,
     IndicateurProgressionComponent,
     IndicateurSparklineComponent,

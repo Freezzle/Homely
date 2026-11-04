@@ -1,0 +1,75 @@
+// Tokens --app-* globaux : voir frontend/src/styles/_app-tokens.css.
+.virement-detail {
+  display: grid;
+  gap: var(--app-space-3);
+  min-width: 0;
+
+  &__total {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--app-space-3);
+    margin: var(--app-space-0);
+  }
+
+  &__total-libelle {
+    font-size: var(--app-text-2xs);
+    font-weight: var(--app-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: var(--app-tracking-wide);
+    color: var(--app-ink-muted);
+  }
+
+  &__total-valeur {
+    font-size: var(--app-donnee-lg);
+    font-weight: var(--app-weight-bold);
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-space-2);
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+
+    th {
+      padding: var(--app-space-2) var(--app-space-3);
+      font-size: var(--app-text-2xs);
+      font-weight: var(--app-weight-bold);
+      text-transform: uppercase;
+      letter-spacing: var(--app-tracking-wide);
+      color: var(--app-ink-muted);
+      text-align: left;
+      border-bottom: var(--app-space-px) solid var(--app-line);
+      background: var(--app-bg);
+    }
+
+    td {
+      padding: var(--app-space-2) var(--app-space-3);
+      font-size: var(--app-text-sm);
+      border-bottom: var(--app-space-px) solid var(--app-line-2);
+      color: var(--app-ink);
+    }
+  }
+
+  &__col-montant {
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    font-weight: var(--app-weight-semibold);
+  }
+
+  &__categorie {
+    color: var(--app-ink-muted);
+  }
+
+  &__vide {
+    text-align: center;
+    padding: var(--app-space-6);
+    color: var(--app-ink-muted);
+  }
+}

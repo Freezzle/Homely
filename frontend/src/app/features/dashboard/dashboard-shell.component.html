@@ -41,3 +41,13 @@
 </div>
 
 <app-indicator-drawer />
+
+<app-virement-detail-dialog
+  [visible]="facade.virementDetailVisible()"
+  [lignes]="facade.virementDetailLignes()"
+  [chargement]="facade.virementDetailChargement()"
+  [libelleSource]="facade.virementDetailComptes().source"
+  [libelleDestination]="facade.virementDetailComptes().destination"
+  [montantTotal]="facade.virementDetailMontant()"
+  [devise]="facade.deviseBase()"
+  (fermer)="facade.fermerDetailVirement()" />

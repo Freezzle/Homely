@@ -34,7 +34,7 @@
 Codes métier (min.) : `REPARTITION_INVALIDE`, `SCENARIO_REFERENCE_UNIQUE`,
 `MEMBRE_REFERENCE_SUPPRESSION`, `DEVISE_INCONNUE`, `ACCES_FOYER_REFUSE`,
 `RESSOURCE_INTROUVABLE`, `FOYER_MEMBRES_INVALIDES`, `COMPTE_SANS_MEMBRE`,
-`VENTILATION_COMPTE_NON_RATTACHE`, `ESTIMATION_POURCENTAGE_REQUIS`.
+`VENTILATION_COMPTE_NON_RATTACHE`, `ESTIMATION_POURCENTAGE_REQUIS`, `ROUTAGE_INVALIDE`.
 
 ## 3. Authentification
 
@@ -94,7 +94,8 @@ membres.
 `…/scenarios/{scenarioId}/postes` — CRUD (`GET …?type=CHARGE`, avec `montantMensualise`
 calculé). Corps principal : `{type, description, categorieId, montant, devise?,
 periodiciteMois, debut, fin, mode, moment, nature, estimPourcentage?, typeRepartition,
-repartitions?, ventilations:[{membreId, compteId}]}`.
+repartitions?, comptePivotId?, ventilations:[{membreId, compteId, quotePart?}]}`.
+La réponse (`PosteDto`) expose en plus `libelleComptePivot`.
 
 Règles clés :
 - `estimPourcentage` : obligatoire (>0) si `nature=ESTIMATION` (`422
@@ -105,6 +106,17 @@ Règles clés :
 - `typeRepartition` : `CUSTOM` → `repartitions` obligatoire, somme 1 (`422
   REPARTITION_INVALIDE`) ; chaque `ventilation.compteId` doit être rattaché au membre
   (`422 VENTILATION_COMPTE_NON_RATTACHE`).
+- `comptePivotId` : compte où la transaction a physiquement lieu (débité pour
+  CHARGE/RESERVE, crédité pour REVENU — cf. [doc 01 §8 bis](01-principes-et-moteur.md)).
+  Doit appartenir au foyer (`404` sinon). **Optionnel dans la requête** : s'il est absent,
+  le serveur le résout automatiquement (compte de la ventilation du membre majoritaire →
+  compte primaire de ce membre → premier compte actif du foyer), de sorte qu'un poste a
+  toujours un pivot.
+- `ventilations` : **lignes de routage** (comptes contreparties). Plusieurs comptes par
+  membre sont autorisés ; `quotePart` (défaut `1`) est la part **dans la part du membre**
+  et la somme par membre doit valoir 1 ± 1e-6, sans doublon `(membre, compte)`
+  (`422 ROUTAGE_INVALIDE`). Les lignes à `quotePart = 0`, sans `compteId`, ou dont le
+  membre a 0 % en CUSTOM sont ignorées.
 
 **Cycle de vie** (pas de modification silencieuse du montant historique) :
 | Endpoint | Effet |
@@ -154,6 +166,17 @@ Toutes en `GET`, scopées scénario, servies via le moteur (doc 01) + cache.
   `ventilation-annuelle`) ; `membreId` optionnel (vue membre via `parCategorieMembre`).
   `part` = `montant / total` (6 décimales, somme ≈ 1), montants ≤ 0 exclus. **La part est
   calculée côté backend**, jamais côté frontend.
+- **`…/projection/virements-comptes?annee=&mois=&membreId=`** / **`…/virements-comptes-annuel?annee=&membreId=`**
+  → paires `{compteSourceId, libelleCompteSource, compteDestinationId, libelleCompteDestination,
+  montant}` : virements simulés compte primaire → compte crédité. Filtrées côté serveur sur les
+  paires dont le compte **destination** inclut `membreId`. La variante annuelle somme les 12 mois.
+- **`…/projection/virements-comptes/detail?annee=&mois=&compteSourceId=&compteDestinationId=`**
+  (+ variante `…/virements-comptes-annuel/detail?annee=&compteSourceId=&compteDestinationId=`)
+  → composition d'un virement : `[{posteId, libelle, categorieId, categorieNom, type, origine,
+  montant}]` trié par `montant` ↓. `origine` ∈ `POSTE | ARGENT_POCHE | COMBLEMENT_TRESORERIE` ;
+  les deux dernières n'ont pas de poste (champs `null`, libellé i18n côté frontend). Montants
+  positifs, **somme des lignes = montant de la paire**. Non scopé à un membre : une paire peut
+  agréger les parts de plusieurs co-titulaires.
 
 ## 9. Argent de poche (niveau scénario)
 
@@ -162,6 +185,23 @@ CRUD `…/politiques-argent-poche` (récurrentes) et `…/allocations-argent-poc
 priorité (`allocation > politique > 0`) : [doc 01 §7](01-principes-et-moteur.md#7-argent-de-poche--impact-sur-le-solde-disponible).
 Actions d'écriture masquées pour `VIEWER` (backend refuse aussi toute écriture hors
 OWNER/EDITOR).
+
+**Routage des comptes** (depuis V29) — politiques comme allocations :
+
+```
+{ "comptePivotId": "<uuid|null>",            // source qui finance ; null → résolu serveur
+  "routage": [ { "compteId": "<uuid>", "quotePart": 0.75 },   // comptes crédités
+               { "compteId": "<uuid>", "quotePart": 0.25 } ] }
+```
+
+- `routage` est **obligatoire et non vide** (`400` sinon, Bean Validation).
+- `quotePart` est optionnel et vaut `1` par défaut ; `Σ quotePart = 1` (tolérance 1e-6),
+  sinon `422 ROUTAGE_INVALIDE`. Un compte répété dans le routage → `422 ROUTAGE_INVALIDE`.
+- `comptePivotId` omis → résolu côté serveur (compte primaire actif du membre, sinon la
+  première contrepartie ⇒ auto-routage, sinon le premier compte actif du foyer) : un
+  versement a toujours une source sans casser les appels existants.
+- Tout compte (pivot ou contrepartie) hors du foyer courant → `404` (barrière multi-tenant).
+- Sémantique (sens REVENU, auto-routage neutre) : [doc 01 §7 bis](01-principes-et-moteur.md#7-bis-routage-des-comptes-dun-versement-dargent-de-poche).
 
 ## 10. Configuration dashboard
 
@@ -258,7 +298,7 @@ discriminée vers un `app-indicateur-*`, composant de drawer). Le détail s'ouvr
 | Aperçu (année) | Mois à risque | heatmap 12 mois (sous le seuil / < 2× seuil / confortable) | nb de mois à risque |
 | Aperçu | Événements | nombre + tendance : nb d'événements, écart en nombre vs période précédente (ton neutre ; masqué si N-1 hors scénario) | favorables · défavorables |
 | Aperçu | Plaisirs vs Besoins | barre empilée du revenu : besoins / plaisirs / reste | % besoins / revenus (`danger` > seuil) |
-| Comptes (membre) | Virements des comptes | entonnoir « source → destination » (top 5 + Autres), avatar des titulaires devant les comptes d'un autre membre | total à virer |
+| Comptes (membre) | Virements des comptes | liste groupée par compte source (en-tête = source + total « à envoyer », lignes = destinations, top 4 + Autres), avatar des titulaires devant les comptes d'un autre membre ; un clic sur une destination ouvre la popin de composition | total à virer |
 | Comptes (année) | Évolution graphique | sparkline trésorerie cumulée, variation vs fin N-1 | — |
 | Postes | Ventilation des postes | barre empilée du revenu : charges / réserves / argent de poche / solde | solde restant |
 | Postes | Postes à optimiser | gaufre, un point par poste (à optimiser / à surveiller / à garder) | nb à optimiser |
@@ -267,6 +307,14 @@ discriminée vers un `app-indicateur-*`, composant de drawer). Le détail s'ouvr
 
 Le drawer « Taux d'effort » affiche 3 `app-carte-info` + `app-indicateur-niveau`
 (charges seules, + réserves, + argent de poche ; tranches de 20 %, ton de zone).
+
+Le drawer « Virements des comptes » affiche `app-table-virements-comptes` (table à
+sous-en-têtes groupée par compte source, case « fait » locale non persistée). Carte et
+drawer partagent le même groupement (`shared/utils/virements-comptes.util.ts`), et
+cliquer une ligne de destination — dans l'un comme dans l'autre — ouvre
+`app-virement-detail-dialog` : total du virement + une ligne par poste
+(libellé, catégorie, montant), avec les lignes « Argent de poche » et « Comblement de
+trésorerie » quand elles existent (`…/virements-comptes[-annuel]/detail`, §8).
 
 ### 3.2 Revenus / Charges / Réserves (`PostesListeComponent`, paramétré par `type`)
 Liste en cartes (barre accent colorée par type) : description + badge `ESTIMATION ± X.X%`,
@@ -301,7 +349,10 @@ les périodes + formulaire (début/fin, parts par membre, somme live, « Équita
 Par membre/scénario : **politiques** (`p-table` nom/membre/période/mode/paramètres,
 formulaire avec aperçu « 6 prochains mois » via `…/rav-brut`) et **allocations**
 ponctuelles (membre/mois/montant/raison, prioritaires sur la politique). Écriture masquée
-pour `VIEWER`.
+pour `VIEWER`. Les deux parcours guidés se terminent par l'étape **comptes**
+(`app-poche-routage`, partagée) : choix du **compte pivot** (« financé depuis ») puis des
+**comptes crédités** (« versé sur »), en mode simple (un seul compte) ou avancé
+(N comptes avec un %, total 100 %).
 
 ## 4. Pratiques transverses
 - Composants partagés du dashboard (`shared/components/`) sans logique métier (agrégats

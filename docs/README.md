@@ -98,6 +98,9 @@ Termes FR à utiliser de façon cohérente dans le code, les entités et l'UI.
 | **Poste** | Ligne budgétaire récurrente REVENU / CHARGE / RESERVE | `Poste` |
 | **Catégorie** | Classification d'un poste | `Categorie` |
 | **Compte** | Compte bancaire du foyer | `Compte` |
+| **Compte pivot** | Compte où la transaction a physiquement lieu : débité (CHARGE/RESERVE) ou crédité (REVENU) pour un poste ; compte **source** qui finance un versement d'argent de poche | `Poste.comptePivot`, `PolitiqueArgentPoche.comptePivot` |
+| **Routage** | Lignes `(membre, compte, quotePart)` d'un poste : les comptes **contreparties** qui alimentent le pivot (CHARGE/RESERVE) ou qu'il alimente (REVENU). Pour l'argent de poche : `(compte, quotePart)` des comptes crédités (sens REVENU) | `VentilationCompte`, `RoutagePolitiquePoche` |
+| **Compte primaire** | Compte par défaut d'un membre, utilisé en l'absence de routage explicite | `compteMembre.estPrimaire` |
 | **Périodicité** | Longueur du cycle en mois (1 = mensuel, 12 = annuel…) | `periodiciteMois` |
 | **Mode** | `MENSUALISE` (lissé) \| `PERIODIQUE` (montant plein) | `ModeComptabilisation` |
 | **Moment** | Poste périodique : `DEBUT_PERIODE` \| `FIN_PERIODE` \| `INCONNU` | `MomentPeriode` |

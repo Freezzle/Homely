@@ -16,6 +16,8 @@ export interface VirementsComptesDrawerData {
   devise: Signal<string>;
   chargement: Signal<boolean>;
   onBascule: (cle: string) => void;
+  /** Ouvre la popin de composition du virement (clé `source::destination`). */
+  onVirementClick: (cle: string) => void;
 }
 
 /**

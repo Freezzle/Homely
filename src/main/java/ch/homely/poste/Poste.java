@@ -1,6 +1,7 @@
 package ch.homely.poste;
 
 import ch.homely.categorie.Categorie;
+import ch.homely.compte.Compte;
 import ch.homely.scenario.Scenario;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -41,6 +42,21 @@ public class Poste {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "categorie_id")
     private Categorie categorie;
+
+    /**
+     * Compte « pivot » du poste : celui où la transaction a physiquement lieu —
+     * débité pour une {@link TypePoste#CHARGE}/{@link TypePoste#RESERVE}, crédité
+     * pour un {@link TypePoste#REVENU}. Les {@link VentilationCompte} du poste sont
+     * les comptes <i>contreparties</i> : ils alimentent le pivot (CHARGE/RESERVE) ou
+     * sont alimentés par lui (REVENU).
+     *
+     * <p>Obligatoire à la création via l'API ; nullable en base pour couvrir les
+     * foyers sans aucun compte actif (le moteur retombe alors sur le compte primaire
+     * du membre).</p>
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "compte_pivot_id")
+    private ch.homely.compte.Compte comptePivot;
 
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal montant = BigDecimal.ZERO;

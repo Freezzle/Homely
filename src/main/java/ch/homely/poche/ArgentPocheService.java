@@ -9,6 +9,7 @@ import ch.homely.compte.CompteRepository;
 import ch.homely.foyer.RoleFoyer;
 import ch.homely.membre.Membre;
 import ch.homely.membre.MembreRepository;
+import ch.homely.poche.dto.LigneRoutagePocheDto;
 import ch.homely.scenario.Scenario;
 import ch.homely.scenario.ScenarioRepository;
 import ch.homely.securite.MultiTenantService;
@@ -19,9 +20,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Service métier "argent de poche" — regroupe :
@@ -90,7 +95,8 @@ public class ArgentPocheService {
         if (alloc.isPresent()) {
             AllocationArgentPoche a = alloc.get();
             return ResolutionArgentPoche.parAllocation(
-                    a.getMontant().doubleValue(), a.getId(), a.getCompte().getId(), ravBrut);
+                    a.getMontant().doubleValue(), a.getId(), pivotId(a.getComptePivot()),
+                    lignes(a.getRoutage()), ravBrut);
         }
 
         Optional<PolitiqueArgentPoche> pol = politiqueRepo
@@ -98,10 +104,29 @@ public class ArgentPocheService {
         if (pol.isPresent()) {
             PolitiqueArgentPoche p = pol.get();
             double montant = calculerFormule(p, ravBrut);
-            return ResolutionArgentPoche.parPolitique(montant, p.getId(), p.getCompte().getId(), ravBrut);
+            return ResolutionArgentPoche.parPolitique(
+                    montant, p.getId(), pivotId(p.getComptePivot()),
+                    lignes(p.getRoutage()), ravBrut);
         }
 
         return ResolutionArgentPoche.aucune(ravBrut);
+    }
+
+    private static UUID pivotId(Compte pivot) {
+        return pivot == null ? null : pivot.getId();
+    }
+
+    /**
+     * Projette les lignes de routage persistées vers le modèle de calcul.
+     *
+     * <p>Le pivot peut être {@code null} sur des données anciennes : dans ce cas
+     * {@link ResolutionArgentPoche} retombe sur la première contrepartie, et le
+     * simulateur n'émet aucun virement.</p>
+     */
+    private static List<LigneRoutagePoche> lignes(List<? extends RoutageArgentPoche> routage) {
+        return routage.stream()
+                .map(r -> new LigneRoutagePoche(r.getCompte().getId(), r.getQuotePart().doubleValue()))
+                .toList();
     }
 
     /**
@@ -152,7 +177,8 @@ public class ArgentPocheService {
     }
 
     public PolitiqueArgentPoche creerPolitique(UUID foyerId, UUID scenarioId,
-                                               UUID membreId, UUID compteId,
+                                               UUID membreId, UUID comptePivotId,
+                                               List<LigneRoutagePocheDto> routage,
                                                String nom,
                                                YearMonth dateDebut, YearMonth dateFin,
                                                ModePolitiqueArgentPoche mode,
@@ -161,19 +187,19 @@ public class ArgentPocheService {
         multiTenant.verifierAcces(foyerId, RoleFoyer.EDITOR);
         Scenario scenario = verifierScenario(foyerId, scenarioId);
         Membre membre = trouverMembre(foyerId, membreId);
-        Compte compte = trouverCompte(foyerId, compteId);
 
         PolitiqueArgentPoche p = new PolitiqueArgentPoche();
         p.setScenario(scenario);
         p.setMembre(membre);
-        p.setCompte(compte);
+        appliquerRoutagePolitique(p, foyerId, comptePivotId, routage);
         appliquerPolitique(p, nom, dateDebut, dateFin, mode, socle, pourcentage, plafond, montantFixe);
         verifierPasDeChevauchement(scenarioId, membreId, p.getDateDebut(), p.getDateFin(), null);
         return politiqueRepo.save(p);
     }
 
     public PolitiqueArgentPoche modifierPolitique(UUID foyerId, UUID scenarioId, UUID id,
-                                                  UUID membreId, UUID compteId,
+                                                  UUID membreId, UUID comptePivotId,
+                                                  List<LigneRoutagePocheDto> routage,
                                                   String nom,
                                                   YearMonth dateDebut, YearMonth dateFin,
                                                   ModePolitiqueArgentPoche mode,
@@ -183,9 +209,8 @@ public class ArgentPocheService {
         verifierScenario(foyerId, scenarioId);
         PolitiqueArgentPoche p = trouverPolitique(scenarioId, id);
         Membre membre = trouverMembre(foyerId, membreId);
-        Compte compte = trouverCompte(foyerId, compteId);
         p.setMembre(membre);
-        p.setCompte(compte);
+        appliquerRoutagePolitique(p, foyerId, comptePivotId, routage);
         appliquerPolitique(p, nom, dateDebut, dateFin, mode, socle, pourcentage, plafond, montantFixe);
         verifierPasDeChevauchement(scenarioId, membreId, p.getDateDebut(), p.getDateFin(), id);
         return politiqueRepo.save(p);
@@ -226,12 +251,12 @@ public class ArgentPocheService {
     }
 
     public AllocationArgentPoche creerAllocation(UUID foyerId, UUID scenarioId,
-                                                 UUID membreId, UUID compteId,
+                                                 UUID membreId, UUID comptePivotId,
+                                                 List<LigneRoutagePocheDto> routage,
                                                  YearMonth mois, BigDecimal montant, String raison) {
         multiTenant.verifierAcces(foyerId, RoleFoyer.EDITOR);
         Scenario scenario = verifierScenario(foyerId, scenarioId);
         Membre membre = trouverMembre(foyerId, membreId);
-        Compte compte = trouverCompte(foyerId, compteId);
 
         // Vérification préemptive du doublon → 409 propre (plutôt que
         // DataIntegrityViolationException générique).
@@ -246,7 +271,7 @@ public class ArgentPocheService {
         AllocationArgentPoche a = new AllocationArgentPoche();
         a.setScenario(scenario);
         a.setMembre(membre);
-        a.setCompte(compte);
+        appliquerRoutageAllocation(a, foyerId, comptePivotId, routage);
         appliquerAllocation(a, mois, montant, raison);
         try {
             return allocationRepo.save(a);
@@ -260,13 +285,13 @@ public class ArgentPocheService {
     }
 
     public AllocationArgentPoche modifierAllocation(UUID foyerId, UUID scenarioId, UUID id,
-                                                    UUID membreId, UUID compteId,
+                                                    UUID membreId, UUID comptePivotId,
+                                                    List<LigneRoutagePocheDto> routage,
                                                     YearMonth mois, BigDecimal montant, String raison) {
         multiTenant.verifierAcces(foyerId, RoleFoyer.EDITOR);
         verifierScenario(foyerId, scenarioId);
         AllocationArgentPoche a = trouverAllocation(scenarioId, id);
         Membre membre = trouverMembre(foyerId, membreId);
-        Compte compte = trouverCompte(foyerId, compteId);
 
         // Si la clé (membre, mois) change, revalider l'unicité.
         boolean cleChange = !a.getMembre().getId().equals(membreId)
@@ -283,7 +308,7 @@ public class ArgentPocheService {
         }
 
         a.setMembre(membre);
-        a.setCompte(compte);
+        appliquerRoutageAllocation(a, foyerId, comptePivotId, routage);
         appliquerAllocation(a, mois, montant, raison);
         try {
             return allocationRepo.save(a);
@@ -358,6 +383,128 @@ public class ArgentPocheService {
             p.setPourcentage(null);
             p.setPlafond(null);
         }
+    }
+
+    // ── Routage (compte pivot + contreparties) ──────────────────────────────
+
+    /**
+     * Applique le routage d'une politique : remplace les contreparties et résout le
+     * compte pivot. Voir {@link #validerRoutage} et {@link #resoudrePivotParDefaut}.
+     */
+    private void appliquerRoutagePolitique(PolitiqueArgentPoche p, UUID foyerId,
+                                           UUID comptePivotId, List<LigneRoutagePocheDto> routage) {
+        List<LigneRoutagePocheDto> lignes = validerRoutage(foyerId, routage);
+
+        // Réconciliation en place plutôt que clear()+recréation : réinsérer la même clé
+        // (politique_id, compte_id) dans le même flush viole uq_routage_politique_poche,
+        // Hibernate ordonnançant les INSERT avant les DELETE.
+        Map<UUID, RoutagePolitiquePoche> existantes = p.getRoutage().stream()
+                .collect(Collectors.toMap(r -> r.getCompte().getId(), r -> r, (a, b) -> a));
+        Set<UUID> voulus = lignes.stream().map(LigneRoutagePocheDto::compteId).collect(Collectors.toSet());
+        p.getRoutage().removeIf(r -> !voulus.contains(r.getCompte().getId()));
+
+        for (LigneRoutagePocheDto l : lignes) {
+            RoutagePolitiquePoche r = existantes.get(l.compteId());
+            if (r == null) {
+                r = new RoutagePolitiquePoche();
+                r.setPolitique(p);
+                r.setCompte(trouverCompte(foyerId, l.compteId()));
+                p.getRoutage().add(r);
+            }
+            r.setQuotePart(quotePart(l));
+        }
+        p.setComptePivot(resoudrePivotParDefaut(foyerId, comptePivotId, p.getMembre(), lignes));
+    }
+
+    /** Pendant de {@link #appliquerRoutagePolitique} pour une allocation ponctuelle. */
+    private void appliquerRoutageAllocation(AllocationArgentPoche a, UUID foyerId,
+                                            UUID comptePivotId, List<LigneRoutagePocheDto> routage) {
+        List<LigneRoutagePocheDto> lignes = validerRoutage(foyerId, routage);
+
+        Map<UUID, RoutageAllocationPoche> existantes = a.getRoutage().stream()
+                .collect(Collectors.toMap(r -> r.getCompte().getId(), r -> r, (x, y) -> x));
+        Set<UUID> voulus = lignes.stream().map(LigneRoutagePocheDto::compteId).collect(Collectors.toSet());
+        a.getRoutage().removeIf(r -> !voulus.contains(r.getCompte().getId()));
+
+        for (LigneRoutagePocheDto l : lignes) {
+            RoutageAllocationPoche r = existantes.get(l.compteId());
+            if (r == null) {
+                r = new RoutageAllocationPoche();
+                r.setAllocation(a);
+                r.setCompte(trouverCompte(foyerId, l.compteId()));
+                a.getRoutage().add(r);
+            }
+            r.setQuotePart(quotePart(l));
+        }
+        a.setComptePivot(resoudrePivotParDefaut(foyerId, comptePivotId, a.getMembre(), lignes));
+    }
+
+    private static BigDecimal quotePart(LigneRoutagePocheDto l) {
+        return l.quotePart() != null ? l.quotePart() : BigDecimal.ONE;
+    }
+
+    /**
+     * Valide les contreparties : au moins une ligne, pas de compte en double, et somme
+     * des quotes-parts égale à 1 (tolérance 1e-6, pour absorber les arrondis d'affichage
+     * côté frontend — même tolérance que le routage des postes).
+     *
+     * @return les lignes validées (jamais {@code null})
+     */
+    private List<LigneRoutagePocheDto> validerRoutage(UUID foyerId, List<LigneRoutagePocheDto> routage) {
+        if (routage == null || routage.isEmpty()) {
+            throw new RegleMetierException(CodesErreur.ROUTAGE_INVALIDE,
+                    "Au moins un compte de versement est requis.");
+        }
+
+        Set<UUID> comptes = new HashSet<>();
+        BigDecimal somme = BigDecimal.ZERO;
+        for (LigneRoutagePocheDto l : routage) {
+            if (!comptes.add(l.compteId())) {
+                throw new RegleMetierException(CodesErreur.ROUTAGE_INVALIDE,
+                        "Le compte " + l.compteId() + " est présent plusieurs fois dans le routage.");
+            }
+            // Appartenance au foyer : barrière multi-tenant sur chaque contrepartie.
+            trouverCompte(foyerId, l.compteId());
+            somme = somme.add(quotePart(l));
+        }
+
+        if (Math.abs(somme.doubleValue() - 1.0) > 1e-6) {
+            throw new RegleMetierException(CodesErreur.ROUTAGE_INVALIDE,
+                    "La somme des quotes-parts de versement doit valoir 1 (obtenu "
+                            + somme.doubleValue() + ").");
+        }
+        return routage;
+    }
+
+    /**
+     * Résout le compte pivot (la source qui finance le versement). Reproduit la règle
+     * déterministe du backfill de {@code V29__argent_poche_routage.sql} quand la requête
+     * n'en fournit pas :
+     * <ol>
+     *   <li>compte primaire actif du membre ;</li>
+     *   <li>sinon la première contrepartie (⇒ auto-routage, aucun virement) ;</li>
+     *   <li>sinon premier compte actif du foyer.</li>
+     * </ol>
+     * Renvoie {@code null} uniquement si le foyer n'a aucun compte actif.
+     */
+    private Compte resoudrePivotParDefaut(UUID foyerId, UUID comptePivotId, Membre membre,
+                                          List<LigneRoutagePocheDto> lignes) {
+        if (comptePivotId != null) return trouverCompte(foyerId, comptePivotId);
+
+        Optional<Compte> primaire = comptePrimaire(foyerId, membre.getId());
+        if (primaire.isPresent()) return primaire.get();
+
+        if (!lignes.isEmpty()) return trouverCompte(foyerId, lignes.get(0).compteId());
+
+        return compteRepo.findAllByFoyerIdAndActifTrueOrderByLibelleAsc(foyerId)
+                .stream().findFirst().orElse(null);
+    }
+
+    private Optional<Compte> comptePrimaire(UUID foyerId, UUID membreId) {
+        return compteRepo.findAllByFoyerIdAndActifTrueOrderByLibelleAsc(foyerId).stream()
+                .filter(c -> c.getCompteMembres().stream()
+                        .anyMatch(cm -> cm.isEstPrimaire() && cm.getMembre().getId().equals(membreId)))
+                .findFirst();
     }
 
     private void appliquerAllocation(AllocationArgentPoche a, YearMonth mois,

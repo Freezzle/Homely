@@ -14,6 +14,8 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -44,10 +46,18 @@ public class AllocationArgentPoche {
     @JoinColumn(name = "membre_id", nullable = false)
     private Membre membre;
 
-    /** Compte crédité par ce versement ponctuel. */
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "compte_id", nullable = false)
-    private Compte compte;
+    /**
+     * Compte <b>pivot</b> : la source qui finance ce versement ponctuel. L'argent part
+     * de ce compte vers les comptes de {@link #routage}. Une contrepartie confondue
+     * avec le pivot est un auto-routage (aucun virement).
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "compte_pivot_id")
+    private Compte comptePivot;
+
+    /** Comptes de poche crédités et leurs quotes-parts (somme = 1). */
+    @OneToMany(mappedBy = "allocation", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RoutageAllocationPoche> routage = new ArrayList<>();
 
     /** Mois concerné (toujours stocké comme le 1er du mois). */
     @Column(nullable = false)

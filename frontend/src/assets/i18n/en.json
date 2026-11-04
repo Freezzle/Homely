@@ -395,14 +395,35 @@
       "personnalise": "Custom",
       "curseurRepartition": "Split between {{a}} and {{b}}",
       "curseurValeur": "{{a}} {{partA}} %, {{b}} {{partB}} %",
+      "partDynamique": "dynamic",
+      "repartitionDynamique": "Based on the income of the period",
+      "curseurValeurDynamique": "Dynamic split between {{a}} and {{b}}, based on the income of the period",
       "depuis": {
         "CHARGE": "Paid from",
         "REVENU": "Paid into",
         "RESERVE": "Set aside on"
       },
-      "depuisMembre": "{{libelle}} · {{nom}}",
-      "comptesSepares": "Each from a different account",
-      "compteCommun": "The same account for everyone",
+      "comptePivotAide": {
+        "CHARGE": "The account actually debited for this expense.",
+        "REVENU": "The account the money actually lands on.",
+        "RESERVE": "The account the money is set aside on."
+      },
+      "contreparties": {
+        "CHARGE": "Funded from",
+        "REVENU": "Redistributed to",
+        "RESERVE": "Funded from"
+      },
+      "contrepartiesMembre": "{{libelle}} · {{nom}}",
+      "contrepartiesAide": {
+        "CHARGE": "The accounts the money leaves from to cover this expense.",
+        "REVENU": "The accounts this money is then split into.",
+        "RESERVE": "The accounts the money leaves from to feed this reserve."
+      },
+      "routageAvance": "Split across several accounts",
+      "routageSimple": "A single account per person",
+      "ajouterCompte": "Add an account",
+      "retirerCompte": "Remove this account",
+      "routageInvalide": "The total must be 100 % for each person.",
       "aucunCompte": "No account available",
       "total": "Total",
       "analyseAide": "You can save without touching it.",
@@ -861,6 +882,14 @@
     "evenementsDefavorables": "Unfavorable",
     "aucunEvenementAnnee": "No structural change this year.",
     "aucunVirementPeriode": "No transfer to make for this period.",
+    "virementDetailOuvrir": "View transfer breakdown",
+    "virementDetailTotal": "Transfer total",
+    "virementDetailColonnePoste": "Item",
+    "virementDetailColonneCategorie": "Category",
+    "virementDetailColonneMontant": "Amount",
+    "virementDetailArgentPoche": "Pocket money",
+    "virementDetailComblement": "Cash top-up",
+    "virementDetailAucuneLigne": "No breakdown available for this transfer.",
     "postesZoneAOptimiser": "To optimize",
     "postesZoneASurveiller": "To watch",
     "postesZoneAGarder": "To check"
@@ -1122,7 +1151,6 @@
     "champs": {
       "nom": "Name",
       "membre": "Member",
-      "compte": "Credited account",
       "dateDebut": "From",
       "dateFin": "Until (included)",
       "dateFinAide": "Leave empty for an open-ended policy.",
@@ -1154,13 +1182,13 @@
           "quoi": "For whom, and under what name?",
           "formule": "How is the amount calculated?",
           "validite": "Over which period does it apply?",
-          "compte": "Which account is it paid into?"
+          "compte": "From which account, and to which?"
         },
         "fiche": {
           "membre": "Member",
           "formule": "Formula",
           "validite": "Validity",
-          "compte": "Account"
+          "compte": "Accounts"
         },
         "nomAide": "A short name, to find it again in the list.",
         "modeVariableAide": "A share of the money left to live on, bounded by a floor and a cap.",
@@ -1177,12 +1205,12 @@
         "etapes": {
           "quoi": "For whom, and which month?",
           "combien": "How much, and why?",
-          "compte": "Which account is it paid into?"
+          "compte": "From which account, and to which?"
         },
         "fiche": {
           "membreMois": "Member and month",
           "montant": "Amount",
-          "compte": "Account"
+          "compte": "Accounts"
         },
         "resolutionAide": "Amount planned for that month before any exception.",
         "reprendreMontant": "Use this amount",
@@ -1195,7 +1223,19 @@
       "debutAnneeProchaine": "Start of next year",
       "sansFin": "No end",
       "finAnnee": "End of the year",
-      "unAn": "For 1 year"
+      "unAn": "For 1 year",
+      "routage": {
+        "pivot": "Funded from which account?",
+        "pivotAide": "Account the money comes from. If it matches the credited account, no transfer is simulated.",
+        "credites": "Paid into which account(s)?",
+        "creditesAide": "The account where the allowance is available and spent.",
+        "modeAvance": "Split across several accounts",
+        "modeSimple": "A single account",
+        "ajouterCompte": "Add an account",
+        "retirerCompte": "Remove this account",
+        "total": "Total",
+        "invalide": "Allocations must total 100%."
+      }
     },
     "apercu": {
       "colonneMois": "Month",

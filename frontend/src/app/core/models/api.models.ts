@@ -82,7 +82,13 @@ export type NaturePoste = 'EFFECTIF' | 'ESTIMATION';
 export type TypeRepartition = 'AUTO' | 'REVERSE_AUTO' | 'CUSTOM';
 
 export interface RepartitionPosteDto { membreId: string; nomMembre: string; quotePart: number; }
-export interface VentilationCompteDto { membreId: string; compteId: string; libelleCompte: string; }
+/**
+ * Ligne de **routage** d'un poste : un compte contrepartie du compte pivot.
+ * Le sens dépend du type de poste (CHARGE/RESERVE : contrepartie → pivot ;
+ * REVENU : pivot → contrepartie). `quotePart` est la part **dans la part du membre**
+ * (somme = 1 par membre). Voir `docs/01-principes-et-moteur.md` §8 bis.
+ */
+export interface VentilationCompteDto { membreId: string; compteId: string; libelleCompte: string; quotePart: number; }
 
 export interface PosteDto {
   id: string; type: TypePoste; description: string; categorieId?: string;
@@ -96,6 +102,8 @@ export interface PosteDto {
   potentielOptimisation: number;  // 1 (non optimisable) à 5 (très optimisable)
   deriveExterne: number;  // 1 (forte baisse) à 5 (forte hausse), 3 = neutre
   repartitions: RepartitionPosteDto[];
+  comptePivotId?: string;       // Compte où la transaction a physiquement lieu
+  libelleComptePivot?: string;
   ventilations: VentilationCompteDto[];
   posteOrigineId?: string;   // Poste dont ce poste est issu par révision de montant
   posteSuivantId?: string;   // Poste qui a remplacé celui-ci par révision de montant (calculé)
@@ -114,7 +122,8 @@ export interface PosteRequest {
   potentielOptimisation?: number;  // 1 (non optimisable) à 5 (très optimisable), défaut 3
   deriveExterne?: number;  // 1 (forte baisse) à 5 (forte hausse), 3 = neutre, défaut 3
   repartitions?: { membreId: string; quotePart: number; }[];
-  ventilations?: { membreId: string; compteId: string; }[];
+  comptePivotId?: string;       // null → résolu automatiquement côté serveur
+  ventilations?: { membreId: string; compteId: string; quotePart?: number; }[];
   inclureProrataTheorique?: boolean;  // null → true ; pertinent si type=REVENU et foyer multi-membres
 }
 export interface PosteRevisionRequest {
@@ -242,11 +251,21 @@ export interface ProrataPartageMembreDto {
 export type ModePolitiqueArgentPoche = 'VARIABLE' | 'FIXE';
 export type SourceArgentPoche = 'ALLOCATION' | 'POLITIQUE' | 'AUCUNE';
 
+/** Contrepartie d'un versement d'argent de poche : compte crédité et part du versement.
+ *  `quotePart` ∈ [0,1], somme = 1 sur l'ensemble des lignes (cf. `docs/01` §8 ter). */
+export interface LigneRoutagePocheDto {
+  compteId: string;
+  quotePart?: number;
+}
+
 export interface PolitiqueArgentPocheDto {
   id: string;
   scenarioId: string;
   membreId: string;
-  compteId: string;
+  /** Compte source finançant le versement. */
+  comptePivotId?: string;
+  /** Comptes de poche crédités par le versement. */
+  routage: LigneRoutagePocheDto[];
   nom: string;
   /** Mois de début inclus, format ISO "YYYY-MM". */
   dateDebut: string;
@@ -260,7 +279,9 @@ export interface PolitiqueArgentPocheDto {
 }
 export interface PolitiqueArgentPocheRequest {
   membreId: string;
-  compteId: string;
+  /** Omis → résolu par le serveur (compte primaire, sinon 1re contrepartie). */
+  comptePivotId?: string;
+  routage: LigneRoutagePocheDto[];
   nom: string;
   dateDebut: string;
   dateFin?: string;
@@ -275,14 +296,16 @@ export interface AllocationArgentPocheDto {
   id: string;
   scenarioId: string;
   membreId: string;
-  compteId: string;
+  comptePivotId?: string;
+  routage: LigneRoutagePocheDto[];
   mois: string;
   montant: number;
   raison?: string;
 }
 export interface AllocationArgentPocheRequest {
   membreId: string;
-  compteId: string;
+  comptePivotId?: string;
+  routage: LigneRoutagePocheDto[];
   mois: string;
   montant: number;
   raison?: string;
@@ -388,6 +411,23 @@ export interface VirementCompteDto {
   libelleCompteSource: string;
   compteDestinationId: string;
   libelleCompteDestination: string;
+  montant: number;
+}
+
+/** Nature d'une ligne de composition d'un virement — toutes ne sont pas rattachables à un
+ *  poste (argent de poche, comblement du découvert du compte destination). */
+export type OrigineVirement = 'POSTE' | 'ARGENT_POCHE' | 'COMBLEMENT_TRESORERIE';
+
+/** Une ligne de la composition d'un virement inter-comptes : « de quoi est fait ce
+ *  virement ». Montant toujours positif ; la somme des lignes égale le montant du virement.
+ *  `posteId`/`libelle`/`categorie*` sont `null` hors origine `POSTE`. */
+export interface VirementDetailLigneDto {
+  posteId: string | null;
+  libelle: string | null;
+  categorieId: string | null;
+  categorieNom: string | null;
+  type: TypePoste;
+  origine: OrigineVirement;
   montant: number;
 }
 

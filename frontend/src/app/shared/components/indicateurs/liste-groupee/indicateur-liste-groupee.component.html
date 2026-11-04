@@ -1,0 +1,62 @@
+<div class="liste-groupee">
+  @for (groupe of groupes(); track groupe.cle) {
+    <section class="liste-groupee__groupe">
+      <header class="liste-groupee__entete">
+        @if (groupe.membres?.length) {
+          <p-avatar-group class="liste-groupee__avatars">
+            @for (m of groupe.membres; track m.nom) {
+              <p-avatar
+                [label]="m.initiales"
+                shape="circle"
+                class="liste-groupee__avatar"
+                [ariaLabel]="m.nom"
+                [style.background-color]="m.couleur" />
+            }
+          </p-avatar-group>
+        }
+        <div class="liste-groupee__entete-texte">
+          <span class="liste-groupee__entete-libelle">{{ groupe.libelle }}</span>
+          @if (groupe.sousLibelle) {
+            <span class="liste-groupee__entete-sous-libelle">{{ groupe.sousLibelle }}</span>
+          }
+        </div>
+        <div class="liste-groupee__entete-total">
+          <span class="liste-groupee__entete-total-valeur">{{ groupe.totalAffiche }}</span>
+          @if (groupe.totalLibelle) {
+            <span class="liste-groupee__entete-total-libelle">{{ groupe.totalLibelle }}</span>
+          }
+        </div>
+      </header>
+
+      <ul class="liste-groupee__lignes">
+        @for (ligne of groupe.lignes; track ligne.cle) {
+          <li
+            class="liste-groupee__ligne"
+            [class.liste-groupee__ligne--interactive]="estCliquable(ligne)"
+            [attr.role]="estCliquable(ligne) ? 'button' : null"
+            [attr.tabindex]="estCliquable(ligne) ? 0 : null"
+            [attr.aria-label]="estCliquable(ligne) ? ligne.libelle + ' · ' + ligne.valeurAffichee : null"
+            (click)="cliquer(ligne)"
+            (keydown.enter)="cliquer(ligne)"
+            (keydown.space)="cliquer(ligne)">
+            <span class="liste-groupee__fleche" aria-hidden="true">→</span>
+            @if (ligne.membres?.length) {
+              <p-avatar-group class="liste-groupee__avatars">
+                @for (m of ligne.membres; track m.nom) {
+                  <p-avatar
+                    [label]="m.initiales"
+                    shape="circle"
+                    class="liste-groupee__avatar"
+                    [ariaLabel]="m.nom"
+                    [style.background-color]="m.couleur" />
+                }
+              </p-avatar-group>
+            }
+            <span class="liste-groupee__ligne-libelle">{{ ligne.libelle }}</span>
+            <span class="liste-groupee__ligne-valeur">{{ ligne.valeurAffichee }}</span>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+</div>

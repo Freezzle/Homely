@@ -14,6 +14,8 @@ import ch.homely.poche.AllocationArgentPoche;
 import ch.homely.poche.AllocationArgentPocheRepository;
 import ch.homely.poche.PolitiqueArgentPoche;
 import ch.homely.poche.PolitiqueArgentPocheRepository;
+import ch.homely.poche.RoutageAllocationPoche;
+import ch.homely.poche.RoutagePolitiquePoche;
 import ch.homely.poste.Poste;
 import ch.homely.poste.PosteRepository;
 import ch.homely.poste.RepartitionPoste;
@@ -256,7 +258,7 @@ public class ScenarioService {
             PolitiqueArgentPoche pc = new PolitiqueArgentPoche();
             pc.setScenario(copie);
             pc.setMembre(sp.getMembre());
-            pc.setCompte(sp.getCompte());
+            pc.setComptePivot(sp.getComptePivot());
             pc.setNom(sp.getNom());
             pc.setDateDebut(sp.getDateDebut());
             pc.setDateFin(sp.getDateFin());
@@ -265,6 +267,15 @@ public class ScenarioService {
             pc.setPourcentage(sp.getPourcentage());
             pc.setPlafond(sp.getPlafond());
             pc.setMontantFixe(sp.getMontantFixe());
+            // Le routage est propre à chaque politique : recréer les lignes plutôt que
+            // de partager celles de la source (orphanRemoval les détacherait).
+            for (RoutagePolitiquePoche src : sp.getRoutage()) {
+                RoutagePolitiquePoche r = new RoutagePolitiquePoche();
+                r.setPolitique(pc);
+                r.setCompte(src.getCompte());
+                r.setQuotePart(src.getQuotePart());
+                pc.getRoutage().add(r);
+            }
             nouvelles.add(pc);
         }
         politiqueArgentPocheRepo.saveAll(nouvelles);
@@ -279,10 +290,17 @@ public class ScenarioService {
             AllocationArgentPoche ac = new AllocationArgentPoche();
             ac.setScenario(copie);
             ac.setMembre(sa.getMembre());
-            ac.setCompte(sa.getCompte());
+            ac.setComptePivot(sa.getComptePivot());
             ac.setMois(sa.getMois());
             ac.setMontant(sa.getMontant());
             ac.setRaison(sa.getRaison());
+            for (RoutageAllocationPoche src : sa.getRoutage()) {
+                RoutageAllocationPoche r = new RoutageAllocationPoche();
+                r.setAllocation(ac);
+                r.setCompte(src.getCompte());
+                r.setQuotePart(src.getQuotePart());
+                ac.getRoutage().add(r);
+            }
             nouvelles.add(ac);
         }
         allocationArgentPocheRepo.saveAll(nouvelles);

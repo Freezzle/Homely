@@ -7,6 +7,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { PeriodRailComponent } from '../../shared/components/period-rail/period-rail.component';
 import { DashboardView, ViewSwitcherComponent } from '../../shared/components/view-switcher/view-switcher.component';
 import { IndicatorDrawerComponent } from './shared/components/indicator-drawer/indicator-drawer.component';
+import { VirementDetailDialogComponent } from './indicators/virements-comptes/virement-detail-dialog.component';
 import { DashboardFacadeService, DashboardViewKey } from './shared/services/dashboard-facade.service';
 
 @Component({
@@ -19,6 +20,7 @@ import { DashboardFacadeService, DashboardViewKey } from './shared/services/dash
     PeriodRailComponent,
     ViewSwitcherComponent,
     IndicatorDrawerComponent,
+    VirementDetailDialogComponent,
   ],
   providers: [DashboardFacadeService],
   templateUrl: './dashboard-shell.component.html',

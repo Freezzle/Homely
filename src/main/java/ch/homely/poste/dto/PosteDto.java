@@ -27,6 +27,8 @@ public record PosteDto(
         NaturePoste nature,
         BigDecimal estimPourcentage,  // Pourcentage d'estimation (nullable si nature=EFFECTIF)
         TypeRepartition typeRepartition,
+        UUID comptePivotId,        // compte où la transaction a physiquement lieu (null = mode hérité)
+        String libelleComptePivot, // libellé du compte pivot (confort d'affichage)
         int ordre,
         int importance,  // 1 (non vital) à 5 (vital) — descriptif, sans impact sur les calculs
         int potentielOptimisation,  // 1 (non optimisable) à 5 (très optimisable) — descriptif
@@ -39,5 +41,5 @@ public record PosteDto(
         boolean inclureProrataTheorique  // pris en compte dans le prorata théorique des membres (défaut true) ; pertinent seulement si type=REVENU et foyer multi-membres
 ) {
     public record RepartitionPosteDto(UUID membreId, String nomMembre, BigDecimal quotePart) {}
-    public record VentilationCompteDto(UUID membreId, UUID compteId, String libelleCompte) {}
+    public record VentilationCompteDto(UUID membreId, UUID compteId, String libelleCompte, BigDecimal quotePart) {}
 }

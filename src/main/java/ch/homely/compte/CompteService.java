@@ -109,8 +109,8 @@ public class CompteService {
         // primaire actif, sans entrant correspondant nulle part) ou des charges qui
         // disparaissent silencieusement de la simulation de trésorerie.
         if (posteRepo.existsByVentilations_Compte_Id(compteId)
-                || politiqueArgentPocheRepo.existsByCompte_Id(compteId)
-                || allocationArgentPocheRepo.existsByCompte_Id(compteId)
+                || politiqueArgentPocheRepo.existsByCompteReference(compteId)
+                || allocationArgentPocheRepo.existsByCompteReference(compteId)
                 || compteMembreRepo.existsByCompte_IdAndEstPrimaireTrue(compteId)) {
             throw new RegleMetierException(
                     CodesErreur.COMPTE_REFERENCE_SUPPRESSION,

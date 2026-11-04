@@ -19,6 +19,8 @@ public final class CodesErreur {
     public static final String FOYER_MEMBRES_INVALIDES         = "FOYER_MEMBRES_INVALIDES";
     public static final String COMPTE_SANS_MEMBRE              = "COMPTE_SANS_MEMBRE";
     public static final String VENTILATION_COMPTE_NON_RATTACHE = "VENTILATION_COMPTE_NON_RATTACHE";
+    public static final String ROUTAGE_INVALIDE                = "ROUTAGE_INVALIDE";
+    public static final String COMPTE_PIVOT_REQUIS             = "COMPTE_PIVOT_REQUIS";
     public static final String ONBOARDING_ORDRE_INVALIDE       = "ONBOARDING_ORDRE_INVALIDE";
     public static final String ERREUR_INTERNE                  = "ERREUR_INTERNE";
     public static final String POSTE_NON_RECURRENT             = "POSTE_NON_RECURRENT";

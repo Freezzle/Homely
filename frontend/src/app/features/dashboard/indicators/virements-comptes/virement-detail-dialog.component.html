@@ -1,0 +1,49 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="!$event && fermer.emit()"
+  [header]="titre()"
+  [modal]="true"
+  [dismissableMask]="true"
+  class="w-full max-w-xl">
+  <div class="virement-detail">
+    <p class="virement-detail__total">
+      <span class="virement-detail__total-libelle">{{ t.dashboard.virementDetailTotal }}</span>
+      <span class="virement-detail__total-valeur montant-neutre">{{ montantTotal() | montant:devise() }}</span>
+    </p>
+
+    @if (chargement()) {
+      <div class="virement-detail__skeleton">
+        @for (i of [1, 2, 3]; track i) {
+          <p-skeleton height="2rem" borderRadius="0.5rem" />
+        }
+      </div>
+    } @else {
+      <div class="table-scroll">
+        <table class="table-sticky-1 virement-detail__table">
+          <thead>
+            <tr>
+              <th>{{ t.dashboard.virementDetailColonnePoste }}</th>
+              <th>{{ t.dashboard.virementDetailColonneCategorie }}</th>
+              <th class="virement-detail__col-montant">{{ t.dashboard.virementDetailColonneMontant }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (ligne of lignesAffichees(); track ligne.cle) {
+              <tr>
+                <td>{{ ligne.libelle }}</td>
+                <td class="virement-detail__categorie">{{ ligne.categorie }}</td>
+                <td class="virement-detail__col-montant" [class]="ligne.classeMontant">
+                  {{ ligne.montant | montant:devise() }}
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="3" class="virement-detail__vide">{{ t.dashboard.virementDetailAucuneLigne }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</p-dialog>

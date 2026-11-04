@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import {
   ProjectionAnnuelleDto, VentilationsDto, VentilationAnnuelleDto, EvenementDto, TauxEffortMembreDto,
   ProrataPartageMembreDto,
-  TresorerieCumuleeDto, VirementCompteDto, RepartitionCategorieDto, TypeCategorie,
+  TresorerieCumuleeDto, VirementCompteDto, VirementDetailLigneDto, RepartitionCategorieDto, TypeCategorie,
 } from '../models/api.models';
 
 /** T9.3 — Service HTTP projection scopé par foyer/scénario. */
@@ -95,6 +95,25 @@ export class ProjectionService {
   virementsComptesAnnuel(foyerId: string, scenarioId: string, annee: number, membreId: string) {
     return this.http.get<VirementCompteDto[]>(
       `${this.base(foyerId, scenarioId)}/virements-comptes-annuel`, { params: { annee, membreId } }
+    );
+  }
+
+  /** Composition d'un virement d'un mois : ce que le mouvement source → destination doit à
+   *  chaque poste, à l'argent de poche et au comblement de trésorerie. */
+  virementDetail(foyerId: string, scenarioId: string, annee: number, mois: number,
+                 compteSourceId: string, compteDestinationId: string) {
+    return this.http.get<VirementDetailLigneDto[]>(
+      `${this.base(foyerId, scenarioId)}/virements-comptes/detail`,
+      { params: { annee, mois, compteSourceId, compteDestinationId } }
+    );
+  }
+
+  /** Variante annuelle de {@link virementDetail} : composantes sommées sur les 12 mois. */
+  virementDetailAnnuel(foyerId: string, scenarioId: string, annee: number,
+                       compteSourceId: string, compteDestinationId: string) {
+    return this.http.get<VirementDetailLigneDto[]>(
+      `${this.base(foyerId, scenarioId)}/virements-comptes-annuel/detail`,
+      { params: { annee, compteSourceId, compteDestinationId } }
     );
   }
 

@@ -175,20 +175,6 @@ public class ProjectionController {
         return projectionService.recapComptesMembreAnnuel(foyerId, scenarioId, annee, membreId);
     }
 
-    /** Détail poste par poste (+ argent de poche éventuel) alimentant un compte donné,
-     * pour un membre et un mois donnés — affiché en liste lorsqu'un compte est sélectionné
-     * dans la vue "Virements des comptes" (org-chart hub & rayons). */
-    @GetMapping("/comptes-recap/postes")
-    public List<ComptePosteDetailDto> comptePostes(@PathVariable UUID foyerId,
-                                                    @PathVariable UUID scenarioId,
-                                                    @RequestParam int annee,
-                                                    @RequestParam int mois,
-                                                    @RequestParam UUID membreId,
-                                                    @RequestParam UUID compteId) {
-        multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
-        return projectionService.recapComptePostes(foyerId, scenarioId, annee, mois, membreId, compteId);
-    }
-
     /** Virements inter-comptes simulés pour un mois (dashboard "Virements des comptes") : paires
      * compte source (primaire) → compte destination (crédité), filtrées pour ne conserver que
      * celles dont le compte destination inclut {@code membreId} (un membre ne voit jamais les
@@ -212,5 +198,30 @@ public class ProjectionController {
                                                             @RequestParam UUID membreId) {
         multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
         return projectionService.virementsComptesAnnuel(foyerId, scenarioId, annee, membreId);
+    }
+
+    /** Composition poste par poste d'un virement simulé d'un mois : ce qui, dans ce
+     * mouvement {@code compteSourceId} → {@code compteDestinationId}, vient de quel poste
+     * (plus les lignes « argent de poche » et « comblement de trésorerie »). */
+    @GetMapping("/virements-comptes/detail")
+    public List<VirementDetailLigneDto> virementDetail(@PathVariable UUID foyerId,
+                                                         @PathVariable UUID scenarioId,
+                                                         @RequestParam int annee,
+                                                         @RequestParam int mois,
+                                                         @RequestParam UUID compteSourceId,
+                                                         @RequestParam UUID compteDestinationId) {
+        multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
+        return projectionService.virementDetail(foyerId, scenarioId, annee, mois, compteSourceId, compteDestinationId);
+    }
+
+    /** Variante annuelle de {@link #virementDetail} : composantes sommées sur les 12 mois. */
+    @GetMapping("/virements-comptes-annuel/detail")
+    public List<VirementDetailLigneDto> virementDetailAnnuel(@PathVariable UUID foyerId,
+                                                               @PathVariable UUID scenarioId,
+                                                               @RequestParam int annee,
+                                                               @RequestParam UUID compteSourceId,
+                                                               @RequestParam UUID compteDestinationId) {
+        multiTenant.verifierAcces(foyerId, RoleFoyer.VIEWER);
+        return projectionService.virementDetailAnnuel(foyerId, scenarioId, annee, compteSourceId, compteDestinationId);
     }
 }

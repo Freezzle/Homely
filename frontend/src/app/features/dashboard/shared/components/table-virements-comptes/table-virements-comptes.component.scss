@@ -98,6 +98,13 @@
   // Indentation légère des lignes de données par rapport aux subheaders
   &__cell-dest { padding-left: var(--app-space-6) !important; }
 
+  // Cellules ouvrant le détail de la composition du virement (la case "fait" reste
+  // en dehors de la zone cliquable pour ne pas déclencher les deux actions à la fois).
+  &__cell-dest--cliquable,
+  &__cell-amount--cliquable {
+    cursor: pointer;
+  }
+
   &__dest { display: flex; align-items: center; gap: var(--app-space-2); }
   &__dest-name {
     font-weight: var(--app-weight-bold);

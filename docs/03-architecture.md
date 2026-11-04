@@ -56,7 +56,7 @@ ch.homely
 ├── scenario/     Scenario, RepartitionPeriode/Part, duplication/référence
 ├── poste/        Poste, RepartitionPoste, VentilationCompte, PosteValidator,
 │                 PosteService (reviser/annuler/decaler/cloturer/reactiver)
-├── poche/        PolitiqueArgentPoche, AllocationArgentPoche, ArgentPocheService
+├── poche/        PolitiqueArgentPoche, AllocationArgentPoche, routage, ArgentPocheService
 ├── dashboard/    Seuils d'interprétation du dashboard (config, sans logique moteur)
 ├── moteur/       ★ MoteurCalcul (pur, records immuables) + événements + argent de poche
 └── projection/   ProjectionService (cache Caffeine) + controllers (annuelle,

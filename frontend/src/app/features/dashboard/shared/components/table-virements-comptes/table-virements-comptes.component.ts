@@ -11,17 +11,19 @@ import { I18nService } from '../../../../../core/i18n/i18n.service';
 import { DecompositionService } from '../../../../../core/services/decomposition.service';
 import { MontantPipe } from '../../../../../core/pipes/format.pipes';
 import { CompteDto, MembreDto, VirementCompteDto } from '../../../../../core/models/api.models';
-
-/** Compte enrichi de ses propriétaires effectifs (résolus depuis `comptes`/`membres`). */
-interface CompteAvecProprietaires {
-  id: string;
-  libelle: string;
-  proprietaires: MembreDto[];
-}
+import {
+  CompteAvecProprietaires,
+  GroupeVirementsSource,
+  cleVirement,
+  enrichirComptes,
+  grouperParCompteSource,
+  resoudreVirements,
+} from '../../utils/virements-comptes.util';
 
 /** Un virement enrichi de ses comptes source/destination résolus + statut "fait" local. */
 interface VirementEnrichi {
   id: string;
+  cle: string;
   source: CompteAvecProprietaires;
   destination: CompteAvecProprietaires;
   montant: number;
@@ -33,11 +35,7 @@ interface VirementEnrichi {
   basculeDesactivee: boolean;
 }
 
-interface SourceGroup {
-  compteSource: CompteAvecProprietaires;
-  virements: VirementEnrichi[];
-  total: number;
-}
+type SourceGroup = GroupeVirementsSource & { virements: VirementEnrichi[] };
 
 /** Union des lignes affichées dans la `p-table` : soit un sous-en-tête de groupe (compte
  *  source), soit une ligne de virement. */
@@ -91,59 +89,36 @@ export class TableVirementsComptesComponent {
 
   /** Émis quand l'utilisateur clique sur le drapeau d'un virement — le parent tient l'état. */
   readonly virementBascule = output<{ virementId: string; fait: boolean }>();
+  /** Émis quand l'utilisateur clique sur une ligne de destination (clé `source::destination`)
+   *  — le parent ouvre alors le détail de la composition du virement. */
+  readonly virementClick = output<string>();
 
   /** Clé stable d'un virement (pas d'id serveur — la paire source/destination l'identifie). */
   protected cleVirement(v: Pick<VirementCompteDto, 'compteSourceId' | 'compteDestinationId'>): string {
-    return `${v.compteSourceId}::${v.compteDestinationId}`;
+    return cleVirement(v);
   }
 
-  private readonly comptesEnrichis = computed<Map<string, CompteAvecProprietaires>>(() => {
-    const membresParId = new Map(this.membres().map((m) => [m.id, m]));
-    const map = new Map<string, CompteAvecProprietaires>();
-    for (const c of this.comptes()) {
-      map.set(c.id, {
-        id: c.id,
-        libelle: c.libelle,
-        proprietaires: c.membreIds.map((id) => membresParId.get(id)).filter((m): m is MembreDto => !!m),
-      });
-    }
-    return map;
-  });
+  private readonly comptesEnrichis = computed<Map<string, CompteAvecProprietaires>>(
+    () => enrichirComptes(this.comptes(), this.membres()),
+  );
 
   private readonly virementsEnrichis = computed<VirementEnrichi[]>(() => {
-    const comptes = this.comptesEnrichis();
     const faits = this.virementsFaits();
     const membreActuelId = this.membreActuelId();
-    return this.virements().map((v) => {
-      const source = comptes.get(v.compteSourceId) ?? { id: v.compteSourceId, libelle: v.libelleCompteSource, proprietaires: [] };
-      const destination = comptes.get(v.compteDestinationId) ?? { id: v.compteDestinationId, libelle: v.libelleCompteDestination, proprietaires: [] };
-      const cle = this.cleVirement(v);
-      return {
-        id: cle,
-        source, destination,
-        montant: v.montant,
-        fait: faits.has(cle),
-        interMembres: this.estInterMembres(source, destination),
-        basculeDesactivee: membreActuelId != null && !source.proprietaires.some((m) => m.id === membreActuelId),
-      };
-    });
+    return resoudreVirements(this.virements(), this.comptesEnrichis()).map((v) => ({
+      ...v,
+      id: v.cle,
+      fait: faits.has(v.cle),
+      interMembres: this.estInterMembres(v.source, v.destination),
+      basculeDesactivee: membreActuelId != null && !v.source.proprietaires.some((m) => m.id === membreActuelId),
+    }));
   });
 
   /** Groupes calculés (source → liste de virements sortants + total) — l'ordre des groupes
    *  suit l'ordre naturel des `virements()` reçus (le service trie en amont, pas le composant). */
-  protected readonly groupes = computed<SourceGroup[]>(() => {
-    const parSource = new Map<string, SourceGroup>();
-    for (const v of this.virementsEnrichis()) {
-      let groupe = parSource.get(v.source.id);
-      if (!groupe) {
-        groupe = { compteSource: v.source, virements: [], total: 0 };
-        parSource.set(v.source.id, groupe);
-      }
-      groupe.virements.push(v);
-      groupe.total += v.montant;
-    }
-    return [...parSource.values()];
-  });
+  protected readonly groupes = computed<SourceGroup[]>(
+    () => grouperParCompteSource(this.virementsEnrichis()) as SourceGroup[],
+  );
 
   /** Aplatit les groupes en une seule liste ordonnée exploitable par `p-table`. */
   protected readonly lignes = computed<LigneTable[]>(() => {
@@ -171,5 +146,10 @@ export class TableVirementsComptesComponent {
   protected onBasculerStatut(v: VirementEnrichi, fait: boolean): void {
     if (v.basculeDesactivee) return;
     this.virementBascule.emit({ virementId: v.id, fait });
+  }
+
+  /** Clic sur la ligne (hors case "fait") : demande l'ouverture du détail du virement. */
+  protected onOuvrirDetail(v: VirementEnrichi): void {
+    this.virementClick.emit(v.cle);
   }
 }

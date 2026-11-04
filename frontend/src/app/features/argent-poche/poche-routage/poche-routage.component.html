@@ -1,0 +1,77 @@
+<!-- Compte pivot : la source qui finance le versement. -->
+<div class="bloc">
+  <app-choix-cartes
+    [label]="t.argentPoche.form.routage.pivot"
+    [options]="optionsPivot()"
+    [value]="comptePivotId()"
+    largeurMin="11rem"
+    (valueChange)="choisirPivot($event)"
+  />
+  <p class="aide">{{ t.argentPoche.form.routage.pivotAide }}</p>
+</div>
+
+<!-- Contreparties : les comptes de poche crédités par le versement. -->
+<div class="bloc">
+  <p class="libelle">{{ t.argentPoche.form.routage.credites }}</p>
+  <p class="aide">{{ t.argentPoche.form.routage.creditesAide }}</p>
+
+  @if (!modeAvance()) {
+    <app-choix-cartes
+      [options]="optionsCredit()"
+      [value]="compteSimple()"
+      largeurMin="11rem"
+      (valueChange)="choisirCompteSimple($event)"
+    />
+    <button type="button" class="lien" (click)="basculerAvance(true)">
+      {{ t.argentPoche.form.routage.modeAvance }}
+    </button>
+  } @else {
+    <div class="routage-bloc">
+      @for (l of lignes(); track $index) {
+        <div class="routage-ligne">
+          <app-select
+            class="routage-compte"
+            [options]="optionsSelect()"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="l.compteId"
+            (ngModelChange)="majLigneCompte($index, $event)"
+          />
+          <app-input-number
+            class="routage-part"
+            [min]="0"
+            [max]="100"
+            suffix=" %"
+            [ngModel]="l.part"
+            (ngModelChange)="majLignePart($index, $event)"
+          />
+          @if (lignes().length > 1) {
+            <button
+              type="button"
+              class="retirer"
+              [attr.aria-label]="t.argentPoche.form.routage.retirerCompte"
+              (click)="retirerLigne($index)"
+            >
+              <i class="pi pi-times"></i>
+            </button>
+          }
+        </div>
+      }
+      <div class="routage-pied">
+        <button type="button" class="lien" (click)="ajouterLigne()">
+          {{ t.argentPoche.form.routage.ajouterCompte }}
+        </button>
+        @if (lignes().length > 1) {
+          <span class="total" [class.total--ok]="valide()" [class.total--ko]="!valide()">
+            {{ t.argentPoche.form.routage.total }} : {{ total() }} %
+          </span>
+        }
+      </div>
+    </div>
+    @if (!avanceImpose()) {
+      <button type="button" class="lien" (click)="basculerAvance(false)">
+        {{ t.argentPoche.form.routage.modeSimple }}
+      </button>
+    }
+  }
+</div>

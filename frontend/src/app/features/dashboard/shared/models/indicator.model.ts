@@ -2,6 +2,7 @@ import { Type } from '@angular/core';
 import { TonCarte, TonIndicateur } from '../../../../shared/components/indicateurs/tons';
 import { SegmentBarreEmpilee } from '../../../../shared/components/indicateurs/barre-empilee/indicateur-barre-empilee.component';
 import { EtapeEntonnoir } from '../../../../shared/components/indicateurs/entonnoir/indicateur-entonnoir.component';
+import { GroupeListeGroupee } from '../../../../shared/components/indicateurs/liste-groupee/indicateur-liste-groupee.component';
 import { SegmentGaufre } from '../../../../shared/components/indicateurs/gaufre/indicateur-gaufre.component';
 import { CelluleHeatmap, EntreeLegendeHeatmap } from '../../../../shared/components/indicateurs/heatmap/indicateur-heatmap.component';
 
@@ -32,6 +33,9 @@ export type VisuelIndicateur =
       libelleAtteint?: string;
     }
   | { type: 'entonnoir'; etapes: EtapeEntonnoir[] }
+  /** Liste à en-têtes de groupe (ex. virements groupés par compte source). Les lignes sont
+   *  cliquables si `onLigneClick` est fourni ; la clé transmise est celle de la ligne. */
+  | { type: 'liste-groupee'; groupes: GroupeListeGroupee[]; onLigneClick?: (cle: string) => void }
   | { type: 'sparkline'; serie: number[]; valeur: string; delta: number; ton?: TonIndicateur }
   /** Valeur clé + badge de variation vs période précédente (`delta` null = pas de référence). */
   | {
@@ -69,6 +73,8 @@ export interface Indicator {
   // ─── Ce qui va dans le drawer ───
   /** Composant Angular monté dans le body du drawer. */
   drawerContent: Type<unknown>;
+  /** Masque le bouton « Voir le détail » de la carte (le contenu y est déjà complet). */
+  sansBoutonDetail?: boolean;
 }
 
 /** Couple indicateur + payload transmis au drawer à l'ouverture. */

@@ -71,6 +71,14 @@
   cursor: pointer;
 }
 
+/* Répartition prorata/inversée : la position du curseur n'est qu'un instantané,
+   on la neutralise visuellement sans désactiver l'interaction (glisser le curseur
+   reste le moyen de repasser à une part fixe). */
+.curseur--dynamique {
+  accent-color: var(--app-line-2);
+  opacity: 0.55;
+}
+
 .membres {
   display: flex;
   flex-wrap: wrap;
@@ -130,4 +138,62 @@
   font-size: var(--app-text-sm);
   text-decoration: underline;
   cursor: pointer;
+}
+
+.aide {
+  font-size: var(--app-text-xs);
+  color: var(--app-ink-muted);
+  margin-bottom: var(--app-space-2);
+}
+
+.routage-membre {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-space-2);
+  padding: var(--app-space-3);
+  margin-bottom: var(--app-space-3);
+  background: var(--app-bg);
+  border-radius: var(--app-radius-card);
+}
+
+.routage-ligne {
+  display: flex;
+  align-items: center;
+  gap: var(--app-space-2);
+}
+
+.routage-compte {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.routage-part {
+  flex: 0 0 7rem;
+}
+
+.routage-pied {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--app-space-3);
+  flex-wrap: wrap;
+}
+
+.retirer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  background: none;
+  border: none;
+  border-radius: var(--app-radius-pill);
+  color: var(--app-ink-muted);
+  cursor: pointer;
+}
+
+.retirer:hover {
+  color: var(--app-danger);
+  background: var(--app-card);
 }

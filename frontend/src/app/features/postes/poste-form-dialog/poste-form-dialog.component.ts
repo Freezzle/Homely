@@ -26,7 +26,11 @@ import { ParcoursGuideComponent } from '../../../shared/components/parcours-guid
 import { EtapeParcours, LigneFiche, TonBadgeParcours } from '../../../shared/components/parcours-guide/parcours-guide.model';
 import { PosteEcheancier } from '../../../shared/components/echeancier-annuel/echeancier.model';
 import { legendeApercuPeriodicite } from '../../../shared/components/echeancier-annuel/poste-apercu-periodicite/poste-apercu-periodicite.component';
-import { RepartitionSaisie } from './components/poste-repartition/repartition-saisie.model';
+import { LigneRoutage, RepartitionSaisie } from './components/poste-repartition/repartition-saisie.model';
+import {
+  compteUniqueDe, ligneUnique, routageDepuisDto, routageMembreValide,
+  routageMultiComptes, routageVersDto,
+} from './components/poste-repartition/routage.util';
 import { calculerParts } from './components/poste-repartition/repartition.util';
 import { EtapeQuoiComponent } from './etapes/etape-quoi.component';
 import { EtapeCombienComponent } from './etapes/etape-combien.component';
@@ -150,7 +154,8 @@ export class PosteFormDialogComponent {
 
   /** Saisie de la répartition : source de vérité de l'étape, projetée dans le `FormArray`. */
   repartitionSaisie = signal<RepartitionSaisie>({
-    typeRepartition: 'AUTO', selection: [], parts: {}, comptes: {}, comptesSepares: false,
+    typeRepartition: 'AUTO', selection: [], parts: {},
+    comptePivot: null, routage: {}, routageAvance: false,
   });
 
   /** Date de référence des raccourcis de l'étape Validité (jamais une date en dur). */
@@ -323,20 +328,22 @@ export class PosteFormDialogComponent {
     return resumeAnalyse(this.t, v.importance ?? 3, v.potentielOptimisation ?? 3, v.deriveExterne ?? 3);
   }
 
-  /** « Dylan 58 % · Camille 42 % · Compte joint » — le compte n'apparaît que s'il est commun. */
+  /**
+   * « Dylan 58 % · Camille 42 % · Compte joint » — le compte affiché est le pivot.
+   * En répartition AUTO/REVERSE_AUTO les parts dépendent de la période : la fiche
+   * se contente des noms suivis de la mention « dynamique ».
+   */
   private resumeRepartition(): string | null {
     const s = this.repartitionSaisie();
     if (!s.selection.length) return null;
     const membres = this.membresActifs().filter(m => s.selection.includes(m.id));
+    const dynamique = s.typeRepartition === 'AUTO' || s.typeRepartition === 'REVERSE_AUTO';
     const parts = membres.map(m =>
-      membres.length === 1 ? m.nom : `${m.nom} ${Math.round(s.parts[m.id] ?? 0)} %`,
+      membres.length === 1 || dynamique ? m.nom : `${m.nom} ${Math.round(s.parts[m.id] ?? 0)} %`,
     );
-    const comptesChoisis = new Set(membres.map(m => s.comptes[m.id] ?? null));
-    if (comptesChoisis.size === 1) {
-      const compteId = [...comptesChoisis][0];
-      const libelle = this.comptes().find(c => c.id === compteId)?.libelle;
-      if (libelle) parts.push(libelle);
-    }
+    if (dynamique && membres.length > 1) parts.push(this.t.poste.form.partDynamique);
+    const libelle = this.comptes().find(c => c.id === s.comptePivot)?.libelle;
+    if (libelle) parts.push(libelle);
     return parts.join(' · ');
   }
 
@@ -405,22 +412,39 @@ export class PosteFormDialogComponent {
   });
 
   /**
-   * Les comptes arrivent en asynchrone : dès qu'ils sont là, on complète les
-   * ventilations encore vides par le compte par défaut de chaque membre (sans
-   * jamais écraser un choix déjà fait).
+   * Les comptes arrivent en asynchrone : dès qu'ils sont là, on complète le compte
+   * pivot et les routages encore vides par le compte par défaut de chaque membre
+   * (sans jamais écraser un choix déjà fait).
    */
   private readonly _completerComptesParDefaut = effect(() => {
     const comptes = this.comptes();
     if (!comptes.length || !this.visible()) return;
     untracked(() => {
       const saisie = this.repartitionSaisie();
-      const manquants = saisie.selection.filter(id => (saisie.parts[id] ?? 0) > 0 && !saisie.comptes[id]);
-      if (!manquants.length) return;
-      const complets = { ...saisie.comptes };
-      for (const id of manquants) complets[id] = this.defaultCompteIdForMembre(id);
-      this.appliquerRepartition({ ...saisie, comptes: complets }, false);
+      const manquants = saisie.selection.filter(
+        id => (saisie.parts[id] ?? 0) > 0 && !compteUniqueDe(saisie.routage, id),
+      );
+      if (!manquants.length && saisie.comptePivot) return;
+      const routage = { ...saisie.routage };
+      for (const id of manquants) routage[id] = ligneUnique(this.defaultCompteIdForMembre(id));
+      const comptePivot = saisie.comptePivot ?? this.pivotParDefaut(routage, saisie.parts);
+      this.appliquerRepartition({ ...saisie, routage, comptePivot }, false);
     });
   });
+
+  /**
+   * Pivot proposé par défaut : le compte du membre majoritaire, à défaut le premier
+   * compte du foyer. Reproduit la règle de résolution appliquée côté serveur.
+   */
+  private pivotParDefaut(
+    routage: Record<string, readonly LigneRoutage[]>,
+    parts: Record<string, number>,
+  ): string | null {
+    const majoritaire: string | undefined = Object.keys(routage)
+      .sort((a, b) => (parts[b] ?? 0) - (parts[a] ?? 0) || a.localeCompare(b))[0];
+    const lignes = majoritaire ? routage[majoritaire] : undefined;
+    return lignes?.[0]?.compteId ?? this.comptes()[0]?.id ?? null;
+  }
 
   // ── Initialisation ────────────────────────────────────────────────────
 
@@ -440,14 +464,15 @@ export class PosteFormDialogComponent {
     // AUTO par défaut, y compris pour un foyer mono-membre : la répartition du
     // scénario lui attribue déjà 100 %, et le payload reste identique à l'existant.
     const typeRepartition: TypeRepartition = 'AUTO';
-    const comptes = this.comptesParDefaut(selection);
-    const comptesDistincts = new Set(selection.map(id => comptes[id] ?? null));
+    const parts = calculerParts(membres, selection, typeRepartition, this.partsAuto());
+    const routage = this.routageParDefaut(selection);
     this.appliquerRepartition({
       typeRepartition,
       selection,
-      parts: calculerParts(membres, selection, typeRepartition, this.partsAuto()),
-      comptes,
-      comptesSepares: comptesDistincts.size > 1,
+      parts,
+      comptePivot: this.pivotParDefaut(routage, parts),
+      routage,
+      routageAvance: false,
     }, false);
 
     this.form.markAsPristine();
@@ -478,29 +503,29 @@ export class PosteFormDialogComponent {
     const membres = this.membresActifs();
     const typeRepartition = (p.typeRepartition ?? 'AUTO') as TypeRepartition;
     const parts: Record<string, number> = {};
-    const comptes: Record<string, string | null> = {};
     for (const m of membres) {
       const rep = custom ? p.repartitions?.find(r => r.membreId === m.id) : undefined;
       parts[m.id] = custom ? Math.round((rep?.quotePart ?? 0) * 10000) / 100 : 0;
-      comptes[m.id] = p.ventilations?.find(v => v.membreId === m.id)?.compteId ?? null;
     }
     const selection = custom
       ? membres.filter(m => parts[m.id] > 0).map(m => m.id)
       : membres.map(m => m.id);
     if (!custom) Object.assign(parts, calculerParts(membres, selection, typeRepartition, this.partsAuto()));
 
-    const comptesRetenus = { ...this.comptesParDefaut(selection) };
+    // Un membre sans ligne de routage enregistrée retombe sur son compte par défaut.
+    const existant = routageDepuisDto(p.ventilations, selection);
+    const routage = { ...this.routageParDefaut(selection) };
     for (const id of selection) {
-      if (comptes[id]) comptesRetenus[id] = comptes[id];
+      if (existant[id]?.length) routage[id] = existant[id];
     }
-    const comptesDistincts = new Set(selection.map(id => comptesRetenus[id] ?? null));
 
     this.appliquerRepartition({
       typeRepartition,
       selection,
       parts,
-      comptes: comptesRetenus,
-      comptesSepares: comptesDistincts.size > 1,
+      comptePivot: p.comptePivotId ?? this.pivotParDefaut(routage, parts),
+      routage,
+      routageAvance: routageMultiComptes(routage, selection),
     }, false);
 
     this.form.markAsPristine();
@@ -510,10 +535,10 @@ export class PosteFormDialogComponent {
     this._focusDescriptionFait = true; // pas d'autofocus surprise en édition
   }
 
-  private comptesParDefaut(selection: readonly string[]): Record<string, string | null> {
-    const out: Record<string, string | null> = {};
+  private routageParDefaut(selection: readonly string[]): Record<string, readonly LigneRoutage[]> {
+    const out: Record<string, readonly LigneRoutage[]> = {};
     for (const m of this.membresActifs()) {
-      out[m.id] = selection.includes(m.id) ? this.defaultCompteIdForMembre(m.id) : null;
+      if (selection.includes(m.id)) out[m.id] = ligneUnique(this.defaultCompteIdForMembre(m.id));
     }
     return out;
   }
@@ -602,10 +627,10 @@ export class PosteFormDialogComponent {
       const id = c.get('membreId')?.value as string;
       const selectionne = saisie.selection.includes(id);
       const quotePart = selectionne ? saisie.parts[id] ?? 0 : 0;
-      c.patchValue(
-        { quotePart, compteId: quotePart > 0 ? saisie.comptes[id] ?? null : null },
-        { emitEvent: false },
-      );
+      // `compteId` n'est plus envoyé à l'API (les ventilations viennent du routage) :
+      // on le garde synchronisé sur la 1re contrepartie pour l'affichage hérité.
+      const compteId = quotePart > 0 ? saisie.routage[id]?.[0]?.compteId ?? null : null;
+      c.patchValue({ quotePart, compteId }, { emitEvent: false });
       this.definirValiditeCompte(c, quotePart > 0);
     });
 
@@ -626,9 +651,11 @@ export class PosteFormDialogComponent {
     return null;
   });
 
+  /** Le routage de chaque membre porteur d'une part doit être complet et sommer à 100 %. */
   private comptesComplets(): boolean {
     const s = this.repartitionSaisie();
-    return s.selection.every(id => (s.parts[id] ?? 0) <= 0 || !!s.comptes[id]);
+    if (s.selection.some(id => (s.parts[id] ?? 0) > 0) && !s.comptePivot) return false;
+    return s.selection.every(id => (s.parts[id] ?? 0) <= 0 || routageMembreValide(s.routage[id]));
   }
 
   // ── Navigation ────────────────────────────────────────────────────────
@@ -791,11 +818,8 @@ export class PosteFormDialogComponent {
         })).filter(r => r.quotePart > 0)
       : undefined;
 
-    const ventilations = this.repartitionsArray.length
-      ? this.repartitionsArray.controls
-          .filter(c => c.get('compteId')?.value)
-          .map(c => ({ membreId: c.get('membreId')!.value, compteId: c.get('compteId')!.value }))
-      : undefined;
+    const s = this.repartitionSaisie();
+    const ventilations = routageVersDto(s.routage, s.selection, s.parts);
 
     const req = {
       type:            this.type(),
@@ -820,6 +844,7 @@ export class PosteFormDialogComponent {
       ordre: 0,
       repartitions,
       ventilations,
+      comptePivotId:   s.comptePivot ?? undefined,
       inclureProrataTheorique: this.type() === 'REVENU' ? (v.inclureProrataTheorique ?? true) : undefined,
     };
 

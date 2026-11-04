@@ -10,17 +10,20 @@ import { I18nService } from '../../../core/i18n/i18n.service';
 import { localeDeLangue } from '../../../core/i18n/locale.util';
 import { MontantPipe } from '../../../core/pipes/format.pipes';
 import {
-  AllocationArgentPocheDto, CompteDto, MembreDto, SourceArgentPoche,
+  AllocationArgentPocheDto, CompteDto, LigneRoutagePocheDto, MembreDto, SourceArgentPoche,
 } from '../../../core/models/api.models';
 import { normaliserCouleur } from '../../../shared/utils/couleur.util';
 import { ParcoursGuideComponent } from '../../../shared/components/parcours-guide/parcours-guide.component';
 import { EtapeParcours, LigneFiche } from '../../../shared/components/parcours-guide/parcours-guide.model';
-import { ChoixCartesComponent } from '../../../shared/components/choix-cartes/choix-cartes.component';
 import { ChoixPucesComponent } from '../../../shared/components/choix-puces/choix-puces.component';
 import { OptionChoix } from '../../../shared/components/choix-cartes/option-choix.model';
 import { DatePickerComponent, InputNumberComponent, InputTextComponent } from '../../../shared/components/form-fields';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
-import { optionsComptes } from '../argent-poche-options.util';
+import { PocheRoutageComponent } from '../poche-routage/poche-routage.component';
+import {
+  LignePocheSaisie, lignePocheUnique, routagePocheDepuisDto, routagePocheValide,
+  routagePocheVersDto,
+} from '../poche-routage/poche-routage.model';
 import { memeJour, moisAnnee, premierDuMois } from '../../postes/poste-form-dialog/poste-form-etapes';
 
 type EtapeAllocation = 'quoi' | 'combien' | 'compte';
@@ -31,7 +34,10 @@ const ETAPES: readonly EtapeAllocation[] = ['quoi', 'combien', 'compte'];
 /** Requête envoyée à l'API — identique au contrat existant de l'écran. */
 export interface AllocationArgentPocheRequest {
   membreId: string;
-  compteId: string;
+  /** Compte source finançant le versement. */
+  comptePivotId?: string;
+  /** Comptes de poche crédités ; somme des quotes-parts = 1. */
+  routage: LigneRoutagePocheDto[];
   mois: string;
   montant: number;
   raison?: string;
@@ -47,8 +53,8 @@ export interface AllocationArgentPocheRequest {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ReactiveFormsModule, MessageModule, MontantPipe, ButtonComponent,
-    ParcoursGuideComponent, ChoixCartesComponent, ChoixPucesComponent,
-    InputTextComponent, InputNumberComponent, DatePickerComponent,
+    ParcoursGuideComponent, ChoixPucesComponent,
+    InputTextComponent, InputNumberComponent, DatePickerComponent, PocheRoutageComponent,
   ],
   templateUrl: './allocation-form-dialog.component.html',
   styleUrl: './allocation-form-dialog.component.scss',
@@ -76,7 +82,6 @@ export class AllocationFormDialogComponent {
 
   readonly form = this.fb.group({
     membreId: [null as string | null, Validators.required],
-    compteId: [null as string | null, Validators.required],
     mois:     [null as Date | null,   Validators.required],
     montant:  [0,                     [Validators.required, Validators.min(0.01)]],
     raison:   [''],
@@ -119,14 +124,17 @@ export class AllocationFormDialogComponent {
       if (a) {
         this.form.setValue({
           membreId: a.membreId,
-          compteId: a.compteId,
           mois: yearMonthVersDate(a.mois),
           montant: a.montant,
           raison: a.raison ?? '',
         });
+        this.comptePivotId.set(a.comptePivotId ?? null);
+        this.lignesRoutage.set(routagePocheDepuisDto(a.routage));
         this.etapesVisitees.set(new Set<EtapeAllocation>(ETAPES));
       } else {
-        this.form.reset({ membreId: null, compteId: null, mois: premierDuMois(this.aujourdHui()), montant: 0, raison: '' });
+        this.form.reset({ membreId: null, mois: premierDuMois(this.aujourdHui()), montant: 0, raison: '' });
+        this.comptePivotId.set(null);
+        this.lignesRoutage.set(lignePocheUnique(null));
         this.etapesVisitees.set(new Set<EtapeAllocation>(['quoi']));
       }
       this.etapeCourante.set('quoi');
@@ -206,16 +214,16 @@ export class AllocationFormDialogComponent {
     this.form.get('montant')!.markAsDirty();
   }
 
-  // ── Étape « compte » ──────────────────────────────────────────────────
+  // ── Étape « compte » : pivot (source) + comptes crédités ──────────────
 
-  protected readonly optionsComptes = computed<OptionChoix<string>[]>(() =>
-    optionsComptes(this.comptes(), this.membres()),
+  /** Compte source finançant le versement ; `null` ⇒ résolu par le serveur. */
+  protected readonly comptePivotId = signal<string | null>(null);
+  /** Comptes de poche crédités, en pourcentage du versement (total 100 %). */
+  protected readonly lignesRoutage = signal<LignePocheSaisie[]>(lignePocheUnique(null));
+
+  protected readonly routageValide = computed(() =>
+    this.comptePivotId() !== null && routagePocheValide(this.lignesRoutage()),
   );
-
-  protected choisirCompte(id: string | null): void {
-    this.form.get('compteId')!.setValue(id);
-    this.form.get('compteId')!.markAsDirty();
-  }
 
   // ── Fiche ─────────────────────────────────────────────────────────────
 
@@ -253,8 +261,20 @@ export class AllocationFormDialogComponent {
     return this.membres().find(m => m.id === this.formValue().membreId)?.nom ?? null;
   }
 
+  /** Résumé de l'étape comptes : « source → destination(s) ». */
   private libelleCompte(): string | null {
-    return this.comptes().find(c => c.id === this.formValue().compteId)?.libelle ?? null;
+    const libelle = (id: string | null) =>
+      this.comptes().find(c => c.id === id)?.libelle ?? null;
+    const pivot = libelle(this.comptePivotId());
+    const credites = this.lignesRoutage()
+      .map(l => libelle(l.compteId))
+      .filter((x): x is string => !!x);
+    if (!pivot && !credites.length) return null;
+    const cible = credites.join(' · ');
+    if (!pivot) return cible || null;
+    // Auto-routage (source == unique destination) : inutile d'afficher une flèche.
+    if (credites.length === 1 && credites[0] === pivot) return pivot;
+    return cible ? `${pivot} → ${cible}` : pivot;
   }
 
   private resumeMembreMois(): string | null {
@@ -277,7 +297,7 @@ export class AllocationFormDialogComponent {
     switch (cle) {
       case 'quoi':    return this.form.get('membreId')!.valid && this.form.get('mois')!.valid;
       case 'combien': return this.form.get('montant')!.valid;
-      case 'compte':  return this.form.get('compteId')!.valid;
+      case 'compte':  return this.routageValide();
     }
   }
 
@@ -334,11 +354,12 @@ export class AllocationFormDialogComponent {
     }
     const v = this.form.getRawValue();
     this.enregistrer.emit({
-      membreId: v.membreId!,
-      compteId: v.compteId!,
-      mois:     dateVersYearMonth(v.mois!),
-      montant:  v.montant!,
-      raison:   v.raison || undefined,
+      membreId:      v.membreId!,
+      comptePivotId: this.comptePivotId() ?? undefined,
+      routage:       routagePocheVersDto(this.lignesRoutage()),
+      mois:          dateVersYearMonth(v.mois!),
+      montant:       v.montant!,
+      raison:        v.raison || undefined,
     });
   }
 }

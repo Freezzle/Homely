@@ -15,14 +15,18 @@
     <div class="duo-membre">
       <span class="avatar" [style.background]="couleur(membreA())">{{ initiales(membreA().nom) }}</span>
       <div>
-        <p class="nom">{{ membreA().nom }} · {{ partA() }} %</p>
-        <p class="montant">{{ montantA() | montant: devise() }}</p>
+        <p class="nom">{{ membreA().nom }} · {{ libellePartA() }}</p>
+        @if (!repartitionDynamique()) {
+          <p class="montant">{{ montantA() | montant: devise() }}</p>
+        }
       </div>
     </div>
     <div class="duo-membre duo-membre--fin">
       <div class="text-right">
-        <p class="nom">{{ membreB().nom }} · {{ partB() }} %</p>
-        <p class="montant">{{ montantB() | montant: devise() }}</p>
+        <p class="nom">{{ membreB().nom }} · {{ libellePartB() }}</p>
+        @if (!repartitionDynamique()) {
+          <p class="montant">{{ montantB() | montant: devise() }}</p>
+        }
       </div>
       <span class="avatar" [style.background]="couleur(membreB())">{{ initiales(membreB().nom) }}</span>
     </div>
@@ -31,6 +35,7 @@
   <input
     type="range"
     class="curseur"
+    [class.curseur--dynamique]="repartitionDynamique()"
     min="0"
     max="100"
     step="1"
@@ -95,34 +100,93 @@
   }
 }
 
-<!-- Comptes de ventilation : un compte commun, ou un compte par personne. -->
+<!-- Compte pivot : là où la transaction a physiquement lieu. -->
+@if (comptes().length) {
+  <div class="bloc">
+    <app-choix-cartes
+      [label]="libellePivot()"
+      [options]="optionsComptes()"
+      [value]="valeur().comptePivot"
+      largeurMin="11rem"
+      (valueChange)="choisirPivot($event)"
+    />
+    <p class="aide">{{ aidePivot() }}</p>
+  </div>
+}
+
+<!-- Contreparties : comptes qui alimentent le pivot (charge/réserve) ou qu'il alimente (revenu). -->
 @if (membresAvecPart().length) {
   <div class="bloc">
-    @if (compteCommunPossible() && !valeur().comptesSepares) {
-      <app-choix-cartes
-        [label]="libelleDepuis()"
-        [options]="optionsComptes()"
-        [value]="compteUnique()"
-        largeurMin="11rem"
-        (valueChange)="choisirCompteCommun($event)"
-      />
-      <button type="button" class="lien" (click)="basculerComptesSepares(true)">
-        {{ t.poste.form.comptesSepares }}
-      </button>
-    } @else {
+    <p class="libelle">{{ libelleContreparties() }}</p>
+    <p class="aide">{{ aideContreparties() }}</p>
+
+    @if (!modeAvance()) {
       @for (m of membresAvecPart(); track m.id) {
         <app-choix-cartes
           class="bloc"
-          [label]="membresAvecPart().length > 1 ? libelleDepuisMembre(m.nom) : libelleDepuis()"
+          [label]="membresAvecPart().length > 1 ? libelleContrepartiesMembre(m.nom) : ''"
           [options]="optionsComptes(m.id)"
-          [value]="compteDe(m.id)"
+          [value]="compteSimple(m.id)"
           largeurMin="11rem"
-          (valueChange)="choisirCompte(m.id, $event)"
+          (valueChange)="choisirCompteSimple(m.id, $event)"
         />
       }
-      @if (compteCommunPossible()) {
-        <button type="button" class="lien" (click)="basculerComptesSepares(false)">
-          {{ t.poste.form.compteCommun }}
+      <button type="button" class="lien" (click)="basculerRoutageAvance(true)">
+        {{ t.poste.form.routageAvance }}
+      </button>
+    } @else {
+      @for (m of membresAvecPart(); track m.id) {
+        <div class="routage-membre">
+          <p class="libelle">{{ libelleContrepartiesMembre(m.nom) }}</p>
+          @for (l of lignes(m.id); track $index) {
+            <div class="routage-ligne">
+              <app-select
+                class="routage-compte"
+                [options]="optionsSelect(m.id)"
+                optionLabel="label"
+                optionValue="value"
+                [ngModel]="l.compteId"
+                (ngModelChange)="majLigneCompte(m.id, $index, $event)"
+              />
+              <app-input-number
+                class="routage-part"
+                [min]="0"
+                [max]="100"
+                suffix=" %"
+                [ngModel]="l.part"
+                (ngModelChange)="majLignePart(m.id, $index, $event)"
+              />
+              @if (lignes(m.id).length > 1) {
+                <button
+                  type="button"
+                  class="retirer"
+                  [attr.aria-label]="t.poste.form.retirerCompte"
+                  (click)="retirerLigne(m.id, $index)"
+                >
+                  <i class="pi pi-times"></i>
+                </button>
+              }
+            </div>
+          }
+          <div class="routage-pied">
+            <button type="button" class="lien" (click)="ajouterLigne(m.id)">
+              {{ t.poste.form.ajouterCompte }}
+            </button>
+            @if (lignes(m.id).length > 1) {
+              <span
+                class="total"
+                [class.total--ok]="routageValide(m.id)"
+                [class.total--ko]="!routageValide(m.id)"
+              >
+                {{ t.poste.form.total }} : {{ total(m.id) }} %
+              </span>
+            }
+          </div>
+        </div>
+      }
+      @if (!avanceImpose()) {
+        <button type="button" class="lien" (click)="basculerRoutageAvance(false)">
+          {{ t.poste.form.routageSimple }}
         </button>
       }
     }

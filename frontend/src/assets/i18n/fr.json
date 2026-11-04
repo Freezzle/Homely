@@ -395,14 +395,35 @@
       "personnalise": "Personnalisé",
       "curseurRepartition": "Répartition entre {{a}} et {{b}}",
       "curseurValeur": "{{a}} {{partA}} %, {{b}} {{partB}} %",
+      "partDynamique": "dynamique",
+      "repartitionDynamique": "Selon les revenus de la période",
+      "curseurValeurDynamique": "Répartition dynamique entre {{a}} et {{b}}, selon les revenus de la période",
       "depuis": {
         "CHARGE": "Prélevé sur",
         "REVENU": "Versé sur",
         "RESERVE": "Mis de côté sur"
       },
-      "depuisMembre": "{{libelle}} · {{nom}}",
-      "comptesSepares": "Chacun depuis un compte différent",
-      "compteCommun": "Le même compte pour tous",
+      "comptePivotAide": {
+        "CHARGE": "Le compte réellement débité pour cette dépense.",
+        "REVENU": "Le compte sur lequel l’argent arrive réellement.",
+        "RESERVE": "Le compte sur lequel l’argent est mis de côté."
+      },
+      "contreparties": {
+        "CHARGE": "Alimenté par",
+        "REVENU": "Redistribué vers",
+        "RESERVE": "Alimenté par"
+      },
+      "contrepartiesMembre": "{{libelle}} · {{nom}}",
+      "contrepartiesAide": {
+        "CHARGE": "Les comptes depuis lesquels l’argent part pour couvrir cette dépense.",
+        "REVENU": "Les comptes vers lesquels cet argent est ensuite réparti.",
+        "RESERVE": "Les comptes depuis lesquels l’argent part pour alimenter cette réserve."
+      },
+      "routageAvance": "Répartir sur plusieurs comptes",
+      "routageSimple": "Un seul compte par personne",
+      "ajouterCompte": "Ajouter un compte",
+      "retirerCompte": "Retirer ce compte",
+      "routageInvalide": "Le total doit faire 100 % pour chaque personne.",
       "aucunCompte": "Aucun compte disponible",
       "total": "Total",
       "analyseAide": "Tu peux enregistrer sans y toucher.",
@@ -861,6 +882,14 @@
     "evenementsDefavorables": "Défavorables",
     "aucunEvenementAnnee": "Aucun changement structurel cette année.",
     "aucunVirementPeriode": "Aucun virement à faire sur la période.",
+    "virementDetailOuvrir": "Voir la composition du virement",
+    "virementDetailTotal": "Total du virement",
+    "virementDetailColonnePoste": "Poste",
+    "virementDetailColonneCategorie": "Catégorie",
+    "virementDetailColonneMontant": "Montant",
+    "virementDetailArgentPoche": "Argent de poche",
+    "virementDetailComblement": "Comblement de trésorerie",
+    "virementDetailAucuneLigne": "Aucune composition disponible pour ce virement.",
     "postesZoneAOptimiser": "À optimiser",
     "postesZoneASurveiller": "À surveiller",
     "postesZoneAEnvisager": "À vérifier"
@@ -1122,7 +1151,6 @@
     "champs": {
       "nom": "Nom",
       "membre": "Membre",
-      "compte": "Compte crédité",
       "dateDebut": "À partir de",
       "dateFin": "Jusqu'à (inclus)",
       "dateFinAide": "Laisser vide pour une politique ouverte.",
@@ -1154,13 +1182,13 @@
           "quoi": "Pour qui, et sous quel nom ?",
           "formule": "Comment se calcule le montant ?",
           "validite": "Sur quelle période s’applique-t-elle ?",
-          "compte": "Sur quel compte est-il versé ?"
+          "compte": "Depuis quel compte, et vers lequel ?"
         },
         "fiche": {
           "membre": "Membre",
           "formule": "Formule",
           "validite": "Validité",
-          "compte": "Compte"
+          "compte": "Comptes"
         },
         "nomAide": "Un nom court, pour la retrouver dans la liste.",
         "modeVariableAide": "Un pourcentage du reste à vivre, borné par un socle et un plafond.",
@@ -1177,12 +1205,12 @@
         "etapes": {
           "quoi": "Pour qui, et quel mois ?",
           "combien": "Combien, et pourquoi ?",
-          "compte": "Sur quel compte est-elle versée ?"
+          "compte": "Depuis quel compte, et vers lequel ?"
         },
         "fiche": {
           "membreMois": "Membre et mois",
           "montant": "Montant",
-          "compte": "Compte"
+          "compte": "Comptes"
         },
         "resolutionAide": "Montant prévu pour ce mois avant exception.",
         "reprendreMontant": "Reprendre ce montant",
@@ -1195,7 +1223,19 @@
       "debutAnneeProchaine": "Début d’année prochaine",
       "sansFin": "Sans fin",
       "finAnnee": "Fin de l’année",
-      "unAn": "Pendant 1 an"
+      "unAn": "Pendant 1 an",
+      "routage": {
+        "pivot": "Financé depuis quel compte ?",
+        "pivotAide": "Compte d’où part l’argent. S’il est identique au compte crédité, aucun virement n’est simulé.",
+        "credites": "Versé sur quel(s) compte(s) ?",
+        "creditesAide": "Le compte où l’argent de poche est disponible et dépensé.",
+        "modeAvance": "Répartir sur plusieurs comptes",
+        "modeSimple": "Un seul compte",
+        "ajouterCompte": "Ajouter un compte",
+        "retirerCompte": "Retirer ce compte",
+        "total": "Total",
+        "invalide": "Le total des versements doit faire 100 %."
+      }
     },
     "apercu": {
       "colonneMois": "Mois",

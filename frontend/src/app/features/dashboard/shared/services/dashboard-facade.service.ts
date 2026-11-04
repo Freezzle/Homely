@@ -22,6 +22,7 @@ import {
   VentilationAggregatDto,
   ResolutionArgentPocheFoyerMoisDto,
   VirementCompteDto,
+  VirementDetailLigneDto,
 } from '../../../../core/models/api.models';
 import { I18nService } from '../../../../core/i18n/i18n.service';
 import { localeDeLangue } from '../../../../core/i18n/locale.util';
@@ -44,6 +45,7 @@ import { PostesAOptimiserDrawerData } from '../../indicators/postes-a-optimiser/
 import { evenementsIndicator } from '../../indicators/evenements/evenements.indicator';
 import { EvenementsDrawerData } from '../../indicators/evenements/evenements-drawer-content.component';
 import { ContexteMembresVirements, virementsComptesIndicator } from '../../indicators/virements-comptes/virements-comptes.indicator';
+import { cleVirement, decomposerCleVirement, enrichirComptes } from '../utils/virements-comptes.util';
 import { VirementsComptesDrawerData } from '../../indicators/virements-comptes/virements-comptes-drawer-content.component';
 import { besoinsPlaisirsIndicator } from '../../indicators/besoins-plaisirs/besoins-plaisirs.indicator';
 import { BesoinsPlaisirsCardData } from '../../../../shared/components/besoins-plaisirs-card/besoins-plaisirs-card.component';
@@ -634,6 +636,7 @@ export class DashboardFacadeService {
     devise: this.deviseBase,
     chargement: this.virementsComptesChargement,
     onBascule: (cle) => this.basculerVirementCompteFait(cle),
+    onVirementClick: (cle) => this.ouvrirDetailVirement(cle),
   }));
 
   /** Référentiels permettant à l'indicateur de signaler (avatar) les comptes d'un autre membre. */
@@ -649,7 +652,7 @@ export class DashboardFacadeService {
   readonly virementsComptesIndicateur = computed(() => {
     if (!this.afficherOngletComptes()) return null;
     return {
-      indicator: virementsComptesIndicator('virements-comptes-mois', this.virementsComptesDto(), this.formateurMontant, this.t, this.contexteMembresVirements()),
+      indicator: virementsComptesIndicator('virements-comptes-mois', this.virementsComptesDto(), this.formateurMontant, this.t, this.contexteMembresVirements(), (cle) => this.ouvrirDetailVirement(cle)),
       data: this.virementsComptesData(),
     };
   });
@@ -664,6 +667,7 @@ export class DashboardFacadeService {
     devise: this.deviseBase,
     chargement: this.virementsComptesAnnuelChargement,
     onBascule: (cle) => this.basculerVirementCompteFait(cle),
+    onVirementClick: (cle) => this.ouvrirDetailVirement(cle),
   }));
 
   /** Indicateur "Virements des comptes" (vue année, vue membre uniquement) — variante
@@ -672,7 +676,7 @@ export class DashboardFacadeService {
   readonly virementsComptesIndicateurAnnee = computed(() => {
     if (!this.afficherOngletComptes()) return null;
     return {
-      indicator: virementsComptesIndicator('virements-comptes-annee', this.virementsComptesAnnuelDto(), this.formateurMontant, this.t, this.contexteMembresVirements()),
+      indicator: virementsComptesIndicator('virements-comptes-annee', this.virementsComptesAnnuelDto(), this.formateurMontant, this.t, this.contexteMembresVirements(), (cle) => this.ouvrirDetailVirement(cle)),
       data: this.virementsComptesDataAnnee(),
     };
   });
@@ -928,6 +932,72 @@ export class DashboardFacadeService {
       courant.add(cle);
     }
     this._virementsComptesFaits.set(courant);
+  }
+
+  // ─── Popin « composition d'un virement » ───
+  // Ouverte depuis la carte du dashboard comme depuis le tableau du drawer : la clé
+  // `compteSourceId::compteDestinationId` suffit à identifier le virement, la période
+  // (mois ou année) est celle actuellement affichée.
+
+  private readonly _virementDetailCle = signal<string | null>(null);
+
+  /** Clé HTTP du détail : `null` tant qu'aucune ligne n'a été cliquée. L'endpoint dépend de
+   *  la vue courante (mois ou année), comme les paires elles-mêmes. */
+  private readonly _virementDetailRequete = computed<
+    { foyerId: string; scenarioId: string; annee: number; mois: number | null; compteSourceId: string; compteDestinationId: string } | null
+  >(() => {
+    const cle = this._virementDetailCle();
+    if (!cle) return null;
+    const { compteSourceId, compteDestinationId } = decomposerCleVirement(cle);
+    if (this.vue() === 'annee') {
+      const projCle = this._projectionAnnuelleCle();
+      return projCle ? { ...projCle, mois: null, compteSourceId, compteDestinationId } : null;
+    }
+    const ventCle = this._ventilationsMoisCle();
+    return ventCle ? { ...ventCle, compteSourceId, compteDestinationId } : null;
+  });
+
+  private readonly _virementDetail = creerChargementReactif(
+    this._virementDetailRequete,
+    ({ foyerId, scenarioId, annee, mois, compteSourceId, compteDestinationId }) =>
+      mois === null
+        ? this.projSvc.virementDetailAnnuel(foyerId, scenarioId, annee, compteSourceId, compteDestinationId)
+        : this.projSvc.virementDetail(foyerId, scenarioId, annee, mois, compteSourceId, compteDestinationId),
+  );
+
+  readonly virementDetailVisible = computed(() => this._virementDetailCle() !== null);
+  readonly virementDetailLignes = computed<VirementDetailLigneDto[]>(() => this._virementDetail.donnees() ?? []);
+  readonly virementDetailChargement = computed(() => this._virementDetail.chargement());
+
+  /** Total du virement ouvert — repris de la paire affichée (et non de la somme des lignes)
+   *  pour que la popin annonce exactement le montant sur lequel l'utilisateur a cliqué. */
+  readonly virementDetailMontant = computed<number>(() => {
+    const cle = this._virementDetailCle();
+    if (!cle) return 0;
+    return this.virementsComptesCourant()
+      .filter((v) => cleVirement(v) === cle)
+      .reduce((somme, v) => somme + v.montant, 0);
+  });
+
+  /** Libellés « compte source → compte destination » du virement ouvert. */
+  readonly virementDetailComptes = computed<{ source: string; destination: string }>(() => {
+    const cle = this._virementDetailCle();
+    if (!cle) return { source: '', destination: '' };
+    const { compteSourceId, compteDestinationId } = decomposerCleVirement(cle);
+    const comptes = enrichirComptes(this.comptes(), this.membres());
+    return {
+      source: comptes.get(compteSourceId)?.libelle ?? '',
+      destination: comptes.get(compteDestinationId)?.libelle ?? '',
+    };
+  });
+
+  /** Ouvre la popin de composition pour la clé `compteSourceId::compteDestinationId`. */
+  ouvrirDetailVirement(cle: string): void {
+    this._virementDetailCle.set(cle);
+  }
+
+  fermerDetailVirement(): void {
+    this._virementDetailCle.set(null);
   }
 
   private mapperTauxEffortCards(dtos: TauxEffortMembreDto[] | null | undefined): TauxEffortCardData[] {

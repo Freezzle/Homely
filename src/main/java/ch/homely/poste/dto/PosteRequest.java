@@ -28,6 +28,7 @@ public record PosteRequest(
         @NotNull NaturePoste nature,
         @DecimalMin("0.0") @DecimalMax("100.0") BigDecimal estimPourcentage,  // Obligatoire si nature=ESTIMATION, sinon nullable
         TypeRepartition typeRepartition,   // null → AUTO
+        UUID comptePivotId,                // compte où la transaction a lieu (débité pour CHARGE/RESERVE, crédité pour REVENU)
         int ordre,
         @Min(1) @Max(5) Integer importance,  // null → 3 (neutre)
         @Min(1) @Max(5) Integer potentielOptimisation,  // null → 3 (neutre)
@@ -42,5 +43,8 @@ public record PosteRequest(
 
     public record VentilationCompteDto(
             @NotNull UUID membreId,
-            UUID compteId) {}  // nullable : null = compte désélectionné (ex. membre à 0%)
+            UUID compteId,  // nullable : null = compte désélectionné (ex. membre à 0%)
+            // Part DANS la part du membre (pas dans le total du poste) ; null → 1.
+            // La somme des quotes-parts d'un même membre doit valoir 1.
+            @DecimalMin("0.0") @DecimalMax("1.0") BigDecimal quotePart) {}
 }

@@ -167,10 +167,11 @@ class VirementsComptesIT {
 
         String catChargeExclusive = creerCategorie(token, foyerId, "Loisirs B", "CHARGE");
         String catChargeCommune = creerCategorie(token, foyerId, "Loyer commun", "CHARGE");
+        // Postes entièrement à la charge de B (CUSTOM 100%) : seul le primaire de B finance.
         // Financé par le primaire de B, vers un compte exclusif à B -> A ne doit pas le voir.
-        creerPoste(token, foyerId, scenarioId, catChargeExclusive, "CHARGE", "2025-01-01", null, 150, 1, "MENSUALISE", membreBId, compteExclusifB);
+        creerPosteCustomMembreUnique(token, foyerId, scenarioId, catChargeExclusive, "CHARGE", "2025-01-01", 150, 1, "MENSUALISE", membreBId, compteExclusifB);
         // Financé par le primaire de B, vers le compte commun -> A doit le voir (il est co-titulaire de la destination).
-        creerPoste(token, foyerId, scenarioId, catChargeCommune, "CHARGE", "2025-01-01", null, 400, 1, "MENSUALISE", membreBId, compteCommun);
+        creerPosteCustomMembreUnique(token, foyerId, scenarioId, catChargeCommune, "CHARGE", "2025-01-01", 400, 1, "MENSUALISE", membreBId, compteCommun);
 
         List<JsonNode> virementsPourA = virementsComptes(token, foyerId, scenarioId, 2025, 1, membreAId);
         assertThat(virementsPourA).hasSize(1);
@@ -222,7 +223,205 @@ class VirementsComptesIT {
                         ex -> assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
     }
 
+    @Test
+    @DisplayName("Détail d'un virement : une ligne par poste financé, avec libellé et catégorie")
+    void detailVirementParPoste() throws Exception {
+        String token = creerEtLogin("virements_detail@test.ch");
+        String foyerId = creerFoyer(token, "Foyer Détail Virement");
+        String membreId = premierMembreId(token, foyerId);
+        String scenarioId = creerScenario(token, foyerId, membreId);
+        String comptePrimaireId = creerCompte(token, foyerId, membreId, "Compte primaire");
+        String compteCible = creerCompte(token, foyerId, membreId, "Compte charges");
+
+        definirComptePrimaire(token, foyerId, membreId, comptePrimaireId);
+
+        String catLoyer = creerCategorie(token, foyerId, "Loyer", "CHARGE");
+        String catAssurance = creerCategorie(token, foyerId, "Assurance", "CHARGE");
+        creerPosteDecrit(token, foyerId, scenarioId, catLoyer, "CHARGE", "2025-01-01", 1200, 1, membreId, compteCible, "Loyer appartement");
+        creerPosteDecrit(token, foyerId, scenarioId, catAssurance, "CHARGE", "2025-01-01", 300, 1, membreId, compteCible, "Assurance ménage");
+
+        List<JsonNode> lignes = virementDetail(token, foyerId, scenarioId, 2025, 1, comptePrimaireId, compteCible);
+        assertThat(lignes).hasSize(2);
+        // Tri par montant décroissant.
+        assertThat(lignes.get(0).get("libelle").asText()).isEqualTo("Loyer appartement");
+        assertThat(lignes.get(0).get("categorieNom").asText()).isEqualTo("Loyer");
+        assertThat(lignes.get(0).get("origine").asText()).isEqualTo("POSTE");
+        assertThat(lignes.get(0).get("type").asText()).isEqualTo("CHARGE");
+        assertThat(lignes.get(0).get("montant").asDouble()).isCloseTo(1200.0, within(0.01));
+        assertThat(lignes.get(1).get("libelle").asText()).isEqualTo("Assurance ménage");
+        assertThat(lignes.get(1).get("montant").asDouble()).isCloseTo(300.0, within(0.01));
+
+        // Invariant : la somme des lignes = le montant de la paire.
+        JsonNode paire = trouverParDestination(
+                virementsComptes(token, foyerId, scenarioId, 2025, 1, membreId), compteCible);
+        assertThat(sommeMontants(lignes)).isCloseTo(paire.get("montant").asDouble(), within(0.01));
+    }
+
+    @Test
+    @DisplayName("Détail d'un virement : charge annuelle échue -> ligne poste + ligne comblement de trésorerie")
+    void detailVirementComblementTresorerie() throws Exception {
+        String token = creerEtLogin("virements_detail_topup@test.ch");
+        String foyerId = creerFoyer(token, "Foyer Détail Comblement");
+        String membreId = premierMembreId(token, foyerId);
+        String scenarioId = creerScenario(token, foyerId, membreId);
+        String comptePrimaireId = creerCompte(token, foyerId, membreId, "Compte primaire");
+        String compteCible = creerCompte(token, foyerId, membreId, "Compte réserve");
+
+        definirComptePrimaire(token, foyerId, membreId, comptePrimaireId);
+
+        String catReserve = creerCategorie(token, foyerId, "3e pilier", "RESERVE");
+        // D=12 ancré en janvier : mensualisé = 100, échu = 1200 -> 1100 de comblement.
+        creerPosteDecrit(token, foyerId, scenarioId, catReserve, "RESERVE", "2025-01-01", 1200, 12, membreId, compteCible, "Pilier 3a");
+
+        List<JsonNode> lignes = virementDetail(token, foyerId, scenarioId, 2025, 1, comptePrimaireId, compteCible);
+        assertThat(lignes).isNotEmpty();
+        assertThat(lignes).anyMatch(l -> l.get("origine").asText().equals("COMBLEMENT_TRESORERIE"));
+        assertThat(sommeMontants(lignes)).isCloseTo(1200.0, within(0.01));
+    }
+
+    @Test
+    @DisplayName("Détail d'un virement : variante annuelle = somme des composantes mensuelles")
+    void detailVirementAnnuel() throws Exception {
+        String token = creerEtLogin("virements_detail_annuel@test.ch");
+        String foyerId = creerFoyer(token, "Foyer Détail Annuel");
+        String membreId = premierMembreId(token, foyerId);
+        String scenarioId = creerScenario(token, foyerId, membreId);
+        String comptePrimaireId = creerCompte(token, foyerId, membreId, "Compte primaire");
+        String compteCible = creerCompte(token, foyerId, membreId, "Compte cible");
+
+        definirComptePrimaire(token, foyerId, membreId, comptePrimaireId);
+
+        String catCharge = creerCategorie(token, foyerId, "Loyer", "CHARGE");
+        creerPosteDecrit(token, foyerId, scenarioId, catCharge, "CHARGE", "2025-01-01", 300, 1, membreId, compteCible, "Loyer mensuel");
+
+        List<JsonNode> lignes = virementDetailAnnuel(token, foyerId, scenarioId, 2025, comptePrimaireId, compteCible);
+        assertThat(lignes).hasSize(1);
+        assertThat(lignes.get(0).get("libelle").asText()).isEqualTo("Loyer mensuel");
+        assertThat(lignes.get(0).get("montant").asDouble()).isCloseTo(3600.0, within(0.01));
+    }
+
+    @Test
+    @DisplayName("Détail d'un virement : argent de poche tracé comme ligne dédiée")
+    void detailVirementArgentPoche() throws Exception {
+        String token = creerEtLogin("virements_detail_poche@test.ch");
+        String foyerId = creerFoyer(token, "Foyer Détail Poche");
+        String membreId = premierMembreId(token, foyerId);
+        String scenarioId = creerScenario(token, foyerId, membreId);
+        String comptePrimaireId = creerCompte(token, foyerId, membreId, "Compte primaire");
+        String comptePoche = creerCompte(token, foyerId, membreId, "Compte argent de poche");
+
+        definirComptePrimaire(token, foyerId, membreId, comptePrimaireId);
+
+        String catRevenu = creerCategorie(token, foyerId, "Salaire", "REVENU");
+        creerPosteDecrit(token, foyerId, scenarioId, catRevenu, "REVENU", "2025-01-01", 5000, 1, membreId, comptePrimaireId, "Salaire");
+        definirArgentPocheFixe(token, foyerId, scenarioId, membreId, 400, comptePoche);
+
+        List<JsonNode> lignes = virementDetail(token, foyerId, scenarioId, 2025, 1, comptePrimaireId, comptePoche);
+        assertThat(lignes).isNotEmpty();
+        assertThat(lignes).anyMatch(l -> l.get("origine").asText().equals("ARGENT_POCHE"));
+    }
+
+    @Test
+    @DisplayName("Accès inter-foyers refusé (403) sur le détail d'un virement")
+    void accesInterFoyersRefuseDetail() {
+        String tokenA = creerEtLogin("virements_detail_a@test.ch");
+        String foyerAId = creerFoyer(tokenA, "Foyer A Détail");
+        String membreAId = premierMembreId(tokenA, foyerAId);
+        String scenarioId = creerScenario(tokenA, foyerAId, membreAId);
+        String compteA = creerCompte(tokenA, foyerAId, membreAId, "Compte A");
+        String compteB = creerCompte(tokenA, foyerAId, membreAId, "Compte B");
+
+        String tokenB = creerEtLogin("virements_detail_b@test.ch");
+        creerFoyer(tokenB, "Foyer B Détail");
+
+        assertThatThrownBy(() -> client.get()
+                .uri("/api/foyers/" + foyerAId + "/scenarios/" + scenarioId
+                        + "/projection/virements-comptes/detail?annee=2025&mois=1&compteSourceId=" + compteA
+                        + "&compteDestinationId=" + compteB)
+                .header("Authorization", "Bearer " + tokenB)
+                .retrieve().toBodilessEntity())
+                .isInstanceOfSatisfying(HttpClientErrorException.class,
+                        ex -> assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+    }
+
     // ── Helpers (mêmes conventions que ComptesRecapIT) ──────────────────────
+
+    private double sommeMontants(List<JsonNode> lignes) {
+        return lignes.stream().mapToDouble(l -> l.get("montant").asDouble()).sum();
+    }
+
+    /** Politique d'argent de poche en mode FIXE, créditée sur {@code compteId}. */
+    private void definirArgentPocheFixe(String token, String foyerId, String scenarioId,
+                                        String membreId, double montantFixe, String compteId) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("membreId", membreId);
+        payload.put("routage", List.of(Map.of("compteId", compteId)));
+        payload.put("nom", "Poche Test");
+        payload.put("dateDebut", "2025-01");
+        payload.put("mode", "FIXE");
+        payload.put("montantFixe", montantFixe);
+        try {
+            client.post()
+                    .uri("/api/foyers/" + foyerId + "/scenarios/" + scenarioId + "/argent-poche/politiques")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(MAPPER.writeValueAsString(payload))
+                    .retrieve().toBodilessEntity();
+        } catch (Exception e) { throw new RuntimeException(e); }
+    }
+
+    private List<JsonNode> virementDetail(String token, String foyerId, String scenarioId, int annee, int mois,
+                                          String compteSourceId, String compteDestinationId) {
+        return getListe(token, "/api/foyers/" + foyerId + "/scenarios/" + scenarioId
+                + "/projection/virements-comptes/detail?annee=" + annee + "&mois=" + mois
+                + "&compteSourceId=" + compteSourceId + "&compteDestinationId=" + compteDestinationId);
+    }
+
+    private List<JsonNode> virementDetailAnnuel(String token, String foyerId, String scenarioId, int annee,
+                                                String compteSourceId, String compteDestinationId) {
+        return getListe(token, "/api/foyers/" + foyerId + "/scenarios/" + scenarioId
+                + "/projection/virements-comptes-annuel/detail?annee=" + annee
+                + "&compteSourceId=" + compteSourceId + "&compteDestinationId=" + compteDestinationId);
+    }
+
+    private List<JsonNode> getListe(String token, String uri) {
+        try {
+            String body = client.get().uri(uri)
+                    .header("Authorization", "Bearer " + token)
+                    .retrieve().body(String.class);
+            JsonNode arr = MAPPER.readTree(body);
+            List<JsonNode> result = new ArrayList<>();
+            arr.forEach(result::add);
+            return result;
+        } catch (Exception e) { throw new RuntimeException(e); }
+    }
+
+    private void creerPosteDecrit(String token, String foyerId, String scenarioId, String catId, String type,
+                                  String debut, double montant, int periodiciteMois,
+                                  String membreId, String compteId, String description) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("type", type);
+        payload.put("description", description);
+        payload.put("categorieId", catId);
+        payload.put("montant", montant);
+        payload.put("periodiciteMois", periodiciteMois);
+        payload.put("debut", debut);
+        payload.put("mode", "MENSUALISE");
+        payload.put("moment", "DEBUT_PERIODE");
+        payload.put("nature", "EFFECTIF");
+        payload.put("ordre", 1);
+        payload.put("repartitions", List.of());
+        payload.put("ventilations", List.of(Map.of("membreId", membreId, "compteId", compteId)));
+        try {
+            client.post()
+                    .uri("/api/foyers/" + foyerId + "/scenarios/" + scenarioId + "/postes")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(MAPPER.writeValueAsString(payload))
+                    .retrieve().toBodilessEntity();
+        } catch (Exception e) { throw new RuntimeException(e); }
+    }
+
 
     private JsonNode trouverParDestination(List<JsonNode> virements, String compteDestinationId) {
         return virements.stream()
@@ -350,6 +549,33 @@ class VirementsComptesIT {
                     .body(MAPPER.writeValueAsString(payload))
                     .retrieve().body(String.class);
             return MAPPER.readTree(body).get("id").asText();
+        } catch (Exception e) { throw new RuntimeException(e); }
+    }
+
+    private void creerPosteCustomMembreUnique(String token, String foyerId, String scenarioId, String catId, String type,
+                                              String debut, double montant, int periodiciteMois, String mode,
+                                              String membreId, String compteId) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("type", type);
+        payload.put("description", "Poste test virements");
+        payload.put("categorieId", catId);
+        payload.put("montant", montant);
+        payload.put("periodiciteMois", periodiciteMois);
+        payload.put("debut", debut);
+        payload.put("mode", mode);
+        payload.put("moment", "DEBUT_PERIODE");
+        payload.put("nature", "EFFECTIF");
+        payload.put("ordre", 1);
+        payload.put("typeRepartition", "CUSTOM");
+        payload.put("repartitions", List.of(Map.of("membreId", membreId, "quotePart", 1)));
+        payload.put("ventilations", List.of(Map.of("membreId", membreId, "compteId", compteId)));
+        try {
+            client.post()
+                    .uri("/api/foyers/" + foyerId + "/scenarios/" + scenarioId + "/postes")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(MAPPER.writeValueAsString(payload))
+                    .retrieve().toBodilessEntity();
         } catch (Exception e) { throw new RuntimeException(e); }
     }
 

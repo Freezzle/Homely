@@ -16,7 +16,7 @@ import { creerChargementReactif } from '../../core/utils/reference-data.util';
 import { creerCrudReferentielScenario } from '../../core/utils/crud-referentiel.util';
 import { I18nService } from '../../core/i18n/i18n.service';
 import {
-  AllocationArgentPocheDto, PolitiqueArgentPocheDto, MembreDto,
+  AllocationArgentPocheDto, CompteDto, LigneRoutagePocheDto, PolitiqueArgentPocheDto, MembreDto,
 } from '../../core/models/api.models';
 import { ButtonComponent } from '../../shared/components/button/button.component';
 import { TagComponent } from '../../shared/components/tag/tag.component';
@@ -147,11 +147,10 @@ export class ArgentPocheComponent {
     const cptes = this.comptes();
     return this.politiques().map(p => {
       const membre = mems.find(m => m.id === p.membreId);
-      const compte = cptes.find(c => c.id === p.compteId);
       return {
         ...p,
         membre,
-        compteLibelle: compte?.libelle ?? '',
+        compteLibelle: this._libelleComptesCredites(p.routage, cptes),
         periodeLibelle: this._formaterPeriode(p.dateDebut, p.dateFin),
         formuleLibelle: this._formuleLibelle(p),
       };
@@ -166,12 +165,11 @@ export class ArgentPocheComponent {
       .sort((a, b) => (a.mois < b.mois ? 1 : a.mois > b.mois ? -1 : 0))
       .map(a => {
         const membre = mems.find(m => m.id === a.membreId);
-        const compte = cptes.find(c => c.id === a.compteId);
         return {
           ...a,
           membreNom: membre?.nom ?? '',
           membreCouleur: membre?.couleur ?? '#6366F1',
-          compteLibelle: compte?.libelle ?? '',
+          compteLibelle: this._libelleComptesCredites(a.routage, cptes),
           moisLibelle: this._formaterMois(a.mois),
         };
       });
@@ -474,6 +472,16 @@ export class ArgentPocheComponent {
   }
   private _dateToYearMonth(d: Date): string {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  }
+  /** Libellés des comptes crédités par un versement, séparés par « · ». */
+  private _libelleComptesCredites(
+    routage: readonly LigneRoutagePocheDto[] | undefined,
+    comptes: readonly CompteDto[],
+  ): string {
+    return (routage ?? [])
+      .map(l => comptes.find(c => c.id === l.compteId)?.libelle)
+      .filter((x): x is string => !!x)
+      .join(' · ');
   }
   private _formaterMois(ym: string): string {
     const [y, m] = ym.split('-').map(Number);
